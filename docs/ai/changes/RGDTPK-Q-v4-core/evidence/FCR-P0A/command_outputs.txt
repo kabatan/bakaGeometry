@@ -1,0 +1,23 @@
+===== rg FCR-P0A reset constraints =====
+- A module-only test is not a production pipeline proof.
+  `AlgorithmDefect` instead of shrinking scope.
+    norm traces, or interpolated relations must trigger PlanDefect unless moved to execute with
+## PlanDefect / AlgorithmDefect Trigger Table
+| A phase plan permits a narrow algebraic shape as the only support-producing path. | `PlanDefect` | Stop the phase, amend the plan or downgrade the claim before code changes continue. |
+| A production registry reaches non-production, test-only, fake, or fixture-specific code. | `PlanDefect` | Quarantine/remove the path or replace it with a production implementation before claiming progress. |
+| A required v4 candidate-cover algorithm cannot be implemented without narrowing scope. | `AlgorithmDefect` | Stop and report the missing algorithmic obligation; do not replace it with a limited slice. |
+| A planner computes final output relations or support polynomials instead of a replayable plan. | `PlanDefect` | Move relation construction to execute or classify the path as non-production. |
+| `api::solve_target` cannot be connected without bypassing DAG/planner/kernel/message/compose. | `AlgorithmDefect` | Stop and report the missing production pipeline mechanism. |
+| A reviewer prompt mainly checks evidence consistency rather than algorithmic sufficiency. | `PlanDefect` | Repair the reviewer prompt and rerun the review. |
+| A support-producing case passes through a helper that skips the production pipeline. | `PlanDefect` | Move the case to test support only or make it pass through the production pipeline. |
+| Actual DAG/block replay cannot replace synthetic all-relations replay for final claims. | `AlgorithmDefect` | Stop before any final readiness claim and implement replay or report the blocker. |
+| A specialized kernel is the only reason a required stress category succeeds. | `PlanDefect` | Add the generic path required by v4 or quarantine the specialized path as an optimizer only. |
+| A later-phase exact-image function is needed to justify candidate-cover readiness. | `PlanDefect` | Separate candidate-cover proof from exact-image semantics or block the claim. |
+
+EXIT_CODE=0
+
+===== git diff --check =====
+warning: in the working copy of 'docs/ai/ACTIVE_CONTEXT.md', LF will be replaced by CRLF the next time Git touches it
+
+EXIT_CODE=0
+

@@ -1,0 +1,21 @@
+schema_version: rgdtpk-fcr-phase-handoff-v1
+phase_id: FCR-P0A
+plan_defect_triggered: false
+algorithm_defect_triggered: false
+trigger_ids: []
+if_triggered_response: not_applicable
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-011
+forbidden_claims_reaffirmed: true
+forbidden_claims:
+  - CANDIDATE_COVER_CORE_READY
+  - EXACT_IMAGE_CORE_READY
+  - SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC
+  - RGDTPK_Q_V4_ACCEPTANCE_COMPLETE
+  - P13 readiness
+  - P14 readiness
+  - P15 readiness
+  - P16 readiness
+handoff_notes:
+  - "FCR-P0A creates an execution constraint, not an implementation claim."
+  - "At least one concrete prior failure mode is identified: prior module/helper stress evidence was treated too strongly compared with public pipeline proof."
+  - "Later phases must state whether a PlanDefect or AlgorithmDefect trigger fired."

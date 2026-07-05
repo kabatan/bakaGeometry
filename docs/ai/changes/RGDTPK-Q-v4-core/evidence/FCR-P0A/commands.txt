@@ -1,0 +1,2 @@
+rg "passing gates is not implementation|module-only test is not a production pipeline proof|AlgorithmDefect|PlanDefect" docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_AGENT_FAILURE_MODE_RESET.md
+git diff --check

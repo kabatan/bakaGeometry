@@ -1,0 +1,83 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: FCR-P0A
+commit: 4647ac5398e67a85c83d716106ac056a7c8b56ee+fcr-p0a-worktree
+algorithm_spec_source_sha256: 1f73bd7a26b2566b08f53d31b14785110466e8ae6170b6769d1af17d50a36047
+failure_source_sha256: 4e4e589854bb44077e87b527ca2a793c44b4920606a0c4637131151dd1441e53
+base_spec_sha256: 1f73bd7a26b2566b08f53d31b14785110466e8ae6170b6769d1af17d50a36047
+plan_sha256: b836599108c1db4a4e828e672780e5074049045fe5fa590e94252cdc91850bb9
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: d3db02e4abc8cc3065e2be8e82614b3703266ad0c0ce6cf3c0ce85ad662d364c
+review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
+evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_AGENT_FAILURE_MODE_RESET.md
+  sha256: a97b50bf597ed590889a7609a2cb25d9ec40f7be27d47adf332e52d3fa8abe36
+  purpose: 'FCR-P0A evidence: FULL_CORE_AGENT_FAILURE_MODE_RESET.md'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_AGENT_FAILURE_MODE_RESET_TEMPLATE.md
+  sha256: 0a9ea0b33bd1cbfac8598eb67923cc165d8ac006aa0e9db5390c1b164d832133
+  purpose: 'FCR-P0A evidence: FULL_CORE_AGENT_FAILURE_MODE_RESET_TEMPLATE.md'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_PLAN.md
+  sha256: b836599108c1db4a4e828e672780e5074049045fe5fa590e94252cdc91850bb9
+  purpose: 'FCR-P0A evidence: FULL_CORE_REPAIR_PLAN.md'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_BASE_SPEC.md
+  sha256: 1f73bd7a26b2566b08f53d31b14785110466e8ae6170b6769d1af17d50a36047
+  purpose: 'FCR-P0A evidence: FULL_CORE_REPAIR_BASE_SPEC.md'
+- path: docs/ai/ACTIVE_CONTEXT.md
+  sha256: c1c1a5ff35a1d2af1ecda598014472ae19b427df0b13273d02f0a0918f8aa958
+  purpose: 'FCR-P0A evidence: ACTIVE_CONTEXT.md'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0A/commands.txt
+  sha256: 9f75c363c74ed74bd790ccc17c6b3a37bbbaea1324fe3f3b44f7f7682c47b1ef
+  purpose: 'FCR-P0A evidence: commands.txt'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0A/command_outputs.txt
+  sha256: fef756d5893517f940f6d1e64ceaa17437a4059e11c7e2f2838d753875a8287d
+  purpose: 'FCR-P0A evidence: command_outputs.txt'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0A/phase_handoff.yaml
+  sha256: 8147ba190e8bae017a02ad84762f94a17bfe61ee51375df0cc324b92c21c676e
+  purpose: 'FCR-P0A evidence: phase_handoff.yaml'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0A/guardian_boundary_reviewer_pass.md
+  sha256: 98ff3fecc8684757f42ac82a28243742a1a239647f7127e5f0eafba85ed84604
+  purpose: 'FCR-P0A evidence: guardian_boundary_reviewer_pass.md'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P0A/20260705-151420Z/prompt.md
+  sha256: 4614eee922427270646a21cf80d6d951381bb137cab1fa1821af5ac8126a75e2
+  purpose: 'FCR-P0A evidence: prompt.md'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P0A/20260705-151420Z/response.md
+  sha256: 0591b1e10eded4a0f4b73f1ae277ecf2fcb6aa2349cb1a196fe797e00de491a9
+  purpose: 'FCR-P0A evidence: response.md'
+command_outputs:
+- command: rg FCR-P0A reset constraints
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0A/command_outputs.txt
+  output_sha256: fef756d5893517f940f6d1e64ceaa17437a4059e11c7e2f2838d753875a8287d
+  finished_at_utc: 20260705-151420Z
+- command: git diff --check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0A/command_outputs.txt
+  output_sha256: fef756d5893517f940f6d1e64ceaa17437a4059e11c7e2f2838d753875a8287d
+  finished_at_utc: 20260705-151420Z
+- command: guardian_boundary_reviewer FCR-P0A
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0A/guardian_boundary_reviewer_pass.md
+  output_sha256: 98ff3fecc8684757f42ac82a28243742a1a239647f7127e5f0eafba85ed84604
+  finished_at_utc: 20260705-151420Z
+static_scans:
+- scan_id: fcr-p0a-reset-constraints
+  command: rg reset hazards and defect triggers
+  forbidden_pattern: missing execution constraint or PlanDefect/AlgorithmDefect trigger
+    table
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0A/command_outputs.txt
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_AGENT_FAILURE_MODE_RESET.md
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0A/guardian_boundary_reviewer_pass.md
+known_limitations:
+- FCR-P0A creates governance constraints only; no production repair implementation
+  is complete.
+- P13/P14/P15/P16 remain blocked.
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-011
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-011
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

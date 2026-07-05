@@ -1,0 +1,152 @@
+schema_version: rgdtpk-review-v2.2
+phase_id: FCR-P0A
+phase_kind: setup
+review_status: PASS
+phase_closable: true
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-011
+base_spec_sha256: 1f73bd7a26b2566b08f53d31b14785110466e8ae6170b6769d1af17d50a36047
+plan_sha256: b836599108c1db4a4e828e672780e5074049045fe5fa590e94252cdc91850bb9
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: d3db02e4abc8cc3065e2be8e82614b3703266ad0c0ce6cf3c0ce85ad662d364c
+review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
+evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
+schema_mirror_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
+commit: 4647ac5398e67a85c83d716106ac056a7c8b56ee+fcr-p0a-worktree
+prompt_sha256: 4614eee922427270646a21cf80d6d951381bb137cab1fa1821af5ac8126a75e2
+response_sha256: 0591b1e10eded4a0f4b73f1ae277ecf2fcb6aa2349cb1a196fe797e00de491a9
+evidence_manifest_sha256: 50eb18c3b351cb3e5760ecd6db90d0a4230403318301f696fc0fb3036488b067
+prompt_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P0A/20260705-151420Z/prompt.md
+response_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P0A/20260705-151420Z/response.md
+evidence_manifest_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P0A/20260705-151420Z/evidence_manifest.yaml
+reviewer_identity: guardian_boundary_reviewer
+reviewed_rids:
+- FCR-016
+- FCR-017
+- FCR-018
+- FCR-019
+- FCR-020
+- FCR-P0A
+reviewed_mechs:
+- MECH-011
+source_sections_checked:
+- FULL_CORE_REPAIR_PLAN.md FCR-P0A
+- FULL_CORE_REPAIR_BASE_SPEC.md FCR-016 through FCR-020
+- FULL_CORE_AGENT_FAILURE_MODE_RESET_TEMPLATE.md
+files_inspected:
+- docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_AGENT_FAILURE_MODE_RESET.md
+- docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_AGENT_FAILURE_MODE_RESET_TEMPLATE.md
+- docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_PLAN.md
+- docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_BASE_SPEC.md
+- docs/ai/ACTIVE_CONTEXT.md
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0A/commands.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0A/command_outputs.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0A/phase_handoff.yaml
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0A/guardian_boundary_reviewer_pass.md
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P0A/20260705-151420Z/prompt.md
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P0A/20260705-151420Z/response.md
+evidence_inspected:
+- docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_AGENT_FAILURE_MODE_RESET.md
+- docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_AGENT_FAILURE_MODE_RESET_TEMPLATE.md
+- docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_PLAN.md
+- docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_BASE_SPEC.md
+- docs/ai/ACTIVE_CONTEXT.md
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0A/commands.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0A/command_outputs.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0A/phase_handoff.yaml
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0A/guardian_boundary_reviewer_pass.md
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P0A/20260705-151420Z/prompt.md
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P0A/20260705-151420Z/response.md
+commands_inspected:
+- rg FCR-P0A reset constraints
+- git diff --check
+- guardian_boundary_reviewer FCR-P0A
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_AGENT_FAILURE_MODE_RESET.md
+algorithmic_sufficiency:
+  verdict: sufficient
+  rationale: FCR-P0A establishes active execution constraints and defect triggers
+    before repair implementation.
+forbidden_pattern_scan:
+  heavy_fallback: pass
+  narrow_slice_escape: pass
+  hidden_fallback: pass
+  decorative_certificate: pass
+  placeholder_candidate: pass
+  geometry_dispatch: pass
+  unsupported_for_well_formed_input: pass
+  exact_image_overclaim: pass
+  target_relation_schedule_discretion: pass
+  weak_action_krylov_coverage: pass
+  nonfinite_without_positive_proof: pass
+  non_spec_status: pass
+  required_function_deferred: pass
+  appendix_override_bypass: pass
+  stress_fixture_dispatch: pass
+not_applicable_justifications:
+  status_mapping_checks[0]: FCR-P0A does not alter public SolverStatus mapping.
+  suite_partition_checks[0]: FCR-P0A is not an acceptance suite phase.
+  semantic_deletion_challenges: No semantic deletion occurs in FCR-P0A.
+raw_response_consistency:
+  raw_response_contains_blocker: false
+  raw_response_contains_required_fix: false
+  summary_overrides_raw_response: false
+  reviewer_declared_files_inspected: true
+phase_specific_checks:
+- check_id: fcr-p0a-active-constraint
+  required_by: FCR-P0A
+  verdict: pass
+  evidence: FULL_CORE_AGENT_FAILURE_MODE_RESET.md states it is an active execution/runtime
+    constraint.
+  reviewer_rationale: The file is not a confession or documentation-only artifact.
+- check_id: fcr-p0a-defect-trigger-table
+  required_by: FCR-P0A
+  verdict: pass
+  evidence: PlanDefect / AlgorithmDefect trigger table and handoff schema are present.
+  reviewer_rationale: Later phases must report trigger state.
+appendix_override_checks:
+- appendix_section: FCR-016 through FCR-020
+  controlling_requirement: FCR-016
+  verdict: pass
+  evidence: Reset file operationalizes gates-not-implementation, source fidelity,
+    compliance map, specialized-kernel, and reviewer-sufficiency rules.
+  reviewer_rationale: Operating doctrine is enforceable in later phases.
+status_mapping_checks:
+- error_or_internal_condition: Defect trigger fires in later FCR phase
+  mapped_solver_status: PlanDefect_or_AlgorithmDefect_stop
+  verdict: pass
+  evidence: phase handoff requires trigger status and stop/amend/generalize/quarantine/report
+    response.
+  reviewer_rationale: Defects cannot be hidden as documented limitations.
+suite_partition_checks:
+- suite_name: not_applicable
+  verdict: not_applicable
+  evidence: FCR-P0A is governance setup.
+  reviewer_rationale: Acceptance suites are later FCR phases.
+semantic_deletion_challenges: []
+tamper_challenges: []
+unresolved_risks:
+- No production repair implementation is complete yet.
+- Forbidden readiness claims remain blocked.
+- No R-ID is marked VERIFIED.
+blocking_findings: []
+required_fixes: []
+pass_conditions:
+  schema_valid: true
+  schema_mirror_byte_identical: true
+  no_blocking_findings: true
+  no_required_fixes: true
+  raw_response_consistent: true
+  algorithmic_sufficiency_satisfied: true
+  all_forbidden_scans_pass: true
+  phase_specific_checks_pass: true
+  appendix_overrides_respected: true
+  status_mapping_respected: true
+  suite_partition_respected: true
+  reviewer_read_code_not_only_summary: true
+  no_controlling_stub_or_placeholder: true
+  exact_verification_present_where_required: true
+  no_failures_overridden_by_summary: true
+  fresh_evidence_after_last_code_change: true
+  pass_matches_raw_response: true
+  schema_hashes_match_current_files: true
+  prompt_and_response_archived: true
+  evidence_manifest_archived_and_valid: true
