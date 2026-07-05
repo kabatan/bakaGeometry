@@ -80,11 +80,12 @@ Never optional:
 
 ---
 
-## FCR-P12 — Adversarial reviewer red-team and fresh source-fidelity review
+## FCR-P11 — Adversarial red-team, final nonfinite gate, and closure preconditions
 
 ### Required actions
 
-After FCR-P0 through FCR-P11, run a separate red-team review that is not allowed to use previous phase PASS summaries as evidence.
+After FCR-P0A/FCR-P1A and FCR-P0 through FCR-P10, and before final closure, run a separate
+red-team review that is not allowed to use previous phase PASS summaries as evidence.
 
 The red-team reviewer must:
 
@@ -97,10 +98,27 @@ The red-team reviewer must:
    - a guarded rational affine case where the denominator is nonconstant;
    - a one-large-block no-separator case;
    - a target-independent component case with feasibility obligation;
-   - a nonfinite case with positive certificate and a similar case without positive certificate.
+   - a final nonfinite case with positive certificate and a similar case without positive certificate.
 3. Run the public or near-public pipeline for each.
 4. Mutate relation order, variable ids, and syntactic polynomial forms.
 5. Verify that success/failure comes from the v4 mechanism, not expected values or helper bypass.
+```
+
+Final nonfinite semantics are owned by this phase, not by FCR-P10 support-producing closure, unless
+the implementation first provides a machine-readable, replay-bound nonfinite certificate that is
+carried by the public result and accepted by `replay_run_certificate`.
+
+This phase must also bind closure preconditions that are easy to overclaim:
+
+```text
+- CoreInvariantFlags must be tied to fresh static scans plus replay/tamper evidence, not asserted
+  as free booleans.
+- no geometry dispatch, no fixture/problem-id/expected-answer dispatch, no hidden fallback, and
+  no QE/CAD/RCF/full-coordinate fallback scans must be referenced from final closure.
+- passing these scans is necessary but not sufficient; dynamic red-team and replay evidence are also
+  required.
+- CANDIDATE_COVER_CORE_READY, EXACT_IMAGE_CORE_READY, SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC, and
+  RGDTPK_Q_V4_ACCEPTANCE_COMPLETE remain separate claim labels with separate evidence gates.
 ```
 
 ### Reviewer must fail if
@@ -108,7 +126,12 @@ The red-team reviewer must:
 ```text
 - the reviewer mainly checks YAML or evidence files;
 - the reviewer does not construct any new algebraic counterexamples;
+- the reviewer creates fewer than 10 new algebraic inputs;
 - any new support-producing case fails because the implementation only supports the examples from FCR-P10;
+- final nonfinite is accepted without machine-readable positive proof or without being clearly kept
+  out of the candidate-cover readiness claim;
+- CoreInvariantFlags are not connected to fresh scans and replay/tamper evidence;
+- no-dispatch or no-QE/CAD evidence is only asserted in prose;
 - the final claim depends on exact-image functions that are not implemented.
 ```
 
@@ -628,9 +651,12 @@ A8. no useful separator one-large-block Universal path
 A9. regular-chain projection with component/guard semantics
 A10. norm/trace two-step tower
 A11. non-real support empty candidate cover
-A12. certified nonfinite only with positive proof
-A13. resource-bounded hard case with cost trace
+B1. resource-bounded hard case with cost trace
 ```
+
+Certified nonfinite target image is intentionally not a P10 support-producing acceptance case. It is
+owned by FCR-P11 final nonfinite semantics unless a later implementation carries a machine-readable,
+replay-bound nonfinite certificate in the public result.
 
 ### Mandatory anti-hack transformations
 
@@ -667,11 +693,12 @@ no projection messages
 - support-producing cases do not use planner/kernel/compose;
 - expected answers are used in production code;
 - only simple univariate/alias examples pass.
+- P10 evidence is used to claim final nonfinite readiness.
 ```
 
 ---
 
-## FCR-P11 — Final closure and claim
+## FCR-P12 — Final closure and claim
 
 ### Required commands
 
@@ -695,12 +722,15 @@ FULL_CORE_PRODUCTION_AUDIT.md
 FULL_CORE_ACCEPTANCE_RESULTS.md
 FULL_CORE_REPLAY_TAMPER_RESULTS.md
 FULL_CORE_COST_TRACE_SUMMARY.md
+FULL_CORE_RED_TEAM_RESULTS.md
+FULL_CORE_NONFINITE_RESULTS.md
+FULL_CORE_INVARIANT_SCAN_BINDING.md
 review archive for every FCR phase
 ```
 
 ### Final allowed claim
 
-Only if all FCR phases pass:
+Only if all FCR phases pass, including FCR-P11 red-team and final nonfinite/invariant-scan gates:
 
 ```text
 CANDIDATE_COVER_CORE_READY

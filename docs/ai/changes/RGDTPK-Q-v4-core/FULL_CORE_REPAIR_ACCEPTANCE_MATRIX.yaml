@@ -115,9 +115,11 @@ support_producing_suites:
       - no_algorithmic_hardcase
 
 failure_semantics_suites:
-  - id: B1_certified_nonfinite_positive_only
+  - id: F11_certified_nonfinite_positive_only
+    phase_owner: FCR-P11_final_nonfinite_gate
     required_checks:
       - positive_nonfinite_certificate_kind
+      - machine_readable_replay_bound_certificate_or_explicit_deferral
       - no_relation_search_failure_not_nonfinite
       - bounded_witness_failure_not_nonfinite
 
@@ -127,6 +129,22 @@ failure_semantics_suites:
       - cost_trace_identifies_block_matrix_degree
       - no_Unsupported
       - no_CertifiedNonFiniteTargetImage
+
+red_team_before_final_closure:
+  phase_owner: FCR-P11
+  minimum_fresh_inputs: 10
+  previous_acceptance_examples_allowed: false
+  required_path: public_or_near_public_pipeline
+  must_include:
+    - multivariate_finite_quotient_action_not_alias_univariate
+    - two_separator_composition
+    - sparse_resultant_not_degree1_target_univariate
+    - guarded_rational_affine_nonconstant_denominator
+    - one_large_block_no_separator
+    - target_independent_feasibility_obligation
+    - positive_nonfinite_case
+    - similar_no_positive_certificate_case
+  reviewer_must_generate_inputs: true
 
 anti_hack_scans:
   - command: rg -n "circle|triangle|tangent|distance|area|incircle|circumcircle|orthic|mixtilinear|fixture|expected|answer|problem_id|official" geosolver-core/src || true
@@ -148,6 +166,9 @@ closure_required_files:
   - FULL_CORE_ACCEPTANCE_RESULTS.md
   - FULL_CORE_REPLAY_TAMPER_RESULTS.md
   - FULL_CORE_COST_TRACE_SUMMARY.md
+  - FULL_CORE_RED_TEAM_RESULTS.md
+  - FULL_CORE_NONFINITE_RESULTS.md
+  - FULL_CORE_INVARIANT_SCAN_BINDING.md
   - CLOSURE.md
 
 
@@ -168,6 +189,12 @@ v2_meta_acceptance:
     candidate_cover_ready_allowed_after_fcr: true
     exact_image_ready_allowed_after_fcr_alone: false
     source_faithful_allowed_after_fcr_alone: false
+    full_acceptance_allowed_after_fcr_alone: false
+  closure_invariant_binding:
+    core_invariant_flags_require_static_scans: true
+    core_invariant_flags_require_replay_or_tamper_evidence: true
+    no_dispatch_scan_bound_to_closure: true
+    no_qe_cad_scan_bound_to_closure: true
   prohibited_completion_patterns:
     target_univariate_only: fail
     affine_only: fail

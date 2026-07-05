@@ -275,7 +275,10 @@ Fail if support is hand-built, if root decode is skipped, or if no-real-root sup
 
 Review the acceptance suite.
 
-PASS only if every required support-producing category uses public or near-public production pipeline and returns CertifiedCandidateCover with exact verified support.
+PASS only if every required support-producing category uses public or near-public production
+pipeline and returns CertifiedCandidateCover with exact verified support. Certified nonfinite is not
+part of P10 support-producing acceptance unless the public result carries a machine-readable,
+replay-bound nonfinite certificate.
 
 Fail if:
 
@@ -287,15 +290,43 @@ Fail if:
 - TargetActionKrylov stress is still univariate/alias-only;
 - no one-large-block Universal case exists;
 - no multiseparator composition case exists.
+- P10 evidence is used to claim final nonfinite readiness.
 ```
 
 ---
 
-## FCR-P11 reviewer prompt
+## FCR-P11 red-team and final nonfinite reviewer prompt
+
+Do not read previous PASS summaries until after code review. First inspect the current source code
+and run or specify new algebraic counterexamples.
+
+PASS only if:
+
+```text
+- the reviewer creates at least 10 new non-fixture algebraic inputs not used in FCR-P10;
+- each new input runs through public or near-public pipeline;
+- the set includes multivariate quotient/action, two-separator composition, sparse resultant,
+  guarded rational affine, one-large-block no-separator, target-independent feasibility, positive
+  nonfinite, and similar no-positive-proof cases;
+- failures are resource/certificate failures with traces, not partial-slice failures;
+- final nonfinite is either backed by a machine-readable replay-bound positive certificate or kept
+  out of CANDIDATE_COVER_CORE_READY;
+- CoreInvariantFlags are tied to fresh static scans and replay/tamper evidence;
+- no-dispatch and no-QE/CAD/no-full-coordinate claims are backed by explicit scan outputs;
+- exact-image/source-fidelity/full-acceptance claims remain blocked unless P13 exact-image passes.
+```
+
+Fail if the review would have passed the old P12G implementation, if fewer than 10 fresh algebraic
+inputs are constructed, or if it relies on FCR-P10 examples as the red-team input set.
+
+---
+
+## FCR-P12 reviewer prompt
 
 Final closure review.
 
-PASS only if all previous FCR phase reviews pass and current HEAD has fresh command evidence.
+PASS only if all previous FCR phase reviews pass, including FCR-P11 red-team/final-nonfinite gate,
+and current HEAD has fresh command evidence.
 
 The final reviewer must independently inspect:
 
@@ -307,6 +338,9 @@ TargetActionKrylov generic quotient/action path
 UniversalTargetElimination path
 replay_run_certificate actual DAG path
 acceptance suite source
+FULL_CORE_RED_TEAM_RESULTS.md
+FULL_CORE_NONFINITE_RESULTS.md
+FULL_CORE_INVARIANT_SCAN_BINDING.md
 CLOSURE.md
 ```
 
@@ -413,7 +447,10 @@ Fail if:
 
 ---
 
-## FCR-P12 red-team reviewer prompt
+## Historical FCR-P12 red-team reviewer prompt
+
+Superseded by the FCR-P11 red-team and final nonfinite reviewer prompt above. This historical text
+is retained only to prevent ambiguity in older evidence packets.
 
 Do not read previous PASS summaries until after code review. First inspect the current source code and run or specify new algebraic counterexamples.
 

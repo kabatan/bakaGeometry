@@ -618,20 +618,7 @@ fn fcr_p10_a11_public_nonreal_support_empty_candidate_cover() {
 }
 
 #[test]
-fn fcr_p10_a12_public_certified_nonfinite_requires_positive_proof() {
-    let t = VariableId(53);
-    let x = VariableId(35);
-    let result = solve_target(
-        problem(vec![x, t], t, vec![poly_sub(&v(x.0), &c(1))]),
-        SolverOptions::default(),
-    );
-    assert_eq!(result.status, SolverStatus::CertifiedNonFiniteTargetImage);
-    assert!(result.support_polynomial.is_none());
-    assert!(result.projection_messages.is_empty() || result.certificate.is_none());
-}
-
-#[test]
-fn fcr_p10_a13_public_resource_bounded_hard_case_has_spec_status() {
+fn fcr_p10_b1_public_resource_bounded_hard_case_has_spec_status() {
     let t = VariableId(59);
     let x = VariableId(39);
     let mut options = options_prioritizing(KernelKind::TargetRelationSearch);

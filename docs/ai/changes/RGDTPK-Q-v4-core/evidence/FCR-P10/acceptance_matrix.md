@@ -2,6 +2,11 @@
 
 Status: implemented and locally verified after spec and boundary-review remediation.
 
+Pre-P11 correction: certified nonfinite target image is no longer counted as a P10 acceptance
+category. It has been moved to the final nonfinite semantics gate because the public
+`TargetSolveResult` does not yet carry a machine-readable nonfinite certificate through
+`CoreRunCertificate` replay.
+
 | Category | Test | Public/near-public path | Required result | Named kernel evidence |
 | --- | --- | --- | --- | --- |
 | A1 | fcr_p10_a1_public_no_initial_target_only_one_block | api::solve_target | CertifiedCandidateCover | support-producing public pipeline |
@@ -15,8 +20,7 @@ Status: implemented and locally verified after spec and boundary-review remediat
 | A9 | fcr_p10_a9_public_regular_chain_style_projection | api::solve_target | CertifiedCandidateCover | RegularChainProjection |
 | A10 | fcr_p10_a10_public_norm_trace_two_step_tower | api::solve_target | CertifiedCandidateCover | NormTraceProjection |
 | A11 | fcr_p10_a11_public_nonreal_support_empty_candidate_cover | api::solve_target | CertifiedCandidateCover with empty roots/candidates | support retained despite no real roots |
-| A12 | fcr_p10_a12_public_certified_nonfinite_requires_positive_proof | api::solve_target | CertifiedNonFiniteTargetImage | positive zero-target-elimination proof only |
-| A13 | fcr_p10_a13_public_resource_bounded_hard_case_has_spec_status | api::solve_target | AlgorithmicHardCase, FiniteResourceFailure, or CertificateDesignGap | bounded failure status with matrix cost trace |
+| B1 | fcr_p10_b1_public_resource_bounded_hard_case_has_spec_status | api::solve_target | AlgorithmicHardCase, FiniteResourceFailure, or CertificateDesignGap | bounded failure status with matrix cost trace |
 
 Shared assertions for support-producing cases:
 - every problem relation is multiplied by a deterministic nonzero rational factor in the shared `problem()` helper before the public solve call, and the test asserts the scaled relation differs from the unscaled relation;
@@ -34,6 +38,12 @@ Additional remediated assertions:
 - required named-kernel cases assert the executed ProjectionMessage.kernel_kind directly;
 - public replay accepts every support-producing result;
 - relationless structural DAG blocks do not produce projection messages, while their child messages remain hash-bound in final DAG replay evidence.
-- resource-bounded A13 failure retains a nonempty cost trace with matrix rows or columns, the requested public target, and TargetRelationSearch kernel identity.
+- resource-bounded B1 failure retains a nonempty cost trace with matrix rows or columns, the requested public target, and TargetRelationSearch kernel identity.
 - A3 and A5 assert projection-message composition is essential by recomposing the public DAG result and verifying that removing each projection message either fails composition or changes target support.
 - A3 also exercises near-public production message-only separator composition over two separators and asserts removing either separator message fails or changes target support.
+
+Moved out of P10:
+- certified nonfinite positive-proof behavior now lives in `fcr_final_nonfinite_semantics.rs`.
+- final nonfinite readiness remains blocked until the final nonfinite gate either adds a public
+  replay-bound nonfinite certificate or explicitly excludes nonfinite readiness from
+  `CANDIDATE_COVER_CORE_READY`.

@@ -1,6 +1,8 @@
 # Closure Packet - RGDTPK-Q-v4-core
 
-Status: Full Core Repair active before P13/P14/P15/P16.
+Status: Full Core Repair active before P13/P14/P15/P16. FCR-P0A/FCR-P1A and FCR-P0 through
+FCR-P10 have been implemented; FCR-P11 red-team/final-nonfinite gate and FCR-P12 final closure are
+still required.
 
 Current maximum claim ceiling:
 
@@ -15,9 +17,9 @@ original scopes. `FULL_CORE_REPAIR_BASE_SPEC.md` and `FULL_CORE_REPAIR_PLAN.md` 
 corrective overlays inserted before P13/P14/P15/P16.
 
 Full Core Repair reopens the current generality and public-pipeline claims. P13, P14, P15, and P16
-remain blocked until all FCR phases pass. The current implementation must not be described as close
-to full candidate-cover completion, and old P12G PASS results must not be used as proof of generic
-core readiness.
+remain blocked until all FCR phases pass. FCR-P10 closes only the support-producing acceptance
+suite and bounded failure semantics. It does not close final red-team, final nonfinite semantics,
+exact-image, source-fidelity, or full acceptance.
 
 ## P12G Remediation Scope
 
@@ -42,22 +44,32 @@ FCR requires repair or removal of narrow production paths, including alias/univa
 TargetActionKrylov, module-only stress proof, synthetic replay substitutes, plan-time execution
 paths, fake or non-generic kernel claims, and any public pipeline gap in `api::solve_target`.
 
+FCR-P10 evidence is not final closure evidence. Certified nonfinite target image is now owned by
+FCR-P11 final nonfinite semantics unless the public result carries a machine-readable,
+replay-bound nonfinite certificate. FCR-P11 must also run the red-team reviewer that creates at
+least 10 new non-fixture algebraic inputs and executes them through the public or near-public
+pipeline.
+
 Required final FCR claim target is `CANDIDATE_COVER_CORE_READY`, not another partial mechanism
 label. That claim is unavailable until FCR acceptance evidence and reviews pass.
+
+Final closure must bind `CoreInvariantFlags` to fresh static scans and replay/tamper evidence. The
+closure packet must include no-dispatch and no-QE/CAD/full-coordinate scan outputs; those scans are
+necessary but not sufficient without red-team and replay evidence.
 
 ## Explicit Negative Claims
 
 The following are still not complete:
 
 - P13 exact-image semantics
-- P14 public orchestration and `solve_target` candidate-cover pipeline connection
-- P15 acceptance suites
-- P16 final closure and source-fidelity audit
+- P14/P15/P16 historical exact-image/final-acceptance phases
+- FCR-P11 red-team and final nonfinite gate
+- FCR-P12 final closure and source-fidelity audit
 - FCR generic candidate-cover core readiness
-- generic TargetActionKrylov over target-relevant quotient/action, beyond alias/univariate Route A
-- actual DAG/block replay as the main replay path
+- final nonfinite readiness with public replay-bound certificate
 - performance claim
 - `CANDIDATE_COVER_CORE_READY`
+- `EXACT_IMAGE_CORE_READY`
 - `SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC`
 - `RGDTPK_Q_V4_ACCEPTANCE_COMPLETE`
 - any R-ID marked `VERIFIED`

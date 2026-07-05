@@ -3,12 +3,14 @@ FCR-P10 final verification commands
 1. cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
 2. cargo check --manifest-path geosolver-core/Cargo.toml
 3. cargo test --manifest-path geosolver-core/Cargo.toml --test fcr_p10_acceptance_suite -- --nocapture
-4. cargo test --manifest-path geosolver-core/Cargo.toml
+3a. cargo test --manifest-path geosolver-core/Cargo.toml --test fcr_final_nonfinite_semantics -- --nocapture
+4. cargo test --manifest-path geosolver-core/Cargo.toml --quiet
 5. cargo test --manifest-path geosolver-core/Cargo.toml verify::replay::tests -- --nocapture
 6. cargo test --manifest-path geosolver-core/Cargo.toml --test fcr_p4_pure_planning fcr_plan_sparse_resultant_does_not_construct_output_relation -- --nocapture
-7. git diff --check
-8. rg -n "circle|triangle|tangent|distance|area|incircle|circumcircle|orthic|mixtilinear|fixture|expected|answer|problem_id|official" geosolver-core/src geosolver-core/tests
-9. rg -n "temporary_pipeline_not_connected|NotProductionF4|for_tests|fake|stub|placeholder|dummy|unimplemented!|todo!" geosolver-core/src geosolver-core/tests
-10. rg -n "coordinate solution|coordinate roots|full coordinate RUR|solve_all_coordinates|CAD|QE|RCF" geosolver-core/src geosolver-core/tests
-11. rg -n "pub mod (action_krylov|norm_trace_projection|regular_chain_projection|sparse_resultant|specialization_interpolation|universal_elimination)|KernelKind::(TargetActionKrylov|NormTraceProjection|RegularChainProjection|SparseResultantProjection|SpecializationInterpolation|UniversalTargetElimination)" geosolver-core/src/kernels/mod.rs geosolver-core/src/planner/admission.rs
-12. rg -n "#\[cfg\(test\)\]\s*(pub )?mod (action_krylov|norm_trace_projection|regular_chain_projection|sparse_resultant|specialization_interpolation|universal_elimination)|#\[cfg\(test\)\].*KernelKind::(TargetActionKrylov|NormTraceProjection|RegularChainProjection|SparseResultantProjection|SpecializationInterpolation|UniversalTargetElimination)" geosolver-core/src/kernels/mod.rs geosolver-core/src/planner/admission.rs
+7. cargo test --manifest-path geosolver-core/Cargo.toml --test fcr_p10_acceptance_suite fcr_p10_b1_public_resource_bounded_hard_case_has_spec_status -- --nocapture
+8. git diff --check
+9. rg -n "circle|triangle|tangent|distance|area|incircle|circumcircle|orthic|mixtilinear|fixture|expected|answer|problem_id|official" geosolver-core/src geosolver-core/tests
+10. rg -n "temporary_pipeline_not_connected|NotProductionF4|for_tests|fake|stub|placeholder|dummy|unimplemented!|todo!" geosolver-core/src geosolver-core/tests
+11. rg -n "coordinate solution|coordinate roots|full coordinate RUR|solve_all_coordinates|CAD|QE|RCF" geosolver-core/src geosolver-core/tests
+12. rg -n "pub mod (action_krylov|norm_trace_projection|regular_chain_projection|sparse_resultant|specialization_interpolation|universal_elimination)|KernelKind::(TargetActionKrylov|NormTraceProjection|RegularChainProjection|SparseResultantProjection|SpecializationInterpolation|UniversalTargetElimination)" geosolver-core/src/kernels/mod.rs geosolver-core/src/planner/admission.rs
+13. rg -n "#\[cfg\(test\)\]\s*(pub )?mod (action_krylov|norm_trace_projection|regular_chain_projection|sparse_resultant|specialization_interpolation|universal_elimination)|#\[cfg\(test\)\].*KernelKind::(TargetActionKrylov|NormTraceProjection|RegularChainProjection|SparseResultantProjection|SpecializationInterpolation|UniversalTargetElimination)" geosolver-core/src/kernels/mod.rs geosolver-core/src/planner/admission.rs

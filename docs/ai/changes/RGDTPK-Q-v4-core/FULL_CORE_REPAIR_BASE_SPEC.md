@@ -509,3 +509,50 @@ Does this phase make the final R-GDTPK candidate-cover core more complete, or me
 ```
 
 A reviewer response that does not answer these questions is invalid even if `review_status: PASS` appears in YAML.
+
+---
+
+## FCR-021 — P10/P11/P12 closure boundary hardening
+
+FCR-P10 closes only the support-producing public acceptance suite and bounded failure semantics for
+candidate-cover work. It must not be used as final nonfinite, exact-image, source-fidelity, or full
+acceptance evidence.
+
+Final nonfinite semantics are separate. `CertifiedNonFiniteTargetImage` may be included in final
+readiness only when one of the following is true:
+
+```text
+1. the public result carries a machine-readable nonfinite certificate;
+2. that certificate is accepted by replay and rejects tampering; or
+3. the final closure explicitly excludes nonfinite readiness from CANDIDATE_COVER_CORE_READY and
+   leaves it to a later final-nonfinite task.
+```
+
+The red-team phase must run before final closure. Its reviewer must create at least 10 fresh
+non-fixture algebraic inputs and run each through the public or near-public pipeline. Previous PASS
+summaries, FCR-P10 examples, YAML manifests, and static scans are not substitutes for these fresh
+inputs.
+
+Final closure must bind `CoreInvariantFlags` to evidence. The final packet must include:
+
+```text
+- fresh static scans for geometry dispatch, fixture/problem-id/expected-answer dispatch, hidden
+  fallback, and QE/CAD/RCF/full-coordinate fallback;
+- replay or tamper evidence showing those flags are not free booleans;
+- explicit no-dispatch and no-QE/CAD scan outputs;
+- a statement that passing scans is necessary but not sufficient without pipeline/red-team/replay
+  evidence.
+```
+
+Claim labels are disjoint:
+
+```text
+CANDIDATE_COVER_CORE_READY
+EXACT_IMAGE_CORE_READY
+SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC
+RGDTPK_Q_V4_ACCEPTANCE_COMPLETE
+```
+
+`CANDIDATE_COVER_CORE_READY` does not imply exact-image readiness, source-fidelity to the full v4
+spec, or full acceptance. `EXACT_IMAGE_CORE_READY`, `SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC`, and
+`RGDTPK_Q_V4_ACCEPTANCE_COMPLETE` remain forbidden unless their own later-phase evidence gates pass.

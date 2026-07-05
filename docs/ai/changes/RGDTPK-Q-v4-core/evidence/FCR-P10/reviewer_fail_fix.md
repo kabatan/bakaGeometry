@@ -10,7 +10,7 @@ Findings addressed:
 - A5 was labelled specialization/interpolation but executed TargetUnivariate.
 - A8 was labelled Universal but executed SparseResultantProjection.
 - A9/A10 were labelled RegularChain/NormTrace but reduced to TargetUnivariate.
-- A13 returned a bounded failure status without preserving cost trace evidence.
+- The B1 bounded-failure case returned a bounded failure status without preserving cost trace evidence.
 
 Fixes:
 - Added generic `SolverOptions.kernel_priority` so public `api::solve_target` tests can force an admitted production kernel without fixture/problem-id dispatch.
@@ -19,7 +19,7 @@ Fixes:
 - Changed P10 A5/A10 fixtures to avoid pre-kernel target-only collapse while remaining public algebraic inputs.
 - Made DAG child exports include target plus separators and skipped relationless structural DAG nodes during planning/execution/replay.
 - Tightened SpecializationInterpolation admission to require a target-bearing local relation.
-- Added public failure-result cost trace retention for FiniteResourceFailure and asserted A13 matrix-dimension trace content.
+- Added public failure-result cost trace retention for FiniteResourceFailure and asserted B1 matrix-dimension trace content.
 
 Boundary reviewer result after the first remediation: FAIL_FIXABLE.
 
@@ -44,8 +44,9 @@ Quality fixes:
 - TargetRelationSearch finite-resource errors now carry `Some(ctx.system.target)`.
 - Universal execution-path finite-resource errors now carry `Some(ctx.system.target)` when the execution context is available.
 - Finite-resource cost trace kernel identity is derived from `FailureKind::FiniteResourceFailure.stage`.
-- A13 now asserts `result.target == t` and that the forced TargetRelationSearch failure retains TargetRelationSearch trace identity.
+- B1 now asserts `result.target == t` and that the forced TargetRelationSearch failure retains TargetRelationSearch trace identity.
 
 Re-verification:
-- `cargo test --manifest-path geosolver-core/Cargo.toml --test fcr_p10_acceptance_suite -- --nocapture`: 13 passed.
+- `cargo test --manifest-path geosolver-core/Cargo.toml --test fcr_p10_acceptance_suite -- --nocapture`: 12 passed after pre-P11 correction.
+- `cargo test --manifest-path geosolver-core/Cargo.toml --test fcr_final_nonfinite_semantics -- --nocapture`: 2 passed.
 - `cargo test --manifest-path geosolver-core/Cargo.toml`: all tests passed.

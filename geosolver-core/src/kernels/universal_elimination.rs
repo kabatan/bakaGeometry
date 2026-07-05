@@ -1359,7 +1359,8 @@ mod tests {
                 "production Universal path must not reference {fragment}"
             );
         }
-        assert!(include_str!("../algebra/mod.rs").contains("#[cfg(test)]\npub mod f4;"));
+        let algebra_mod_source = include_str!("../algebra/mod.rs").replace("\r\n", "\n");
+        assert!(algebra_mod_source.contains("#[cfg(test)]\npub mod f4;"));
 
         let t = VariableId(0);
         let x = VariableId(1);
