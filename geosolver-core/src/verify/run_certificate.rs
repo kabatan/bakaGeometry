@@ -3,10 +3,11 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Serialize};
 
 use crate::compose::message::{hash_projection_message, ProjectionMessage};
+use crate::result::status::{FailureKind, SolverError, SolverErrorKind};
 use crate::roots::decode::TargetCandidate;
 use crate::roots::isolate::RealRootRecord;
 use crate::types::hash::{hash_sequence, Hash};
-use crate::types::ids::VariableId;
+use crate::types::ids::{BlockId, VariableId};
 use crate::types::rational::rational_to_bytes;
 use crate::types::univariate::UniPolynomialQ;
 use crate::verify::certificates::KernelCertificatePayload;
@@ -27,6 +28,7 @@ pub struct CoreRunCertificate {
     pub root_isolation_hash: Option<Hash>,
     pub decoded_candidate_hash: Option<Hash>,
     pub global_support_certificate_hash: Option<Hash>,
+    pub final_dag_replay_evidence_hash: Option<Hash>,
     pub invariants: CoreInvariantFlags,
     pub invariant_evidence_hash: Hash,
     pub run_hash: Hash,
@@ -42,6 +44,30 @@ pub struct CoreInvariantFlags {
     pub no_qe_cad: bool,
     pub exact_q_verification: bool,
     pub no_hidden_fallback: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FinalInvariantEvidence {
+    pub no_geometry_dispatch_scan_hash: Option<Hash>,
+    pub no_problem_id_dispatch_scan_hash: Option<Hash>,
+    pub no_expected_answer_dispatch_scan_hash: Option<Hash>,
+    pub no_qe_cad_scan_hash: Option<Hash>,
+    pub exact_q_verification_hash: Option<Hash>,
+    pub evidence_hash: Hash,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FinalDagReplayEvidence {
+    pub actual_projection_dag_hash: Option<Hash>,
+    pub projection_message_hashes: Vec<Hash>,
+    pub kernel_plan_hashes: Vec<Hash>,
+    pub message_block_ids: Vec<BlockId>,
+    pub per_message_source_relation_hashes: Vec<Vec<Hash>>,
+    pub message_child_dependency_hashes: Vec<Vec<Hash>>,
+    pub block_authorization_hashes: Vec<Hash>,
+    pub edge_authorization_hashes: Vec<Hash>,
+    pub actual_dag_replay_verified: bool,
+    pub evidence_hash: Hash,
 }
 
 impl CoreInvariantFlags {
@@ -86,6 +112,7 @@ pub fn build_core_run_certificate(input: CoreRunCertificateInput<'_>) -> CoreRun
         root_isolation_hash: Some(hash_root_isolation(input.root_isolation)),
         decoded_candidate_hash: Some(hash_decoded_candidates(input.decoded_candidates)),
         global_support_certificate_hash: input.global_support_certificate_hash,
+        final_dag_replay_evidence_hash: None,
         invariants: derive_core_invariant_flags(
             input.projection_messages,
             messages_have_verifiable_payloads(input.projection_messages),
@@ -103,6 +130,107 @@ pub fn build_core_run_certificate(input: CoreRunCertificateInput<'_>) -> CoreRun
     };
     cert.run_hash = hash_core_run_certificate(&cert);
     cert
+}
+
+pub fn final_invariant_evidence(
+    no_geometry_dispatch_scan_hash: Option<Hash>,
+    no_problem_id_dispatch_scan_hash: Option<Hash>,
+    no_expected_answer_dispatch_scan_hash: Option<Hash>,
+    no_qe_cad_scan_hash: Option<Hash>,
+    exact_q_verification_hash: Option<Hash>,
+) -> FinalInvariantEvidence {
+    let mut evidence = FinalInvariantEvidence {
+        no_geometry_dispatch_scan_hash,
+        no_problem_id_dispatch_scan_hash,
+        no_expected_answer_dispatch_scan_hash,
+        no_qe_cad_scan_hash,
+        exact_q_verification_hash,
+        evidence_hash: hash_sequence("final-invariant-evidence", &[]),
+    };
+    evidence.evidence_hash = hash_final_invariant_evidence(&evidence);
+    evidence
+}
+
+pub fn require_final_claim_invariant_evidence(
+    flags: &CoreInvariantFlags,
+    evidence: &FinalInvariantEvidence,
+) -> Result<(), SolverError> {
+    if evidence.evidence_hash != hash_final_invariant_evidence(evidence)
+        || !flags.no_geometry_dispatch
+        || !flags.no_problem_id_dispatch
+        || !flags.no_expected_answer_dispatch
+        || !flags.no_qe_cad
+        || !flags.exact_q_verification
+        || evidence.no_geometry_dispatch_scan_hash.is_none()
+        || evidence.no_problem_id_dispatch_scan_hash.is_none()
+        || evidence.no_expected_answer_dispatch_scan_hash.is_none()
+        || evidence.no_qe_cad_scan_hash.is_none()
+        || evidence.exact_q_verification_hash.is_none()
+    {
+        return Err(certificate_gap(
+            "final invariant evidence is missing or does not justify final claim flags",
+        ));
+    }
+    Ok(())
+}
+
+pub fn final_dag_replay_evidence(
+    actual_projection_dag_hash: Option<Hash>,
+    projection_message_hashes: Vec<Hash>,
+    kernel_plan_hashes: Vec<Hash>,
+    message_block_ids: Vec<BlockId>,
+    per_message_source_relation_hashes: Vec<Vec<Hash>>,
+    message_child_dependency_hashes: Vec<Vec<Hash>>,
+    block_authorization_hashes: Vec<Hash>,
+    edge_authorization_hashes: Vec<Hash>,
+    actual_dag_replay_verified: bool,
+) -> FinalDagReplayEvidence {
+    let mut evidence = FinalDagReplayEvidence {
+        actual_projection_dag_hash,
+        projection_message_hashes,
+        kernel_plan_hashes,
+        message_block_ids,
+        per_message_source_relation_hashes,
+        message_child_dependency_hashes,
+        block_authorization_hashes,
+        edge_authorization_hashes,
+        actual_dag_replay_verified,
+        evidence_hash: hash_sequence("final-dag-replay-evidence", &[]),
+    };
+    evidence.evidence_hash = hash_final_dag_replay_evidence(&evidence);
+    evidence
+}
+
+pub fn require_final_claim_dag_replay_evidence(
+    cert: &CoreRunCertificate,
+    evidence: &FinalDagReplayEvidence,
+) -> Result<(), SolverError> {
+    if !final_claim_dag_replay_structurally_bound_for_p12g(cert, evidence) {
+        return Err(certificate_gap(
+            "final claim requires hash-bound TargetProjectionDAG and block authorization evidence",
+        ));
+    }
+    Err(certificate_gap(
+        "P14 cannot close until actual DAG replay replaces synthetic all-relations replay for final claims",
+    ))
+}
+
+pub fn final_claim_dag_replay_structurally_bound_for_p12g(
+    cert: &CoreRunCertificate,
+    evidence: &FinalDagReplayEvidence,
+) -> bool {
+    let message_count = cert.projection_message_hashes.len();
+    evidence.evidence_hash == hash_final_dag_replay_evidence(evidence)
+        && cert.final_dag_replay_evidence_hash == Some(evidence.evidence_hash)
+        && evidence.actual_dag_replay_verified
+        && evidence.actual_projection_dag_hash == Some(cert.target_projection_dag_hash)
+        && evidence.projection_message_hashes == cert.projection_message_hashes
+        && evidence.kernel_plan_hashes == cert.kernel_plan_hashes
+        && evidence.message_block_ids.len() == message_count
+        && evidence.per_message_source_relation_hashes.len() == message_count
+        && evidence.message_child_dependency_hashes.len() == message_count
+        && evidence.block_authorization_hashes.len() == message_count
+        && (message_count <= 1 || !evidence.edge_authorization_hashes.is_empty())
 }
 
 pub fn hash_projection_messages(messages: &[ProjectionMessage]) -> Vec<Hash> {
@@ -357,6 +485,7 @@ pub fn hash_core_run_certificate(cert: &CoreRunCertificate) -> Hash {
     chunks.push(optional_hash_bytes(cert.root_isolation_hash));
     chunks.push(optional_hash_bytes(cert.decoded_candidate_hash));
     chunks.push(optional_hash_bytes(cert.global_support_certificate_hash));
+    chunks.push(optional_hash_bytes(cert.final_dag_replay_evidence_hash));
     chunks.push(cert.invariant_evidence_hash.0.to_vec());
     chunks.push(vec![
         cert.invariants.no_geometry_dispatch as u8,
@@ -374,4 +503,257 @@ pub fn hash_core_run_certificate(cert: &CoreRunCertificate) -> Hash {
 fn optional_hash_bytes(hash: Option<Hash>) -> Vec<u8> {
     hash.map(|value| value.0.to_vec())
         .unwrap_or_else(|| vec![0xff])
+}
+
+fn hash_final_invariant_evidence(evidence: &FinalInvariantEvidence) -> Hash {
+    hash_sequence(
+        "final-invariant-evidence",
+        &[
+            optional_hash_bytes(evidence.no_geometry_dispatch_scan_hash),
+            optional_hash_bytes(evidence.no_problem_id_dispatch_scan_hash),
+            optional_hash_bytes(evidence.no_expected_answer_dispatch_scan_hash),
+            optional_hash_bytes(evidence.no_qe_cad_scan_hash),
+            optional_hash_bytes(evidence.exact_q_verification_hash),
+        ],
+    )
+}
+
+fn hash_final_dag_replay_evidence(evidence: &FinalDagReplayEvidence) -> Hash {
+    let mut chunks = vec![optional_hash_bytes(evidence.actual_projection_dag_hash)];
+    for hash in &evidence.projection_message_hashes {
+        chunks.push(hash.0.to_vec());
+    }
+    chunks.push(Vec::new());
+    for hash in &evidence.kernel_plan_hashes {
+        chunks.push(hash.0.to_vec());
+    }
+    chunks.push(Vec::new());
+    for block_id in &evidence.message_block_ids {
+        chunks.push(block_id.0.to_be_bytes().to_vec());
+    }
+    chunks.push(Vec::new());
+    for hashes in &evidence.per_message_source_relation_hashes {
+        for hash in hashes {
+            chunks.push(hash.0.to_vec());
+        }
+        chunks.push(Vec::new());
+    }
+    chunks.push(Vec::new());
+    for hashes in &evidence.message_child_dependency_hashes {
+        for hash in hashes {
+            chunks.push(hash.0.to_vec());
+        }
+        chunks.push(Vec::new());
+    }
+    chunks.push(Vec::new());
+    chunks.extend(
+        evidence
+            .block_authorization_hashes
+            .iter()
+            .map(|hash| hash.0.to_vec()),
+    );
+    chunks.push(Vec::new());
+    chunks.extend(
+        evidence
+            .edge_authorization_hashes
+            .iter()
+            .map(|hash| hash.0.to_vec()),
+    );
+    chunks.push(vec![evidence.actual_dag_replay_verified as u8]);
+    hash_sequence("final-dag-replay-evidence", &chunks)
+}
+
+fn certificate_gap(missing_certificate_kind: &str) -> SolverError {
+    SolverError {
+        target: None,
+        kind: SolverErrorKind::Failure(FailureKind::CertificateDesignGap {
+            constructed_object_hash: hash_sequence(
+                "certificate-gap",
+                &[missing_certificate_kind.as_bytes().to_vec()],
+            ),
+            missing_certificate_kind: missing_certificate_kind.to_owned(),
+        }),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn p12g_final_invariant_claim_is_blocked_without_explicit_evidence() {
+        let flags = CoreInvariantFlags {
+            no_geometry_dispatch: false,
+            no_problem_id_dispatch: false,
+            no_expected_answer_dispatch: false,
+            no_full_coordinate_solution_set: true,
+            no_full_coordinate_rur: true,
+            no_qe_cad: false,
+            exact_q_verification: true,
+            no_hidden_fallback: true,
+        };
+        let evidence = final_invariant_evidence(None, None, None, None, None);
+
+        let err = require_final_claim_invariant_evidence(&flags, &evidence).unwrap_err();
+        assert!(matches!(
+            err.kind,
+            SolverErrorKind::Failure(FailureKind::CertificateDesignGap { .. })
+        ));
+    }
+
+    #[test]
+    fn p12g_final_dag_claim_is_blocked_without_actual_dag_replay_evidence() {
+        let cert = minimal_cert(
+            hash_sequence("derived-message-dag", &[]),
+            Vec::new(),
+            Vec::new(),
+            None,
+        );
+        let evidence = final_dag_replay_evidence(
+            None,
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            false,
+        );
+
+        let err = require_final_claim_dag_replay_evidence(&cert, &evidence).unwrap_err();
+        assert!(matches!(
+            err.kind,
+            SolverErrorKind::Failure(FailureKind::CertificateDesignGap { .. })
+        ));
+    }
+
+    #[test]
+    fn p12g_replay_rejects_child_message_not_on_declared_dag_edge() {
+        let dag_hash = hash_sequence("actual-dag", &[]);
+        let message_hashes = vec![
+            hash_sequence("message-parent", &[]),
+            hash_sequence("message-child", &[]),
+        ];
+        let plan_hashes = vec![
+            hash_sequence("plan-parent", &[]),
+            hash_sequence("plan-child", &[]),
+        ];
+        let evidence = final_dag_replay_evidence(
+            Some(dag_hash),
+            message_hashes.clone(),
+            plan_hashes.clone(),
+            vec![BlockId(0), BlockId(1)],
+            vec![
+                vec![hash_sequence("source-parent", &[])],
+                vec![hash_sequence("source-child", &[])],
+            ],
+            vec![Vec::new(), vec![message_hashes[0]]],
+            vec![
+                hash_sequence("block-parent-auth", &[]),
+                hash_sequence("block-child-auth", &[]),
+            ],
+            Vec::new(),
+            true,
+        );
+        let cert = minimal_cert(
+            dag_hash,
+            plan_hashes,
+            message_hashes,
+            Some(evidence.evidence_hash),
+        );
+
+        let err = require_final_claim_dag_replay_evidence(&cert, &evidence).unwrap_err();
+        assert!(matches!(
+            err.kind,
+            SolverErrorKind::Failure(FailureKind::CertificateDesignGap { .. })
+        ));
+    }
+
+    #[test]
+    fn p12g_dag_authorization_hash_bound_into_run_certificate() {
+        let dag_hash = hash_sequence("actual-dag", &[]);
+        let message_hashes = vec![hash_sequence("message", &[])];
+        let plan_hashes = vec![hash_sequence("plan", &[])];
+        let evidence = final_dag_replay_evidence(
+            Some(dag_hash),
+            message_hashes.clone(),
+            plan_hashes.clone(),
+            vec![BlockId(0)],
+            vec![vec![hash_sequence("source", &[])]],
+            vec![Vec::new()],
+            vec![hash_sequence("block-auth", &[])],
+            Vec::new(),
+            true,
+        );
+        let cert = minimal_cert(
+            dag_hash,
+            plan_hashes.clone(),
+            message_hashes.clone(),
+            Some(evidence.evidence_hash),
+        );
+        let unbound_cert = minimal_cert(dag_hash, plan_hashes, message_hashes, None);
+        assert_ne!(
+            hash_core_run_certificate(&unbound_cert),
+            hash_core_run_certificate(&cert)
+        );
+        assert!(final_claim_dag_replay_structurally_bound_for_p12g(
+            &cert, &evidence
+        ));
+        let err = require_final_claim_dag_replay_evidence(&cert, &evidence).unwrap_err();
+        assert!(matches!(
+            err.kind,
+            SolverErrorKind::Failure(FailureKind::CertificateDesignGap { .. })
+        ));
+
+        let mut tampered = evidence.clone();
+        tampered.block_authorization_hashes[0] = hash_sequence("different-block-auth", &[]);
+        tampered.evidence_hash = hash_final_dag_replay_evidence(&tampered);
+        assert!(!final_claim_dag_replay_structurally_bound_for_p12g(
+            &cert, &tampered
+        ));
+        let err = require_final_claim_dag_replay_evidence(&cert, &tampered).unwrap_err();
+        assert!(matches!(
+            err.kind,
+            SolverErrorKind::Failure(FailureKind::CertificateDesignGap { .. })
+        ));
+    }
+
+    fn minimal_cert(
+        dag_hash: Hash,
+        kernel_plan_hashes: Vec<Hash>,
+        projection_message_hashes: Vec<Hash>,
+        final_dag_replay_evidence_hash: Option<Hash>,
+    ) -> CoreRunCertificate {
+        let mut cert = CoreRunCertificate {
+            input_hash: hash_sequence("input", &[]),
+            canonical_system_hash: hash_sequence("canonical", &[]),
+            target_variable: VariableId(0),
+            compression_hash: hash_sequence("compression", &[]),
+            hypergraph_hash: hash_sequence("hypergraph", &[]),
+            target_projection_dag_hash: dag_hash,
+            kernel_plan_hashes,
+            projection_message_hashes,
+            global_support_hash: None,
+            squarefree_support_hash: None,
+            root_isolation_hash: None,
+            decoded_candidate_hash: None,
+            global_support_certificate_hash: None,
+            final_dag_replay_evidence_hash,
+            invariants: CoreInvariantFlags {
+                no_geometry_dispatch: false,
+                no_problem_id_dispatch: false,
+                no_expected_answer_dispatch: false,
+                no_full_coordinate_solution_set: true,
+                no_full_coordinate_rur: true,
+                no_qe_cad: false,
+                exact_q_verification: true,
+                no_hidden_fallback: true,
+            },
+            invariant_evidence_hash: hash_sequence("invariants", &[]),
+            run_hash: hash_sequence("run", &[]),
+        };
+        cert.run_hash = hash_core_run_certificate(&cert);
+        cert
+    }
 }

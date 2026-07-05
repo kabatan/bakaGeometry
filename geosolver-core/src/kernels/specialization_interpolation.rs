@@ -841,6 +841,7 @@ mod tests {
     use crate::graph::projection_dag::ProjectionBlock;
     use crate::kernels::traits::{KernelContext, KernelKind, TargetProjectionKernel};
     use crate::planner::admission::{collect_kernel_admissions, KernelAdmissionStatus};
+    use crate::planner::kernel_plan::CertificateRoute;
     use crate::planner::probes::run_cost_probes;
     use crate::preprocess::compression::CompressionState;
     use crate::problem::canonicalize::canonicalize_system;
@@ -979,6 +980,48 @@ mod tests {
             )
             .unwrap_err();
         assert_eq!(err.public_status(), SolverStatus::ImplementationBug);
+    }
+
+    #[test]
+    fn p12g_specialization_interpolation_inner_schedule_is_declared() {
+        let t = VariableId(0);
+        let u = VariableId(1);
+        let v = VariableId(2);
+        let x = VariableId(3);
+        let rhs = poly_add(
+            &poly_add(&variable_poly(t), &variable_poly(u)),
+            &variable_poly(v),
+        );
+        let relations = vec![
+            poly_sub(&variable_poly(x), &rhs),
+            poly_sub(&variable_poly(x), &constant_poly(int_q(1))),
+        ];
+        let compressed = compressed_system(vec![t, u, v, x], t, relations);
+        let block = test_block(&compressed, [t, u, v, x], [t, u, v]);
+        let solver_ctx = new_context(SolverOptions::default());
+        let kctx = KernelContext {
+            block,
+            system: compressed,
+            child_messages: Vec::new(),
+        };
+        let kernel = SpecializationInterpolationKernel;
+        let plan = kernel
+            .plan(&kernel.admit(&kctx.block, &kctx), &kctx, &solver_ctx)
+            .unwrap();
+
+        assert_eq!(plan.kernel_kind, KernelKind::SpecializationInterpolation);
+        assert!(plan.support_plan.template_plan.is_some());
+        assert!(plan.support_plan.rank_plan.is_some());
+        assert!(plan.support_plan.degree_bound >= 1);
+        assert!(plan.resource_bounds.max_local_elimination_steps.is_some());
+        assert_eq!(
+            plan.certificate_route,
+            CertificateRoute::SpecializationInterpolationExactVerification
+        );
+        assert_eq!(
+            plan.plan_work_classification,
+            crate::planner::kernel_plan::PlanWorkClassification::PurePlan
+        );
     }
 
     #[test]

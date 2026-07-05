@@ -1,0 +1,1 @@
+P12G-g implemented with `NonFiniteProofKind` in `NonFiniteCertificate`; the certificate hash binds the proof kind and verification rejects proof-kind/evidence mismatch. Regression `p12g_nonfinite_certificate_kind_is_positive_and_hash_bound` covers the behavior.

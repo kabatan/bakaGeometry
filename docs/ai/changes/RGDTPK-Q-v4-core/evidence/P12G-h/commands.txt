@@ -1,0 +1,7 @@
+cargo test --manifest-path geosolver-core\Cargo.toml p12g_ -- --nocapture
+cargo test --manifest-path geosolver-core\Cargo.toml -- --nocapture
+cargo fmt --manifest-path geosolver-core\Cargo.toml -- --check
+git diff --check
+python schema mirror/parse validation for P12G review schemas
+spec_verifier P12G-f/P12G-h after hard-block remediation
+quality_reviewer P12G-f/P12G-h after hard-block remediation

@@ -1,0 +1,19 @@
+HEAD at P12G-a rebind start:
+d958d1a26266414f67ee6c4251c648a8558375ca
+
+Schema hashes after P12G archive-schema extension:
+- review_summary.schema.yaml: e69c92eeb226b48fc1921d4b75daf7f6a78bdb4aa6a69a4a38a1679acc51ce05
+- evidence_manifest.schema.yaml: 9edb10d373900470a4c244ecd65b51b8a15569e98fa728b75e7b40d4aa4ac291
+- REVIEW_ARCHIVE_SCHEMA.md: 8cf55bb7b5958e3a031c7e84cc4de07387623c30ae123cbdf4343becf834e167
+
+P12G source hashes:
+- P12G_BASE_SPEC_AMENDMENT.md: 71f9a4ab993105f88636b6de251907f817bf5ebc22a7a90b7d17597aa9870572
+- P12G_PLAN.md: 3279ecc0ed4ab76457935df79f3913a780c06b7f9864b8cd7ad315ffb8dc7488
+- P12G_ACCEPTANCE_CHECKLIST.yaml: 8cd4f495914421a671f042cc04dce914dc51e3719433ae5a2bb14beffc6693b6
+
+Fresh command results:
+- cargo fmt --manifest-path geosolver-core\Cargo.toml -- --check: exit 0
+- cargo test --manifest-path geosolver-core\Cargo.toml p12g_ -- --nocapture: exit 0; 16 tests passed after spec-verifier remediation
+- cargo test --manifest-path geosolver-core\Cargo.toml -- --nocapture: exit 0; 193 unit tests, 1 integration test, and doctests passed
+- schema validation: exit 0; review/evidence schemas parse as Draft202012Validator and review schema mirrors are byte-identical
+- git diff --check: exit 0 after trailing whitespace fix

@@ -20,6 +20,9 @@ docs/ai/changes/RGDTPK-Q-v4-core/reviews/<phase-id>/<YYYYMMDD-HHMMSSZ>/
   evidence_manifest.yaml
 ```
 
+P12G remediation subphases use the same archive shape with phase ids `P12G-a`
+through `P12G-h`.
+
 `prompt.md` must be the exact prompt sent to the reviewer. `response.md` must be the exact reviewer response. The Agent may not replace either with a summary.
 
 ## `review_summary.yaml` requirements

@@ -1,8 +1,8 @@
-# Primitive Scope Ledger — RGDTPK-Q-v4-core P5R
+# Primitive Scope Ledger - RGDTPK-Q-v4-core P12G
 
-Status: active P5R anti-overclaim ledger.  
-Authority: tightening implementation ledger for `P5R-RGQ-070`; it does not weaken `BASE_SPEC.md` or `P5R_BASE_SPEC_AMENDMENT.md`.  
-Current claim ceiling: `PARTIAL_MECHANISM_READY:MECH-004`.
+Status: active P12G anti-overclaim ledger.
+Authority: tightening implementation ledger for `P5R-RGQ-070` and P12G-RGQ-073 through P12G-RGQ-085; it does not weaken `BASE_SPEC.md`, `P5R_BASE_SPEC_AMENDMENT.md`, or `P12G_BASE_SPEC_AMENDMENT.md`.
+Current claim ceiling: `PARTIAL_MECHANISM_READY:MECH-011`.
 
 This ledger prevents P6/P8/P9 and later reviewers from treating narrow P3/P4 primitives as completed generic target-direct solver kernels. It is not permission to keep a narrow solver. Every later phase reviewer must consult this file before accepting planner admission, kernel readiness, candidate-cover readiness, exact-image readiness, or final acceptance.
 
@@ -186,19 +186,19 @@ Later phase that must expand or replace this primitive:
 
 P7 for `LinearAffineKernel`; P13/P16 for exact-image semantics.
 
-## algebra/quotient.rs
+## algebra/quotient.rs and kernels/action_krylov.rs
 
 Current implemented capability:
 
-Production quotient handles are split from debug explicit handles. `ProductionProvenancedTargetQuotientHandle` is built from authorized relations, an authorization hash, a normal-form basis certificate, and per-action-column normal-form membership certificates.
+Production quotient handles are split from debug explicit handles. `ProductionProvenancedTargetQuotientHandle` is built from authorized relations, an authorization hash, a normal-form basis certificate, and per-action-column normal-form membership certificates. P12G Route A adds a production TargetActionKrylov path for a local univariate relation plus a linear target alias relation, for example `x^2 - 2 = 0` and `T - x = 0`, without calling TargetRelationSearch or Universal first.
 
 Exact limitations:
 
-The production builder verifies supplied certificates; it does not yet implement a generic quotient-basis construction algorithm for all local block shapes.
+The production builder verifies supplied certificates and the P12G TargetActionKrylov constructor builds the alias/univariate quotient-action certificates. It still does not implement a generic quotient-basis construction algorithm for all local block shapes or arbitrary ideals.
 
 Production use allowed before expansion:
 
-Allowed only when authorized block relations and independent normal-form certificates are supplied or built by an owning later phase. `DebugExplicitTargetQuotientHandle` is not production-provenanced.
+Allowed when authorized block relations are target-only univariate or match the P12G local-univariate plus target-alias quotient pattern and independent normal-form certificates are built from those authorized relations. `DebugExplicitTargetQuotientHandle` is not production-provenanced.
 
 Required exact verification after use:
 
@@ -210,11 +210,11 @@ Allowed failure on exhaustion:
 
 Forbidden claim:
 
-Do not claim production `TargetActionKrylovKernel` readiness from externally injected action matrices or debug explicit handles.
+Do not claim production `TargetActionKrylovKernel` readiness from externally injected action matrices, debug explicit handles, target-univariate companion-only behavior, or arbitrary local-ideal quotient basis construction.
 
 Later phase that must expand or replace this primitive:
 
-P8c.
+P8c plus P12G-b.
 
 ## algebra/krylov.rs
 

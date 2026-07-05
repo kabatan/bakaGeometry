@@ -296,6 +296,9 @@ fn one() -> SparsePolynomialQ {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::algebra::groebner::{groebner_elimination_basis, GroebnerOptions};
+    use crate::algebra::monomial_order::lex_order;
+    use crate::algebra::polynomial_ops::reduce_by_set;
     use crate::preprocess::compression::{
         rational_affine_transformation_certificate, CompressionExpression,
     };
@@ -304,15 +307,24 @@ mod tests {
     use crate::problem::validate::validate_input;
     use crate::types::ids::RelationId;
     use crate::types::polynomial::{
-        clear_denominators_primitive, constant_poly, poly_add, poly_mul, poly_sub, variable_poly,
+        clear_denominators_primitive, constant_poly, poly_add, poly_mul, poly_scale, poly_sub,
+        variable_poly,
     };
     use crate::types::rational::int_q;
 
     fn state_from_relations(relations: Vec<SparsePolynomialQ>) -> CompressionState {
         let t = VariableId(0);
         let vars = vec![t, VariableId(1), VariableId(2), VariableId(3)];
+        state_from_relations_with_vars(t, vars, relations)
+    }
+
+    fn state_from_relations_with_vars(
+        target: VariableId,
+        vars: Vec<VariableId>,
+        relations: Vec<SparsePolynomialQ>,
+    ) -> CompressionState {
         let canonical = canonicalize_system(
-            validate_input(make_problem(vars, t, relations, Vec::new())).unwrap(),
+            validate_input(make_problem(vars, target, relations, Vec::new())).unwrap(),
         )
         .unwrap();
         CompressionState::from_system(canonical)
@@ -499,6 +511,200 @@ mod tests {
             transformed_y_minus_two_relation.hash,
         );
         assert_ne!(cert.transformation_hash, tampered.transformation_hash);
+    }
+
+    #[test]
+    fn p12g_g5_guarded_rational_affine_records_guard_and_preserves_target_support() {
+        let t = VariableId(0);
+        let x = VariableId(1);
+        let y = VariableId(2);
+        let s = VariableId(3);
+        let denominator = poly_add(&variable_poly(x), &constant_poly(int_q(1)));
+        let witness = poly_sub(
+            &poly_mul(&denominator, &variable_poly(s)),
+            &constant_poly(int_q(1)),
+        );
+        let affine = poly_sub(
+            &poly_mul(&denominator, &variable_poly(y)),
+            &poly_add(&variable_poly(t), &variable_poly(x)),
+        );
+        let y_square_minus_two = poly_sub(
+            &poly_mul(&variable_poly(y), &variable_poly(y)),
+            &constant_poly(int_q(2)),
+        );
+        let x_minus_one = poly_sub(&variable_poly(x), &constant_poly(int_q(1)));
+        let state = state_from_relations(vec![
+            witness,
+            affine,
+            y_square_minus_two,
+            x_minus_one.clone(),
+        ]);
+
+        let mut ctx =
+            crate::problem::context::new_context(crate::solver::options::SolverOptions::default());
+        let state = eliminate_linear_affine_variables(state, &mut ctx).unwrap();
+        let expected_target_support = poly_sub(
+            &poly_mul(
+                &poly_add(&variable_poly(t), &constant_poly(int_q(1))),
+                &poly_add(&variable_poly(t), &constant_poly(int_q(1))),
+            ),
+            &constant_poly(int_q(8)),
+        );
+        let target_plus_x = poly_add(&variable_poly(t), &variable_poly(x));
+        let expected_guarded_relation = poly_sub(
+            &poly_mul(
+                &constant_poly(int_q(2)),
+                &poly_mul(&denominator, &denominator),
+            ),
+            &poly_mul(&target_plus_x, &target_plus_x),
+        );
+
+        assert!(state
+            .guards
+            .iter()
+            .any(|guard| guard.guard_kind == GuardKind::AffineDenominator));
+        assert!(state.substitutions.iter().any(|sub| {
+            sub.kind == SubstitutionKind::LinearAffineGuardedPivot
+                && matches!(sub.expression, CompressionExpression::Rational(_))
+        }));
+        assert!(
+            state.relations.iter().any(|relation| same_poly_up_to_sign(
+                &relation.polynomial,
+                &expected_guarded_relation
+            )),
+            "relations={:?}",
+            state
+                .relations
+                .iter()
+                .map(|relation| &relation.polynomial)
+                .collect::<Vec<_>>()
+        );
+        assert!(state
+            .relations
+            .iter()
+            .any(|relation| same_poly_up_to_sign(&relation.polynomial, &x_minus_one)));
+        assert!(same_poly_up_to_sign(
+            &substitute_x_equals_one(&expected_guarded_relation, x),
+            &expected_target_support
+        ));
+    }
+
+    #[test]
+    fn p12g_g3_bilinear_structure_preprocesses_to_target_support_under_permutation() {
+        let t = VariableId(0);
+        let a = VariableId(3);
+        let b = VariableId(11);
+        let u = VariableId(5);
+        let v = VariableId(2);
+        let bilinear = poly_sub(
+            &poly_sub(
+                &poly_mul(&variable_poly(a), &variable_poly(u)),
+                &poly_mul(&variable_poly(b), &variable_poly(v)),
+            ),
+            &variable_poly(t),
+        );
+        let state = state_from_relations_with_vars(
+            t,
+            vec![v, a, u, t, b],
+            vec![
+                poly_sub(&variable_poly(v), &constant_poly(int_q(5))),
+                poly_sub(&variable_poly(b), &constant_poly(int_q(2))),
+                bilinear,
+                poly_sub(&variable_poly(u), &constant_poly(int_q(3))),
+                poly_sub(&variable_poly(a), &constant_poly(int_q(1))),
+            ],
+        );
+        let mut ctx =
+            crate::problem::context::new_context(crate::solver::options::SolverOptions::default());
+        let state = eliminate_linear_affine_variables(state, &mut ctx).unwrap();
+        let state = eliminate_linear_affine_variables(state, &mut ctx).unwrap();
+
+        let support = poly_add(&variable_poly(t), &constant_poly(int_q(7)));
+        assert!(relations_imply_support(
+            &state,
+            &support,
+            vec![v, b, u, a, t]
+        ));
+    }
+
+    #[test]
+    fn p12g_g4_quadratic_structure_preprocesses_to_target_support() {
+        let t = VariableId(0);
+        let p = VariableId(4);
+        let q = VariableId(2);
+        let r = VariableId(6);
+        let quadratic = poly_sub(
+            &poly_add(
+                &poly_mul(&variable_poly(p), &variable_poly(p)),
+                &poly_mul(&variable_poly(q), &variable_poly(q)),
+            ),
+            &variable_poly(r),
+        );
+        let state = state_from_relations_with_vars(
+            t,
+            vec![t, p, q, r],
+            vec![
+                poly_sub(&variable_poly(q), &constant_poly(int_q(1))),
+                quadratic,
+                poly_sub(&variable_poly(r), &constant_poly(int_q(5))),
+                poly_sub(&variable_poly(p), &variable_poly(t)),
+            ],
+        );
+        let mut ctx =
+            crate::problem::context::new_context(crate::solver::options::SolverOptions::default());
+        let state = eliminate_linear_affine_variables(state, &mut ctx).unwrap();
+        let state = eliminate_linear_affine_variables(state, &mut ctx).unwrap();
+
+        let support = poly_sub(
+            &poly_mul(&variable_poly(t), &variable_poly(t)),
+            &constant_poly(int_q(4)),
+        );
+        assert!(relations_imply_support(&state, &support, vec![q, r, p, t]));
+    }
+
+    fn same_poly_up_to_sign(
+        a: &crate::types::polynomial::SparsePolynomialQ,
+        b: &crate::types::polynomial::SparsePolynomialQ,
+    ) -> bool {
+        a == b || *a == poly_scale(b, &int_q(-1))
+    }
+
+    fn substitute_x_equals_one(
+        poly: &crate::types::polynomial::SparsePolynomialQ,
+        x: VariableId,
+    ) -> crate::types::polynomial::SparsePolynomialQ {
+        let mut subst = crate::types::polynomial::SubstitutionMap::new();
+        subst.insert(x, constant_poly(int_q(1)));
+        crate::types::polynomial::substitute_poly(poly, &subst)
+    }
+
+    fn relations_imply_support(
+        state: &CompressionState,
+        support: &crate::types::polynomial::SparsePolynomialQ,
+        variables: Vec<VariableId>,
+    ) -> bool {
+        let relations = state
+            .relations
+            .iter()
+            .map(|relation| relation.polynomial.clone())
+            .collect::<Vec<_>>();
+        let basis = groebner_elimination_basis(
+            &relations,
+            &lex_order(&variables),
+            GroebnerOptions {
+                max_pairs: 1024,
+                max_basis_size: 128,
+            },
+        )
+        .unwrap()
+        .basis
+        .into_iter()
+        .map(|certified| certified.polynomial)
+        .collect::<Vec<_>>();
+        reduce_by_set(support, &basis, &lex_order(&variables))
+            .remainder
+            .terms
+            .is_empty()
     }
 
     #[test]

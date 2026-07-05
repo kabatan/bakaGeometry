@@ -265,6 +265,35 @@ mod tests {
     }
 
     #[test]
+    fn p12g_g6_multiseparator_composition_requires_child_message() {
+        let t = VariableId(0);
+        let x = VariableId(1);
+        let child = message(
+            BlockId(1),
+            PackageId(11),
+            vec![x],
+            poly_sub(&variable_poly(x), &constant(1)),
+        );
+        let root = message(
+            BlockId(0),
+            PackageId(10),
+            vec![t, x],
+            poly_sub(&variable_poly(t), &variable_poly(x)),
+        );
+        let dag = dag(t, x);
+        let mut ctx = new_context(SolverOptions::default());
+
+        let composed =
+            compose_projection_messages(&dag, vec![root.clone(), child], t, &mut ctx).unwrap();
+        let support = build_global_support_polynomial(composed, t, &mut ctx).unwrap();
+        assert!(same_up_to_sign(
+            &support.coeffs_low_to_high,
+            &[int_q(-1), int_q(1)]
+        ));
+        assert!(compose_projection_messages(&dag, vec![root], t, &mut ctx).is_err());
+    }
+
+    #[test]
     fn p10_tampered_message_relation_is_rejected_before_composition() {
         let t = VariableId(0);
         let x = VariableId(1);

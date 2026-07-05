@@ -1,0 +1,1 @@
+P12G-b Route A implemented. `TargetActionKrylov` now builds a production-provenanced quotient/action handle from a local univariate relation and a linear target alias relation. Regression `p12g_action_krylov_builds_non_target_only_quotient_action` verifies `x^2 - 2 = 0`, `T - x = 0` produces `T^2 - 2` through `TargetActionKrylov` replay.

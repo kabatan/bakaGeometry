@@ -1236,9 +1236,9 @@ mod tests {
         build_dense_relation_search_schedule, build_export_monomial_support,
         build_membership_matrix_builder, build_multiplier_supports, execute_target_relation_search,
         reconstruct_and_verify_relation, relation_search_default_export_degree_cap,
-        RelationSearchBound,
+        RelationSearchBound, TargetRelationSearchKernel,
     };
-    use crate::kernels::traits::KernelKind;
+    use crate::kernels::traits::{KernelKind, TargetProjectionKernel};
     use crate::planner::admission::{collect_kernel_admissions, KernelAdmissionStatus};
     use crate::planner::probes::run_cost_probes;
     use crate::preprocess::compression::CompressionState;
@@ -1254,8 +1254,8 @@ mod tests {
         monomial_degree, monomial_to_bytes, normalize_monomial, Monomial,
     };
     use crate::types::polynomial::{
-        clear_denominators_primitive, constant_poly, poly_add, poly_mul, poly_sub, poly_variables,
-        variable_poly, SparsePolynomialQ,
+        clear_denominators_primitive, constant_poly, poly_add, poly_mul, poly_scale, poly_sub,
+        poly_variables, variable_poly, SparsePolynomialQ,
     };
     use crate::types::rational::int_q;
 
@@ -1705,6 +1705,41 @@ mod tests {
             tag,
             &monomials.iter().map(monomial_to_bytes).collect::<Vec<_>>(),
         )
+    }
+
+    #[test]
+    fn p12g_g1_projection_without_initial_target_only_relation_finds_support() {
+        let t = VariableId(0);
+        let x = VariableId(1);
+        let y = VariableId(2);
+        let (message, kctx) = execute_case(
+            vec![t, x, y],
+            t,
+            vec![
+                poly_sub(&variable_poly(x), &variable_poly(y)),
+                poly_sub(&variable_poly(y), &variable_poly(t)),
+                poly_sub(
+                    &poly_mul(&variable_poly(x), &variable_poly(x)),
+                    &constant_poly(int_q(2)),
+                ),
+            ],
+            [t, x, y],
+            [t],
+            Some(2),
+        );
+
+        assert!(same_poly_up_to_sign(
+            &message.relation_generators[0],
+            &poly_sub(
+                &poly_mul(&variable_poly(t), &variable_poly(t)),
+                &constant_poly(int_q(2)),
+            )
+        ));
+        assert!(TargetRelationSearchKernel.replay(&message, &kctx).accepted);
+    }
+
+    fn same_poly_up_to_sign(a: &SparsePolynomialQ, b: &SparsePolynomialQ) -> bool {
+        a == b || *a == poly_scale(b, &int_q(-1))
     }
 
     fn execute_case<const N: usize, const M: usize>(

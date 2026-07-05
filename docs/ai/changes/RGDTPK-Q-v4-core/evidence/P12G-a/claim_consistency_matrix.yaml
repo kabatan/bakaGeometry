@@ -1,0 +1,18 @@
+schema_version: rgdtpk-p12g-claim-consistency-v1
+phase: P12G-a
+claim_ceiling: PARTIAL_MECHANISM_READY:MECH-011
+not_claimed:
+  - P13 exact-image semantics
+  - P14 public orchestration
+  - P15 acceptance suites
+  - P16 final closure
+  - performance readiness
+  - SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC
+  - RGDTPK_Q_V4_ACCEPTANCE_COMPLETE
+active_documents_updated:
+  - docs/ai/ACTIVE_CONTEXT.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/CLOSURE.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/P6_READINESS.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/PRIMITIVE_SCOPE_LEDGER.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/P12G_DIRECT_ALGORITHM_INVENTORY.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/P12G_READINESS.md

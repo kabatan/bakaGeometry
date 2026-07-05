@@ -1,0 +1,1 @@
+P12G-e implemented as a final-claim evidence hook. `require_final_claim_invariant_evidence` returns `CertificateDesignGap` unless final invariant flags and scan/evidence hashes are present. Regression `p12g_final_invariant_claim_is_blocked_without_explicit_evidence` covers the blocker.

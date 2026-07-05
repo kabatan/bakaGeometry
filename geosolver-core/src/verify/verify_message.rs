@@ -145,12 +145,19 @@ fn payload_sources_are_authorized(
     let Some(payload_hashes) = payload_source_hashes(payload) else {
         return true;
     };
-    let mut authorized = ctx
+    let relations_by_id = ctx
         .system
         .relations
         .iter()
-        .map(|relation| relation.polynomial.hash)
-        .collect::<BTreeSet<_>>();
+        .map(|relation| (relation.id, relation))
+        .collect::<BTreeMap<_, _>>();
+    let mut authorized = BTreeSet::new();
+    for relation_id in &ctx.block.relation_ids {
+        if let Some(relation) = relations_by_id.get(relation_id) {
+            authorized.insert(relation.hash);
+            authorized.insert(relation.polynomial.hash);
+        }
+    }
     for child in &ctx.child_messages {
         if Some(child.package_hash) == excluded_child_hash {
             continue;
@@ -547,8 +554,17 @@ fn source_hashes_are_authorized(
         .iter()
         .map(|relation| (relation.id, relation.hash))
         .collect::<BTreeMap<_, _>>();
+    let authorized_relation_ids = ctx
+        .block
+        .relation_ids
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
     let mut authorized = BTreeSet::new();
     for id in &message.source_relation_ids {
+        if !authorized_relation_ids.contains(id) {
+            return Ok(false);
+        }
         if let Some(hash) = relations.get(id).copied() {
             authorized.insert(hash);
         }
@@ -711,7 +727,7 @@ fn univariate_to_sparse(poly: &UniPolynomialQ) -> SparsePolynomialQ {
         }
         power = poly_mul(&power, &variable);
     }
-    clear_denominators_primitive(&out)
+    out
 }
 
 fn replay_guarded_affine_outputs(

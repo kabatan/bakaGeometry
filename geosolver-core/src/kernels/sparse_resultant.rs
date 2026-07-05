@@ -774,6 +774,7 @@ mod tests {
     use crate::compose::message::{MessageRepresentation, ProjectionMessage, ProjectionStrength};
     use crate::graph::projection_dag::ProjectionBlock;
     use crate::kernels::traits::{KernelContext, KernelKind, TargetProjectionKernel};
+    use crate::planner::kernel_plan::CertificateRoute;
     use crate::preprocess::compression::CompressionState;
     use crate::problem::canonicalize::canonicalize_system;
     use crate::problem::context::new_context;
@@ -898,6 +899,43 @@ mod tests {
             )
             .unwrap_err();
         assert_eq!(err.public_status(), SolverStatus::ImplementationBug);
+    }
+
+    #[test]
+    fn p12g_sparse_resultant_template_plan_does_not_overclaim_binary_chain() {
+        let t = VariableId(0);
+        let y = VariableId(1);
+        let relations = vec![
+            poly_sub(&variable_poly(y), &variable_poly(t)),
+            poly_sub(&variable_poly(y), &constant_poly(int_q(1))),
+        ];
+        let compressed = compressed_system(vec![t, y], t, relations);
+        let block = test_block(&compressed, [t, y], [t]);
+        let solver_ctx = new_context(SolverOptions::default());
+        let kctx = KernelContext {
+            block,
+            system: compressed,
+            child_messages: Vec::new(),
+        };
+        let kernel = SparseResultantProjectionKernel;
+        let plan = kernel
+            .plan(&kernel.admit(&kctx.block, &kctx), &kctx, &solver_ctx)
+            .unwrap();
+
+        assert_eq!(plan.kernel_kind, KernelKind::SparseResultantProjection);
+        assert!(plan.support_plan.template_plan.is_some());
+        assert!(plan.support_plan.rank_plan.is_some());
+        assert_eq!(
+            plan.certificate_route,
+            CertificateRoute::SparseResultantExactVerification
+        );
+        assert_eq!(
+            plan.plan_work_classification,
+            crate::planner::kernel_plan::PlanWorkClassification::PurePlan
+        );
+        assert_eq!(plan.exported_variables, vec![t]);
+        assert_eq!(plan.eliminated_variables, vec![y]);
+        assert_eq!(plan.source_relation_hashes.len(), 2);
     }
 
     fn compressed_system(

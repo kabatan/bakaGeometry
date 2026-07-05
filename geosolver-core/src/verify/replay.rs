@@ -196,6 +196,58 @@ fn verify_projection_messages(
     true
 }
 
+#[allow(dead_code)]
+pub(crate) fn verify_projection_messages_with_actual_blocks(
+    result: &TargetSolveResult,
+    compressed: &crate::preprocess::compression::CompressedSystemQ,
+    blocks: &[ProjectionBlock],
+    message_dependencies: &[Vec<usize>],
+) -> bool {
+    if message_dependencies.len() != result.projection_messages.len() {
+        return false;
+    }
+    for (message_idx, message) in result.projection_messages.iter().enumerate() {
+        let Some(block) = blocks
+            .iter()
+            .find(|block| block.block_id == message.block_id)
+            .cloned()
+        else {
+            return false;
+        };
+        if authorize_block_relations(&block, compressed) != block.authorization_hash {
+            return false;
+        }
+        let mut child_messages = Vec::new();
+        for dep_idx in &message_dependencies[message_idx] {
+            let Some(child_message) = result.projection_messages.get(*dep_idx).cloned() else {
+                return false;
+            };
+            if !block.child_block_ids.contains(&child_message.block_id) {
+                return false;
+            }
+            let Some(child_block) = blocks
+                .iter()
+                .find(|child| child.block_id == child_message.block_id)
+            else {
+                return false;
+            };
+            if child_block.parent_block_id != Some(block.block_id) {
+                return false;
+            }
+            child_messages.push(child_message);
+        }
+        let kctx = crate::kernels::traits::KernelContext {
+            block,
+            system: compressed.clone(),
+            child_messages,
+        };
+        if verify_projection_message(message, &kctx).is_err() {
+            return false;
+        }
+    }
+    true
+}
+
 fn base_source_hashes(compressed: &crate::preprocess::compression::CompressedSystemQ) -> Vec<Hash> {
     let mut hashes = BTreeSet::new();
     for relation in &compressed.relations {
@@ -386,6 +438,199 @@ mod tests {
     };
     use crate::verify::verify_message::verify_projection_message;
     use crate::verify::verify_support::verify_global_support;
+
+    #[test]
+    fn p12g_replay_rejects_message_using_relation_outside_original_block() {
+        let t = VariableId(0);
+        let problem = make_problem(
+            vec![t],
+            t,
+            vec![
+                poly_sub(&variable_poly(t), &constant_poly(int_q(1))),
+                poly_sub(&variable_poly(t), &constant_poly(int_q(2))),
+            ],
+            Vec::new(),
+        );
+        let compressed = compressed_system(&problem);
+        let authorized_relation = compressed.relations[0].clone();
+        let outside_relation = compressed.relations[1].clone();
+        let support = normalize_univariate(UniPolynomialQ {
+            variable: t,
+            coeffs_low_to_high: vec![int_q(-2), int_q(1)],
+            hash: hash_sequence("univariate", &[]),
+        });
+        let message = input_authorized_target_support_message(
+            PackageId(200),
+            t,
+            outside_relation.polynomial.clone(),
+            hash_sequence("p12g-outside-plan", &[]),
+            hash_sequence("p12g-outside-cert", &[]),
+            BlockId(0),
+            outside_relation.id,
+            outside_relation.hash,
+        );
+
+        let mut synthetic_block = ProjectionBlock {
+            block_id: BlockId(0),
+            local_variables: BTreeSet::from([t]),
+            relation_ids: compressed.relation_order.clone(),
+            exported_variables: BTreeSet::from([t]),
+            child_block_ids: Vec::new(),
+            parent_block_id: None,
+            authorization_hash: hash_sequence("tmp", &[]),
+            duplication_certificates: Vec::new(),
+            block_hash: hash_sequence("test-block", &[]),
+        };
+        synthetic_block.authorization_hash =
+            authorize_block_relations(&synthetic_block, &compressed);
+        let synthetic_ctx = KernelContext {
+            block: synthetic_block,
+            system: compressed.clone(),
+            child_messages: Vec::new(),
+        };
+        let synthetic_verification = verify_projection_message(&message, &synthetic_ctx);
+        assert!(synthetic_verification.is_ok(), "{synthetic_verification:?}");
+
+        let mut actual_block = ProjectionBlock {
+            block_id: BlockId(0),
+            local_variables: BTreeSet::from([t]),
+            relation_ids: vec![authorized_relation.id],
+            exported_variables: BTreeSet::from([t]),
+            child_block_ids: Vec::new(),
+            parent_block_id: None,
+            authorization_hash: hash_sequence("tmp", &[]),
+            duplication_certificates: Vec::new(),
+            block_hash: hash_sequence("test-block", &[]),
+        };
+        actual_block.authorization_hash = authorize_block_relations(&actual_block, &compressed);
+        let messages = vec![message.clone()];
+        let cert = build_core_run_certificate(CoreRunCertificateInput {
+            input_hash: problem.input_hash,
+            canonical_hash: canonical_hash(&problem),
+            compression_hash: compression_hash(&problem),
+            hypergraph_hash: hypergraph_hash(&problem),
+            dag_hash: hash_projection_message_dag_binding(t, &messages),
+            kernel_plan_hashes: vec![message.certificate.plan_hash],
+            projection_messages: &messages,
+            support: Some(&support),
+            squarefree_support: Some(&support),
+            root_isolation: &[],
+            decoded_candidates: &[],
+            global_support_certificate_hash: None,
+        });
+        let result = result(t, support, messages, cert);
+
+        assert!(!super::verify_projection_messages_with_actual_blocks(
+            &result,
+            &compressed,
+            &[actual_block],
+            &[Vec::new()],
+        ));
+    }
+
+    #[test]
+    fn p12g_replay_rejects_child_message_not_on_declared_dag_edge() {
+        let t = VariableId(0);
+        let problem = make_problem(
+            vec![t],
+            t,
+            vec![poly_sub(&variable_poly(t), &constant_poly(int_q(1)))],
+            Vec::new(),
+        );
+        let compressed = compressed_system(&problem);
+        let base_relation = compressed.relations[0].clone();
+        let support = support_poly(t);
+        let child_message = input_authorized_target_support_message(
+            PackageId(210),
+            t,
+            base_relation.polynomial.clone(),
+            hash_sequence("p12g-child-plan", &[]),
+            hash_sequence("p12g-child-cert", &[]),
+            BlockId(1),
+            base_relation.id,
+            base_relation.hash,
+        );
+        let parent_message = forged_target_support_message(
+            PackageId(211),
+            t,
+            child_message.relation_generators[0].clone(),
+            hash_sequence("p12g-parent-plan", &[]),
+            hash_sequence("p12g-parent-cert", &[]),
+            BlockId(0),
+        );
+
+        let mut synthetic_block = ProjectionBlock {
+            block_id: BlockId(0),
+            local_variables: BTreeSet::from([t]),
+            relation_ids: Vec::new(),
+            exported_variables: BTreeSet::from([t]),
+            child_block_ids: Vec::new(),
+            parent_block_id: None,
+            authorization_hash: hash_sequence("tmp", &[]),
+            duplication_certificates: Vec::new(),
+            block_hash: hash_sequence("test-block", &[]),
+        };
+        synthetic_block.authorization_hash =
+            authorize_block_relations(&synthetic_block, &compressed);
+        let synthetic_ctx = KernelContext {
+            block: synthetic_block,
+            system: compressed.clone(),
+            child_messages: vec![child_message.clone()],
+        };
+        let synthetic_verification = verify_projection_message(&parent_message, &synthetic_ctx);
+        assert!(synthetic_verification.is_ok(), "{synthetic_verification:?}");
+
+        let mut parent_block = ProjectionBlock {
+            block_id: BlockId(0),
+            local_variables: BTreeSet::from([t]),
+            relation_ids: Vec::new(),
+            exported_variables: BTreeSet::from([t]),
+            child_block_ids: Vec::new(),
+            parent_block_id: None,
+            authorization_hash: hash_sequence("tmp", &[]),
+            duplication_certificates: Vec::new(),
+            block_hash: hash_sequence("test-block", &[]),
+        };
+        parent_block.authorization_hash = authorize_block_relations(&parent_block, &compressed);
+        let mut child_block = ProjectionBlock {
+            block_id: BlockId(1),
+            local_variables: BTreeSet::from([t]),
+            relation_ids: vec![base_relation.id],
+            exported_variables: BTreeSet::from([t]),
+            child_block_ids: Vec::new(),
+            parent_block_id: Some(BlockId(0)),
+            authorization_hash: hash_sequence("tmp", &[]),
+            duplication_certificates: Vec::new(),
+            block_hash: hash_sequence("test-block", &[]),
+        };
+        child_block.authorization_hash = authorize_block_relations(&child_block, &compressed);
+        let messages = vec![parent_message.clone(), child_message.clone()];
+        let cert = build_core_run_certificate(CoreRunCertificateInput {
+            input_hash: problem.input_hash,
+            canonical_hash: canonical_hash(&problem),
+            compression_hash: compression_hash(&problem),
+            hypergraph_hash: hypergraph_hash(&problem),
+            dag_hash: hash_projection_message_dag_binding(t, &messages),
+            kernel_plan_hashes: vec![
+                parent_message.certificate.plan_hash,
+                child_message.certificate.plan_hash,
+            ],
+            projection_messages: &messages,
+            support: Some(&support),
+            squarefree_support: Some(&support),
+            root_isolation: &[],
+            decoded_candidates: &[],
+            global_support_certificate_hash: None,
+        });
+        let result = result(t, support, messages, cert);
+
+        assert!(!super::verify_projection_messages_with_actual_blocks(
+            &result,
+            &compressed,
+            &[parent_block, child_block],
+            &[vec![1], Vec::new()],
+        ));
+    }
 
     #[test]
     fn p11_replay_fails_when_projection_message_is_deleted() {

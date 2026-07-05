@@ -1,0 +1,39 @@
+schema_version: rgdtpk-p12g-stress-v1
+phase: P12G-h
+plan_required_tests:
+  p12g_plan_does_not_silently_execute_final_relation: pass
+  p12g_certified_probe_plan_hash_tamper_fails: pass
+  p12g_specialization_interpolation_inner_schedule_is_declared: pass
+  p12g_sparse_resultant_template_plan_does_not_overclaim_binary_chain: pass
+  p12g_replay_rejects_message_using_relation_outside_original_block: pass
+  p12g_replay_rejects_child_message_not_on_declared_dag_edge: pass
+  p12g_dag_authorization_hash_bound_into_run_certificate: pass
+integration_manifest:
+  test_file: geosolver-core/tests/p12g_generality_stress.rs
+  test: p12g_generality_stress_manifest_lists_required_cases
+  result: pass
+cases:
+  G1_projection_without_initial_target_only_relation:
+    test: kernels::target_relation_search::tests::p12g_g1_projection_without_initial_target_only_relation_finds_support
+    result: pass
+  G2_finite_quotient_action_without_initial_target_only_relation:
+    test: kernels::action_krylov::tests::p12g_action_krylov_builds_non_target_only_quotient_action
+    result: pass
+  G3_bilinear_structure:
+    test: preprocess::linear_affine::tests::p12g_g3_bilinear_structure_preprocesses_to_target_support_under_permutation
+    result: pass
+  G4_quadratic_structure:
+    test: preprocess::linear_affine::tests::p12g_g4_quadratic_structure_preprocesses_to_target_support
+    result: pass
+  G5_guarded_rational_affine:
+    test: preprocess::linear_affine::tests::p12g_g5_guarded_rational_affine_records_guard_and_preserves_target_support
+    result: pass
+  G6_multiseparator_composition:
+    test: compose::compose::tests::p12g_g6_multiseparator_composition_requires_child_message
+    result: pass
+  G7_norm_trace_tower:
+    test: kernels::norm_trace_projection::tests::p12g_g7_norm_trace_stress_covers_single_and_two_step_towers
+    result: pass
+  G8_nonreal_support_empty_cover:
+    test: compose::final_support::tests::p12g_candidate_cover_with_no_real_roots_is_empty_cover_not_hard_case
+    result: pass

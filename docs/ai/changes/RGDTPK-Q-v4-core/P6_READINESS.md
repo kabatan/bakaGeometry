@@ -1,12 +1,14 @@
-# P6 Readiness — P5R Barrier
+# P6 Readiness - Historical P5R Barrier
 
-Status: P5R remediation final audit ready.  
+Status: historical P5R readiness record, superseded for continuation by P12G after P12.
 Required before P6: P5R-a through P5R-f PASS review archives, fresh evidence, final commit binding, and explicit user instruction to proceed beyond the P5R stop point.
+
+Current continuation gate after P12: P12G-a through P12G-h must close before P13/P14.
 
 Current claim ceiling:
 
 ```text
-PARTIAL_MECHANISM_READY:MECH-004
+PARTIAL_MECHANISM_READY:MECH-011
 ```
 
 ## P5R-RGQ-071 Questions
@@ -33,7 +35,10 @@ Answer: yes by `PRIMITIVE_SCOPE_LEDGER.md`, `PLAN.md`, `SOURCE_MAP.md`, and `REV
 
 6. Is public orchestration still not connected, and is that claim ceiling explicit?
 
-Answer: yes. Public orchestration, projection-message execution, candidate-cover construction, exact-image classification, replay, performance claims, and final acceptance are explicitly not complete. The claim ceiling remains `PARTIAL_MECHANISM_READY:MECH-004`.
+Answer: P6 readiness was satisfied historically. In the current P12G state, public orchestration,
+P13 exact-image semantics, P14 pipeline connection, P15 acceptance suites, P16 final closure,
+performance claims, and final acceptance are explicitly not complete. The current claim ceiling is
+`PARTIAL_MECHANISM_READY:MECH-011`.
 
 7. Which later phases remain responsible for TargetRelationSearch schedule, Universal fixed ladder, composition, final support, roots, exact image, and replay?
 
@@ -41,6 +46,7 @@ Answer: P6 remains responsible for deterministic planning and support-producing 
 
 ## Final Gate
 
-P6 may begin: yes after the P5R-f PASS review is archived and the final remediation commit is created.
+P6 may begin: already completed historically.
 
-Reason: P5R-a through P5R-e have PASS review archives, P5R-f has fresh test/static-scan evidence, and the active documents preserve the claim ceiling. P6 has not been started in this work item; entering P6 still requires a new explicit user instruction.
+Reason: P5R-a through P5R-f have PASS review archives and P6 through P12 have since completed. This
+file is no longer the active continuation gate; P12G is.

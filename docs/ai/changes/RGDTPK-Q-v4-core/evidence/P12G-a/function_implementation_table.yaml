@@ -1,0 +1,24 @@
+schema_version: rgdtpk-p12g-function-table-v1
+phase: P12G-a
+entries:
+  - file: geosolver-core/src/kernels/action_krylov.rs
+    functions:
+      - select_target_action_selection
+      - build_quotient_handle_input_from_alias_univariate
+      - validate_selection_hash_coverage
+    p12g_scope: TargetActionKrylov Route A minimum generalization
+  - file: geosolver-core/src/planner/kernel_plan.rs
+    functions:
+      - certified_probe_plan
+      - verify_certified_probe_replay
+    p12g_scope: typed plan-time probe model with authorization, resource trace, and cost trace hash binding
+  - file: geosolver-core/src/compose/final_support.rs
+    functions:
+      - finalize_candidate_cover_result
+      - verify_nonfinite_certificate
+    p12g_scope: empty real-root candidate cover and proof-kind discipline
+  - file: geosolver-core/src/verify/run_certificate.rs
+    functions:
+      - require_final_claim_invariant_evidence
+      - require_final_claim_dag_replay_evidence
+    p12g_scope: final-claim blockers

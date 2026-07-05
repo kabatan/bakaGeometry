@@ -1,0 +1,7 @@
+git rev-parse --verify HEAD
+git status --short
+cargo fmt --manifest-path geosolver-core\Cargo.toml -- --check
+cargo test --manifest-path geosolver-core\Cargo.toml p12g_ -- --nocapture
+cargo test --manifest-path geosolver-core\Cargo.toml -- --nocapture
+python schema validation for review_summary/evidence_manifest schemas and review schema mirror identity
+git diff --check

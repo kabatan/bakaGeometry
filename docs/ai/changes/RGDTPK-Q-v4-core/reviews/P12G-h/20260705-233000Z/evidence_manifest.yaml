@@ -1,0 +1,111 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: P12G-h
+commit: d958d1a26266414f67ee6c4251c648a8558375ca+p12g-worktree
+algorithm_spec_source_sha256: 71f9a4ab993105f88636b6de251907f817bf5ebc22a7a90b7d17597aa9870572
+failure_source_sha256: 58c59899ad95f534b638d65478756a528105bd3399fb3ec33db15aaf4ee77ef1
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: 3279ecc0ed4ab76457935df79f3913a780c06b7f9864b8cd7ad315ffb8dc7488
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: 8cf55bb7b5958e3a031c7e84cc4de07387623c30ae123cbdf4343becf834e167
+review_summary_schema_sha256: e69c92eeb226b48fc1921d4b75daf7f6a78bdb4aa6a69a4a38a1679acc51ce05
+evidence_manifest_schema_sha256: 9edb10d373900470a4c244ecd65b51b8a15569e98fa728b75e7b40d4aa4ac291
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12G-f/notes.md
+  sha256: e8cc61e87271777e11cf7b4d2ddde7271b4d671229549cf770dde5085fbd613f
+  purpose: 'P12G-h review evidence: notes.md'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12G-f/spec_verifier_pass_after_hard_block.md
+  sha256: 0331cda379a5d468b8ef2f939b2e9cb6395877511efd961d6f47443c145edbcc
+  purpose: 'P12G-h review evidence: spec_verifier_pass_after_hard_block.md'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12G-f/quality_reviewer_pass_after_hard_block.md
+  sha256: cfc75c68d0aa64a9d9c933901aa6d89a3a209689d265ed4f7db42c956d17e071
+  purpose: 'P12G-h review evidence: quality_reviewer_pass_after_hard_block.md'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12G-h/commands.txt
+  sha256: c6966cfbea8649cd64e1621d9c1b6ecd62a3f47770fc15eee41a445ece56cb21
+  purpose: 'P12G-h review evidence: commands.txt'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12G-h/command_outputs.txt
+  sha256: eb946347ce12dc7753fa27cbe00a7eb6bfc40f718a3428554463f70b0b0ed10e
+  purpose: 'P12G-h review evidence: command_outputs.txt'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12G-h/stress_matrix.yaml
+  sha256: 6d620e5ac1dc761cc55e9ede2e2455917c21c311e38ec60514e670f022530300
+  purpose: 'P12G-h review evidence: stress_matrix.yaml'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/P12G_READINESS.md
+  sha256: 2db0f65322db554fe1ca342a654f890f57cae47925809e40f18ea845e0744e62
+  purpose: 'P12G-h review evidence: P12G_READINESS.md'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/P13_P14_READINESS_AFTER_P12G.md
+  sha256: 9c4a7afb5724d42544c8097d5ce5c9c6907ebea3b3b2121d31413be2bee09b71
+  purpose: 'P12G-h review evidence: P13_P14_READINESS_AFTER_P12G.md'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P12G-h/20260705-233000Z/prompt.md
+  sha256: 2932f36c37a5f06d07dcbe7ffafe319258d8a9a4e42c2ca211581e98f436162d
+  purpose: 'P12G-h review evidence: prompt.md'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P12G-h/20260705-233000Z/response.md
+  sha256: 0a8dd5415e9b4b204dea1244c6130fcb2082c172d69ebf260efc70b4f8bd7be7
+  purpose: 'P12G-h review evidence: response.md'
+command_outputs:
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p12g_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12G-h/command_outputs.txt
+  output_sha256: eb946347ce12dc7753fa27cbe00a7eb6bfc40f718a3428554463f70b0b0ed10e
+  finished_at_utc: 20260705-233000Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12G-h/command_outputs.txt
+  output_sha256: eb946347ce12dc7753fa27cbe00a7eb6bfc40f718a3428554463f70b0b0ed10e
+  finished_at_utc: 20260705-233000Z
+- command: cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12G-h/command_outputs.txt
+  output_sha256: eb946347ce12dc7753fa27cbe00a7eb6bfc40f718a3428554463f70b0b0ed10e
+  finished_at_utc: 20260705-233000Z
+- command: git diff --check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12G-h/command_outputs.txt
+  output_sha256: eb946347ce12dc7753fa27cbe00a7eb6bfc40f718a3428554463f70b0b0ed10e
+  finished_at_utc: 20260705-233000Z
+- command: python schema mirror/parse validation for P12G review schemas
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12G-h/command_outputs.txt
+  output_sha256: eb946347ce12dc7753fa27cbe00a7eb6bfc40f718a3428554463f70b0b0ed10e
+  finished_at_utc: 20260705-233000Z
+- command: spec_verifier P12G-f/P12G-h after hard-block remediation
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12G-f/spec_verifier_pass_after_hard_block.md
+  output_sha256: 0331cda379a5d468b8ef2f939b2e9cb6395877511efd961d6f47443c145edbcc
+  finished_at_utc: 20260705-233000Z
+- command: quality_reviewer P12G-f/P12G-h after hard-block remediation
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12G-f/quality_reviewer_pass_after_hard_block.md
+  output_sha256: cfc75c68d0aa64a9d9c933901aa6d89a3a209689d265ed4f7db42c956d17e071
+  finished_at_utc: 20260705-233000Z
+static_scans:
+- scan_id: p12g-final-dag-hard-block
+  command: rg final DAG replay hard-block functions and P14 blocker docs
+  forbidden_pattern: caller supplied DAG evidence accepted as final claim proof
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12G-h/command_outputs.txt
+- scan_id: p12g-stress-manifest
+  command: rg P12G stress manifest and required case tests
+  forbidden_pattern: missing P12G-h stress manifest or required named tests
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12G-h/stress_matrix.yaml
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12G-a/function_implementation_table.yaml
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12G-f/spec_verifier_pass_after_hard_block.md
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12G-f/quality_reviewer_pass_after_hard_block.md
+known_limitations:
+- P14 remains blocked until actual DAG/block replay replaces synthetic all-relations
+  replay for final claims.
+- P12G does not close P13 exact-image semantics, P14 public orchestration, P15 acceptance
+  suites, or P16 final closure.
+- No R-ID is marked VERIFIED by this archive.
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-011
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-011
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

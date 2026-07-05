@@ -41,10 +41,17 @@ pub struct TargetEliminationZeroCertificate {
     pub certificate_hash: Hash,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum NonFiniteProofKind {
+    ZeroTargetEliminationOverQ,
+    ZeroTargetEliminationWithRealWitness,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NonFiniteCertificate {
     pub target: VariableId,
     pub composed_hash: Hash,
+    pub proof_kind: NonFiniteProofKind,
     pub zero_target_elimination: TargetEliminationZeroCertificate,
     pub real_certificate: Option<RealNonFiniteTargetCertificate>,
     pub certificate_hash: Hash,
@@ -115,6 +122,11 @@ pub fn certify_nonfinite_target_image(
     let mut cert = NonFiniteCertificate {
         target: composed.target,
         composed_hash: composed.composed_hash,
+        proof_kind: if real_certificate.is_some() {
+            NonFiniteProofKind::ZeroTargetEliminationWithRealWitness
+        } else {
+            NonFiniteProofKind::ZeroTargetEliminationOverQ
+        },
         zero_target_elimination,
         real_certificate,
         certificate_hash: hash_sequence("nonfinite-target-certificate", &[]),
@@ -188,6 +200,16 @@ pub fn verify_nonfinite_certificate(
             "nonfinite certificate hash or target binding mismatch",
         ));
     }
+    match (cert.proof_kind, cert.real_certificate.is_some()) {
+        (NonFiniteProofKind::ZeroTargetEliminationOverQ, false)
+        | (NonFiniteProofKind::ZeroTargetEliminationWithRealWitness, true) => {}
+        _ => {
+            return Err(implementation_bug(
+                composed.target,
+                "nonfinite proof kind does not match supplied proof evidence",
+            ));
+        }
+    }
     verify_zero_target_elimination_certificate(&cert.zero_target_elimination, composed)?;
     if let Some(real_cert) = &cert.real_certificate {
         verify_real_nonfinite_certificate(real_cert, composed)?;
@@ -251,13 +273,6 @@ pub fn finalize_candidate_cover_result(
             method: root_isolation_method,
         },
     )?;
-    if root_isolation.is_empty() {
-        return Err(root_decode_hard_case(
-            target,
-            support.hash,
-            "support-producing candidate cover produced no real roots",
-        ));
-    }
     let decoded_candidates = decode_candidates(target, &squarefree_support, &root_isolation);
     if decoded_candidates.len() != root_isolation.len() {
         return Err(implementation_bug(
@@ -265,6 +280,15 @@ pub fn finalize_candidate_cover_result(
             "decoded candidate count does not match isolated root count",
         ));
     }
+    let diagnostics = if root_isolation.is_empty() {
+        vec![DiagnosticRecord::new(
+            "EmptyRealCandidateCover",
+            "support has no real roots; certified candidate cover is empty".to_owned(),
+            Some(StageId("P12RootDecode".to_owned())),
+        )]
+    } else {
+        Vec::new()
+    };
     Ok(TargetSolveResult {
         status: SolverStatus::CertifiedCandidateCover,
         target,
@@ -274,7 +298,7 @@ pub fn finalize_candidate_cover_result(
         decoded_candidates,
         projection_messages,
         certificate: None::<CoreRunCertificate>,
-        diagnostics: Vec::new(),
+        diagnostics,
         cost_trace,
     })
 }
@@ -533,6 +557,7 @@ fn hash_nonfinite_certificate(cert: &NonFiniteCertificate) -> Hash {
     let mut chunks = vec![
         cert.target.0.to_be_bytes().to_vec(),
         cert.composed_hash.0.to_vec(),
+        format!("{:?}", cert.proof_kind).into_bytes(),
         cert.zero_target_elimination.certificate_hash.0.to_vec(),
     ];
     if let Some(real) = &cert.real_certificate {
@@ -574,17 +599,6 @@ fn algorithmic_hard_case(target: VariableId, hash: Hash, reason: &str) -> Solver
     }
 }
 
-fn root_decode_hard_case(target: VariableId, hash: Hash, reason: &str) -> SolverError {
-    SolverError {
-        target: Some(target),
-        kind: SolverErrorKind::Failure(FailureKind::AlgorithmicHardCase {
-            stage: StageId("P12RootDecode".to_owned()),
-            reason: AlgebraicReason(reason.to_owned()),
-            minimal_block_hash: hash,
-        }),
-    }
-}
-
 fn certificate_gap(target: VariableId, hash: Hash, missing: &str) -> SolverError {
     SolverError {
         target: Some(target),
@@ -601,5 +615,82 @@ fn implementation_bug(target: VariableId, message: &str) -> SolverError {
         kind: SolverErrorKind::Failure(FailureKind::ImplementationBug {
             invariant_violated: message.to_owned(),
         }),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::compose::compose::{hash_composed_projection, ComposedProjection};
+    use crate::compose::message::ProjectionMessage;
+    use crate::problem::context::new_context;
+    use crate::result::cost_trace::{CompositionCostTrace, GlobalCostTrace};
+    use crate::result::status::SolverStatus;
+    use crate::solver::options::{RootIsolationMethod, SolverOptions};
+    use crate::types::hash::hash_sequence;
+    use crate::types::ids::BlockId;
+    use crate::types::ids::VariableId;
+    use crate::types::rational::int_q;
+    use crate::types::univariate::{normalize_univariate, UniPolynomialQ};
+
+    use super::{
+        certify_nonfinite_target_image, finalize_candidate_cover_result,
+        hash_nonfinite_certificate, verify_nonfinite_certificate, NonFiniteProofKind,
+    };
+
+    #[test]
+    fn p12g_candidate_cover_with_no_real_roots_is_empty_cover_not_hard_case() {
+        let t = VariableId(0);
+        let support = normalize_univariate(UniPolynomialQ {
+            variable: t,
+            coeffs_low_to_high: vec![int_q(1), int_q(0), int_q(1)],
+            hash: hash_sequence("univariate", &[]),
+        });
+
+        let result = finalize_candidate_cover_result(
+            t,
+            support.clone(),
+            Vec::<ProjectionMessage>::new(),
+            GlobalCostTrace::default(),
+            RootIsolationMethod::Sturm,
+        )
+        .unwrap();
+
+        assert_eq!(result.status, SolverStatus::CertifiedCandidateCover);
+        assert_eq!(result.support_polynomial, Some(support.clone()));
+        assert!(result.squarefree_support_polynomial.is_some());
+        assert!(result.root_isolation.is_empty());
+        assert!(result.decoded_candidates.is_empty());
+        assert!(result
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.name == "EmptyRealCandidateCover"));
+    }
+
+    #[test]
+    fn p12g_nonfinite_certificate_kind_is_positive_and_hash_bound() {
+        let t = VariableId(0);
+        let mut composed = ComposedProjection {
+            target: t,
+            root_block_id: BlockId(0),
+            message_relations: Vec::new(),
+            root_relations: Vec::new(),
+            source_message_hashes: Vec::new(),
+            separator_elimination_hashes: Vec::new(),
+            composition_cost: CompositionCostTrace::default(),
+            composed_hash: hash_sequence("composed-projection", &[]),
+        };
+        composed.composed_hash = hash_composed_projection(&composed);
+        let mut ctx = new_context(SolverOptions::default());
+        let mut cert = certify_nonfinite_target_image(&composed, &mut ctx).unwrap();
+
+        assert_eq!(
+            cert.proof_kind,
+            NonFiniteProofKind::ZeroTargetEliminationOverQ
+        );
+        verify_nonfinite_certificate(&cert, &composed).unwrap();
+        cert.proof_kind = NonFiniteProofKind::ZeroTargetEliminationWithRealWitness;
+        cert.certificate_hash = hash_nonfinite_certificate(&cert);
+        let err = verify_nonfinite_certificate(&cert, &composed).unwrap_err();
+        assert_eq!(err.public_status(), SolverStatus::ImplementationBug);
     }
 }

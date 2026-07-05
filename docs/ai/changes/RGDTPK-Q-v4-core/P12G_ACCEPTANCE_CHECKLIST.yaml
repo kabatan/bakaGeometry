@@ -1,0 +1,64 @@
+schema_version: rgdtpk-p12g-acceptance-v1
+phase_group: P12G
+must_close_before:
+- P13
+- P14
+- P15
+- P16
+claim_ceiling_before_closure: PARTIAL_MECHANISM_READY:MECH-011
+required_subphases:
+- id: P12G-a
+  name: HEAD rebind, closure repair, direct algorithm inventory
+  must_pass: true
+- id: P12G-b
+  name: TargetActionKrylov generic implementation or honest demotion
+  must_pass: true
+- id: P12G-c
+  name: Plan/execute separation or CertifiedProbePlan model
+  must_pass: true
+- id: P12G-d
+  name: No-real-root candidate-cover semantics
+  must_pass: true
+- id: P12G-e
+  name: Truthful invariant flags or hard P14/P16 blocker
+  must_pass: true
+- id: P12G-f
+  name: Actual DAG replay implementation or hard P14/P16 blocker
+  must_pass: true
+- id: P12G-g
+  name: Positive nonfinite proof discipline
+  must_pass: true
+- id: P12G-h
+  name: General algebraic stress battery and P13/P14 readiness
+  must_pass: true
+mandatory_general_stress_cases:
+  G1_projection_without_initial_target_only_relation: must produce support by target-direct
+    projection
+  G2_non_target_only_quotient_action: must pass via TargetActionKrylov if P8c remains
+    closed
+  G3_bilinear_determinant_like: must pass with variable/relation permutations
+  G4_dot_gram_quadratic: must pass without geometry names
+  G5_guarded_rational_affine: must preserve guard and produce support
+  G6_multi_separator_composition: must fail on child-message deletion and pass when
+    intact
+  G7_algebraic_tower_norm_trace: single tower required; two-step tower required if
+    claimed
+  G8_non_real_support: must not be hard-case solely because no real roots exist
+forbidden_pass_conditions:
+- review_summary PASS with blockers
+- documentation-only fix where code path remains unsafe
+- target-only shortcut for non-target-only tests
+- geometry/problem/expected-answer dispatch
+- CertifiedNonFiniteTargetImage without positive proof
+- P8c generic claim when TargetActionKrylov only handles target-univariate companion
+  relation
+- P14/P16 readiness while invariant flags or DAG replay are unresolved without blockers
+required_evidence_per_subphase:
+- commands.txt
+- command_outputs.txt
+- static_scans.txt
+- function_implementation_table.yaml
+- prompt.md
+- response.md
+- review_summary.yaml
+- evidence_manifest.yaml

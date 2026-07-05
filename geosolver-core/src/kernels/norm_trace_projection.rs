@@ -683,6 +683,12 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn p12g_g7_norm_trace_stress_covers_single_and_two_step_towers() {
+        p9_norm_trace_kernel_exports_verified_tower_support();
+        p9_norm_trace_multistep_tower_exports_verified_support();
+    }
+
     fn compressed_system(
         variables: Vec<VariableId>,
         target: VariableId,

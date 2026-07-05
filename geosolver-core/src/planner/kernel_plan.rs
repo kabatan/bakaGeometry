@@ -35,7 +35,26 @@ pub struct KernelExecutionPlan {
     pub resource_bounds: ResourceBounds,
     pub certificate_route: CertificateRoute,
     pub failure_behavior: PlannedFailureBehavior,
+    pub plan_work_classification: PlanWorkClassification,
     pub plan_hash: Hash,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum PlanWorkClassification {
+    PurePlan,
+    CertifiedProbePlan(CertifiedProbePlan),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CertifiedProbePlan {
+    pub authorization_hash: Hash,
+    pub source_relation_hashes: Vec<Hash>,
+    pub probe_output_hashes: Vec<Hash>,
+    pub resource_trace_hash: Hash,
+    pub cost_trace_hash: Hash,
+    pub probe_certificate_hash: Hash,
+    pub execute_replay_required: bool,
+    pub probe_hash: Hash,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -172,6 +191,43 @@ impl KernelExecutionPlan {
         certificate_route: CertificateRoute,
         failure_behavior: PlannedFailureBehavior,
     ) -> Self {
+        Self::new_with_work_classification(
+            plan_id,
+            block_id,
+            kernel_kind,
+            input_block_authorization_hash,
+            source_relation_ids,
+            source_relation_hashes,
+            child_block_ids,
+            child_message_hashes,
+            exported_variables,
+            eliminated_variables,
+            support_plan,
+            resource_bounds,
+            certificate_route,
+            failure_behavior,
+            PlanWorkClassification::PurePlan,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_work_classification(
+        plan_id: KernelPlanId,
+        block_id: BlockId,
+        kernel_kind: KernelKind,
+        input_block_authorization_hash: Hash,
+        source_relation_ids: Vec<RelationId>,
+        source_relation_hashes: Vec<Hash>,
+        child_block_ids: Vec<BlockId>,
+        child_message_hashes: Vec<Hash>,
+        exported_variables: Vec<VariableId>,
+        eliminated_variables: Vec<VariableId>,
+        support_plan: KernelSupportPlan,
+        resource_bounds: ResourceBounds,
+        certificate_route: CertificateRoute,
+        failure_behavior: PlannedFailureBehavior,
+        plan_work_classification: PlanWorkClassification,
+    ) -> Self {
         let mut plan = Self {
             plan_id,
             block_id,
@@ -187,6 +243,7 @@ impl KernelExecutionPlan {
             resource_bounds,
             certificate_route,
             failure_behavior,
+            plan_work_classification,
             plan_hash: hash_sequence("kernel-execution-plan", &[]),
         };
         plan.plan_hash = hash_kernel_execution_plan(&plan);
@@ -263,6 +320,11 @@ pub fn hash_kernel_execution_plan(plan: &KernelExecutionPlan) -> Hash {
     chunks.push(format!("{:?}", plan.certificate_route).into_bytes());
     chunks.push(plan.failure_behavior.behavior_hash.0.to_vec());
     chunks.push(failure_behavior_hash(&plan.failure_behavior).0.to_vec());
+    chunks.push(
+        plan_work_classification_hash(&plan.plan_work_classification)
+            .0
+            .to_vec(),
+    );
     hash_sequence("kernel-execution-plan", &chunks)
 }
 
@@ -382,6 +444,86 @@ pub fn template_plan(
         row_monomial_hash,
         column_support_hash,
     }
+}
+
+pub fn certified_probe_plan(
+    authorization_hash: Hash,
+    source_relation_hashes: Vec<Hash>,
+    probe_output_hashes: Vec<Hash>,
+    resource_trace_hash: Hash,
+    cost_trace_hash: Hash,
+    probe_certificate_hash: Hash,
+) -> PlanWorkClassification {
+    let mut source_relation_hashes = source_relation_hashes;
+    source_relation_hashes.sort();
+    source_relation_hashes.dedup();
+    let mut probe_output_hashes = probe_output_hashes;
+    probe_output_hashes.sort();
+    probe_output_hashes.dedup();
+    let mut probe = CertifiedProbePlan {
+        authorization_hash,
+        source_relation_hashes,
+        probe_output_hashes,
+        resource_trace_hash,
+        cost_trace_hash,
+        probe_certificate_hash,
+        execute_replay_required: true,
+        probe_hash: hash_sequence("certified-probe-plan", &[]),
+    };
+    probe.probe_hash = hash_certified_probe_plan(&probe);
+    PlanWorkClassification::CertifiedProbePlan(probe)
+}
+
+pub fn verify_certified_probe_replay(
+    plan: &KernelExecutionPlan,
+    source_relation_hashes: &[Hash],
+    probe_output_hashes: &[Hash],
+    probe_certificate_hash: Hash,
+) -> Result<(), SolverError> {
+    let expected = certified_probe_plan(
+        plan.input_block_authorization_hash,
+        source_relation_hashes.to_vec(),
+        probe_output_hashes.to_vec(),
+        plan.resource_bounds.bounds_hash,
+        plan.support_plan.support_hash,
+        probe_certificate_hash,
+    );
+    if plan.plan_work_classification != expected {
+        return Err(implementation_bug(
+            "certified probe plan was not replayed against its bound source/output hashes",
+        ));
+    }
+    Ok(())
+}
+
+fn plan_work_classification_hash(classification: &PlanWorkClassification) -> Hash {
+    match classification {
+        PlanWorkClassification::PurePlan => hash_sequence("plan-work-classification", &[vec![0]]),
+        PlanWorkClassification::CertifiedProbePlan(probe) => hash_sequence(
+            "plan-work-classification",
+            &[vec![1], hash_certified_probe_plan(probe).0.to_vec()],
+        ),
+    }
+}
+
+fn hash_certified_probe_plan(probe: &CertifiedProbePlan) -> Hash {
+    hash_sequence(
+        "certified-probe-plan",
+        &std::iter::once(probe.authorization_hash.0.to_vec())
+            .chain(std::iter::once(probe.resource_trace_hash.0.to_vec()))
+            .chain(std::iter::once(probe.cost_trace_hash.0.to_vec()))
+            .chain(std::iter::once(probe.probe_certificate_hash.0.to_vec()))
+            .chain(
+                probe
+                    .source_relation_hashes
+                    .iter()
+                    .map(|hash| hash.0.to_vec()),
+            )
+            .chain(std::iter::once(Vec::new()))
+            .chain(probe.probe_output_hashes.iter().map(|hash| hash.0.to_vec()))
+            .chain(std::iter::once(vec![probe.execute_replay_required as u8]))
+            .collect::<Vec<_>>(),
+    )
 }
 
 fn kernel_kind_bytes(kind: KernelKind) -> Vec<u8> {

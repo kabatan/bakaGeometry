@@ -1,49 +1,55 @@
-# Closure Packet — RGDTPK-Q-v4-core
+# Closure Packet - RGDTPK-Q-v4-core
 
-Status: P5R remediation reviewed and ready for final commit after P5 and before P6.  
+Status: P12 completed, with P12G generality remediation active before P13/P14.
+
 Current maximum claim ceiling:
 
 ```text
-PARTIAL_MECHANISM_READY:MECH-004
+PARTIAL_MECHANISM_READY:MECH-011
 ```
 
 ## Current State
 
-P0 through P5 established the Guardian documentation, exact base types, problem/status layer, algebra primitives, pre-kernel compression, and graph/DAG authorization layer through `MECH-004`.
+P0 through P12 have PASS review archives in the current worktree history. P12G is a mandatory
+post-P12 remediation inserted by `P12G_BASE_SPEC_AMENDMENT.md` and `P12G_PLAN.md`; P13 and P14
+remain blocked until P12G-a through P12G-h are closed.
 
-P5R is now inserted as a mandatory pre-planner remediation barrier. P5R-a through P5R-f have PASS review archives and fresh final-audit evidence. The final remediation commit must be created before P6 begins.
+P12G preserves the current claim ceiling. It does not claim exact-image completion, public
+orchestration, performance readiness, final acceptance, `SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC`, or
+`RGDTPK_Q_V4_ACCEPTANCE_COMPLETE`.
+
+## P12G Remediation Scope
+
+P12G addresses the direct algorithm audit findings before continuation:
+
+- TargetActionKrylov now has a provenance-bound non-target-only quotient/action path for local
+  univariate relation plus target alias relation, in addition to the target-only companion path.
+- Kernel plans can carry a typed `CertifiedProbePlan`; TargetActionKrylov binds plan-time probe
+  source hashes, output hash, and trace hash, then replays them during execute.
+- Candidate-cover finalization keeps nonzero support with zero real roots as
+  `CertifiedCandidateCover` with empty roots/candidates.
+- Final invariant evidence and final DAG replay evidence are hash-bound blockers. P14/P16 final
+  claims remain blocked until actual DAG/block replay replaces synthetic all-relations replay for
+  final claims.
+- Nonfinite certificates carry an explicit proof kind and reject proof-kind/evidence mismatch.
+- P12G G1-G8 stress tests are present at direct module or pipeline-fragment level.
 
 ## Explicit Negative Claims
 
-The following are not complete:
+The following are still not complete:
 
-- planner admission
-- kernel planning
-- projection-message execution
-- candidate-cover construction
-- exact-image classification
-- run certificate replay
-- public orchestration
+- P13 exact-image semantics
+- P14 public orchestration and `solve_target` candidate-cover pipeline connection
+- P15 acceptance suites
+- P16 final closure and source-fidelity audit
 - performance claim
+- `SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC`
 - `RGDTPK_Q_V4_ACCEPTANCE_COMPLETE`
-
-Current P5 graph/DAG completion is not candidate-cover readiness, exact-image readiness, kernel readiness, public pipeline readiness, or final acceptance.
-
-## P5R Remediation Scope
-
-P5R closes only the unsafe continuation paths identified in `P5R_BASE_SPEC_AMENDMENT.md`:
-
-- fake F4 production claim path
-- guarded affine narrowing to polynomial quotients only
-- self-certifying injected quotient/action handles
-- primitive overclaim risk before P6/P8/P9
-- stale or unbound evidence/claim wording
-- missing explicit P6 readiness gate
-
-P5R does not close a new generic solver MECH. It preserves the current claim ceiling `PARTIAL_MECHANISM_READY:MECH-004`.
+- any R-ID marked `VERIFIED`
 
 ## Commit Binding
 
-P5R evidence overlays record the Git commit observed by `git rev-parse --verify HEAD`, final remediation command evidence, and PASS review archives. Historical review archives that were created before the first repository commit remain historical records and are superseded for continuation by the P5R evidence overlay and final remediation commit.
-
-Final P16 closure remains open and must follow the claim ladder in `RGQ-049` and the consistency audit required by `RGQ-064`.
+The current P12G working state is bound by fresh local evidence under
+`docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12G-*` and review archives under
+`docs/ai/changes/RGDTPK-Q-v4-core/reviews/P12G-*` once each subphase closes. Historical P0-P12
+archives remain evidence for their original scopes only and do not override P12G.

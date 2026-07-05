@@ -1,0 +1,34 @@
+P12G stress command:
+cargo test --manifest-path geosolver-core\Cargo.toml p12g_ -- --nocapture
+Initial result: exit 0; 12 passed, 0 failed.
+Spec-verifier remediation rerun: exit 0; 16 passed, 0 failed.
+Quality-remediation rerun: exit 0; 20 unit tests passed, 1 integration test passed, 0 failed.
+Hard-block remediation rerun: exit 0; 20 unit tests passed, 1 integration test passed, 0 failed.
+
+Full command:
+cargo test --manifest-path geosolver-core\Cargo.toml -- --nocapture
+Result: exit 0; 193 unit tests passed, 1 integration test passed, doctests passed.
+Quality-remediation rerun: exit 0; 197 unit tests passed, 2 integration tests passed, doctests passed.
+Hard-block remediation rerun: exit 0; 197 unit tests passed, 2 integration tests passed, doctests passed.
+
+Formatting:
+cargo fmt --manifest-path geosolver-core\Cargo.toml -- --check
+Result: exit 0.
+
+Whitespace:
+git diff --check
+Result: exit 0.
+
+Schema validation:
+review_summary_mirror_byte_identical True
+review_summary.schema.yaml sha256 e69c92eeb226b48fc1921d4b75daf7f6a78bdb4aa6a69a4a38a1679acc51ce05
+evidence_manifest.schema.yaml sha256 9edb10d373900470a4c244ecd65b51b8a15569e98fa728b75e7b40d4aa4ac291
+REVIEW_ARCHIVE_SCHEMA.md sha256 8cf55bb7b5958e3a031c7e84cc4de07387623c30ae123cbdf4343becf834e167
+Result: exit 0; schemas parsed as Draft 2020-12 JSON Schema; no P12G review archive files existed yet.
+
+Spec verifier:
+Result: PASS after hard-block remediation; no blocking findings.
+
+Quality reviewer:
+Result: PASS after hard-block remediation; prior final DAG evidence forgeability blocker fixed for
+P12G scope.

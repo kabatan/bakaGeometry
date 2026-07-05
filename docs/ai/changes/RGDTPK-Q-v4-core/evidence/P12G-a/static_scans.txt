@@ -1,0 +1,4 @@
+Relevant scans:
+- rg P12G/phase_id patterns in review_summary and evidence_manifest schemas: P12G-a through P12G-h accepted.
+- rg TargetActionKrylov/CertifiedProbePlan/no-real/DAG/invariant/NonFiniteProofKind in changed files: implementation hooks present.
+- git diff --name-only: changed files are scoped to P12G docs, schemas, and geosolver-core algorithm/replay/finalizer modules.
