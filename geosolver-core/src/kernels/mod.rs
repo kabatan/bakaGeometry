@@ -76,6 +76,25 @@ mod tests {
     }
 
     #[test]
+    fn fcr_p7_advanced_projection_kernels_are_not_completion_registry_claims() {
+        let kinds = all_kernels()
+            .into_iter()
+            .map(|kernel| kernel.kind())
+            .collect::<Vec<_>>();
+        for advanced in [
+            KernelKind::SparseResultantProjection,
+            KernelKind::NormTraceProjection,
+            KernelKind::RegularChainProjection,
+            KernelKind::SpecializationInterpolation,
+        ] {
+            assert!(
+                !kinds.contains(&advanced),
+                "{advanced:?} must remain outside production all_kernels until generic contract is claimed"
+            );
+        }
+    }
+
+    #[test]
     fn test_lookup_still_constructs_quarantined_kernel_kinds() {
         for kind in [
             KernelKind::TargetUnivariate,

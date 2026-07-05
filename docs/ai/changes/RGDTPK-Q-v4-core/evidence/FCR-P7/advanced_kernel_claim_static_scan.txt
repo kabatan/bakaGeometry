@@ -1,0 +1,20 @@
+FCR-P7 static scan command:
+
+rg -n "FCR-P7|SparseResultant requirements|SpecializationInterpolation requirements|RegularChain requirements|NormTrace requirements|fcr_p7_advanced_projection_kernels_are_not_completion_registry_claims|fcr_p7_production_planner_kernel_list_has_no_advanced_completion_claims|cfg\(test\)|all_kernels\(|all_planner_kernel_kinds\(|FULL_CORE_CLEANUP_REPORT|still_blocking|SparseResultantProjection|NormTraceProjection|RegularChainProjection|SpecializationInterpolation" docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_PLAN.md docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_REVIEWER_PROMPTS.md docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_BASE_SPEC.md docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_CLEANUP_REPORT.md geosolver-core/src/kernels/mod.rs geosolver-core/src/planner/admission.rs
+
+Selected fresh hits:
+
+- docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_PLAN.md:493 identifies FCR-P7.
+- docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_PLAN.md:495,505,514,523 list SparseResultant, SpecializationInterpolation, RegularChain, and NormTrace requirements.
+- docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_REVIEWER_PROMPTS.md:211-223 defines FCR-P7 pass/fail checks.
+- geosolver-core/src/kernels/mod.rs:39 defines production all_kernels.
+- geosolver-core/src/kernels/mod.rs:79 defines fcr_p7_advanced_projection_kernels_are_not_completion_registry_claims.
+- geosolver-core/src/planner/admission.rs:57 defines all_planner_kernel_kinds.
+- geosolver-core/src/planner/admission.rs:433 defines fcr_p7_production_planner_kernel_list_has_no_advanced_completion_claims.
+- docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_CLEANUP_REPORT.md:16-22 records SparseResultant, SpecializationInterpolation, RegularChain, and NormTrace as test/support evidence only, not production generic completion claims.
+
+Interpretation:
+
+- SparseResultant, SpecializationInterpolation, RegularChain, and NormTrace remain available to tests and review, but they are not production registry entries and are not production planner completion claims.
+- FCR-P7 does not claim these kernels implement their full generic v4 contracts.
+- Final candidate-cover readiness/source fidelity/acceptance completion remain blocked until later phases finish the actual production path and claim audit.

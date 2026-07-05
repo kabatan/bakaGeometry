@@ -1,0 +1,7 @@
+cargo fmt
+cargo test --lib fcr_p7_
+cargo test
+cargo check
+git diff --check
+static FCR-P7 advanced-kernel completion-claim scan
+guardian_boundary_reviewer FCR-P7

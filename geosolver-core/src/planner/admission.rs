@@ -427,6 +427,36 @@ fn block_relations<'a>(
         .collect()
 }
 
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn fcr_p7_production_planner_kernel_list_has_no_advanced_completion_claims() {
+        let source = include_str!("admission.rs");
+        let start = source
+            .find("#[cfg(not(test))]")
+            .expect("production planner branch must be explicit");
+        let after_start = &source[start..];
+        let end = after_start
+            .find("#[cfg(test)]\n    vec![")
+            .expect("test planner branch must remain separate");
+        let production_branch = &after_start[..end];
+
+        assert!(production_branch.contains("KernelKind::TargetUnivariate"));
+        assert!(production_branch.contains("KernelKind::LinearAffine"));
+        for advanced in [
+            "SparseResultantProjection",
+            "NormTraceProjection",
+            "RegularChainProjection",
+            "SpecializationInterpolation",
+        ] {
+            assert!(
+                !production_branch.contains(advanced),
+                "{advanced} must not appear in the production planner kernel list"
+            );
+        }
+    }
+}
+
 fn sorted_set(vars: &BTreeSet<VariableId>) -> Vec<VariableId> {
     vars.iter().copied().collect()
 }
