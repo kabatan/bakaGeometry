@@ -1,7 +1,8 @@
 use crate::problem::context::SolverContext;
 use crate::problem::input::RationalTargetProblem;
+use crate::result::diagnostics::DiagnosticRecord;
 use crate::result::output::{finalize_success_result, FinalizeSuccessInput, TargetSolveResult};
-use crate::result::status::{SolverError, SolverStatus};
+use crate::result::status::{SolverError, SolverStatus, StageId};
 use crate::solver::pipeline::{
     finalize_nonfinite_pipeline_result, step_build_dag, step_build_graphs, step_canonicalize,
     step_compose, step_compress, step_core_certificate, step_cost_trace, step_execute, step_plan,
@@ -44,6 +45,13 @@ pub fn solve_with_context(
             );
             let mut diagnostics = compressed.diagnostics.clone();
             diagnostics.extend(ctx.diagnostics.clone());
+            if roots.root_isolation.is_empty() {
+                diagnostics.push(DiagnosticRecord::new(
+                    "EmptyRealCandidateCover",
+                    "support has no real roots; certified candidate cover is empty".to_owned(),
+                    Some(StageId("P12RootDecode".to_owned())),
+                ));
+            }
             let result = TargetSolveResult {
                 status: SolverStatus::CertifiedCandidateCover,
                 target,

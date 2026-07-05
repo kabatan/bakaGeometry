@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use crate::compose::compose::{hash_composed_projection, ComposedProjection};
+use crate::compose::compose::compose_projection_messages;
 use crate::compose::message::ProjectionMessage;
 use crate::graph::hypergraph::build_relation_variable_hypergraph;
 use crate::graph::influence::build_target_influence_graph;
@@ -14,13 +14,12 @@ use crate::graph::weighted_primal::build_weighted_primal_graph;
 use crate::kernels::traits::ReplayResult;
 use crate::preprocess::compression::CompressionState;
 use crate::problem::canonicalize::canonicalize_system;
+use crate::problem::context::new_context;
 use crate::problem::input::RationalTargetProblem;
 use crate::problem::validate::validate_input;
-use crate::result::cost_trace::CompositionCostTrace;
 use crate::result::output::TargetSolveResult;
+use crate::solver::options::SolverOptions;
 use crate::types::hash::{hash_sequence, Hash};
-use crate::types::ids::BlockId;
-use crate::types::polynomial::{poly_variables, SparsePolynomialQ};
 use crate::verify::run_certificate::{
     build_final_dag_replay_evidence_from_dag, derive_core_invariant_flags,
     hash_core_run_certificate, hash_decoded_candidates, hash_invariant_evidence,
@@ -156,7 +155,7 @@ fn replay_checks(result: &TargetSolveResult, problem: &RationalTargetProblem) ->
         &message_dependencies,
     );
     let support_verified =
-        verify_support_from_messages(result, cert.global_support_certificate_hash);
+        verify_support_from_messages(result, &actual_dag, cert.global_support_certificate_hash);
     let roots_and_candidates_verified = verify_roots_and_candidates(result);
     let expected_invariants = derive_core_invariant_flags(
         &result.projection_messages,
@@ -285,12 +284,19 @@ fn actual_dag_message_dependencies(
 
 fn verify_support_from_messages(
     result: &TargetSolveResult,
+    dag: &TargetProjectionDAG,
     expected_certificate_hash: Option<Hash>,
 ) -> bool {
     let Some(support) = &result.support_polynomial else {
         return result.squarefree_support_polynomial.is_none();
     };
-    let Some(composed) = replay_composed_projection(result) else {
+    let mut ctx = new_context(SolverOptions::default());
+    let Ok(composed) = compose_projection_messages(
+        dag,
+        result.projection_messages.clone(),
+        result.target,
+        &mut ctx,
+    ) else {
         return false;
     };
     let Ok(cert) = verify_global_support(support, &composed) else {
@@ -353,50 +359,6 @@ fn verify_roots_and_candidates(result: &TargetSolveResult) -> bool {
         }
     }
     candidate_indices == root_indices
-}
-
-fn replay_composed_projection(result: &TargetSolveResult) -> Option<ComposedProjection> {
-    let mut message_relations = Vec::<SparsePolynomialQ>::new();
-    let mut root_relations = Vec::<SparsePolynomialQ>::new();
-    let target_set = BTreeSet::from([result.target]);
-    for message in &result.projection_messages {
-        if crate::compose::message::hash_projection_message(message) != message.package_hash {
-            return None;
-        }
-        for relation in &message.relation_generators {
-            if poly_variables(relation).is_subset(&target_set) {
-                root_relations.push(relation.clone());
-            }
-            message_relations.push(relation.clone());
-        }
-    }
-    if root_relations.is_empty() {
-        return None;
-    }
-    let mut composed = ComposedProjection {
-        target: result.target,
-        root_block_id: result
-            .projection_messages
-            .first()
-            .map_or(BlockId(0), |message| message.block_id),
-        message_relations,
-        root_relations,
-        source_message_hashes: result
-            .projection_messages
-            .iter()
-            .map(|message| message.package_hash)
-            .collect(),
-        separator_elimination_hashes: Vec::new(),
-        composition_cost: CompositionCostTrace {
-            relation_count_before: 0,
-            relation_count_after: 0,
-        },
-        composed_hash: hash_sequence("composed-projection", &[]),
-    };
-    composed.composition_cost.relation_count_before = composed.message_relations.len();
-    composed.composition_cost.relation_count_after = composed.root_relations.len();
-    composed.composed_hash = hash_composed_projection(&composed);
-    Some(composed)
 }
 
 fn recompute_input_hash(problem: &RationalTargetProblem) -> Hash {

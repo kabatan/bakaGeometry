@@ -676,6 +676,7 @@ mod tests {
             root_relations: Vec::new(),
             source_message_hashes: Vec::new(),
             separator_elimination_hashes: Vec::new(),
+            separator_elimination_messages: Vec::new(),
             composition_cost: CompositionCostTrace::default(),
             composed_hash: hash_sequence("composed-projection", &[]),
         };

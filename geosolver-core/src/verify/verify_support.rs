@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Serialize};
 
 use crate::compose::compose::{hash_composed_projection, ComposedProjection};
+use crate::compose::separator_elimination::verify_separator_elimination_message;
 use crate::result::status::{FailureKind, SolverError, SolverErrorKind};
 use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::VariableId;
@@ -52,6 +53,7 @@ pub fn verify_global_support(
             "global support polynomial does not match verified target-only relation product",
         ));
     }
+    verify_separator_evidence(composed)?;
     let mut cert = GlobalSupportCertificate {
         target: composed.target,
         composed_hash: composed.composed_hash,
@@ -74,6 +76,42 @@ pub fn verify_global_support(
     );
     cert.certificate_hash = hash_global_support_certificate(&cert);
     Ok(cert)
+}
+
+fn verify_separator_evidence(composed: &ComposedProjection) -> Result<(), SolverError> {
+    if composed.separator_elimination_hashes.len() != composed.separator_elimination_messages.len()
+    {
+        return Err(implementation_bug(
+            composed.target,
+            "separator elimination evidence hash/message count mismatch",
+        ));
+    }
+    for (expected_hash, message) in composed
+        .separator_elimination_hashes
+        .iter()
+        .zip(&composed.separator_elimination_messages)
+    {
+        if *expected_hash != message.package_hash {
+            return Err(implementation_bug(
+                composed.target,
+                "separator elimination message package hash mismatch",
+            ));
+        }
+        verify_separator_elimination_message(
+            &composed.message_relations,
+            composed.target,
+            message,
+        )?;
+        for relation in &message.relation_generators {
+            if !composed.root_relations.iter().any(|root| root == relation) {
+                return Err(implementation_bug(
+                    composed.target,
+                    "separator elimination output is absent from composed root relations",
+                ));
+            }
+        }
+    }
+    Ok(())
 }
 
 pub fn hash_global_support_certificate(cert: &GlobalSupportCertificate) -> Hash {

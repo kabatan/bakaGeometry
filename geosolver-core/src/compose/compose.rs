@@ -3,7 +3,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Serialize};
 
 use crate::compose::message::{hash_projection_message, ProjectionMessage};
-#[cfg(test)]
 use crate::compose::separator_elimination::eliminate_separators_from_message_relations;
 use crate::graph::projection_dag::TargetProjectionDAG;
 use crate::problem::context::SolverContext;
@@ -21,6 +20,7 @@ pub struct ComposedProjection {
     pub root_relations: Vec<SparsePolynomialQ>,
     pub source_message_hashes: Vec<Hash>,
     pub separator_elimination_hashes: Vec<Hash>,
+    pub separator_elimination_messages: Vec<ProjectionMessage>,
     pub composition_cost: CompositionCostTrace,
     pub composed_hash: Hash,
 }
@@ -29,7 +29,7 @@ pub fn compose_projection_messages(
     dag: &TargetProjectionDAG,
     messages: Vec<ProjectionMessage>,
     target: VariableId,
-    _ctx: &mut SolverContext,
+    ctx: &mut SolverContext,
 ) -> Result<ComposedProjection, SolverError> {
     let blocks = dag
         .blocks
@@ -59,14 +59,9 @@ pub fn compose_projection_messages(
         relations.extend(message.relation_generators);
     }
     let relation_count_before = relations.len();
-    let root_relations = target_only_relations(&relations, target);
-    #[cfg(test)]
-    let mut root_relations = root_relations;
-    #[cfg(test)]
+    let mut root_relations = target_only_relations(&relations, target);
     let mut separator_hashes = Vec::new();
-    #[cfg(not(test))]
-    let separator_hashes = Vec::new();
-    #[cfg(test)]
+    let mut separator_messages = Vec::new();
     if root_relations.is_empty() {
         let all_variables = relations
             .iter()
@@ -82,10 +77,11 @@ pub fn compose_projection_messages(
             keep,
             separators,
             target,
-            _ctx,
+            ctx,
         )?;
         separator_hashes.push(message.package_hash);
         root_relations.extend(target_only_relations(&message.relation_generators, target));
+        separator_messages.push(message);
     }
     if root_relations.is_empty() {
         return Err(algorithmic_hard_case(
@@ -101,6 +97,7 @@ pub fn compose_projection_messages(
         root_relations,
         source_message_hashes: message_hashes,
         separator_elimination_hashes: separator_hashes,
+        separator_elimination_messages: separator_messages,
         composition_cost: CompositionCostTrace {
             relation_count_before,
             relation_count_after: 0,
@@ -132,6 +129,10 @@ pub fn hash_composed_projection(composed: &ComposedProjection) -> Hash {
     for hash in &composed.separator_elimination_hashes {
         chunks.push(hash.0.to_vec());
     }
+    chunks.push(Vec::new());
+    for message in &composed.separator_elimination_messages {
+        chunks.push(message.package_hash.0.to_vec());
+    }
     hash_sequence("composed-projection", &chunks)
 }
 
@@ -149,6 +150,7 @@ impl ComposedProjection {
             message_relations: relations,
             source_message_hashes,
             separator_elimination_hashes: Vec::new(),
+            separator_elimination_messages: Vec::new(),
             composition_cost: CompositionCostTrace::default(),
             composed_hash: hash_sequence("composed-projection", &[]),
         };
@@ -238,6 +240,8 @@ mod tests {
     use crate::types::polynomial::{poly_sub, variable_poly, SparsePolynomialQ};
     use crate::types::rational::int_q;
     use crate::verify::certificates::KernelCertificate;
+    use crate::verify::certificates::{kernel_certificate_binding_hash, KernelCertificatePayload};
+    use crate::verify::verify_support::verify_global_support;
     use std::collections::BTreeSet;
 
     #[test]
@@ -260,15 +264,69 @@ mod tests {
         let mut ctx = new_context(SolverOptions::default());
 
         let composed = compose_projection_messages(&dag, vec![root, child], t, &mut ctx).unwrap();
+        assert_eq!(composed.separator_elimination_messages.len(), 1);
         assert!(composed.root_relations.iter().all(|relation| {
             crate::types::polynomial::poly_variables(relation).is_subset(&BTreeSet::from([t]))
         }));
 
-        let support = build_global_support_polynomial(composed, t, &mut ctx).unwrap();
+        let support = build_global_support_polynomial(composed.clone(), t, &mut ctx).unwrap();
+        verify_global_support(&support, &composed).unwrap();
         assert!(same_up_to_sign(
             &support.coeffs_low_to_high,
             &[int_q(-1), int_q(1)]
         ));
+    }
+
+    #[test]
+    fn fcr_p9_support_verifier_replays_separator_elimination_certificate() {
+        let t = VariableId(0);
+        let x = VariableId(1);
+        let child = message(
+            BlockId(1),
+            PackageId(11),
+            vec![x],
+            poly_sub(&variable_poly(x), &constant(1)),
+        );
+        let root = message(
+            BlockId(0),
+            PackageId(10),
+            vec![t, x],
+            poly_sub(&variable_poly(t), &variable_poly(x)),
+        );
+        let dag = dag(t, x);
+        let mut ctx = new_context(SolverOptions::default());
+
+        let composed = compose_projection_messages(&dag, vec![root, child], t, &mut ctx).unwrap();
+        assert_eq!(composed.separator_elimination_messages.len(), 1);
+        let support = build_global_support_polynomial(composed.clone(), t, &mut ctx).unwrap();
+        verify_global_support(&support, &composed).unwrap();
+
+        let mut tampered = composed.clone();
+        let tampered_package_hash = {
+            let separator_message = tampered
+                .separator_elimination_messages
+                .first_mut()
+                .expect("separator elimination evidence");
+            let KernelCertificatePayload::Membership(proof) =
+                &mut separator_message.certificate.payload
+            else {
+                panic!("separator elimination must carry a membership proof");
+            };
+            let first_term = proof
+                .output_memberships
+                .first_mut()
+                .and_then(|membership| membership.combination_terms.first_mut())
+                .expect("separator membership term");
+            first_term.multiplier = constant(0);
+            separator_message.certificate.binding_hash =
+                kernel_certificate_binding_hash(&separator_message.certificate);
+            separator_message.package_hash = hash_projection_message(separator_message);
+            separator_message.package_hash
+        };
+        tampered.separator_elimination_hashes[0] = tampered_package_hash;
+        tampered.composed_hash = hash_composed_projection(&tampered);
+
+        assert!(verify_global_support(&support, &tampered).is_err());
     }
 
     #[test]

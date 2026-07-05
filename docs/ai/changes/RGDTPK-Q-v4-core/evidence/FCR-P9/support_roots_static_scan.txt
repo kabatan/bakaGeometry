@@ -1,0 +1,49 @@
+FCR-P9 static support/root/replay scan
+
+1. Separator elimination is production-compiled for composition helper use.
+   Evidence:
+   - geosolver-core/src/compose/mod.rs exports `pub mod separator_elimination;`
+   - geosolver-core/src/kernels/mod.rs exports `pub mod target_relation_search;`
+   - geosolver-core/src/kernels/mod.rs `all_kernels()` still returns only TargetUnivariateKernel and LinearAffineKernel, preserving the P7 production completion registry quarantine.
+
+2. `compose_projection_messages` uses message relations and separator elimination when no target-only root relation is already present.
+   Evidence:
+   - geosolver-core/src/compose/compose.rs collects `message.relation_generators` into `message_relations`.
+   - When `target_only_relations(&relations, target)` is empty, it calls `eliminate_separators_from_message_relations(relations.clone(), keep, separators, target, ctx)`.
+   - The resulting separator message package hash is recorded in `separator_elimination_hashes`.
+   - The full separator `ProjectionMessage` is recorded in `separator_elimination_messages`.
+   - `hash_composed_projection` binds the separator message package hashes.
+
+3. `verify_global_support` replays separator proof evidence.
+   Evidence:
+   - geosolver-core/src/verify/verify_support.rs calls `verify_separator_evidence(composed)?`.
+   - `verify_separator_evidence` checks hash/message arity, package hash equality, calls `verify_separator_elimination_message`, and requires each separator output relation to appear in `root_relations`.
+   - geosolver-core/src/compose/separator_elimination.rs reconstructs the message-only system and block, authorization hash, block hash, compressed hash, and calls `verify_projection_message` on the separator message.
+
+4. Production replay verifies support by recomposing with the actual DAG instead of synthetic all-relations reconstruction.
+   Evidence:
+   - geosolver-core/src/verify/replay.rs `verify_support_from_messages` accepts `&TargetProjectionDAG`.
+   - It calls `compose_projection_messages(dag, result.projection_messages.clone(), result.target, &mut ctx)`.
+   - The obsolete `replay_composed_projection` helper has been removed.
+
+5. Public success path runs squarefree support, root isolation, and candidate decode.
+   Evidence:
+   - geosolver-core/src/solver/orchestrator.rs calls `step_roots(&support, target, &mut ctx)?` before constructing `CertifiedCandidateCover`.
+   - geosolver-core/src/solver/pipeline.rs `step_roots` calls `squarefree_support`, `isolate_real_roots`, and `decode_candidates`, and rejects root/candidate count mismatch.
+
+6. Empty real root sets remain CertifiedCandidateCover with empty candidates.
+   Evidence:
+   - geosolver-core/src/solver/orchestrator.rs adds `EmptyRealCandidateCover` diagnostic when `roots.root_isolation.is_empty()`.
+   - geosolver-core/tests/p3_public_pipeline_integration.rs `fcr_p9_public_api_returns_empty_candidate_cover_for_support_with_no_real_roots` asserts CertifiedCandidateCover, support, squarefree support, empty roots, empty candidates, certificate, diagnostic, and accepted replay for `T^2 + 1`.
+
+7. Targeted tamper coverage exists for separator proof replay.
+   Evidence:
+   - geosolver-core/src/compose/compose.rs test `fcr_p9_support_verifier_replays_separator_elimination_certificate` tampers the separator membership multiplier, recomputes enclosing hashes, and asserts `verify_global_support` fails.
+
+8. Fresh command evidence after final code change:
+   - cargo fmt: pass
+   - cargo check: pass
+   - cargo test fcr_p9_support_verifier_replays_separator_elimination_certificate: pass
+   - cargo test --test p3_public_pipeline_integration: pass
+   - cargo test: pass
+   - git diff --check: pass

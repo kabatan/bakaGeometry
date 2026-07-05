@@ -1,0 +1,54 @@
+FCR-P9 command outputs, after final code change:
+
+Command: cargo fmt
+CWD: geosolver-core
+Exit code: 0
+Summary: formatting completed with no output.
+
+Command: cargo check
+CWD: geosolver-core
+Exit code: 0
+Output:
+    Checking geosolver-core v0.1.0 (.../bakaGeometry/geosolver-core)
+    Finished `dev` profile [unoptimized + debuginfo] target(s)
+
+Command: cargo test fcr_p9_support_verifier_replays_separator_elimination_certificate
+CWD: geosolver-core
+Exit code: 0
+Output summary:
+    running 1 test
+    test compose::compose::tests::fcr_p9_support_verifier_replays_separator_elimination_certificate ... ok
+    test result: ok. 1 passed; 0 failed.
+
+Command: cargo test --test p3_public_pipeline_integration
+CWD: geosolver-core
+Exit code: 0
+Output summary:
+    running 2 tests
+    test fcr_p9_public_api_returns_empty_candidate_cover_for_support_with_no_real_roots ... ok
+    test p3_public_api_runs_candidate_cover_pipeline_for_target_only_case ... ok
+    test result: ok. 2 passed; 0 failed.
+
+Command: cargo test
+CWD: geosolver-core
+Exit code: 0
+Output summary:
+    running 208 tests
+    test result: ok. 208 passed; 0 failed.
+    running 7 tests
+    test result: ok. 7 passed; 0 failed.
+    running 1 test
+    test result: ok. 1 passed; 0 failed.
+    running 1 test
+    test result: ok. 1 passed; 0 failed.
+    running 2 tests
+    test result: ok. 2 passed; 0 failed.
+    Doc-tests geosolver_core: 0 tests.
+
+Command: git diff --check
+CWD: repository root
+Exit code: 0
+Output summary:
+    No whitespace errors. Git emitted CRLF normalization warnings only.
+
+Earlier during development, the new no-real-root public integration test failed because the public orchestrator did not attach the existing EmptyRealCandidateCover diagnostic. The final code change added the diagnostic to the public pipeline, and the fresh reruns above passed.

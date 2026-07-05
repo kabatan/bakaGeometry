@@ -60,3 +60,25 @@ fn p3_public_api_runs_candidate_cover_pipeline_for_target_only_case() {
         &int_q(3)
     ));
 }
+
+#[test]
+fn fcr_p9_public_api_returns_empty_candidate_cover_for_support_with_no_real_roots() {
+    let target = VariableId(0);
+    let t = variable_poly(target);
+    let support_relation = poly_add(&poly_mul(&t, &t), &constant_poly(int_q(1)));
+    let problem = make_problem(vec![target], target, vec![support_relation], Vec::new());
+
+    let result = solve_target(problem.clone(), SolverOptions::default());
+
+    assert_eq!(result.status, SolverStatus::CertifiedCandidateCover);
+    assert!(result.support_polynomial.is_some());
+    assert!(result.squarefree_support_polynomial.is_some());
+    assert!(result.root_isolation.is_empty());
+    assert!(result.decoded_candidates.is_empty());
+    assert!(result.certificate.is_some());
+    assert!(result
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.name == "EmptyRealCandidateCover"));
+    assert!(replay_run_certificate(&result, &problem).accepted);
+}

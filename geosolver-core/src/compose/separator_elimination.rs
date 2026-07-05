@@ -14,6 +14,7 @@ use crate::result::status::{AlgebraicReason, FailureKind, SolverError, SolverErr
 use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::{BlockId, RelationId, VariableId};
 use crate::types::polynomial::{poly_variables, SparsePolynomialQ};
+use crate::verify::verify_message::verify_projection_message;
 
 pub fn eliminate_separators_from_message_relations(
     relations: Vec<SparsePolynomialQ>,
@@ -76,6 +77,44 @@ pub fn eliminate_separators_from_message_relations(
             &format!("separator target-direct kernel declined: {reason}"),
         )),
     }
+}
+
+pub fn verify_separator_elimination_message(
+    relations: &[SparsePolynomialQ],
+    target: VariableId,
+    message: &ProjectionMessage,
+) -> Result<(), SolverError> {
+    if relations.is_empty() {
+        return Err(algorithmic_hard_case(
+            target,
+            hash_sequence("p10-empty-message-relations", &[]),
+            "separator elimination has no message relations",
+        ));
+    }
+    let all_variables = relations
+        .iter()
+        .flat_map(poly_variables)
+        .collect::<BTreeSet<_>>();
+    let keep_variables = BTreeSet::from([target]);
+    let separator_variables = all_variables
+        .difference(&keep_variables)
+        .copied()
+        .collect::<BTreeSet<_>>();
+    let allowed = keep_variables
+        .union(&separator_variables)
+        .copied()
+        .collect::<BTreeSet<_>>();
+    let mut system = message_only_system(relations.to_vec(), allowed, target);
+    let mut block = message_only_block(&system, keep_variables);
+    block.authorization_hash = authorize_block_relations(&block, &system);
+    block.block_hash = hash_message_only_block(&block);
+    system.compressed_hash = hash_message_only_system(&system);
+    let kctx = KernelContext {
+        block,
+        system,
+        child_messages: Vec::new(),
+    };
+    verify_projection_message(message, &kctx)
 }
 
 fn message_only_system(

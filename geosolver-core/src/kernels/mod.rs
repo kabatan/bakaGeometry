@@ -9,7 +9,6 @@ pub mod regular_chain_projection;
 pub mod sparse_resultant;
 #[cfg(test)]
 pub mod specialization_interpolation;
-#[cfg(test)]
 pub mod target_relation_search;
 pub mod target_univariate;
 pub mod traits;
