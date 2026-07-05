@@ -1,0 +1,8 @@
+python docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P1/generate_revised_audit.py
+python validate revised audit row counts, method-qualified paths, mandatory findings, high/fatal actions, certificate_binding values, plan-time final-relation repair actions, no boilerplate classes, replay/final_support downgrades
+python validate concrete TargetProjectionKernel trait-dispatch rows, exact kernel file paths, source_line values, and absence of geosolver-core/src/kernels/* wildcard rows
+rg mandatory defect markers in FULL_CORE_PRODUCTION_AUDIT.md
+rg concrete TargetProjectionKernel plan rows for action_krylov, sparse_resultant, specialization_interpolation, regular_chain_projection, and norm_trace_projection
+rg production code markers for temporary pipeline, NotProductionF4, plan-time traces, synthetic replay, limited nonfinite proof, and PurePlan
+rg semantic spot-check rows in FULL_CORE_PRODUCTION_AUDIT.md for eliminate_to_keep_variables, KernelPlan::new, KernelExecutionPlan::new, replay_run_certificate, certify_nonfinite_target_image, finalize_nonfinite_result
+git diff --check

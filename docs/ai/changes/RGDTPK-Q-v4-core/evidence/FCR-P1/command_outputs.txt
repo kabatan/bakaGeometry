@@ -1,0 +1,151 @@
+--- first guardian boundary review ---
+FCR-P1 initial audit review: FAIL_FIXABLE. Failure archived at evidence/FCR-P1/guardian_boundary_reviewer_fail.md.
+
+--- revised audit generation ---
+wrote audit rows=428 public=371 production_paths=57
+risk_counts=fatal=3, high=150, low=192, medium=61, none=22
+action_counts=generalize=201, keep=214, move_to_test=6, replace=7
+plan_time_counts=cost_probe_only=6, final_relation_construction=25, none=397
+certificate_counts=decorative=181, exact=94, missing=153
+
+--- revised audit validation ---
+public_function_method_rows=371
+production_function_list_rows=371
+production_path_rows=57
+table_shape_bad=0
+high_or_fatal_keep_rows=0
+invalid_certificate_binding_rows=0
+plan_time_final_relation_keep_rows=0
+boilerplate_phrases_remaining=0
+required_semantic_markers_missing=0
+replay_exact_rows=0
+final_support_exact_rows=0
+FCR-P1 revised audit checks PASS
+
+--- second guardian boundary review ---
+FCR-P1 revised audit review: FAIL_FIXABLE. Remaining blocker was wildcard TargetProjectionKernel trait-dispatch path rows. Failure archived at evidence/FCR-P1/guardian_boundary_reviewer_fail_2.md.
+
+--- concrete trait row regeneration ---
+wrote audit rows=428 public=371 production_paths=57
+risk_counts=fatal=3, high=150, low=192, medium=61, none=22
+action_counts=generalize=201, keep=214, move_to_test=6, replace=7
+plan_time_counts=cost_probe_only=6, final_relation_construction=25, none=397
+certificate_counts=decorative=181, exact=94, missing=153
+
+--- concrete trait row validation ---
+public_function_method_rows=371
+production_function_list_rows=371
+production_path_rows=57
+trait_dispatch_rows=45
+trait_dispatch_concrete_rows=45
+table_shape_bad=0
+high_or_fatal_keep_rows=0
+invalid_certificate_binding_rows=0
+plan_time_final_relation_keep_rows=0
+boilerplate_phrases_remaining=0
+wildcard_trait_rows=0
+missing_required_trait_paths=0
+required_semantic_markers_missing=0
+replay_exact_rows=0
+final_support_exact_rows=0
+FCR-P1 revised concrete trait audit checks PASS
+
+--- rg concrete TargetProjectionKernel plan rows ---
+58:| geosolver-core/src/kernels/sparse_resultant.rs::SparseResultantProjectionKernel(TargetProjectionKernel)::plan | kernels/sparse_resultant.rs:44 | true | plan | Concrete TargetProjectionKernel::plan dispatch in kernels/sparse_resultant.rs for projection block/context/message. | SparseResultantProjectionKernel plan result routed through the production kernel registry. | Concrete trait dispatch must be replay-bound with the matching SparseResultantProjectionKernel implementation and certificate semantics. | high | final_relation_construction | decorative | generalize |
+63:| geosolver-core/src/kernels/action_krylov.rs::TargetActionKrylovKernel(TargetProjectionKernel)::plan | kernels/action_krylov.rs:51 | true | plan | Concrete TargetProjectionKernel::plan dispatch in kernels/action_krylov.rs for projection block/context/message. | TargetActionKrylovKernel plan result routed through the production kernel registry. | Concrete trait dispatch must be replay-bound with the matching TargetActionKrylovKernel implementation and certificate semantics. | high | final_relation_construction | decorative | generalize |
+73:| geosolver-core/src/kernels/regular_chain_projection.rs::RegularChainProjectionKernel(TargetProjectionKernel)::plan | kernels/regular_chain_projection.rs:43 | true | plan | Concrete TargetProjectionKernel::plan dispatch in kernels/regular_chain_projection.rs for projection block/context/message. | RegularChainProjectionKernel plan result routed through the production kernel registry. | Concrete trait dispatch must be replay-bound with the matching RegularChainProjectionKernel implementation and certificate semantics. | high | final_relation_construction | decorative | generalize |
+78:| geosolver-core/src/kernels/norm_trace_projection.rs::NormTraceProjectionKernel(TargetProjectionKernel)::plan | kernels/norm_trace_projection.rs:43 | true | plan | Concrete TargetProjectionKernel::plan dispatch in kernels/norm_trace_projection.rs for projection block/context/message. | NormTraceProjectionKernel plan result routed through the production kernel registry. | Concrete trait dispatch must be replay-bound with the matching NormTraceProjectionKernel implementation and certificate semantics. | high | final_relation_construction | decorative | generalize |
+83:| geosolver-core/src/kernels/specialization_interpolation.rs::SpecializationInterpolationKernel(TargetProjectionKernel)::plan | kernels/specialization_interpolation.rs:56 | true | plan | Concrete TargetProjectionKernel::plan dispatch in kernels/specialization_interpolation.rs for projection block/context/message. | SpecializationInterpolationKernel plan result routed through the production kernel registry. | Concrete trait dispatch must be replay-bound with the matching SpecializationInterpolationKernel implementation and certificate semantics. | high | final_relation_construction | decorative | generalize |
+
+--- rg mandatory defect markers in FULL_CORE_PRODUCTION_AUDIT.md ---
+29:| geosolver-core/src/solver/orchestrator.rs::temporary_pipeline_not_connected path | true | validate | Any public solve_with_context invocation. | Immediate temporary error; no solver pipeline. | No candidate-cover pipeline executes. | fatal | none | missing | replace |
+30:| geosolver-core/src/algebra/f4.rs::NotProductionF4 and *_for_tests | false | execute | Test/debug Groebner-backed F4-like helpers. | Non-production results labelled NotProductionF4. | Not Appendix A production F4. | high | none | missing | move_to_test |
+31:| geosolver-core/src/kernels/action_krylov.rs::target-only quotient-action path | true | execute | Target-only univariate quotient-action relation. | Characteristic/annihilator message for target-only slice. | Cannot stand in for generic TargetActionKrylov. | high | final_relation_construction | decorative | generalize |
+32:| geosolver-core/src/kernels/action_krylov.rs::alias-univariate quotient-action path | true | execute | Local univariate relation plus target alias. | Characteristic/annihilator message for alias slice. | Current non-target coverage remains alias/univariate shaped. | high | final_relation_construction | decorative | generalize |
+33:| geosolver-core/src/kernels/sparse_resultant.rs::plan-time resultant trace | true | plan | Pair/template sparse resultant candidate class. | Plan support hash and trace based on computed relation. | Plan-time final relation construction; binary/pair limitation. | high | final_relation_construction | decorative | generalize |
+34:| geosolver-core/src/kernels/specialization_interpolation.rs::plan-time inner TargetRelationSearch | true | plan | Specialization samples where inner target-only relation search admits. | Sample relation traces used to interpolate relation. | Plan executes inner support-producing computation. | high | final_relation_construction | decorative | generalize |
+35:| geosolver-core/src/kernels/specialization_interpolation.rs::local Groebner verification | true | verify | Interpolated relation and local elimination result. | Verification against local generated elimination data. | Local verification cannot replace full declared proof. | high | final_relation_construction | decorative | generalize |
+36:| geosolver-core/src/kernels/regular_chain_projection.rs::plan-time chain decomposition/projection | true | plan | Triangular/regular-chain-like current recognizer input. | Projected generators embedded in trace/template support. | Plan-time output construction and limited class. | high | final_relation_construction | decorative | generalize |
+37:| geosolver-core/src/kernels/norm_trace_projection.rs::plan-time tower/norm construction | true | plan | Explicit tower forms detected by current recognizer. | Norm relation embedded in trace/support. | Explicit-tower-only path. | high | final_relation_construction | decorative | generalize |
+38:| geosolver-core/src/verify/replay.rs::synthetic all-relations replay | true | verify | TargetSolveResult and original problem; reconstructed compressed relation-order block context. | ReplayResult without actual TargetProjectionDAG block replay. | Not exact DAG replay. | high | none | missing | replace |
+39:| geosolver-core/src/compose/final_support.rs::limited nonfinite proof kind | true | verify | ComposedProjection lacking target-only support plus optional witness. | CertifiedNonFiniteTargetImage may be emitted with certificate: None::<CoreRunCertificate>. | Positive final run proof incomplete. | high | none | missing | generalize |
+40:| geosolver-core/src/planner/kernel_plan.rs::KernelExecutionPlan::new default PurePlan path | true | plan | Kernel execution plan metadata without explicit work classification. | KernelExecutionPlan with PlanWorkClassification::PurePlan. | PurePlan can hide plan-time output construction. | high | none | missing | replace |
+
+--- semantic spot-check rows ---
+40:| geosolver-core/src/planner/kernel_plan.rs::KernelExecutionPlan::new default PurePlan path | true | plan | Kernel execution plan metadata without explicit work classification. | KernelExecutionPlan with PlanWorkClassification::PurePlan. | PurePlan can hide plan-time output construction. | high | none | missing | replace |
+99:| geosolver-core/src/algebra/elimination.rs::eliminate_to_keep_variables | algebra/elimination.rs:45 | true | execute | Local Q-polynomial relations plus eliminate/keep variables; signature inputs: relations: &[SparsePolynomialQ]; eliminate: &[VariableId]; keep: &[VariableId]; strategy: EliminationStrategy; _ctx: &mut SolverContext | LocalEliminationResult with keep-variable generators and certificates; return: Result<EliminationResult, SolverError> | No known FCR-P1 blocker beyond later semantic review | low | none | exact | keep |
+191:| geosolver-core/src/compose/final_support.rs::certify_nonfinite_target_image | compose/final_support.rs:105 | true | verify | ComposedProjection, target, nonfinite witness/certificate, context; signature inputs: composed: &ComposedProjection; ctx: &mut crate::problem::context::SolverContext | Support polynomial, limited nonfinite result, or candidate-cover result without CoreRunCertificate; return: Result<NonFiniteCertificate, SolverError> | FCR repair required before candidate-cover readiness; finalizers do not attach CoreRunCertificate and nonfinite proof kind is limited | high | none | decorative | generalize |
+195:| geosolver-core/src/compose/final_support.rs::finalize_nonfinite_result | compose/final_support.rs:235 | true | verify | ComposedProjection, target, nonfinite witness/certificate, context; signature inputs: target: VariableId; cert: NonFiniteCertificate; composed: &ComposedProjection; projection_messages: Vec<ProjectionMessage>; cost_trace: GlobalCostTrace | Support polynomial, limited nonfinite result, or candidate-cover result without CoreRunCertificate; return: Result<TargetSolveResult, SolverError> | FCR repair required before candidate-cover readiness; finalizers do not attach CoreRunCertificate and nonfinite proof kind is limited | high | none | missing | generalize |
+286:| geosolver-core/src/planner/kernel_plan.rs::KernelPlan::new | planner/kernel_plan.rs:154 | true | plan | Kernel plan/execution metadata, support plans, resources, routes, failures, probes; signature inputs: block_id: BlockId; declared_ladder: Vec<KernelExecutionPlan>; admissions: Vec<KernelAdmission>; cost_estimates: Vec<KernelCostEstimate> | KernelPlan/KernelExecutionPlan/hash/support/failure/probe result; return: Result<Self, SolverError> | FCR repair required before candidate-cover readiness; KernelPlan::new selects the first declared ladder entry and depends on ladder purity | high | none | decorative | generalize |
+287:| geosolver-core/src/planner/kernel_plan.rs::KernelExecutionPlan::new | planner/kernel_plan.rs:178 | true | plan | Kernel plan/execution metadata, support plans, resources, routes, failures, probes; signature inputs: plan_id: KernelPlanId; block_id: BlockId; kernel_kind: KernelKind; input_block_authorization_hash: Hash; source_relation_ids: Vec<RelationId>; source_relation_hashes: Vec<Hash>; child_block_ids: Vec<BlockId>; child_message_hashes: Vec<Hash>; exported_variables: Vec<VariableId>; eliminated_variables: Vec<VariableId>; support_plan: KernelSupportPlan; resource_bounds: ResourceBounds; certificate_route: CertificateRoute; failure_behavior: PlannedFailureBehavior | KernelPlan/KernelExecutionPlan/hash/support/failure/probe result; return: Self | FCR repair required before candidate-cover readiness; KernelExecutionPlan::new defaults to PurePlan unless disambiguated by impl context | high | none | decorative | replace |
+288:| geosolver-core/src/planner/kernel_plan.rs::KernelExecutionPlan::new_with_work_classification | planner/kernel_plan.rs:214 | true | plan | Kernel plan/execution metadata, support plans, resources, routes, failures, probes; signature inputs: plan_id: KernelPlanId; block_id: BlockId; kernel_kind: KernelKind; input_block_authorization_hash: Hash; source_relation_ids: Vec<RelationId>; source_relation_hashes: Vec<Hash>; child_block_ids: Vec<BlockId>; child_message_hashes: Vec<Hash>; exported_variables: Vec<VariableId>; eliminated_variables: Vec<VariableId>; support_plan: KernelSupportPlan; resource_bounds: ResourceBounds; certificate_route: CertificateRoute; failure_behavior: PlannedFailureBehavior; plan_work_classification: PlanWorkClassification | KernelPlan/KernelExecutionPlan/hash/support/failure/probe result; return: Self | FCR repair required before candidate-cover readiness | high | none | decorative | generalize |
+440:| geosolver-core/src/verify/replay.rs::replay_run_certificate | verify/replay.rs:23 | true | verify | TargetSolveResult and original problem; signature inputs: result: &TargetSolveResult; problem: &RationalTargetProblem | ReplayResult from recomputed stages plus synthetic relation-order replay checks; return: ReplayResult | FCR repair required before candidate-cover readiness; replay reconstructs relation-order blocks instead of actual DAG block evidence | high | none | missing | replace |
+
+--- rg production code markers ---
+geosolver-core\src\kernels\regular_chain_projection.rs:4:    combine_chain_projections, local_regular_chain_decomposition, project_chain_to_variables,
+geosolver-core\src\kernels\regular_chain_projection.rs:296:    let dag = local_regular_chain_decomposition(RegularChainInput {
+geosolver-core\src\verify\replay.rs:473:        let mut synthetic_block = ProjectionBlock {
+geosolver-core\src\verify\replay.rs:484:        synthetic_block.authorization_hash =
+geosolver-core\src\verify\replay.rs:485:            authorize_block_relations(&synthetic_block, &compressed);
+geosolver-core\src\verify\replay.rs:487:            block: synthetic_block,
+geosolver-core\src\verify\replay.rs:562:        let mut synthetic_block = ProjectionBlock {
+geosolver-core\src\verify\replay.rs:573:        synthetic_block.authorization_hash =
+geosolver-core\src\verify\replay.rs:574:            authorize_block_relations(&synthetic_block, &compressed);
+geosolver-core\src\verify\replay.rs:576:            block: synthetic_block,
+geosolver-core\src\verify\replay.rs:846:        synthetic.certificate = KernelCertificate::synthetic_for_tests(Hash([6; 32]));
+geosolver-core\src\verify\replay.rs:1698:            certificate: KernelCertificate::synthetic_for_tests(support.hash),
+geosolver-core\src\kernels\specialization_interpolation.rs:157:    let trace = build_specialization_interpolation_trace(
+geosolver-core\src\kernels\specialization_interpolation.rs:264:    let trace = build_specialization_interpolation_trace(
+geosolver-core\src\kernels\specialization_interpolation.rs:371:fn build_specialization_interpolation_trace(
+geosolver-core\src\kernels\specialization_interpolation.rs:395:            execute_inner_target_only_kernel(relations, eliminated, target, point, solver_ctx)?;
+geosolver-core\src\kernels\specialization_interpolation.rs:476:fn execute_inner_target_only_kernel(
+geosolver-core\src\kernels\specialization_interpolation.rs:1023:            crate::planner::kernel_plan::PlanWorkClassification::PurePlan
+geosolver-core\src\kernels\specialization_interpolation.rs:1108:            certificate: KernelCertificate::synthetic_for_tests(certificate_hash),
+geosolver-core\src\kernels\sparse_resultant.rs:147:    let trace = build_sparse_resultant_trace(&relation_polys, &eliminated, &exported, max_dim)?;
+geosolver-core\src\kernels\sparse_resultant.rs:253:    let trace = build_sparse_resultant_trace(
+geosolver-core\src\kernels\sparse_resultant.rs:332:fn build_sparse_resultant_trace(
+geosolver-core\src\kernels\sparse_resultant.rs:934:            crate::planner::kernel_plan::PlanWorkClassification::PurePlan
+geosolver-core\src\kernels\sparse_resultant.rs:988:            certificate: KernelCertificate::synthetic_for_tests(certificate_hash),
+geosolver-core\src\compose\final_support.rs:245:        status: SolverStatus::CertifiedNonFiniteTargetImage,
+geosolver-core\src\compose\final_support.rs:254:            "CertifiedNonFiniteTargetImage",
+geosolver-core\src\planner\kernel_plan.rs:44:    PurePlan,
+geosolver-core\src\planner\kernel_plan.rs:209:            PlanWorkClassification::PurePlan,
+geosolver-core\src\planner\kernel_plan.rs:501:        PlanWorkClassification::PurePlan => hash_sequence("plan-work-classification", &[vec![0]]),
+geosolver-core\src\algebra\f4.rs:13:    NotProductionF4,
+geosolver-core\src\algebra\f4.rs:26:            implementation_level: F4ImplementationLevel::NotProductionF4,
+geosolver-core\src\algebra\f4.rs:39:pub fn groebner_backed_batch_reduce_for_tests(
+geosolver-core\src\algebra\f4.rs:59:pub fn non_production_groebner_batch_elimination_for_tests(
+geosolver-core\src\algebra\f4.rs:94:        let result = groebner_backed_batch_reduce_for_tests(
+geosolver-core\src\algebra\f4.rs:107:            F4ImplementationLevel::NotProductionF4
+geosolver-core\src\algebra\f4.rs:120:        let result = non_production_groebner_batch_elimination_for_tests(
+geosolver-core\src\algebra\f4.rs:135:        let reduced = groebner_backed_batch_reduce_for_tests(
+geosolver-core\src\solver\orchestrator.rs:10:    Err(SolverError::temporary_pipeline_not_connected(Some(
+geosolver-core\src\kernels\norm_trace_projection.rs:4:    detect_explicit_tower_plan, norm_relation_for_tower_plan, verify_norm_tower_plan_relation,
+geosolver-core\src\kernels\norm_trace_projection.rs:269:    let Some(tower) = detect_explicit_tower_plan(relations, exported) else {
+
+--- git diff --check ---
+warning: in the working copy of 'docs/ai/ACTIVE_CONTEXT.md', LF will be replaced by CRLF the next time Git touches it
+
+--- current mandatory defect markers after concrete trait update ---
+29:| geosolver-core/src/solver/orchestrator.rs::temporary_pipeline_not_connected path |  | true | validate | Any public solve_with_context invocation. | Immediate temporary error; no solver pipeline. | No candidate-cover pipeline executes. | fatal | none | missing | replace |
+30:| geosolver-core/src/algebra/f4.rs::NotProductionF4 and *_for_tests |  | false | execute | Test/debug Groebner-backed F4-like helpers. | Non-production results labelled NotProductionF4. | Not Appendix A production F4. | high | none | missing | move_to_test |
+31:| geosolver-core/src/kernels/action_krylov.rs::target-only quotient-action path |  | true | execute | Target-only univariate quotient-action relation. | Characteristic/annihilator message for target-only slice. | Cannot stand in for generic TargetActionKrylov. | high | final_relation_construction | decorative | generalize |
+32:| geosolver-core/src/kernels/action_krylov.rs::alias-univariate quotient-action path |  | true | execute | Local univariate relation plus target alias. | Characteristic/annihilator message for alias slice. | Current non-target coverage remains alias/univariate shaped. | high | final_relation_construction | decorative | generalize |
+33:| geosolver-core/src/kernels/sparse_resultant.rs::plan-time resultant trace |  | true | plan | Pair/template sparse resultant candidate class. | Plan support hash and trace based on computed relation. | Plan-time final relation construction; binary/pair limitation. | high | final_relation_construction | decorative | generalize |
+34:| geosolver-core/src/kernels/specialization_interpolation.rs::plan-time inner TargetRelationSearch |  | true | plan | Specialization samples where inner target-only relation search admits. | Sample relation traces used to interpolate relation. | Plan executes inner support-producing computation. | high | final_relation_construction | decorative | generalize |
+35:| geosolver-core/src/kernels/specialization_interpolation.rs::local Groebner verification |  | true | verify | Interpolated relation and local elimination result. | Verification against local generated elimination data. | Local verification cannot replace full declared proof. | high | final_relation_construction | decorative | generalize |
+36:| geosolver-core/src/kernels/regular_chain_projection.rs::plan-time chain decomposition/projection |  | true | plan | Triangular/regular-chain-like current recognizer input. | Projected generators embedded in trace/template support. | Plan-time output construction and limited class. | high | final_relation_construction | decorative | generalize |
+37:| geosolver-core/src/kernels/norm_trace_projection.rs::plan-time tower/norm construction |  | true | plan | Explicit tower forms detected by current recognizer. | Norm relation embedded in trace/support. | Explicit-tower-only path. | high | final_relation_construction | decorative | generalize |
+38:| geosolver-core/src/verify/replay.rs::synthetic all-relations replay |  | true | verify | TargetSolveResult and original problem; reconstructed compressed relation-order block context. | ReplayResult without actual TargetProjectionDAG block replay. | Not exact DAG replay. | high | none | missing | replace |
+39:| geosolver-core/src/compose/final_support.rs::limited nonfinite proof kind |  | true | verify | ComposedProjection lacking target-only support plus optional witness. | CertifiedNonFiniteTargetImage may be emitted with certificate: None::<CoreRunCertificate>. | Positive final run proof incomplete. | high | none | missing | generalize |
+40:| geosolver-core/src/planner/kernel_plan.rs::KernelExecutionPlan::new default PurePlan path |  | true | plan | Kernel execution plan metadata without explicit work classification. | KernelExecutionPlan with PlanWorkClassification::PurePlan. | PurePlan can hide plan-time output construction. | high | none | missing | replace |
+
+--- current semantic spot-check rows after concrete trait update ---
+40:| geosolver-core/src/planner/kernel_plan.rs::KernelExecutionPlan::new default PurePlan path |  | true | plan | Kernel execution plan metadata without explicit work classification. | KernelExecutionPlan with PlanWorkClassification::PurePlan. | PurePlan can hide plan-time output construction. | high | none | missing | replace |
+99:| geosolver-core/src/algebra/elimination.rs::eliminate_to_keep_variables | algebra/elimination.rs:45 | true | execute | Local Q-polynomial relations plus eliminate/keep variables; signature inputs: relations: &[SparsePolynomialQ]; eliminate: &[VariableId]; keep: &[VariableId]; strategy: EliminationStrategy; _ctx: &mut SolverContext | LocalEliminationResult with keep-variable generators and certificates; return: Result<EliminationResult, SolverError> | No known FCR-P1 blocker beyond later semantic review | low | none | exact | keep |
+191:| geosolver-core/src/compose/final_support.rs::certify_nonfinite_target_image | compose/final_support.rs:105 | true | verify | ComposedProjection, target, nonfinite witness/certificate, context; signature inputs: composed: &ComposedProjection; ctx: &mut crate::problem::context::SolverContext | Support polynomial, limited nonfinite result, or candidate-cover result without CoreRunCertificate; return: Result<NonFiniteCertificate, SolverError> | FCR repair required before candidate-cover readiness; finalizers do not attach CoreRunCertificate and nonfinite proof kind is limited | high | none | decorative | generalize |
+195:| geosolver-core/src/compose/final_support.rs::finalize_nonfinite_result | compose/final_support.rs:235 | true | verify | ComposedProjection, target, nonfinite witness/certificate, context; signature inputs: target: VariableId; cert: NonFiniteCertificate; composed: &ComposedProjection; projection_messages: Vec<ProjectionMessage>; cost_trace: GlobalCostTrace | Support polynomial, limited nonfinite result, or candidate-cover result without CoreRunCertificate; return: Result<TargetSolveResult, SolverError> | FCR repair required before candidate-cover readiness; finalizers do not attach CoreRunCertificate and nonfinite proof kind is limited | high | none | missing | generalize |
+286:| geosolver-core/src/planner/kernel_plan.rs::KernelPlan::new | planner/kernel_plan.rs:154 | true | plan | Kernel plan/execution metadata, support plans, resources, routes, failures, probes; signature inputs: block_id: BlockId; declared_ladder: Vec<KernelExecutionPlan>; admissions: Vec<KernelAdmission>; cost_estimates: Vec<KernelCostEstimate> | KernelPlan/KernelExecutionPlan/hash/support/failure/probe result; return: Result<Self, SolverError> | FCR repair required before candidate-cover readiness; KernelPlan::new selects the first declared ladder entry and depends on ladder purity | high | none | decorative | generalize |
+287:| geosolver-core/src/planner/kernel_plan.rs::KernelExecutionPlan::new | planner/kernel_plan.rs:178 | true | plan | Kernel plan/execution metadata, support plans, resources, routes, failures, probes; signature inputs: plan_id: KernelPlanId; block_id: BlockId; kernel_kind: KernelKind; input_block_authorization_hash: Hash; source_relation_ids: Vec<RelationId>; source_relation_hashes: Vec<Hash>; child_block_ids: Vec<BlockId>; child_message_hashes: Vec<Hash>; exported_variables: Vec<VariableId>; eliminated_variables: Vec<VariableId>; support_plan: KernelSupportPlan; resource_bounds: ResourceBounds; certificate_route: CertificateRoute; failure_behavior: PlannedFailureBehavior | KernelPlan/KernelExecutionPlan/hash/support/failure/probe result; return: Self | FCR repair required before candidate-cover readiness; KernelExecutionPlan::new defaults to PurePlan unless disambiguated by impl context | high | none | decorative | replace |
+288:| geosolver-core/src/planner/kernel_plan.rs::KernelExecutionPlan::new_with_work_classification | planner/kernel_plan.rs:214 | true | plan | Kernel plan/execution metadata, support plans, resources, routes, failures, probes; signature inputs: plan_id: KernelPlanId; block_id: BlockId; kernel_kind: KernelKind; input_block_authorization_hash: Hash; source_relation_ids: Vec<RelationId>; source_relation_hashes: Vec<Hash>; child_block_ids: Vec<BlockId>; child_message_hashes: Vec<Hash>; exported_variables: Vec<VariableId>; eliminated_variables: Vec<VariableId>; support_plan: KernelSupportPlan; resource_bounds: ResourceBounds; certificate_route: CertificateRoute; failure_behavior: PlannedFailureBehavior; plan_work_classification: PlanWorkClassification | KernelPlan/KernelExecutionPlan/hash/support/failure/probe result; return: Self | FCR repair required before candidate-cover readiness | high | none | decorative | generalize |
+440:| geosolver-core/src/verify/replay.rs::replay_run_certificate | verify/replay.rs:23 | true | verify | TargetSolveResult and original problem; signature inputs: result: &TargetSolveResult; problem: &RationalTargetProblem | ReplayResult from recomputed stages plus synthetic relation-order replay checks; return: ReplayResult | FCR repair required before candidate-cover readiness; replay reconstructs relation-order blocks instead of actual DAG block evidence | high | none | missing | replace |

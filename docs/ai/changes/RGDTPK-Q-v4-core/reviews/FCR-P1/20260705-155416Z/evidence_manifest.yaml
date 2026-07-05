@@ -1,0 +1,115 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: FCR-P1
+commit: 09f3d3e6b7c7226562b2a9ea460eb495422baed4+fcr-p1-worktree
+algorithm_spec_source_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+failure_source_sha256: a97b50bf597ed590889a7609a2cb25d9ec40f7be27d47adf332e52d3fa8abe36
+base_spec_sha256: 1f73bd7a26b2566b08f53d31b14785110466e8ae6170b6769d1af17d50a36047
+plan_sha256: b836599108c1db4a4e828e672780e5074049045fe5fa590e94252cdc91850bb9
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: d3db02e4abc8cc3065e2be8e82614b3703266ad0c0ce6cf3c0ce85ad662d364c
+review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
+evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_PRODUCTION_AUDIT.md
+  sha256: 6bcb152bd6581a9903213cabf773f10b124b66df4625ce77384b6da6126c0a36
+  purpose: 'FCR-P1 evidence: full production audit table'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_BASE_SPEC.md
+  sha256: 1f73bd7a26b2566b08f53d31b14785110466e8ae6170b6769d1af17d50a36047
+  purpose: 'FCR-P1 source: full core repair base spec'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_PLAN.md
+  sha256: b836599108c1db4a4e828e672780e5074049045fe5fa590e94252cdc91850bb9
+  purpose: 'FCR-P1 source: full core repair plan'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_REVIEWER_PROMPTS.md
+  sha256: 28075ea55b02213c4b38f5304735f87b163ab7eddb15121eefe072878a1f387b
+  purpose: 'FCR-P1 source: reviewer prompt requirements'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/BASE_SPEC.md
+  sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+  purpose: 'FCR-P1 source: approved base spec'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P1/commands.txt
+  sha256: be3412fa6e31667a471d3bf705f8f342d983239bc1f03f9c7cd31da15557a428
+  purpose: 'FCR-P1 evidence: commands run'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P1/command_outputs.txt
+  sha256: f192dbe923f1f8a6d6aefb813a27d413747ccd4c880615b1d3f2bf82143623c1
+  purpose: 'FCR-P1 evidence: command outputs and scans'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P1/production_function_list.tsv
+  sha256: 5ba8b459e5df5ca5e787dd82c478a5267c53089b2779d197dfc2def991dac193
+  purpose: 'FCR-P1 evidence: extracted public production function list'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P1/generate_revised_audit.py
+  sha256: 343c0d17ae6bb400fc5e5753fd7dc7f47103d2d9ed19fd54d6bc45ffce805037
+  purpose: 'FCR-P1 evidence: audit generator'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P1/guardian_boundary_reviewer_fail.md
+  sha256: 65414dee4d20d107942da971422072216d1431ff51bc83d2ef60b01a895c7b4b
+  purpose: 'FCR-P1 evidence: first guardian FAIL_FIXABLE response'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P1/guardian_boundary_reviewer_fail_2.md
+  sha256: 7d4633f4980daf2e5f6ab89d0a74d4edc17471da1728b4f14eac4ae54a56e0ec
+  purpose: 'FCR-P1 evidence: second guardian FAIL_FIXABLE response'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P1/guardian_boundary_reviewer_pass.md
+  sha256: 785a4f269b70f0b220280d2700d655bd3ad4ed2cd1e23e12d33cf9b39b42b594
+  purpose: 'FCR-P1 evidence: guardian PASS response'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P1/20260705-155416Z/prompt.md
+  sha256: cadcaa860f02b1849e3e3324d3ad317292ee49f4744c6a11669332cd9eff9b18
+  purpose: FCR-P1 archived reviewer prompt
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P1/20260705-155416Z/response.md
+  sha256: 785a4f269b70f0b220280d2700d655bd3ad4ed2cd1e23e12d33cf9b39b42b594
+  purpose: FCR-P1 archived reviewer response
+command_outputs:
+- command: python generate FCR-P1 production audit
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P1/command_outputs.txt
+  output_sha256: f192dbe923f1f8a6d6aefb813a27d413747ccd4c880615b1d3f2bf82143623c1
+  finished_at_utc: 20260705-155416Z
+- command: python validate revised concrete trait audit checks
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P1/command_outputs.txt
+  output_sha256: f192dbe923f1f8a6d6aefb813a27d413747ccd4c880615b1d3f2bf82143623c1
+  finished_at_utc: 20260705-155416Z
+- command: rg mandatory and semantic audit markers
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P1/command_outputs.txt
+  output_sha256: f192dbe923f1f8a6d6aefb813a27d413747ccd4c880615b1d3f2bf82143623c1
+  finished_at_utc: 20260705-155416Z
+- command: git diff --check
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P1/command_outputs.txt
+  output_sha256: f192dbe923f1f8a6d6aefb813a27d413747ccd4c880615b1d3f2bf82143623c1
+  finished_at_utc: 20260705-155416Z
+- command: guardian_boundary_reviewer FCR-P1
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P1/guardian_boundary_reviewer_pass.md
+  output_sha256: 785a4f269b70f0b220280d2700d655bd3ad4ed2cd1e23e12d33cf9b39b42b594
+  finished_at_utc: 20260705-155416Z
+static_scans:
+- scan_id: fcr-p1-no-wildcard-trait-rows
+  command: python validate concrete TargetProjectionKernel trait-dispatch rows
+  forbidden_pattern: geosolver-core/src/kernels/* wildcard trait-dispatch audit row
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P1/command_outputs.txt
+- scan_id: fcr-p1-high-fatal-not-keep
+  command: python validate high/fatal rows are not keep
+  forbidden_pattern: high or fatal risk audit row with required_action keep
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P1/command_outputs.txt
+- scan_id: fcr-p1-certificate-downgrades
+  command: python validate replay and final_support downgrades
+  forbidden_pattern: replay_run_certificate or final_support row claims exact certificate binding
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P1/command_outputs.txt
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_PRODUCTION_AUDIT.md
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P1/guardian_boundary_reviewer_fail.md
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P1/guardian_boundary_reviewer_fail_2.md
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P1/guardian_boundary_reviewer_pass.md
+known_limitations:
+- FCR-P1 is an audit/admission phase only; production repair implementation is not complete.
+- CANDIDATE_COVER_CORE_READY, exact-image readiness, source-fidelity, and acceptance completion remain forbidden.
+- No R-ID is marked VERIFIED.
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-011
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-011
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

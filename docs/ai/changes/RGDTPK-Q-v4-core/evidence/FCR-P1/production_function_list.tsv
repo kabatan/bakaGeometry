@@ -1,0 +1,371 @@
+algebra/crt.rs	17		crt_combine	pub fn crt_combine(a_mod_m: ModInteger, b_mod_n: ModInteger) -> ModInteger
+algebra/crt.rs	22		crt_vector_combine	pub fn crt_vector_combine(v1: ModVector, mod1: BigInt, v2: ModVector, mod2: BigInt) -> ModVector
+algebra/crt.rs	52		try_crt_combine	pub fn try_crt_combine(a_mod_m: &ModInteger, b_mod_n: &ModInteger) -> Option<ModInteger>
+algebra/crt.rs	76		canonical_mod	pub fn canonical_mod(value: &BigInt, modulus: &BigInt) -> BigInt
+algebra/dense_matrix.rs	14		build_dense_matrix_fp	pub fn build_dense_matrix_fp( rows: usize, cols: usize, entries_row_major: Vec<u64>, ) -> DenseMatrixFp
+algebra/dense_matrix.rs	31		row_echelon_dense_fp	pub fn row_echelon_dense_fp(m: &DenseMatrixFp, prime: Prime) -> DenseEchelonResultFp
+algebra/dense_matrix.rs	42		nullspace_dense_fp	pub fn nullspace_dense_fp(m: &DenseMatrixFp, prime: Prime) -> Vec<VectorFp>
+algebra/dense_matrix.rs	49		rank_dense_fp	pub fn rank_dense_fp(m: &DenseMatrixFp, prime: Prime) -> usize
+algebra/elimination.rs	45		eliminate_to_keep_variables	pub fn eliminate_to_keep_variables( relations: &[SparsePolynomialQ], eliminate: &[VariableId], keep: &[VariableId], strategy: EliminationStrategy, _ctx: &mut SolverContext, ) -> Result<EliminationResult, SolverError>
+algebra/elimination.rs	72		local_result_from_groebner	pub fn local_result_from_groebner( relations: &[SparsePolynomialQ], keep: &[VariableId], basis: GroebnerBasisResult, strategy: LocalEliminationStrategyName, ) -> Result<LocalEliminationResult, SolverError>
+algebra/elimination.rs	92		validate_local_elimination_result	pub fn validate_local_elimination_result( result: &LocalEliminationResult, keep: &[VariableId], relations: &[SparsePolynomialQ], ) -> Result<(), SolverError>
+algebra/f4.rs	38		groebner_backed_batch_reduce_for_tests	pub fn groebner_backed_batch_reduce_for_tests( reducers: &[SparsePolynomialQ], targets: &[SparsePolynomialQ], order: &MonomialOrder, options: GroebnerBackedBatchOptions, ) -> Result<GroebnerBackedBatchReductionResult, SolverError>
+algebra/f4.rs	58		non_production_groebner_batch_elimination_for_tests	pub fn non_production_groebner_batch_elimination_for_tests( relations: &[SparsePolynomialQ], eliminate: &[VariableId], keep: &[VariableId], options: GroebnerBackedBatchOptions, ) -> Result<LocalEliminationResult, SolverError>
+algebra/groebner.rs	46		groebner_elimination_basis	pub fn groebner_elimination_basis( relations: &[SparsePolynomialQ], order: &MonomialOrder, options: GroebnerOptions, ) -> Result<GroebnerBasisResult, SolverError>
+algebra/groebner.rs	127		extract_elimination_generators	pub fn extract_elimination_generators( basis: &[SparsePolynomialQ], keep_variables: &BTreeSet<VariableId>, ) -> Vec<SparsePolynomialQ>
+algebra/groebner.rs	138		extract_certified_elimination_generators	pub fn extract_certified_elimination_generators( basis: &[CertifiedPolynomialQ], keep_variables: &BTreeSet<VariableId>, ) -> Vec<CertifiedPolynomialQ>
+algebra/groebner.rs	149		polynomial_in_keep_variables	pub fn polynomial_in_keep_variables( p: &SparsePolynomialQ, keep_variables: &BTreeSet<VariableId>, ) -> bool
+algebra/interpolation.rs	42		choose_specialization_points	pub fn choose_specialization_points( vars: &[VariableId], count: usize, prime: Prime, ) -> Vec<SpecializationPoint>
+algebra/interpolation.rs	62		specialize_polynomials	pub fn specialize_polynomials( polys: &[SparsePolynomialQ], point: &SpecializationPoint, ) -> Vec<SparsePolynomialQ>
+algebra/interpolation.rs	77		interpolate_sparse_coefficients	pub fn interpolate_sparse_coefficients( samples: &[SpecializedRelation], ) -> Result<SparsePolynomialQ, SolverError>
+algebra/interpolation.rs	118		build_multiseparator_coefficient_support	pub fn build_multiseparator_coefficient_support( vars: &[VariableId], max_total_degree: usize, ) -> Vec<Monomial>
+algebra/interpolation.rs	132		choose_multiseparator_specialization_points	pub fn choose_multiseparator_specialization_points( vars: &[VariableId], coefficient_support: &[Monomial], prime: Prime, ) -> Vec<SpecializationPoint>
+algebra/interpolation.rs	178		interpolate_sparse_coefficients_with_support	pub fn interpolate_sparse_coefficients_with_support( samples: &[SpecializedRelation], specialized_variables: &[VariableId], coefficient_support: &[Monomial], reconstruction_height_bound: Option<usize>, ) -> Result<SparsePolynomialQ, SolverError>
+algebra/interpolation.rs	262		verify_interpolated_relation	pub fn verify_interpolated_relation( relation: &SparsePolynomialQ, certificate: &InterpolationCertificate, ) -> bool
+algebra/interpolation.rs	278		build_interpolation_certificate	pub fn build_interpolation_certificate( relation: &SparsePolynomialQ, samples: Vec<SpecializedRelation>, specialized_variables: Vec<VariableId>, ) -> InterpolationCertificate
+algebra/krylov.rs	66		block_krylov_sequence	pub fn block_krylov_sequence( handle: &ProductionProvenancedTargetQuotientHandle, target: VariableId, plan: KrylovPlan, ) -> Result<KrylovSequence, SolverError>
+algebra/krylov.rs	104		require_production_target_action_krylov_handle	pub fn require_production_target_action_krylov_handle( handle: &dyn TargetQuotientHandle, ) -> Result<(), SolverError>
+algebra/krylov.rs	116		recover_recurrence	pub fn recover_recurrence(seq: &KrylovSequence) -> Result<RecurrencePolynomial, SolverError>
+algebra/krylov.rs	136		certify_krylov_coverage	pub fn certify_krylov_coverage( seq: &KrylovSequence, recurrence: &RecurrencePolynomial, handle: &ProductionProvenancedTargetQuotientHandle, ) -> Result<CoverageCertificate, SolverError>
+algebra/krylov.rs	169		verify_annihilator	pub fn verify_annihilator( handle: &ProductionProvenancedTargetQuotientHandle, poly: &UniPolynomialQ, ) -> Result<AnnihilatorCertificate, SolverError>
+algebra/linear_solve.rs	60		solve_homogeneous_modular	pub fn solve_homogeneous_modular( matrix_builder: MatrixBuilder, plan: ModularSolvePlan, ) -> ModularNullspaceResult
+algebra/linear_solve.rs	109		solve_inhomogeneous_modular	pub fn solve_inhomogeneous_modular( matrix_builder: MatrixBuilder, rhs: VectorQ, plan: ModularSolvePlan, ) -> ModularSolveResult
+algebra/modular.rs	26		choose_prime_avoiding_denominators	pub fn choose_prime_avoiding_denominators(polys: &[SparsePolynomialQ], seed: u64) -> Prime
+algebra/modular.rs	34		reduce_q_to_fp	pub fn reduce_q_to_fp(p: &SparsePolynomialQ, prime: Prime) -> SparsePolynomialFp
+algebra/modular.rs	50		lift_fp_coeff	pub fn lift_fp_coeff(c: Fp, prime: Prime) -> IntegerRepresentative
+algebra/modular.rs	59		next_prime_at_or_after	pub fn next_prime_at_or_after(n: u64) -> Prime
+algebra/modular.rs	67		next_prime_after	pub fn next_prime_after(p: Prime) -> Prime
+algebra/modular.rs	71		add_mod	pub fn add_mod(a: u64, b: u64, prime: Prime) -> u64
+algebra/modular.rs	75		sub_mod	pub fn sub_mod(a: u64, b: u64, prime: Prime) -> u64
+algebra/modular.rs	79		mul_mod	pub fn mul_mod(a: u64, b: u64, prime: Prime) -> u64
+algebra/modular.rs	83		inv_mod_u64	pub fn inv_mod_u64(a: u64, prime: Prime) -> Option<u64>
+algebra/modular.rs	91		reduce_bigint_mod	pub fn reduce_bigint_mod(value: &BigInt, prime: Prime) -> u64
+algebra/modular.rs	100		reduce_rational_coeff	pub fn reduce_rational_coeff(num: &BigInt, den: &BigInt, prime: Prime) -> u64
+algebra/monomial_order.rs	20	MonomialOrder	compare	pub fn compare(&self, a: &Monomial, b: &Monomial) -> Ordering
+algebra/monomial_order.rs	41		elimination_order	pub fn elimination_order(eliminate: &[VariableId], keep: &[VariableId]) -> MonomialOrder
+algebra/monomial_order.rs	48		grevlex_order	pub fn grevlex_order(vars: &[VariableId]) -> MonomialOrder
+algebra/monomial_order.rs	52		lex_order	pub fn lex_order(vars: &[VariableId]) -> MonomialOrder
+algebra/monomial_order.rs	56		block_order	pub fn block_order(blocks: Vec<Vec<VariableId>>) -> MonomialOrder
+algebra/norm_trace.rs	48	UniOrMultiPolynomialQ	as_multivariate	pub fn as_multivariate(&self) -> &SparsePolynomialQ
+algebra/norm_trace.rs	53	UniOrMultiPolynomialQ	into_multivariate	pub fn into_multivariate(self) -> SparsePolynomialQ
+algebra/norm_trace.rs	60		detect_explicit_tower	pub fn detect_explicit_tower( relations: &[SparsePolynomialQ], exported: &[VariableId], ) -> Option<TowerDescription>
+algebra/norm_trace.rs	79		detect_explicit_tower_plan	pub fn detect_explicit_tower_plan( relations: &[SparsePolynomialQ], exported: &[VariableId], ) -> Option<TowerPlanDescription>
+algebra/norm_trace.rs	188		norm_of_target_minus_expression	pub fn norm_of_target_minus_expression( tower: &TowerDescription, target_expr: SparsePolynomialQ, ) -> Result<UniOrMultiPolynomialQ, SolverError>
+algebra/norm_trace.rs	221		norm_relation_for_tower_plan	pub fn norm_relation_for_tower_plan( tower: &TowerPlanDescription, ) -> Result<UniOrMultiPolynomialQ, SolverError>
+algebra/norm_trace.rs	272		verify_norm_relation	pub fn verify_norm_relation(tower: &TowerDescription, relation: &SparsePolynomialQ) -> bool
+algebra/norm_trace.rs	282		verify_norm_tower_plan_relation	pub fn verify_norm_tower_plan_relation( tower: &TowerPlanDescription, relation: &SparsePolynomialQ, ) -> bool
+algebra/normal_form.rs	17		normal_form	pub fn normal_form( p: &SparsePolynomialQ, basis: &[SparsePolynomialQ], order: &MonomialOrder, ) -> SparsePolynomialQ
+algebra/normal_form.rs	25		verify_membership_by_certificate	pub fn verify_membership_by_certificate( g: &SparsePolynomialQ, cert: &MembershipCertificate, relations: &[SparsePolynomialQ], ) -> bool
+algebra/polynomial_ops.rs	21		leading_term	pub fn leading_term(p: &SparsePolynomialQ, order: &MonomialOrder) -> Option<TermQ>
+algebra/polynomial_ops.rs	29		s_polynomial	pub fn s_polynomial( f: &SparsePolynomialQ, g: &SparsePolynomialQ, order: &MonomialOrder, ) -> SparsePolynomialQ
+algebra/polynomial_ops.rs	58		reduce_by_set	pub fn reduce_by_set( f: &SparsePolynomialQ, gs: &[SparsePolynomialQ], order: &MonomialOrder, ) -> ReductionResult
+algebra/polynomial_ops.rs	105		content_primitive_part	pub fn content_primitive_part(f: &SparsePolynomialQ) -> (RationalQ, SparsePolynomialQ)
+algebra/quotient.rs	111		build_debug_explicit_target_quotient_handle	pub fn build_debug_explicit_target_quotient_handle( input: DebugQuotientHandleInput, ) -> Result<DebugExplicitTargetQuotientHandle, SolverError>
+algebra/quotient.rs	124		build_production_target_relevant_quotient_handle	pub fn build_production_target_relevant_quotient_handle( input: ProductionQuotientHandleInput, ) -> Result<ProductionProvenancedTargetQuotientHandle, SolverError>
+algebra/quotient.rs	153	ProductionProvenancedTargetQuotientHandle	authorized_relation_hash	pub fn authorized_relation_hash(&self) -> Hash
+algebra/quotient.rs	156	ProductionProvenancedTargetQuotientHandle	action_column_certificate	pub fn action_column_certificate( &self, variable: VariableId, basis_index: usize, ) -> Option<&ActionColumnCertificate>
+algebra/quotient.rs	261		unit_vector	pub fn unit_vector(width: usize, index: usize) -> VectorQ
+algebra/quotient.rs	269		zero_vector	pub fn zero_vector(width: usize) -> VectorQ
+algebra/quotient.rs	275		vector_add	pub fn vector_add(a: &VectorQ, b: &VectorQ) -> VectorQ
+algebra/quotient.rs	287		vector_scale	pub fn vector_scale(v: &VectorQ, c: &crate::types::rational::RationalQ) -> VectorQ
+algebra/quotient.rs	293		vector_hash	pub fn vector_hash(v: &VectorQ) -> Hash
+algebra/quotient.rs	300		hash_authorized_relations	pub fn hash_authorized_relations(relations: &[SparsePolynomialQ]) -> Hash
+algebra/quotient.rs	310		normal_form_basis_certificate	pub fn normal_form_basis_certificate( basis_polynomials: &[SparsePolynomialQ], source_relation_authorization_hash: Hash, ) -> NormalFormBasisCertificate
+algebra/quotient.rs	367		make_action_column_certificate	pub fn make_action_column_certificate( variable: VariableId, basis_index: usize, basis_polynomials: &[SparsePolynomialQ], authorized_relations: &[SparsePolynomialQ], source_relation_authorization_hash: Hash, normal_form_vector: VectorQ, membership_certificate: MembershipCertificate, ) -> Result<ActionColumnCertificate, SolverError>
+algebra/quotient.rs	402		monomial_basis_polynomials	pub fn monomial_basis_polynomials(var: VariableId, size: usize) -> Vec<SparsePolynomialQ>
+algebra/rational_reconstruction.rs	25		reconstruct_rational	pub fn reconstruct_rational( a_mod_m: ModInteger, modulus: BigInt, height_bound: Option<usize>, ) -> Option<RationalQ>
+algebra/rational_reconstruction.rs	61		reconstruct_polynomial	pub fn reconstruct_polynomial( mod_poly_data: ModPolynomialData, modulus: BigInt, ) -> Option<SparsePolynomialQ>
+algebra/real_root.rs	18		sturm_sequence	pub fn sturm_sequence(p: &UniPolynomialQ) -> Vec<UniPolynomialQ>
+algebra/real_root.rs	40		isolate_real_roots_sturm	pub fn isolate_real_roots_sturm(p: &UniPolynomialQ) -> Result<Vec<RealRootRecord>, SolverError>
+algebra/real_root.rs	44		isolate_real_roots_sturm_with_max_width	pub fn isolate_real_roots_sturm_with_max_width( p: &UniPolynomialQ, max_width: RationalQ, ) -> Result<Vec<RealRootRecord>, SolverError>
+algebra/real_root.rs	87		isolate_real_roots_descartes	pub fn isolate_real_roots_descartes( p: &UniPolynomialQ, ) -> Result<Vec<RealRootRecord>, SolverError>
+algebra/regular_chain.rs	58		local_regular_chain_decomposition	pub fn local_regular_chain_decomposition( input: RegularChainInput, ) -> Result<RegularChainDAG, SolverError>
+algebra/regular_chain.rs	128		project_chain_to_variables	pub fn project_chain_to_variables( chain: &RegularChain, keep: &[VariableId], ) -> Result<ProjectionGenerators, SolverError>
+algebra/regular_chain.rs	186		combine_chain_projections	pub fn combine_chain_projections( chains: &[ProjectionGenerators], semantics: UnionSemantics, ) -> Result<Vec<SparsePolynomialQ>, SolverError>
+algebra/resultant.rs	82		support_sets	pub fn support_sets(polys: &[SparsePolynomialQ]) -> Vec<MonomialSupport>
+algebra/resultant.rs	86		build_sparse_resultant_template	pub fn build_sparse_resultant_template( input: ResultantInput, ) -> Result<ResultantTemplate, SolverError>
+algebra/resultant.rs	167		compute_resultant_relation	pub fn compute_resultant_relation( template: &ResultantTemplate, options: ModularOptions, ) -> Result<ResultantRelation, SolverError>
+algebra/resultant.rs	190		verify_resultant_certificate	pub fn verify_resultant_certificate(cert: &SparseResultantCertificate) -> bool
+algebra/sign.rs	24		sign_at_algebraic_root	pub fn sign_at_algebraic_root(poly: &UniPolynomialQ, root: &RealRootRecord) -> SignDetermination
+algebra/sign.rs	57		thom_encoding	pub fn thom_encoding(poly: &UniPolynomialQ, root: &RealRootRecord) -> ThomEncoding
+algebra/sparse_matrix.rs	18		build_sparse_matrix_fp	pub fn build_sparse_matrix_fp(rows: Vec<SparseRowFp>, ncols: usize) -> SparseMatrixFp
+algebra/sparse_matrix.rs	36		row_echelon_sparse_fp	pub fn row_echelon_sparse_fp(m: &SparseMatrixFp, prime: Prime) -> EchelonResultFp
+algebra/sparse_matrix.rs	47		nullspace_sparse_fp	pub fn nullspace_sparse_fp(m: &SparseMatrixFp, prime: Prime) -> Vec<VectorFp>
+algebra/sparse_matrix.rs	70		rank_sparse_fp	pub fn rank_sparse_fp(m: &SparseMatrixFp, prime: Prime) -> usize
+api.rs	5		solve_target	pub fn solve_target(problem: RationalTargetProblem, options: SolverOptions) -> TargetSolveResult
+compose/compose.rs	26		compose_projection_messages	pub fn compose_projection_messages( dag: &TargetProjectionDAG, messages: Vec<ProjectionMessage>, target: VariableId, ctx: &mut SolverContext, ) -> Result<ComposedProjection, SolverError>
+compose/compose.rs	107		hash_composed_projection	pub fn hash_composed_projection(composed: &ComposedProjection) -> Hash
+compose/compose.rs	133	ComposedProjection	from_message_relations_for_test	pub fn from_message_relations_for_test( target: VariableId, relations: Vec<SparsePolynomialQ>, source_message_hashes: Vec<Hash>, ) -> Self
+compose/final_support.rs	73		build_global_support_polynomial	pub fn build_global_support_polynomial( composed: ComposedProjection, target: VariableId, _ctx: &mut crate::problem::context::SolverContext, ) -> Result<UniPolynomialQ, SolverError>
+compose/final_support.rs	87		build_final_support_or_nonfinite	pub fn build_final_support_or_nonfinite( composed: ComposedProjection, target: VariableId, ctx: &mut crate::problem::context::SolverContext, ) -> Result<FinalSupportComputation, SolverError>
+compose/final_support.rs	105		certify_nonfinite_target_image	pub fn certify_nonfinite_target_image( composed: &ComposedProjection, ctx: &mut crate::problem::context::SolverContext, ) -> Result<NonFiniteCertificate, SolverError>
+compose/final_support.rs	138		certify_zero_target_elimination_ideal	pub fn certify_zero_target_elimination_ideal( composed: &ComposedProjection, _ctx: &mut crate::problem::context::SolverContext, ) -> Result<TargetEliminationZeroCertificate, SolverError>
+compose/final_support.rs	188		verify_nonfinite_certificate	pub fn verify_nonfinite_certificate( cert: &NonFiniteCertificate, composed: &ComposedProjection, ) -> Result<(), SolverError>
+compose/final_support.rs	219		certify_real_nonfinite_target_image	pub fn certify_real_nonfinite_target_image( input: RealNonFiniteInput, _ctx: &mut crate::problem::context::SolverContext, ) -> Result<RealNonFiniteTargetCertificate, SolverError>
+compose/final_support.rs	235		finalize_nonfinite_result	pub fn finalize_nonfinite_result( target: VariableId, cert: NonFiniteCertificate, composed: &ComposedProjection, projection_messages: Vec<ProjectionMessage>, cost_trace: GlobalCostTrace, ) -> Result<TargetSolveResult, SolverError>
+compose/final_support.rs	261		finalize_candidate_cover_result	pub fn finalize_candidate_cover_result( target: VariableId, support: UniPolynomialQ, projection_messages: Vec<ProjectionMessage>, cost_trace: GlobalCostTrace, root_isolation_method: RootIsolationMethod, ) -> Result<TargetSolveResult, SolverError>
+compose/message.rs	27		hash_projection_message	pub fn hash_projection_message(message: &ProjectionMessage) -> Hash
+compose/separator_elimination.rs	17		eliminate_separators_from_message_relations	pub fn eliminate_separators_from_message_relations( relations: Vec<SparsePolynomialQ>, keep_variables: BTreeSet<VariableId>, separator_variables: BTreeSet<VariableId>, target: VariableId, ctx: &mut SolverContext, ) -> Result<ProjectionMessage, SolverError>
+graph/hypergraph.rs	25		build_relation_variable_hypergraph	pub fn build_relation_variable_hypergraph( system: &CompressedSystemQ, ) -> RelationVariableHypergraph
+graph/hypergraph.rs	55		connected_components	pub fn connected_components(h: &RelationVariableHypergraph) -> Vec<HypergraphComponent>
+graph/hypergraph.rs	100		relation_variables	pub fn relation_variables(h: &RelationVariableHypergraph, r: RelationId) -> BTreeSet<VariableId>
+graph/hypergraph.rs	104		variable_relations	pub fn variable_relations(h: &RelationVariableHypergraph, v: VariableId) -> BTreeSet<RelationId>
+graph/influence.rs	18		build_target_influence_graph	pub fn build_target_influence_graph( h: &RelationVariableHypergraph, target: VariableId, ) -> TargetInfluenceGraph
+graph/metrics.rs	42		structural_metrics	pub fn structural_metrics( block: &ProjectionBlock, system: &CompressedSystemQ, ) -> StructuralMetrics
+graph/metrics.rs	80		estimate_local_quotient_rank	pub fn estimate_local_quotient_rank(block: &ProjectionBlock) -> RankEstimate
+graph/metrics.rs	99		estimate_sparse_template_size	pub fn estimate_sparse_template_size(block: &ProjectionBlock) -> TemplateEstimate
+graph/metrics.rs	120		estimate_coefficient_growth	pub fn estimate_coefficient_growth(block: &ProjectionBlock) -> HeightEstimate
+graph/projection_dag.rs	41		build_target_projection_dag	pub fn build_target_projection_dag( system: &CompressedSystemQ, influence: &TargetInfluenceGraph, decomposition: &DecompositionTree, ) -> Result<TargetProjectionDAG, SolverError>
+graph/projection_dag.rs	84		authorize_block_relations	pub fn authorize_block_relations( block: &ProjectionBlock, system: &CompressedSystemQ, ) -> AuthorizationHash
+graph/projection_dag.rs	121		validate_projection_dag	pub fn validate_projection_dag( dag: &TargetProjectionDAG, system: &CompressedSystemQ, ) -> Result<(), SolverError>
+graph/separators.rs	46		articulation_variable_candidates	pub fn articulation_variable_candidates(g: &WeightedPrimalGraph) -> Vec<SeparatorCandidate>
+graph/separators.rs	66		min_fill_separator_candidates	pub fn min_fill_separator_candidates( g: &WeightedPrimalGraph, target: VariableId, ) -> Vec<SeparatorCandidate>
+graph/separators.rs	88		score_separator	pub fn score_separator( candidate: &SeparatorCandidate, subgraph: &WeightedPrimalGraph, cost_model: &CostModel, ) -> SeparatorScore
+graph/tree_decomposition.rs	29		build_target_rooted_decomposition	pub fn build_target_rooted_decomposition( g: &WeightedPrimalGraph, target: VariableId, cost_model: &CostModel, ) -> DecompositionTree
+graph/weighted_primal.rs	32		build_weighted_primal_graph	pub fn build_weighted_primal_graph( system: &CompressedSystemQ, influence: &TargetInfluenceGraph, ) -> WeightedPrimalGraph
+graph/weighted_primal.rs	93		variable_weight	pub fn variable_weight(v: VariableId, system: &CompressedSystemQ) -> AlgebraicWeight
+graph/weighted_primal.rs	97		edge_weight	pub fn edge_weight(_u: VariableId, _v: VariableId, relations: &[RelationId]) -> AlgebraicWeight
+graph/weighted_primal.rs	108		edge_key	pub fn edge_key(a: VariableId, b: VariableId) -> (VariableId, VariableId)
+graph/weighted_primal.rs	116		induced_subgraph	pub fn induced_subgraph( g: &WeightedPrimalGraph, vars: &BTreeSet<VariableId>, ) -> WeightedPrimalGraph
+graph/weighted_primal.rs	161		components_after_removing	pub fn components_after_removing( g: &WeightedPrimalGraph, remove: &BTreeSet<VariableId>, ) -> Vec<BTreeSet<VariableId>>
+kernels/action_krylov.rs	168		admit_target_action_krylov	pub fn admit_target_action_krylov(block: &ProjectionBlock, ctx: &KernelContext) -> KernelAdmission
+kernels/action_krylov.rs	189		plan_target_action_krylov	pub fn plan_target_action_krylov( block: &ProjectionBlock, system: &CompressedSystemQ, solver_ctx: &SolverContext, plan_id: KernelPlanId, ) -> Result<KernelExecutionPlan, SolverError>
+kernels/action_krylov.rs	198		plan_target_action_krylov_with_messages	pub fn plan_target_action_krylov_with_messages( block: &ProjectionBlock, system: &CompressedSystemQ, child_messages: &[ProjectionMessage], solver_ctx: &SolverContext, plan_id: KernelPlanId, ) -> Result<KernelExecutionPlan, SolverError>
+kernels/action_krylov.rs	281		plan_target_action_krylov_from_admission	pub fn plan_target_action_krylov_from_admission( admission: &KernelAdmission, ctx: &KernelContext, solver_ctx: &SolverContext, ) -> Result<KernelExecutionPlan, SolverError>
+kernels/action_krylov.rs	305		execute_target_action_krylov	pub fn execute_target_action_krylov( plan: &KernelExecutionPlan, ctx: &mut KernelContext, _solver_ctx: &mut SolverContext, ) -> Result<ProjectionMessage, SolverError>
+kernels/linear_affine.rs	70		admit_linear_affine	pub fn admit_linear_affine( block: &ProjectionBlock, system: &CompressedSystemQ, ctx: &SolverContext, ) -> KernelAdmission
+kernels/linear_affine.rs	96		find_triangular_affine_order	pub fn find_triangular_affine_order( block: &ProjectionBlock, system: &CompressedSystemQ, ) -> Option<AffineEliminationPlan>
+kernels/linear_affine.rs	149		plan_linear_affine	pub fn plan_linear_affine( block: &ProjectionBlock, system: &CompressedSystemQ, order: &AffineEliminationPlan, ctx: &SolverContext, ) -> Result<KernelExecutionPlan, SolverError>
+kernels/linear_affine.rs	221		execute_linear_affine	pub fn execute_linear_affine( plan: &KernelExecutionPlan, ctx: &mut KernelContext, _solver_ctx: &mut SolverContext, ) -> Result<ProjectionMessage, SolverError>
+kernels/mod.rs	23		all_kernels	pub fn all_kernels() -> Vec<Box<dyn TargetProjectionKernel>>
+kernels/mod.rs	37		kernel_by_kind	pub fn kernel_by_kind(kind: KernelKind) -> Box<dyn TargetProjectionKernel>
+kernels/norm_trace_projection.rs	81		admit_norm_trace_projection	pub fn admit_norm_trace_projection( block: &ProjectionBlock, ctx: &KernelContext, ) -> KernelAdmission
+kernels/norm_trace_projection.rs	103		plan_norm_trace_projection	pub fn plan_norm_trace_projection( block: &ProjectionBlock, system: &CompressedSystemQ, solver_ctx: &SolverContext, plan_id: KernelPlanId, ) -> Result<KernelExecutionPlan, SolverError>
+kernels/norm_trace_projection.rs	176		plan_norm_trace_projection_from_admission	pub fn plan_norm_trace_projection_from_admission( admission: &KernelAdmission, ctx: &KernelContext, solver_ctx: &SolverContext, ) -> Result<KernelExecutionPlan, SolverError>
+kernels/norm_trace_projection.rs	199		execute_norm_trace_projection	pub fn execute_norm_trace_projection( plan: &KernelExecutionPlan, ctx: &mut KernelContext, ) -> Result<ProjectionMessage, SolverError>
+kernels/regular_chain_projection.rs	88		admit_regular_chain_projection	pub fn admit_regular_chain_projection( block: &ProjectionBlock, ctx: &KernelContext, ) -> KernelAdmission
+kernels/regular_chain_projection.rs	109		plan_regular_chain_projection	pub fn plan_regular_chain_projection( block: &ProjectionBlock, system: &CompressedSystemQ, solver_ctx: &SolverContext, plan_id: KernelPlanId, ) -> Result<KernelExecutionPlan, SolverError>
+kernels/regular_chain_projection.rs	186		plan_regular_chain_projection_from_admission	pub fn plan_regular_chain_projection_from_admission( admission: &KernelAdmission, ctx: &KernelContext, solver_ctx: &SolverContext, ) -> Result<KernelExecutionPlan, SolverError>
+kernels/regular_chain_projection.rs	209		execute_regular_chain_projection	pub fn execute_regular_chain_projection( plan: &KernelExecutionPlan, ctx: &mut KernelContext, ) -> Result<ProjectionMessage, SolverError>
+kernels/sparse_resultant.rs	92		admit_sparse_resultant	pub fn admit_sparse_resultant(block: &ProjectionBlock, ctx: &KernelContext) -> KernelAdmission
+kernels/sparse_resultant.rs	118		plan_sparse_resultant	pub fn plan_sparse_resultant( block: &ProjectionBlock, system: &CompressedSystemQ, solver_ctx: &SolverContext, plan_id: crate::types::ids::KernelPlanId, ) -> Result<KernelExecutionPlan, SolverError>
+kernels/sparse_resultant.rs	127		plan_sparse_resultant_with_messages	pub fn plan_sparse_resultant_with_messages( block: &ProjectionBlock, system: &CompressedSystemQ, child_messages: &[ProjectionMessage], solver_ctx: &SolverContext, plan_id: crate::types::ids::KernelPlanId, ) -> Result<KernelExecutionPlan, SolverError>
+kernels/sparse_resultant.rs	212		plan_sparse_resultant_from_admission	pub fn plan_sparse_resultant_from_admission( admission: &KernelAdmission, ctx: &KernelContext, solver_ctx: &SolverContext, ) -> Result<KernelExecutionPlan, SolverError>
+kernels/sparse_resultant.rs	236		execute_sparse_resultant	pub fn execute_sparse_resultant( plan: &KernelExecutionPlan, ctx: &mut KernelContext, solver_ctx: &mut SolverContext, ) -> Result<ProjectionMessage, SolverError>
+kernels/specialization_interpolation.rs	106		admit_specialization_interpolation	pub fn admit_specialization_interpolation( block: &ProjectionBlock, ctx: &KernelContext, ) -> KernelAdmission
+kernels/specialization_interpolation.rs	128		plan_specialization_interpolation	pub fn plan_specialization_interpolation( block: &ProjectionBlock, system: &CompressedSystemQ, solver_ctx: &SolverContext, plan_id: crate::types::ids::KernelPlanId, ) -> Result<KernelExecutionPlan, SolverError>
+kernels/specialization_interpolation.rs	137		plan_specialization_interpolation_with_messages	pub fn plan_specialization_interpolation_with_messages( block: &ProjectionBlock, system: &CompressedSystemQ, child_messages: &[ProjectionMessage], solver_ctx: &SolverContext, plan_id: crate::types::ids::KernelPlanId, ) -> Result<KernelExecutionPlan, SolverError>
+kernels/specialization_interpolation.rs	228		plan_specialization_interpolation_from_admission	pub fn plan_specialization_interpolation_from_admission( admission: &KernelAdmission, ctx: &KernelContext, solver_ctx: &SolverContext, ) -> Result<KernelExecutionPlan, SolverError>
+kernels/specialization_interpolation.rs	252		execute_specialization_interpolation	pub fn execute_specialization_interpolation( plan: &KernelExecutionPlan, ctx: &mut KernelContext, solver_ctx: &mut SolverContext, ) -> Result<ProjectionMessage, SolverError>
+kernels/specialization_interpolation.rs	356		verify_interpolated_relation_by_elimination	pub fn verify_interpolated_relation_by_elimination( relation: &SparsePolynomialQ, elimination_result: &LocalEliminationResult, source_relations: &[SparsePolynomialQ], exported_variables: &[VariableId], ) -> Result<bool, SolverError>
+kernels/target_relation_search.rs	148		admit_target_relation_search	pub fn admit_target_relation_search( block: &ProjectionBlock, ctx: &KernelContext, solver_ctx: &SolverContext, ) -> KernelAdmission
+kernels/target_relation_search.rs	239		execute_target_relation_search	pub fn execute_target_relation_search( plan: &KernelExecutionPlan, ctx: &mut KernelContext, solver_ctx: &mut SolverContext, ) -> Result<ProjectionMessage, SolverError>
+kernels/target_relation_search.rs	399		relation_search_default_export_degree_cap	pub fn relation_search_default_export_degree_cap( j: &[SparsePolynomialQ], eliminated: &[VariableId], exported: &[VariableId], ) -> usize
+kernels/target_relation_search.rs	418		build_dense_relation_search_schedule	pub fn build_dense_relation_search_schedule( j: &[SparsePolynomialQ], eliminated: &[VariableId], exported: &[VariableId], options: &SolverOptions, ) -> DenseRelationSearchSchedule
+kernels/target_relation_search.rs	486		hash_dense_relation_search_schedule	pub fn hash_dense_relation_search_schedule(schedule: &DenseRelationSearchSchedule) -> Hash
+kernels/target_relation_search.rs	507		hash_relation_search_stage	pub fn hash_relation_search_stage(stage: &RelationSearchStage) -> Hash
+kernels/target_relation_search.rs	524		build_export_monomial_support	pub fn build_export_monomial_support( exported: &[VariableId], bound: &RelationSearchBound, ) -> Vec<Monomial>
+kernels/target_relation_search.rs	531		build_multiplier_supports	pub fn build_multiplier_supports( relations: &[SparsePolynomialQ], eliminated: &[VariableId], exported: &[VariableId], bound: &RelationSearchBound, ) -> Vec<Vec<Monomial>>
+kernels/target_relation_search.rs	638		build_membership_matrix	pub fn build_membership_matrix( relations: &[SparsePolynomialQ], export_support: &[Monomial], multiplier_supports: &[Vec<Monomial>], row_monomials: &[Monomial], ) -> SparseMatrixQ
+kernels/target_relation_search.rs	684		build_membership_matrix_builder	pub fn build_membership_matrix_builder( j: &[SparsePolynomialQ], bound: &RelationSearchBound, ) -> MembershipMatrixBuilder
+kernels/target_relation_search.rs	692		build_membership_matrix_builder_for_variables	pub fn build_membership_matrix_builder_for_variables( j: &[SparsePolynomialQ], eliminated: &[VariableId], exported: &[VariableId], bound: &RelationSearchBound, ) -> MembershipMatrixBuilder
+kernels/target_relation_search.rs	839		reconstruct_and_verify_relation	pub fn reconstruct_and_verify_relation( ns: &ModularNullspaceResult, bound: &RelationSearchBound, j: &[SparsePolynomialQ], ) -> Result<Vec<VerifiedRelationSearchCandidate>, SolverError>
+kernels/target_relation_search.rs	965		verify_membership_exact	pub fn verify_membership_exact( relation: &SparsePolynomialQ, multipliers: &[SparsePolynomialQ], source_relations: &[SparsePolynomialQ], ) -> bool
+kernels/target_univariate.rs	74		admit_target_univariate	pub fn admit_target_univariate( block: &ProjectionBlock, system: &CompressedSystemQ, ctx: &SolverContext, ) -> KernelAdmission
+kernels/target_univariate.rs	82		admit_target_univariate_with_messages	pub fn admit_target_univariate_with_messages( block: &ProjectionBlock, system: &CompressedSystemQ, child_messages: &[ProjectionMessage], ctx: &SolverContext, ) -> KernelAdmission
+kernels/target_univariate.rs	165		execute_target_univariate	pub fn execute_target_univariate( plan: &KernelExecutionPlan, ctx: &mut KernelContext, _solver_ctx: &mut SolverContext, ) -> Result<ProjectionMessage, SolverError>
+kernels/target_univariate.rs	243		target_only_support_from_relations	pub fn target_only_support_from_relations( relations: &[CanonicalRelationQ], target: VariableId, ) -> Option<SparsePolynomialQ>
+kernels/target_univariate.rs	256		target_only_support_from_polynomials	pub fn target_only_support_from_polynomials( relations: &[SparsePolynomialQ], target: VariableId, ) -> Option<SparsePolynomialQ>
+kernels/traits.rs	58		declined_kernel_admission	pub fn declined_kernel_admission( kind: KernelKind, block: &ProjectionBlock, reason: &str, ) -> KernelAdmission
+kernels/traits.rs	88		kernel_not_ready_error	pub fn kernel_not_ready_error(kind: KernelKind) -> SolverError
+kernels/traits.rs	101		exact_replay_result	pub fn exact_replay_result( kind: KernelKind, label: &str, message: &ProjectionMessage, ctx: &KernelContext, ) -> ReplayResult
+kernels/universal_elimination.rs	109		admit_universal_elimination	pub fn admit_universal_elimination( block: &ProjectionBlock, ctx: &KernelContext, ) -> KernelAdmission
+kernels/universal_elimination.rs	133		plan_universal_elimination	pub fn plan_universal_elimination( block: &ProjectionBlock, system: &CompressedSystemQ, solver_ctx: &SolverContext, plan_id: KernelPlanId, ) -> Result<KernelExecutionPlan, SolverError>
+kernels/universal_elimination.rs	142		plan_universal_elimination_with_messages	pub fn plan_universal_elimination_with_messages( block: &ProjectionBlock, system: &CompressedSystemQ, child_messages: &[ProjectionMessage], solver_ctx: &SolverContext, plan_id: KernelPlanId, ) -> Result<KernelExecutionPlan, SolverError>
+kernels/universal_elimination.rs	263		build_universal_elimination_plan	pub fn build_universal_elimination_plan( admission: &KernelAdmission, ctx: &KernelContext, ) -> Result<KernelExecutionPlan, SolverError>
+kernels/universal_elimination.rs	286		execute_universal_elimination	pub fn execute_universal_elimination( plan: &KernelExecutionPlan, ctx: &mut KernelContext, ) -> Result<ProjectionMessage, SolverError>
+kernels/universal_elimination.rs	333		execute_universal_stage	pub fn execute_universal_stage( stage: &UniversalStagePlan, ctx: &mut KernelContext, ) -> Result<ProjectionMessage, SolverError>
+kernels/universal_elimination.rs	523		verify_universal_no_coordinate_fallback	pub fn verify_universal_no_coordinate_fallback( plan: &KernelExecutionPlan, trace: &ProjectionCostTrace, ) -> Result<(), SolverError>
+kernels/universal_elimination.rs	578		extract_verified_export_generators	pub fn extract_verified_export_generators( result: &LocalEliminationResult, exported: &[VariableId], ) -> Result<Vec<SparsePolynomialQ>, SolverError>
+planner/admission.rs	45	KernelAdmission	is_admitted	pub fn is_admitted(&self) -> bool
+planner/admission.rs	49		all_planner_kernel_kinds	pub fn all_planner_kernel_kinds() -> Vec<KernelKind>
+planner/admission.rs	63		collect_kernel_admissions	pub fn collect_kernel_admissions( block: &ProjectionBlock, system: &CompressedSystemQ, probes: &ProbeResults, ctx: &SolverContext, ) -> Vec<KernelAdmission>
+planner/cost_model.rs	44		estimate_kernel_cost	pub fn estimate_kernel_cost( block: &ProjectionBlock, kernel: KernelKind, probes: &ProbeResults, ) -> KernelCostEstimate
+planner/cost_model.rs	86		compare_cost	pub fn compare_cost(a: &KernelCostEstimate, b: &KernelCostEstimate) -> Ordering
+planner/cost_model.rs	99		planner_kernel_order	pub fn planner_kernel_order(kind: KernelKind) -> usize
+planner/kernel_plan.rs	154	KernelPlan	new	pub fn new( block_id: BlockId, declared_ladder: Vec<KernelExecutionPlan>, admissions: Vec<KernelAdmission>, cost_estimates: Vec<KernelCostEstimate>, ) -> Result<Self, SolverError>
+planner/kernel_plan.rs	178	KernelExecutionPlan	new	pub fn new( plan_id: KernelPlanId, block_id: BlockId, kernel_kind: KernelKind, input_block_authorization_hash: Hash, source_relation_ids: Vec<RelationId>, source_relation_hashes: Vec<Hash>, child_block_ids: Vec<BlockId>, child_message_hashes: Vec<Hash>, exported_variables: Vec<VariableId>, eliminated_variables: Vec<VariableId>, support_plan: KernelSupportPlan, resource_bounds: ResourceBounds, certificate_route: CertificateRoute, failure_behavior: PlannedFailureBehavior, ) -> Self
+planner/kernel_plan.rs	214	KernelExecutionPlan	new_with_work_classification	pub fn new_with_work_classification( plan_id: KernelPlanId, block_id: BlockId, kernel_kind: KernelKind, input_block_authorization_hash: Hash, source_relation_ids: Vec<RelationId>, source_relation_hashes: Vec<Hash>, child_block_ids: Vec<BlockId>, child_message_hashes: Vec<Hash>, exported_variables: Vec<VariableId>, eliminated_variables: Vec<VariableId>, support_plan: KernelSupportPlan, resource_bounds: ResourceBounds, certificate_route: CertificateRoute, failure_behavior: PlannedFailureBehavior, plan_work_classification: PlanWorkClassification, ) -> Self
+planner/kernel_plan.rs	253		require_declared_kernel_plan	pub fn require_declared_kernel_plan( plan: &KernelPlan, kernel_kind: KernelKind, expected_plan_hash: Hash, ) -> Result<&KernelExecutionPlan, SolverError>
+planner/kernel_plan.rs	269		hash_kernel_plan	pub fn hash_kernel_plan(plan: &KernelPlan) -> Hash
+planner/kernel_plan.rs	285		hash_kernel_execution_plan	pub fn hash_kernel_execution_plan(plan: &KernelExecutionPlan) -> Hash
+planner/kernel_plan.rs	330		support_plan_hash	pub fn support_plan_hash(plan: &KernelSupportPlan) -> Hash
+planner/kernel_plan.rs	357		resource_bounds_hash	pub fn resource_bounds_hash(bounds: &ResourceBounds) -> Hash
+planner/kernel_plan.rs	374		affine_elimination_plan	pub fn affine_elimination_plan(steps: Vec<AffineEliminationStep>) -> AffineEliminationPlan
+planner/kernel_plan.rs	383		affine_elimination_step	pub fn affine_elimination_step( eliminated_variable: VariableId, source_relation_id: RelationId, pivot_hash: Hash, denominator_guard_hash: Option<Hash>, ) -> AffineEliminationStep
+planner/kernel_plan.rs	400		planned_failure_behavior	pub fn planned_failure_behavior( allowed_statuses: Vec<SolverStatus>, local_nonfinite_policy: LocalNonfinitePolicy, ) -> PlannedFailureBehavior
+planner/kernel_plan.rs	412		universal_strategy_step	pub fn universal_strategy_step( strategy: UniversalStrategy, enabled: bool, skip_reason: Option<String>, ) -> UniversalStrategyPlanStep
+planner/kernel_plan.rs	427		rank_plan	pub fn rank_plan(estimated_rank: usize) -> RankPlan
+planner/kernel_plan.rs	434		template_plan	pub fn template_plan( matrix_rows: usize, matrix_cols: usize, row_monomial_hash: Hash, column_support_hash: Hash, ) -> TemplatePlan
+planner/kernel_plan.rs	448		certified_probe_plan	pub fn certified_probe_plan( authorization_hash: Hash, source_relation_hashes: Vec<Hash>, probe_output_hashes: Vec<Hash>, resource_trace_hash: Hash, cost_trace_hash: Hash, probe_certificate_hash: Hash, ) -> PlanWorkClassification
+planner/kernel_plan.rs	476		verify_certified_probe_replay	pub fn verify_certified_probe_replay( plan: &KernelExecutionPlan, source_relation_hashes: &[Hash], probe_output_hashes: &[Hash], probe_certificate_hash: Hash, ) -> Result<(), SolverError>
+planner/ladder.rs	5		build_declared_ladder	pub fn build_declared_ladder( admissions: &[KernelAdmission], costs: &[KernelCostEstimate], ) -> Vec<KernelExecutionPlan>
+planner/planner.rs	10		plan_all_blocks	pub fn plan_all_blocks( dag: &TargetProjectionDAG, system: &CompressedSystemQ, ctx: &mut SolverContext, ) -> Result<Vec<KernelPlan>, SolverError>
+planner/probes.rs	44		run_cost_probes	pub fn run_cost_probes( block: &ProjectionBlock, system: &CompressedSystemQ, _ctx: &mut SolverContext, ) -> ProbeResults
+planner/probes.rs	74		modular_rank_probe	pub fn modular_rank_probe(block: &ProjectionBlock, primes: &[Prime]) -> RankProbeResult
+planner/probes.rs	88		local_macaulay_size_probe	pub fn local_macaulay_size_probe(block: &ProjectionBlock) -> MacaulaySizeProbe
+planner/probes.rs	100		mixed_support_probe	pub fn mixed_support_probe(block: &ProjectionBlock) -> SparseSupportProbe
+preprocess/binomial.rs	17		detect_binomial_relations	pub fn detect_binomial_relations(state: &CompressionState) -> Vec<BinomialCandidate>
+preprocess/binomial.rs	37		simplify_binomial_relations	pub fn simplify_binomial_relations( mut state: CompressionState, _ctx: &mut SolverContext, ) -> Result<CompressionState, SolverError>
+preprocess/compression.rs	123	CompressionExpression	expression_hash	pub fn expression_hash(&self) -> Hash
+preprocess/compression.rs	203		pre_kernel_compress	pub fn pre_kernel_compress( system: CanonicalSystemQ, ctx: &mut SolverContext, ) -> Result<CompressedSystemQ, SolverError>
+preprocess/compression.rs	245	CompressionState	from_system	pub fn from_system(system: CanonicalSystemQ) -> Self
+preprocess/compression.rs	270	CompressionState	to_canonical_system	pub fn to_canonical_system(&self) -> CanonicalSystemQ
+preprocess/compression.rs	286	CompressionState	to_compressed_system	pub fn to_compressed_system(mut self) -> CompressedSystemQ
+preprocess/compression.rs	306	CompressionState	record_step	pub fn record_step(&mut self, step: CompressionStepKind)
+preprocess/compression.rs	311	CompressionState	add_substitution	pub fn add_substitution( &mut self, eliminated_variable: VariableId, expression: SparsePolynomialQ, denominator_guard: Option<SparsePolynomialQ>, source_relation_id: RelationId, kind: SubstitutionKind, )
+preprocess/compression.rs	328	CompressionState	add_rational_substitution	pub fn add_rational_substitution( &mut self, eliminated_variable: VariableId, expression: RationalExpressionQ, denominator_guard: Option<SparsePolynomialQ>, source_relation_id: RelationId, kind: SubstitutionKind, )
+preprocess/compression.rs	371	CompressionState	add_guard	pub fn add_guard( &mut self, factor: SparsePolynomialQ, source_relation_ids: Vec<RelationId>, guard_kind: GuardKind, ) -> GuardRecord
+preprocess/compression.rs	396	CompressionState	add_saturation	pub fn add_saturation( &mut self, factor: SparsePolynomialQ, witness_relation_id: RelationId, slack_variable: VariableId, )
+preprocess/compression.rs	418	CompressionState	apply_polynomial_substitution	pub fn apply_polynomial_substitution( &mut self, eliminated_variable: VariableId, expression: &SparsePolynomialQ, source_relation_id: RelationId, )
+preprocess/compression.rs	447	CompressionState	apply_rational_affine_substitution	pub fn apply_rational_affine_substitution( &mut self, eliminated_variable: VariableId, numerator: &SparsePolynomialQ, denominator: &SparsePolynomialQ, source_relation_id: RelationId, denominator_guard: GuardRecord, source_witness_relation_ids: Vec<RelationId>, )
+preprocess/compression.rs	496	CompressionState	replace_relations	pub fn replace_relations(&mut self, relations: Vec<CanonicalRelationQ>)
+preprocess/compression.rs	501	CompressionState	rehash	pub fn rehash(&mut self)
+preprocess/compression.rs	506	CompressionState	state_hash	pub fn state_hash(&self, tag: &str) -> Hash
+preprocess/compression.rs	534		relation_with_polynomial	pub fn relation_with_polynomial( id: RelationId, polynomial: SparsePolynomialQ, source: RelationSource, ) -> CanonicalRelationQ
+preprocess/compression.rs	552		total_monomial_count	pub fn total_monomial_count(relations: &[CanonicalRelationQ]) -> usize
+preprocess/compression.rs	559		max_total_degree	pub fn max_total_degree(relations: &[CanonicalRelationQ]) -> usize
+preprocess/compression.rs	567		max_coefficient_height_bits	pub fn max_coefficient_height_bits(relations: &[CanonicalRelationQ]) -> usize
+preprocess/compression.rs	576		component_hash	pub fn component_hash( component_id: usize, relation_ids: &[RelationId], variables: &[VariableId], contains_target: bool, ) -> Hash
+preprocess/compression.rs	595		obligation_hash	pub fn obligation_hash( component_id: usize, relation_ids: &[RelationId], variables: &[VariableId], ) -> Hash
+preprocess/compression.rs	610		polynomial_variable_map	pub fn polynomial_variable_map( relations: &[CanonicalRelationQ], ) -> BTreeMap<VariableId, Vec<RelationId>>
+preprocess/compression.rs	622		sort_dedup_variables	pub fn sort_dedup_variables(vars: impl IntoIterator<Item = VariableId>) -> Vec<VariableId>
+preprocess/compression.rs	629		affine_parts_in_variable	pub fn affine_parts_in_variable( poly: &SparsePolynomialQ, variable: VariableId, ) -> Option<(SparsePolynomialQ, SparsePolynomialQ)>
+preprocess/compression.rs	722		rational_expression	pub fn rational_expression( numerator: SparsePolynomialQ, denominator: SparsePolynomialQ, denominator_guard: GuardRecord, source_witness_relation_ids: Vec<RelationId>, ) -> RationalExpressionQ
+preprocess/compression.rs	745		rational_affine_transformation_certificate	pub fn rational_affine_transformation_certificate( original_relation_id: RelationId, transformed_relation_id: RelationId, pivot_relation_id: RelationId, eliminated_variable: VariableId, numerator: SparsePolynomialQ, denominator: SparsePolynomialQ, denominator_clearing_power: u32, denominator_guard: GuardRecord, source_witness_relation_ids: Vec<RelationId>, original_relation_hash: Hash, transformed_relation_hash: Hash, ) -> RationalAffineTransformationCertificate
+preprocess/compression.rs	789		substitute_rational_and_clear	pub fn substitute_rational_and_clear( poly: &SparsePolynomialQ, variable: VariableId, numerator: &SparsePolynomialQ, denominator: &SparsePolynomialQ, ) -> SparsePolynomialQ
+preprocess/compression.rs	798		substitute_rational_and_clear_with_power	pub fn substitute_rational_and_clear_with_power( poly: &SparsePolynomialQ, variable: VariableId, numerator: &SparsePolynomialQ, denominator: &SparsePolynomialQ, ) -> (SparsePolynomialQ, u32)
+preprocess/definitional.rs	21		find_definitional_relations	pub fn find_definitional_relations(system: &CanonicalSystemQ) -> Vec<DefinitionalCandidate>
+preprocess/definitional.rs	67		apply_definitional_elimination	pub fn apply_definitional_elimination( mut state: CompressionState, candidates: &[DefinitionalCandidate], _ctx: &mut SolverContext, ) -> Result<CompressionState, SolverError>
+preprocess/independent.rs	11		mark_target_independent_components	pub fn mark_target_independent_components( mut state: CompressionState, _ctx: &mut SolverContext, ) -> Result<CompressionState, SolverError>
+preprocess/independent.rs	33		compute_component_feasibility_obligations	pub fn compute_component_feasibility_obligations( components: &[Component], ) -> Vec<FeasibilityObligation>
+preprocess/linear_affine.rs	57		find_linear_affine_candidates	pub fn find_linear_affine_candidates(state: &CompressionState) -> Vec<LinearAffineCandidate>
+preprocess/linear_affine.rs	108		select_safe_affine_pivots	pub fn select_safe_affine_pivots( candidates: &[LinearAffineCandidate], _policy: PivotPolicy, ) -> Vec<AffinePivot>
+preprocess/linear_affine.rs	156		eliminate_linear_affine_variables	pub fn eliminate_linear_affine_variables( mut state: CompressionState, _ctx: &mut SolverContext, ) -> Result<CompressionState, SolverError>
+preprocess/saturation.rs	20		apply_explicit_saturations	pub fn apply_explicit_saturations( mut state: CompressionState, _ctx: &mut SolverContext, ) -> Result<CompressionState, SolverError>
+preprocess/saturation.rs	40		is_explicit_nonzero_factor	pub fn is_explicit_nonzero_factor( factor: &SparsePolynomialQ, _semantics: &[RealConstraintEncoding], ) -> bool
+preprocess/saturation.rs	47		find_explicit_nonzero_witness	pub fn find_explicit_nonzero_witness( state: &CompressionState, factor: &SparsePolynomialQ, ) -> Option<ExplicitNonzeroWitness>
+preprocess/saturation.rs	57		explicit_nonzero_witnesses	pub fn explicit_nonzero_witnesses(state: &CompressionState) -> Vec<ExplicitNonzeroWitness>
+problem/canonicalize.rs	44		canonicalize_system	pub fn canonicalize_system(validated: ValidatedProblem) -> Result<CanonicalSystemQ, SolverError>
+problem/canonicalize.rs	89		canonicalize_relation	pub fn canonicalize_relation(id: RelationId, p: SparsePolynomialQ) -> CanonicalRelationQ
+problem/canonicalize.rs	103		canonical_variable_order	pub fn canonical_variable_order(vars: &[VariableId], target: VariableId) -> VariableOrder
+problem/context.rs	16	SolverContext	new	pub fn new(options: SolverOptions) -> SolverContext
+problem/context.rs	36		new_context	pub fn new_context(options: SolverOptions) -> SolverContext
+problem/context.rs	40		check_resource	pub fn check_resource(_ctx: &mut SolverContext, _stage: StageId) -> Result<(), SolverError>
+problem/context.rs	44		push_diagnostic	pub fn push_diagnostic(ctx: &mut SolverContext, diag: DiagnosticRecord)
+problem/input.rs	23		make_problem	pub fn make_problem( variables: Vec<VariableId>, target: VariableId, equations: Vec<SparsePolynomialQ>, semantic_encodings: Vec<RealConstraintEncoding>, ) -> RationalTargetProblem
+problem/semantic.rs	29		register_slack_encoding	pub fn register_slack_encoding( kind: RealConstraintKind, encoded_relation_ids: Vec<RelationId>, slack_variables: Vec<VariableId>, ) -> RealConstraintEncoding
+problem/semantic.rs	56		semantic_relations	pub fn semantic_relations(sem: &[RealConstraintEncoding]) -> BTreeSet<RelationId>
+problem/semantic.rs	62		verify_semantic_references	pub fn verify_semantic_references( sem: &[RealConstraintEncoding], relations: &[RelationId], variables: &[VariableId], ) -> Result<(), InvalidInput>
+problem/validate.rs	11		validate_input	pub fn validate_input(problem: RationalTargetProblem) -> Result<ValidatedProblem, SolverError>
+result/diagnostics.rs	16	DiagnosticRecord	new	pub fn new( name: impl Into<String>, message: impl Into<String>, stage: Option<StageId>, ) -> DiagnosticRecord
+result/diagnostics.rs	28	DiagnosticRecord	from_solver_error	pub fn from_solver_error(err: &SolverError) -> DiagnosticRecord
+result/output.rs	36	TargetSolveResult	from_solver_error	pub fn from_solver_error(err: SolverError) -> TargetSolveResult
+result/output.rs	51		finalize_success_result	pub fn finalize_success_result(input: FinalizeSuccessInput) -> TargetSolveResult
+result/output.rs	55		finalize_failure_result	pub fn finalize_failure_result(input: FinalizeFailureInput) -> TargetSolveResult
+result/status.rs	68	SolverError	invalid_input	pub fn invalid_input(target: Option<VariableId>, message: impl Into<String>) -> Self
+result/status.rs	76	SolverError	temporary_pipeline_not_connected	pub fn temporary_pipeline_not_connected(target: Option<VariableId>) -> Self
+result/status.rs	83	SolverError	public_status	pub fn public_status(&self) -> SolverStatus
+roots/algebraic_number.rs	25		algebraic_roots_from_support	pub fn algebraic_roots_from_support( support: &UniPolynomialQ, options: RootIsolationOptions, ) -> Result<Vec<AlgebraicRootRecord>, SolverError>
+roots/algebraic_number.rs	36		algebraic_root_from_record	pub fn algebraic_root_from_record( support: &UniPolynomialQ, root: &RealRootRecord, ) -> Result<AlgebraicRootRecord, SolverError>
+roots/algebraic_number.rs	56		refine_algebraic_root	pub fn refine_algebraic_root( root: &AlgebraicRootRecord, options: RootIsolationOptions, ) -> Result<AlgebraicRootRecord, SolverError>
+roots/algebraic_number.rs	72		refine_algebraic_root_to_width	pub fn refine_algebraic_root_to_width( root: &AlgebraicRootRecord, max_width: RationalQ, ) -> Result<AlgebraicRootRecord, SolverError>
+roots/algebraic_number.rs	93		compare_algebraic_roots	pub fn compare_algebraic_roots( a: &AlgebraicRootRecord, b: &AlgebraicRootRecord, ) -> Option<AlgebraicRootOrdering>
+roots/algebraic_number.rs	113		hash_algebraic_root	pub fn hash_algebraic_root( support_hash: Hash, root_index: usize, isolating_interval: &RationalInterval, ) -> Hash
+roots/decode.rs	18		decode_candidates	pub fn decode_candidates( target: VariableId, support: &UniPolynomialQ, roots: &[RealRootRecord], ) -> Vec<TargetCandidate>
+roots/decode.rs	40		hash_target_candidate	pub fn hash_target_candidate( target: VariableId, support_hash: Hash, root_index: usize, isolating_interval: &RationalInterval, ) -> Hash
+roots/isolate.rs	29		isolate_real_roots	pub fn isolate_real_roots( p: &UniPolynomialQ, options: RootIsolationOptions, ) -> Result<Vec<RealRootRecord>, SolverError>
+roots/squarefree.rs	6		squarefree_support	pub fn squarefree_support(p: &UniPolynomialQ) -> Result<UniPolynomialQ, SolverError>
+solver/orchestrator.rs	5		solve_with_context	pub fn solve_with_context( problem: RationalTargetProblem, _ctx: SolverContext, ) -> Result<TargetSolveResult, SolverError>
+solver/pipeline.rs	6		step_validate	pub fn step_validate( problem: RationalTargetProblem, _ctx: &mut SolverContext, ) -> Result<ValidatedProblem, SolverError>
+solver/pipeline.rs	13		step_canonicalize	pub fn step_canonicalize( validated: ValidatedProblem, _ctx: &mut SolverContext, ) -> Result<CanonicalSystemQ, SolverError>
+types/hash.rs	6		hash_bytes	pub fn hash_bytes(bytes: &[u8]) -> Hash
+types/hash.rs	13		hash_tagged	pub fn hash_tagged(tag: &str, bytes: &[u8]) -> Hash
+types/hash.rs	25		hash_sequence	pub fn hash_sequence(tag: &str, chunks: &[Vec<u8>]) -> Hash
+types/ids.rs	29	IdCounter	new	pub fn new(start: u32) -> Self
+types/ids.rs	33		fresh_variable_id	pub fn fresh_variable_id(counter: &mut IdCounter) -> VariableId
+types/ids.rs	39		fresh_relation_id	pub fn fresh_relation_id(counter: &mut IdCounter) -> RelationId
+types/ids.rs	45		stable_id_from_name	pub fn stable_id_from_name(name: &str, namespace: &str) -> StableId
+types/interval.rs	17		interval_new	pub fn interval_new(lo: RationalQ, hi: RationalQ) -> Result<RationalInterval, IntervalError>
+types/interval.rs	24		interval_contains_q	pub fn interval_contains_q(i: &RationalInterval, x: &RationalQ) -> bool
+types/interval.rs	28		interval_disjoint	pub fn interval_disjoint(a: &RationalInterval, b: &RationalInterval) -> bool
+types/monomial.rs	13		normalize_monomial	pub fn normalize_monomial(entries: Vec<(VariableId, u32)>) -> Monomial
+types/monomial.rs	29		monomial_mul	pub fn monomial_mul(a: &Monomial, b: &Monomial) -> Monomial
+types/monomial.rs	35		monomial_div	pub fn monomial_div(a: &Monomial, b: &Monomial) -> Option<Monomial>
+types/monomial.rs	54		monomial_degree	pub fn monomial_degree(m: &Monomial) -> u32
+types/monomial.rs	58		monomial_variables	pub fn monomial_variables(m: &Monomial) -> BTreeSet<VariableId>
+types/monomial.rs	62		compare_monomial	pub fn compare_monomial(a: &Monomial, b: &Monomial, order: &MonomialOrder) -> Ordering
+types/monomial.rs	66		monomial_to_bytes	pub fn monomial_to_bytes(m: &Monomial) -> Vec<u8>
+types/polynomial.rs	28		normalize_poly	pub fn normalize_poly(p: SparsePolynomialQ) -> SparsePolynomialQ
+types/polynomial.rs	50		zero_poly	pub fn zero_poly() -> SparsePolynomialQ
+types/polynomial.rs	57		constant_poly	pub fn constant_poly(c: RationalQ) -> SparsePolynomialQ
+types/polynomial.rs	70		variable_poly	pub fn variable_poly(v: VariableId) -> SparsePolynomialQ
+types/polynomial.rs	80		poly_add	pub fn poly_add(a: &SparsePolynomialQ, b: &SparsePolynomialQ) -> SparsePolynomialQ
+types/polynomial.rs	89		poly_sub	pub fn poly_sub(a: &SparsePolynomialQ, b: &SparsePolynomialQ) -> SparsePolynomialQ
+types/polynomial.rs	106		poly_mul	pub fn poly_mul(a: &SparsePolynomialQ, b: &SparsePolynomialQ) -> SparsePolynomialQ
+types/polynomial.rs	122		poly_scale	pub fn poly_scale(a: &SparsePolynomialQ, c: &RationalQ) -> SparsePolynomialQ
+types/polynomial.rs	139		poly_derivative	pub fn poly_derivative(a: &SparsePolynomialQ, v: VariableId) -> SparsePolynomialQ
+types/polynomial.rs	162		poly_variables	pub fn poly_variables(a: &SparsePolynomialQ) -> BTreeSet<VariableId>
+types/polynomial.rs	172		poly_total_degree	pub fn poly_total_degree(a: &SparsePolynomialQ) -> u32
+types/polynomial.rs	180		poly_monomial_count	pub fn poly_monomial_count(a: &SparsePolynomialQ) -> usize
+types/polynomial.rs	184		clear_denominators_primitive	pub fn clear_denominators_primitive(a: &SparsePolynomialQ) -> SparsePolynomialQ
+types/polynomial.rs	229		substitute_poly	pub fn substitute_poly(a: &SparsePolynomialQ, subst: &SubstitutionMap) -> SparsePolynomialQ
+types/polynomial.rs	253		hash_terms	pub fn hash_terms(terms: &[TermQ]) -> Hash
+types/rational.rs	30		new_q	pub fn new_q(num: BigInt, den: BigInt) -> RationalQ
+types/rational.rs	35		normalize_q	pub fn normalize_q(mut q: RationalQ) -> RationalQ
+types/rational.rs	54		zero_q	pub fn zero_q() -> RationalQ
+types/rational.rs	61		one_q	pub fn one_q() -> RationalQ
+types/rational.rs	68		int_q	pub fn int_q(n: i64) -> RationalQ
+types/rational.rs	75		add_q	pub fn add_q(a: &RationalQ, b: &RationalQ) -> RationalQ
+types/rational.rs	79		sub_q	pub fn sub_q(a: &RationalQ, b: &RationalQ) -> RationalQ
+types/rational.rs	83		neg_q	pub fn neg_q(a: &RationalQ) -> RationalQ
+types/rational.rs	90		mul_q	pub fn mul_q(a: &RationalQ, b: &RationalQ) -> RationalQ
+types/rational.rs	94		div_q	pub fn div_q(a: &RationalQ, b: &RationalQ) -> Result<RationalQ, DivisionByZero>
+types/rational.rs	101		bit_height_q	pub fn bit_height_q(q: &RationalQ) -> usize
+types/rational.rs	107		rational_to_bytes	pub fn rational_to_bytes(q: &RationalQ) -> Vec<u8>
+types/rational.rs	124		is_zero_q	pub fn is_zero_q(q: &RationalQ) -> bool
+types/rational.rs	128		sign_q	pub fn sign_q(q: &RationalQ) -> i8
+types/univariate.rs	15		normalize_univariate	pub fn normalize_univariate(mut p: UniPolynomialQ) -> UniPolynomialQ
+types/univariate.rs	23		zero_uni	pub fn zero_uni(variable: VariableId) -> UniPolynomialQ
+types/univariate.rs	31		constant_uni	pub fn constant_uni(variable: VariableId, c: RationalQ) -> UniPolynomialQ
+types/univariate.rs	39		degree_uni	pub fn degree_uni(p: &UniPolynomialQ) -> Option<usize>
+types/univariate.rs	47		derivative_uni	pub fn derivative_uni(p: &UniPolynomialQ) -> UniPolynomialQ
+types/univariate.rs	62		gcd_uni	pub fn gcd_uni(a: &UniPolynomialQ, b: &UniPolynomialQ) -> UniPolynomialQ
+types/univariate.rs	74		squarefree_part_uni	pub fn squarefree_part_uni(p: &UniPolynomialQ) -> UniPolynomialQ
+types/univariate.rs	87		eval_uni_q	pub fn eval_uni_q(p: &UniPolynomialQ, x: &RationalQ) -> RationalQ
+verify/certificates.rs	30	KernelCertificate	from_execution_plan	pub fn from_execution_plan( plan: &KernelExecutionPlan, output_relations: &[SparsePolynomialQ], certificate_hash: Hash, ) -> Self
+verify/certificates.rs	42	KernelCertificate	from_execution_plan_with_payload	pub fn from_execution_plan_with_payload( plan: &KernelExecutionPlan, output_relations: &[SparsePolynomialQ], certificate_hash: Hash, payload: KernelCertificatePayload, ) -> Self
+verify/certificates.rs	65	KernelCertificate	synthetic_for_tests	pub fn synthetic_for_tests(certificate_hash: Hash) -> Self
+verify/certificates.rs	169		kernel_certificate_binding_hash	pub fn kernel_certificate_binding_hash(cert: &KernelCertificate) -> Hash
+verify/replay.rs	23		replay_run_certificate	pub fn replay_run_certificate( result: &TargetSolveResult, problem: &RationalTargetProblem, ) -> ReplayResult
+verify/run_certificate.rs	74	CoreInvariantFlags	p11_replay_enforced	pub fn p11_replay_enforced(&self) -> bool
+verify/run_certificate.rs	96		build_core_run_certificate	pub fn build_core_run_certificate(input: CoreRunCertificateInput<'_>) -> CoreRunCertificate
+verify/run_certificate.rs	134		final_invariant_evidence	pub fn final_invariant_evidence( no_geometry_dispatch_scan_hash: Option<Hash>, no_problem_id_dispatch_scan_hash: Option<Hash>, no_expected_answer_dispatch_scan_hash: Option<Hash>, no_qe_cad_scan_hash: Option<Hash>, exact_q_verification_hash: Option<Hash>, ) -> FinalInvariantEvidence
+verify/run_certificate.rs	153		require_final_claim_invariant_evidence	pub fn require_final_claim_invariant_evidence( flags: &CoreInvariantFlags, evidence: &FinalInvariantEvidence, ) -> Result<(), SolverError>
+verify/run_certificate.rs	176		final_dag_replay_evidence	pub fn final_dag_replay_evidence( actual_projection_dag_hash: Option<Hash>, projection_message_hashes: Vec<Hash>, kernel_plan_hashes: Vec<Hash>, message_block_ids: Vec<BlockId>, per_message_source_relation_hashes: Vec<Vec<Hash>>, message_child_dependency_hashes: Vec<Vec<Hash>>, block_authorization_hashes: Vec<Hash>, edge_authorization_hashes: Vec<Hash>, actual_dag_replay_verified: bool, ) -> FinalDagReplayEvidence
+verify/run_certificate.rs	203		require_final_claim_dag_replay_evidence	pub fn require_final_claim_dag_replay_evidence( cert: &CoreRunCertificate, evidence: &FinalDagReplayEvidence, ) -> Result<(), SolverError>
+verify/run_certificate.rs	217		final_claim_dag_replay_structurally_bound_for_p12g	pub fn final_claim_dag_replay_structurally_bound_for_p12g( cert: &CoreRunCertificate, evidence: &FinalDagReplayEvidence, ) -> bool
+verify/run_certificate.rs	235		hash_projection_messages	pub fn hash_projection_messages(messages: &[ProjectionMessage]) -> Vec<Hash>
+verify/run_certificate.rs	239		hash_root_isolation	pub fn hash_root_isolation(roots: &[RealRootRecord]) -> Hash
+verify/run_certificate.rs	250		hash_decoded_candidates	pub fn hash_decoded_candidates(candidates: &[TargetCandidate]) -> Hash
+verify/run_certificate.rs	263		hash_projection_message_dag_binding	pub fn hash_projection_message_dag_binding( target: VariableId, messages: &[ProjectionMessage], ) -> Hash
+verify/run_certificate.rs	270		hash_projection_message_dag_binding_with_authorized_sources	pub fn hash_projection_message_dag_binding_with_authorized_sources( target: VariableId, messages: &[ProjectionMessage], base_source_hashes: &[Hash], ) -> Hash
+verify/run_certificate.rs	298		projection_message_dependency_indices	pub fn projection_message_dependency_indices( messages: &[ProjectionMessage], base_source_hashes: &[Hash], ) -> Option<Vec<Vec<usize>>>
+verify/run_certificate.rs	364		hash_invariant_evidence	pub fn hash_invariant_evidence( input_hash: Hash, messages: &[ProjectionMessage], support: Option<&UniPolynomialQ>, squarefree_support: Option<&UniPolynomialQ>, roots: &[RealRootRecord], candidates: &[TargetCandidate], ) -> Hash
+verify/run_certificate.rs	387		derive_core_invariant_flags	pub fn derive_core_invariant_flags( messages: &[ProjectionMessage], exact_q_verified: bool, no_hidden_fallback_verified: bool, ) -> CoreInvariantFlags
+verify/run_certificate.rs	405		messages_have_verifiable_payloads	pub fn messages_have_verifiable_payloads(messages: &[ProjectionMessage]) -> bool
+verify/run_certificate.rs	412		projection_plans_are_bound	pub fn projection_plans_are_bound(messages: &[ProjectionMessage]) -> bool
+verify/run_certificate.rs	465		hash_core_run_certificate	pub fn hash_core_run_certificate(cert: &CoreRunCertificate) -> Hash
+verify/verify_message.rs	40		verify_projection_message	pub fn verify_projection_message( message: &ProjectionMessage, ctx: &KernelContext, ) -> Result<(), SolverError>
+verify/verify_support.rs	24		verify_global_support	pub fn verify_global_support( support: &UniPolynomialQ, composed: &ComposedProjection, ) -> Result<GlobalSupportCertificate, SolverError>
+verify/verify_support.rs	78		hash_global_support_certificate	pub fn hash_global_support_certificate(cert: &GlobalSupportCertificate) -> Hash
