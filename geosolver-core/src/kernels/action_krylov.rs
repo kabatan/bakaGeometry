@@ -15,9 +15,9 @@ use crate::graph::projection_dag::ProjectionBlock;
 use crate::kernels::traits::{KernelContext, KernelKind, ReplayResult, TargetProjectionKernel};
 use crate::planner::admission::{KernelAdmission, KernelAdmissionStatus};
 use crate::planner::kernel_plan::{
-    certified_probe_plan, hash_kernel_execution_plan, planned_failure_behavior, rank_plan,
-    resource_bounds_hash, support_plan_hash, template_plan, verify_certified_probe_replay,
-    CertificateRoute, KernelExecutionPlan, KernelSupportPlan, LocalNonfinitePolicy, ResourceBounds,
+    hash_kernel_execution_plan, planned_failure_behavior, rank_plan, resource_bounds_hash,
+    support_plan_hash, template_plan, CertificateRoute, KernelExecutionPlan, KernelSupportPlan,
+    LocalNonfinitePolicy, ResourceBounds,
 };
 use crate::preprocess::compression::CompressedSystemQ;
 use crate::problem::canonicalize::CanonicalRelationQ;
@@ -29,8 +29,8 @@ use crate::types::ids::{KernelPlanId, PackageId, RelationId, VariableId};
 use crate::types::matrix::{SparseMatrixQ, VectorQ};
 use crate::types::monomial::normalize_monomial;
 use crate::types::polynomial::{
-    constant_poly, normalize_poly, poly_monomial_count, poly_mul, poly_scale, poly_variables,
-    variable_poly, SparsePolynomialQ, TermQ,
+    constant_poly, normalize_poly, poly_monomial_count, poly_mul, poly_scale, poly_total_degree,
+    poly_variables, variable_poly, SparsePolynomialQ, TermQ,
 };
 use crate::types::rational::{add_q, div_q, is_zero_q, mul_q, neg_q, one_q, zero_q, RationalQ};
 use crate::types::univariate::{normalize_univariate, UniPolynomialQ};
@@ -88,6 +88,15 @@ struct TargetActionKrylovTrace {
     matrix_cols: usize,
     degree_bound: usize,
     trace_hash: Hash,
+}
+
+#[derive(Debug, Clone)]
+struct TargetActionKrylovPlanProbe {
+    matrix_rows: usize,
+    matrix_cols: usize,
+    degree_bound: usize,
+    action_shape_hash: Hash,
+    characteristic_support_hash: Hash,
 }
 
 #[derive(Debug, Clone)]
@@ -164,6 +173,17 @@ impl TargetActionSelection {
         hashes.dedup();
         hashes
     }
+
+    fn source_polynomials(&self) -> Vec<&SparsePolynomialQ> {
+        match self {
+            TargetActionSelection::TargetOnly(input) => vec![&input.polynomial],
+            TargetActionSelection::AliasUnivariate {
+                local_relation,
+                alias_relation,
+                ..
+            } => vec![&local_relation.polynomial, &alias_relation.polynomial],
+        }
+    }
 }
 
 pub fn admit_target_action_krylov(block: &ProjectionBlock, ctx: &KernelContext) -> KernelAdmission {
@@ -206,31 +226,27 @@ pub fn plan_target_action_krylov_with_messages(
     let inputs = collect_relation_inputs(block, system, child_messages);
     let selected = select_target_action_selection(&inputs, system.target)
         .ok_or_else(|| certificate_design_gap("no certifiable target-action quotient relation"))?;
-    let trace = build_target_action_krylov_trace(
-        &selected,
-        system.target,
-        BasisHandleId(plan_id.0 as u64),
-    )?;
+    let probe = probe_target_action_krylov_plan(&selected, system.target, block);
     let template = template_plan(
-        trace.matrix_rows,
-        trace.matrix_cols,
-        trace.coverage.target_action_matrix_hash,
-        trace.coverage.characteristic_polynomial_hash,
+        probe.matrix_rows,
+        probe.matrix_cols,
+        probe.action_shape_hash,
+        probe.characteristic_support_hash,
     );
     let mut support_plan = KernelSupportPlan {
         dense_relation_search_schedule: None,
         affine_elimination_order: None,
         template_plan: Some(template),
-        rank_plan: Some(rank_plan(trace.coverage.quotient_rank)),
+        rank_plan: Some(rank_plan(probe.matrix_rows.min(probe.matrix_cols))),
         universal_strategy_sequence: Vec::new(),
-        degree_bound: trace.degree_bound,
+        degree_bound: probe.degree_bound,
         support_hash: hash_sequence("kernel-support-plan", &[]),
     };
     support_plan.support_hash = support_plan_hash(&support_plan);
     let mut bounds = ResourceBounds {
-        max_matrix_rows: Some(trace.matrix_rows),
-        max_matrix_cols: Some(trace.matrix_cols),
-        max_export_degree: Some(trace.degree_bound),
+        max_matrix_rows: Some(probe.matrix_rows),
+        max_matrix_cols: Some(probe.matrix_cols),
+        max_export_degree: Some(probe.degree_bound),
         max_multiplier_total_degree: None,
         max_local_elimination_steps: Some(0),
         max_memory_bytes: solver_ctx.options.max_memory_bytes,
@@ -240,9 +256,7 @@ pub fn plan_target_action_krylov_with_messages(
     let source_relation_ids = selected.source_relation_ids();
     let source_hashes = selected.source_hashes();
     let child_message_hashes = selected.child_message_hashes();
-    let resource_trace_hash = bounds.bounds_hash;
-    let cost_trace_hash = support_plan.support_hash;
-    Ok(KernelExecutionPlan::new_with_work_classification(
+    Ok(KernelExecutionPlan::new(
         plan_id,
         block.block_id,
         KernelKind::TargetActionKrylov,
@@ -267,14 +281,6 @@ pub fn plan_target_action_krylov_with_messages(
                 SolverStatus::CertificateDesignGap,
             ],
             LocalNonfinitePolicy::NotApplicable,
-        ),
-        certified_probe_plan(
-            block.authorization_hash,
-            source_hashes,
-            vec![trace.relation.hash],
-            resource_trace_hash,
-            cost_trace_hash,
-            trace.trace_hash,
         ),
     ))
 }
@@ -318,25 +324,25 @@ pub fn execute_target_action_krylov(
         ctx.system.target,
         BasisHandleId(plan.plan_id.0 as u64),
     )?;
-    verify_certified_probe_replay(
-        plan,
-        &selected.source_hashes(),
-        &[trace.relation.hash],
-        trace.trace_hash,
-    )?;
     let Some(template) = &plan.support_plan.template_plan else {
         return Err(implementation_bug(
             "target-action-krylov plan lacks template plan",
         ));
     };
-    if template.matrix_rows != trace.matrix_rows
-        || template.matrix_cols != trace.matrix_cols
-        || template.row_monomial_hash != trace.coverage.target_action_matrix_hash
-        || template.column_support_hash != trace.coverage.characteristic_polynomial_hash
+    let probe = probe_target_action_krylov_plan(&selected, ctx.system.target, &ctx.block);
+    if template.matrix_rows != probe.matrix_rows
+        || template.matrix_cols != probe.matrix_cols
+        || template.row_monomial_hash != probe.action_shape_hash
+        || template.column_support_hash != probe.characteristic_support_hash
         || support_plan_hash(&plan.support_plan) != plan.support_plan.support_hash
     {
         return Err(implementation_bug(
             "target-action-krylov characteristic coverage plan is not reproducible",
+        ));
+    }
+    if trace.degree_bound > plan.support_plan.degree_bound {
+        return Err(implementation_bug(
+            "target-action-krylov execution exceeded planned characteristic degree bound",
         ));
     }
     if !trace.coverage.no_coordinate_roots_exported
@@ -407,6 +413,48 @@ pub fn execute_target_action_krylov(
     };
     message.package_hash = projection_message_hash(&message);
     Ok(message)
+}
+
+fn probe_target_action_krylov_plan(
+    selection: &TargetActionSelection,
+    target: VariableId,
+    block: &ProjectionBlock,
+) -> TargetActionKrylovPlanProbe {
+    let source_degree_bound = selection
+        .source_polynomials()
+        .iter()
+        .map(|poly| poly_total_degree(poly) as usize)
+        .max()
+        .unwrap_or(1);
+    let rank_estimate = block
+        .local_variables
+        .len()
+        .max(selection.source_hashes().len())
+        .max(source_degree_bound)
+        .max(1);
+    let degree_bound = rank_estimate.max(1);
+    let mut chunks = vec![target.0.to_be_bytes().to_vec()];
+    for hash in selection.source_hashes() {
+        chunks.push(hash.0.to_vec());
+    }
+    for variable in &block.local_variables {
+        chunks.push(variable.0.to_be_bytes().to_vec());
+    }
+    let action_shape_hash = hash_sequence("target-action-krylov-planned-action-shape", &chunks);
+    let characteristic_support_hash = hash_sequence(
+        "target-action-krylov-planned-characteristic-support",
+        &[
+            action_shape_hash.0.to_vec(),
+            degree_bound.to_be_bytes().to_vec(),
+        ],
+    );
+    TargetActionKrylovPlanProbe {
+        matrix_rows: rank_estimate,
+        matrix_cols: rank_estimate,
+        degree_bound,
+        action_shape_hash,
+        characteristic_support_hash,
+    }
 }
 
 fn build_target_action_krylov_trace(
@@ -1129,7 +1177,9 @@ mod tests {
     use crate::compose::message::{MessageRepresentation, ProjectionStrength};
     use crate::kernels::traits::{KernelKind, TargetProjectionKernel};
     use crate::planner::admission::{collect_kernel_admissions, KernelAdmissionStatus};
-    use crate::planner::kernel_plan::hash_kernel_execution_plan;
+    use crate::planner::kernel_plan::{
+        hash_kernel_execution_plan, support_plan_hash, PlanWorkClassification,
+    };
     use crate::planner::probes::run_cost_probes;
     use crate::preprocess::compression::CompressionState;
     use crate::problem::canonicalize::canonicalize_system;
@@ -1349,7 +1399,7 @@ mod tests {
     }
 
     #[test]
-    fn p12g_action_krylov_plan_probe_classification_is_replayed_in_execute() {
+    fn p12g_action_krylov_pure_plan_template_is_replayed_in_execute() {
         let t = VariableId(0);
         let x = VariableId(1);
         let compressed = compressed_system(
@@ -1375,13 +1425,14 @@ mod tests {
 
         assert!(matches!(
             plan.plan_work_classification,
-            crate::planner::kernel_plan::PlanWorkClassification::CertifiedProbePlan(_)
+            PlanWorkClassification::PurePlan
         ));
-        if let crate::planner::kernel_plan::PlanWorkClassification::CertifiedProbePlan(probe) =
-            &mut plan.plan_work_classification
-        {
-            probe.probe_output_hashes = vec![hash_sequence("tampered-probe-output", &[])];
-        }
+        plan.support_plan
+            .template_plan
+            .as_mut()
+            .unwrap()
+            .row_monomial_hash = hash_sequence("tampered-target-action-template", &[]);
+        plan.support_plan.support_hash = support_plan_hash(&plan.support_plan);
         plan.plan_hash = hash_kernel_execution_plan(&plan);
         let err = kernel
             .execute(&plan, &mut kctx, &mut solver_ctx)
@@ -1415,23 +1466,19 @@ mod tests {
             .plan(&kernel.admit(&kctx.block, &kctx), &kctx, &solver_ctx)
             .unwrap();
 
-        let crate::planner::kernel_plan::PlanWorkClassification::CertifiedProbePlan(probe) =
-            &plan.plan_work_classification
-        else {
-            panic!("TargetActionKrylov plan-time algebra must be a certified probe");
-        };
         assert_eq!(
-            probe.authorization_hash,
-            plan.input_block_authorization_hash
+            plan.plan_work_classification,
+            PlanWorkClassification::PurePlan
         );
-        assert_eq!(probe.resource_trace_hash, plan.resource_bounds.bounds_hash);
-        assert_eq!(probe.cost_trace_hash, plan.support_plan.support_hash);
-        assert!(probe.execute_replay_required);
-        assert_eq!(probe.probe_output_hashes.len(), 1);
+        let template = plan.support_plan.template_plan.as_ref().unwrap();
+        assert_eq!(template.matrix_rows, plan.support_plan.degree_bound);
+        assert_eq!(template.matrix_cols, plan.support_plan.degree_bound);
+        assert_eq!(plan.exported_variables, vec![t]);
+        assert_eq!(plan.eliminated_variables, vec![x]);
     }
 
     #[test]
-    fn p12g_certified_probe_plan_hash_tamper_fails() {
+    fn p12g_target_action_support_plan_hash_tamper_fails() {
         let t = VariableId(0);
         let x = VariableId(1);
         let compressed = compressed_system(
@@ -1455,11 +1502,7 @@ mod tests {
         let mut plan = kernel
             .plan(&kernel.admit(&kctx.block, &kctx), &kctx, &solver_ctx)
             .unwrap();
-        if let crate::planner::kernel_plan::PlanWorkClassification::CertifiedProbePlan(probe) =
-            &mut plan.plan_work_classification
-        {
-            probe.resource_trace_hash = hash_sequence("tampered-resource-trace", &[]);
-        }
+        plan.support_plan.degree_bound = plan.support_plan.degree_bound.saturating_add(1);
         plan.plan_hash = hash_kernel_execution_plan(&plan);
 
         let err = kernel

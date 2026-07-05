@@ -86,6 +86,15 @@ struct RegularChainProjectionTrace {
     trace_hash: Hash,
 }
 
+#[derive(Debug, Clone)]
+struct RegularChainPlanProbe {
+    row_count: usize,
+    column_count: usize,
+    max_degree: usize,
+    source_shape_hash: Hash,
+    output_support_hash: Hash,
+}
+
 pub fn admit_regular_chain_projection(
     block: &ProjectionBlock,
     ctx: &KernelContext,
@@ -120,32 +129,29 @@ pub fn plan_regular_chain_projection(
         .collect::<Vec<_>>();
     let exported = sorted_set(&block.exported_variables);
     let variables = sorted_set(&block.local_variables);
-    let trace = build_regular_chain_trace(&relations, &system.guards, &variables, &exported)?;
+    let probe = probe_regular_chain_plan(&relations, &system.guards, &variables, &exported)?;
     let mut support_plan = KernelSupportPlan {
         dense_relation_search_schedule: None,
         affine_elimination_order: None,
         template_plan: Some(template_plan(
-            trace.dag.chains.len().max(1),
-            trace.generators.len().max(1),
-            trace.dag.dag_hash,
-            trace.component_hash,
+            probe.row_count,
+            probe.column_count,
+            probe.source_shape_hash,
+            probe.output_support_hash,
         )),
-        rank_plan: Some(rank_plan(trace.generators.len().max(1))),
+        rank_plan: Some(rank_plan(probe.column_count)),
         universal_strategy_sequence: Vec::new(),
-        degree_bound: trace.max_degree,
+        degree_bound: probe.max_degree,
         support_hash: hash_sequence("kernel-support-plan", &[]),
     };
     support_plan.support_hash = support_plan_hash(&support_plan);
     let mut bounds = ResourceBounds {
-        max_matrix_rows: solver_ctx
-            .options
-            .max_matrix_rows
-            .or(Some(trace.dag.chains.len().max(1))),
+        max_matrix_rows: solver_ctx.options.max_matrix_rows.or(Some(probe.row_count)),
         max_matrix_cols: solver_ctx
             .options
             .max_matrix_cols
-            .or(Some(trace.generators.len().max(1))),
-        max_export_degree: Some(trace.max_degree),
+            .or(Some(probe.column_count)),
+        max_export_degree: Some(probe.max_degree),
         max_multiplier_total_degree: None,
         max_local_elimination_steps: Some(relations.len().saturating_mul(variables.len()).max(1)),
         max_memory_bytes: solver_ctx.options.max_memory_bytes,
@@ -226,11 +232,25 @@ pub fn execute_regular_chain_projection(
     let Some(template) = &plan.support_plan.template_plan else {
         return Err(implementation_bug("regular-chain plan lacks template plan"));
     };
-    if template.row_monomial_hash != trace.dag.dag_hash
-        || template.column_support_hash != trace.component_hash
+    let planned_source_hash = planned_regular_chain_source_shape_hash(
+        &relations,
+        &ctx.system.guards,
+        &sorted_set(&ctx.block.local_variables),
+    );
+    if template.row_monomial_hash != planned_source_hash
+        || template.column_support_hash
+            != planned_regular_chain_output_support_hash(
+                &plan.exported_variables,
+                plan.support_plan.degree_bound,
+            )
     {
         return Err(implementation_bug(
             "regular-chain projection trace does not match plan support",
+        ));
+    }
+    if trace.max_degree > plan.support_plan.degree_bound {
+        return Err(implementation_bug(
+            "regular-chain execution exceeded planned export degree bound",
         ));
     }
     validate_exported_generators(&trace.generators, &plan.exported_variables)?;
@@ -287,6 +307,27 @@ pub fn execute_regular_chain_projection(
     Ok(message)
 }
 
+fn probe_regular_chain_plan(
+    relations: &[SparsePolynomialQ],
+    guards: &[GuardRecord],
+    variables: &[VariableId],
+    exported: &[VariableId],
+) -> Result<RegularChainPlanProbe, SolverError> {
+    if relations.is_empty() || exported.is_empty() {
+        return Err(algorithmic_hard_case(
+            "regular-chain projection plan requires local relations and exported variables",
+        ));
+    }
+    let max_degree = relations.iter().map(poly_total_degree).max().unwrap_or(1) as usize;
+    Ok(RegularChainPlanProbe {
+        row_count: relations.len().max(1),
+        column_count: exported.len().max(1),
+        max_degree,
+        source_shape_hash: planned_regular_chain_source_shape_hash(relations, guards, variables),
+        output_support_hash: planned_regular_chain_output_support_hash(exported, max_degree),
+    })
+}
+
 fn build_regular_chain_trace(
     relations: &[SparsePolynomialQ],
     guards: &[GuardRecord],
@@ -333,6 +374,35 @@ fn build_regular_chain_trace(
         component_hash,
         trace_hash,
     })
+}
+
+fn planned_regular_chain_source_shape_hash(
+    relations: &[SparsePolynomialQ],
+    guards: &[GuardRecord],
+    variables: &[VariableId],
+) -> Hash {
+    let mut chunks = Vec::new();
+    for relation in relations {
+        chunks.push(relation.hash.0.to_vec());
+    }
+    chunks.push(Vec::new());
+    for guard in guards {
+        chunks.push(guard.guard_hash.0.to_vec());
+    }
+    chunks.push(Vec::new());
+    for variable in variables {
+        chunks.push(variable.0.to_be_bytes().to_vec());
+    }
+    hash_sequence("regular-chain-planned-source-shape", &chunks)
+}
+
+fn planned_regular_chain_output_support_hash(exported: &[VariableId], max_degree: usize) -> Hash {
+    let mut chunks = Vec::new();
+    for variable in exported {
+        chunks.push(variable.0.to_be_bytes().to_vec());
+    }
+    chunks.push(max_degree.to_be_bytes().to_vec());
+    hash_sequence("regular-chain-planned-output-support", &chunks)
 }
 
 fn validate_regular_chain_plan_binding(

@@ -39,6 +39,7 @@ use crate::types::polynomial::{
     clear_denominators_primitive, poly_monomial_count, poly_total_degree, poly_variables,
     SparsePolynomialQ,
 };
+use crate::types::rational::rational_to_bytes;
 use crate::verify::certificates::{
     KernelCertificate, KernelCertificatePayload, SpecializationInterpolationProjectionCertificate,
 };
@@ -94,6 +95,15 @@ struct SpecializationInterpolationTrace {
     sample_hash: Hash,
     support_hash: Hash,
     trace_hash: Hash,
+}
+
+#[derive(Debug, Clone)]
+struct SpecializationInterpolationPlanProbe {
+    matrix_rows: usize,
+    matrix_cols: usize,
+    degree_bound: usize,
+    sample_hash: Hash,
+    support_hash: Hash,
 }
 
 #[derive(Debug, Clone)]
@@ -153,27 +163,25 @@ pub fn plan_specialization_interpolation_with_messages(
         .difference(&block.exported_variables)
         .copied()
         .collect::<Vec<_>>();
-    let mut trace_ctx = solver_ctx.clone();
-    let trace = build_specialization_interpolation_trace(
+    let probe = probe_specialization_interpolation_plan(
         &relation_polys,
         &eliminated,
         &exported,
         system.target,
-        &mut trace_ctx,
     )?;
     let template = template_plan(
-        trace.matrix_rows,
-        trace.matrix_cols,
-        trace.sample_hash,
-        trace.support_hash,
+        probe.matrix_rows,
+        probe.matrix_cols,
+        probe.sample_hash,
+        probe.support_hash,
     );
     let mut support_plan = KernelSupportPlan {
         dense_relation_search_schedule: None,
         affine_elimination_order: None,
         template_plan: Some(template),
-        rank_plan: Some(rank_plan(trace.matrix_cols)),
+        rank_plan: Some(rank_plan(probe.matrix_cols)),
         universal_strategy_sequence: Vec::new(),
-        degree_bound: trace.degree_bound,
+        degree_bound: probe.degree_bound,
         support_hash: hash_sequence("kernel-support-plan", &[]),
     };
     support_plan.support_hash = support_plan_hash(&support_plan);
@@ -181,12 +189,12 @@ pub fn plan_specialization_interpolation_with_messages(
         max_matrix_rows: solver_ctx
             .options
             .max_matrix_rows
-            .or(Some(trace.matrix_rows)),
+            .or(Some(probe.matrix_rows)),
         max_matrix_cols: solver_ctx
             .options
             .max_matrix_cols
-            .or(Some(trace.matrix_cols)),
-        max_export_degree: Some(trace.degree_bound),
+            .or(Some(probe.matrix_cols)),
+        max_export_degree: Some(probe.degree_bound),
         max_multiplier_total_degree: None,
         max_local_elimination_steps: Some(eliminated.len().max(1)),
         max_memory_bytes: solver_ctx.options.max_memory_bytes,
@@ -273,14 +281,26 @@ pub fn execute_specialization_interpolation(
             "specialization-interpolation plan lacks template plan",
         ));
     };
+    let probe = probe_specialization_interpolation_plan(
+        &relation_polys,
+        &plan.eliminated_variables,
+        &plan.exported_variables,
+        ctx.system.target,
+    )?;
     if template.matrix_rows != trace.matrix_rows
         || template.matrix_cols != trace.matrix_cols
-        || template.row_monomial_hash != trace.sample_hash
-        || template.column_support_hash != trace.support_hash
+        || template.row_monomial_hash != probe.sample_hash
+        || template.column_support_hash != probe.support_hash
+        || trace.support_hash != probe.support_hash
         || support_plan_hash(&plan.support_plan) != plan.support_plan.support_hash
     {
         return Err(implementation_bug(
             "specialization-interpolation sample/support plan is not reproducible",
+        ));
+    }
+    if trace.degree_bound > plan.support_plan.degree_bound {
+        return Err(implementation_bug(
+            "specialization-interpolation execution exceeded planned degree bound",
         ));
     }
     let exported = plan
@@ -455,6 +475,42 @@ fn build_specialization_interpolation_trace(
         sample_hash,
         support_hash,
         trace_hash,
+    })
+}
+
+fn probe_specialization_interpolation_plan(
+    relations: &[SparsePolynomialQ],
+    eliminated: &[VariableId],
+    exported: &[VariableId],
+    target: VariableId,
+) -> Result<SpecializationInterpolationPlanProbe, SolverError> {
+    let separators = exported
+        .iter()
+        .copied()
+        .filter(|var| *var != target)
+        .collect::<Vec<_>>();
+    if separators.is_empty() {
+        return Err(algorithmic_hard_case(
+            "specialization-interpolation requires a non-target exported separator",
+        ));
+    }
+    let degree_bound = specialization_interpolation_degree_bound(relations, eliminated, exported);
+    let coefficient_support = build_multiseparator_coefficient_support(&separators, degree_bound);
+    let points =
+        choose_multiseparator_specialization_points(&separators, &coefficient_support, 101);
+    let support_hash = hash_sequence(
+        "specialization-interpolation-coefficient-support",
+        &coefficient_support
+            .iter()
+            .map(monomial_to_bytes)
+            .collect::<Vec<_>>(),
+    );
+    Ok(SpecializationInterpolationPlanProbe {
+        matrix_rows: points.len(),
+        matrix_cols: coefficient_support.len(),
+        degree_bound,
+        sample_hash: hash_specialization_points(&points),
+        support_hash,
     })
 }
 
@@ -736,6 +792,9 @@ fn specialization_interpolation_certificate_hash(
         plan.plan_hash.0.to_vec(),
         trace.trace_hash.0.to_vec(),
         trace.interpolation_certificate.relation_hash.0.to_vec(),
+        trace.degree_bound.to_be_bytes().to_vec(),
+        trace.sample_hash.0.to_vec(),
+        trace.support_hash.0.to_vec(),
     ];
     for sample in &trace.samples {
         chunks.push(sample.relation.hash.0.to_vec());
@@ -754,6 +813,19 @@ fn hash_specialization_samples(samples: &[SpecializedRelation]) -> Hash {
         chunks.push(sample.relation.hash.0.to_vec());
     }
     hash_sequence("specialization-interpolation-samples", &chunks)
+}
+
+fn hash_specialization_points(points: &[SpecializationPoint]) -> Hash {
+    let mut chunks = Vec::new();
+    for point in points {
+        chunks.push(point.prime.to_be_bytes().to_vec());
+        for (variable, value) in &point.assignments {
+            chunks.push(variable.0.to_be_bytes().to_vec());
+            chunks.push(rational_to_bytes(value));
+        }
+        chunks.push(Vec::new());
+    }
+    hash_sequence("specialization-interpolation-sample-points", &chunks)
 }
 
 fn finish_admission(

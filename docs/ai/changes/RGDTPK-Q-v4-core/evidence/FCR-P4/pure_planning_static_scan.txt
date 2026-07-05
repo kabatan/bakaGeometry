@@ -1,0 +1,39 @@
+FCR-P4 static plan/execute separation scan.
+
+Plan/probe functions inspected by tests/fcr_p4_pure_planning.rs:
+
+PASS fcr_plan_sparse_resultant_does_not_construct_output_relation
+- plan_sparse_resultant_with_messages does not call build_sparse_resultant_trace or compute_resultant_relation.
+- probe_sparse_resultant_plan builds a template/support-bound probe only.
+
+PASS fcr_plan_specialization_interpolation_does_not_run_inner_kernel
+- plan_specialization_interpolation_with_messages does not call build_specialization_interpolation_trace.
+- probe_specialization_interpolation_plan does not call execute_inner_target_only_kernel, execute_target_relation_search, or eliminate_to_keep_variables.
+
+PASS fcr_plan_regular_chain_does_not_project_chain
+- plan_regular_chain_projection does not call build_regular_chain_trace.
+- probe_regular_chain_plan does not call local_regular_chain_decomposition, project_chain_to_variables, or combine_chain_projections.
+
+PASS fcr_plan_norm_trace_does_not_construct_norm_relation
+- plan_norm_trace_projection does not call build_norm_trace_trace.
+- probe_norm_trace_plan does not call norm_relation_for_tower_plan.
+
+PASS fcr_plan_target_action_does_not_construct_final_support
+- plan_target_action_krylov_with_messages does not call build_target_action_krylov_trace.
+- probe_target_action_krylov_plan does not call build_production_target_relevant_quotient_handle, block_krylov_sequence, recover_recurrence, or certify_krylov_coverage.
+
+PASS fcr_plan_universal_elimination_does_not_run_inner_execution
+- plan_universal_elimination and plan_universal_elimination_with_messages do not call compute_resultant_relation, execute_target_relation_search, eliminate_to_keep_variables, local_regular_chain_decomposition, project_chain_to_variables, or norm_relation_for_tower_plan.
+
+Execute-side recomputation/certification inspected:
+
+PASS fcr_execute_recomputes_and_certifies_declared_plan_outputs
+- execute_sparse_resultant calls build_sparse_resultant_trace and sparse_resultant_certificate_hash.
+- execute_specialization_interpolation calls build_specialization_interpolation_trace and verify_interpolated_relation_by_elimination.
+- execute_regular_chain_projection calls build_regular_chain_trace and regular_chain_certificate_hash.
+- execute_norm_trace_projection calls build_norm_trace_trace and norm_trace_certificate_hash.
+- execute_target_action_krylov calls build_target_action_krylov_trace and target_action_krylov_certificate_hash.
+
+Claim limit:
+- This scan supports only FCR-P4 plan/execute separation.
+- It does not claim generic advanced-kernel readiness, candidate-cover readiness, exact-image readiness, source fidelity, or acceptance completion.

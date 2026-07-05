@@ -1,0 +1,46 @@
+FCR-P4 command evidence summary, refreshed after the last code change.
+
+1. cargo fmt
+   cwd: geosolver-core
+   exit_code: 0
+
+2. cargo test
+   cwd: geosolver-core
+   exit_code: 0
+   summary:
+   - lib tests: 198 passed, 0 failed
+   - tests/fcr_p4_pure_planning.rs: 7 passed, 0 failed
+   - tests/p12_roots_decode_integration.rs: 1 passed, 0 failed
+   - tests/p12g_generality_stress.rs: 1 passed, 0 failed
+   - tests/p3_public_pipeline_integration.rs: 1 passed, 0 failed
+   - doc tests: 0 passed, 0 failed
+
+3. cargo check
+   cwd: geosolver-core
+   exit_code: 0
+   summary: Finished dev profile successfully.
+
+4. git diff --check
+   cwd: repository root
+   exit_code: 0
+   summary: no whitespace errors; Git emitted line-ending warnings only for tracked Rust files.
+
+5. cargo test --test fcr_p4_pure_planning
+   cwd: geosolver-core
+   exit_code: 0
+   covered by cargo test integration-test output:
+   - fcr_plan_sparse_resultant_does_not_construct_output_relation
+   - fcr_plan_specialization_interpolation_does_not_run_inner_kernel
+   - fcr_plan_regular_chain_does_not_project_chain
+   - fcr_plan_norm_trace_does_not_construct_norm_relation
+   - fcr_plan_target_action_does_not_construct_final_support
+   - fcr_plan_universal_elimination_does_not_run_inner_execution
+   - fcr_execute_recomputes_and_certifies_declared_plan_outputs
+
+6. schema and hash validation for FCR-P4 review archive
+   cwd: repository root
+   exit_code: 0
+   summary:
+   - schema_and_hash_validation: PASS
+   - review_summary.yaml and evidence_manifest.yaml validated against their schemas.
+   - file hashes in the archive were checked against current file contents.

@@ -1,0 +1,147 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: FCR-P4
+commit: adbef2b35e5e5a36897a5b17202f96331147df82+fcr-p4-worktree
+algorithm_spec_source_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+failure_source_sha256: a97b50bf597ed590889a7609a2cb25d9ec40f7be27d47adf332e52d3fa8abe36
+base_spec_sha256: 1f73bd7a26b2566b08f53d31b14785110466e8ae6170b6769d1af17d50a36047
+plan_sha256: b836599108c1db4a4e828e672780e5074049045fe5fa590e94252cdc91850bb9
+source_map_sha256: 892b75221a3f724ab864e0214e3a0559e99331cda0b8fba4976f5a21372f08ec
+review_archive_schema_sha256: d3db02e4abc8cc3065e2be8e82614b3703266ad0c0ce6cf3c0ce85ad662d364c
+review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
+evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_BASE_SPEC.md
+  sha256: 1f73bd7a26b2566b08f53d31b14785110466e8ae6170b6769d1af17d50a36047
+  purpose: "FCR-P4 source: forbidden planning work and PurePlan limits"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_PLAN.md
+  sha256: b836599108c1db4a4e828e672780e5074049045fe5fa590e94252cdc91850bb9
+  purpose: "FCR-P4 source: plan/execute separation requirements"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_SOURCE_SPEC_COMPLIANCE_MAP.md
+  sha256: 892b75221a3f724ab864e0214e3a0559e99331cda0b8fba4976f5a21372f08ec
+  purpose: "FCR-P4 source: compliance map and claim limits"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_REVIEWER_PROMPTS.md
+  sha256: 28075ea55b02213c4b38f5304735f87b163ab7eddb15121eefe072878a1f387b
+  purpose: "FCR-P4 source: reviewer fail/pass prompt"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/BASE_SPEC.md
+  sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+  purpose: "FCR-P4 source: approved base spec"
+- path: geosolver-core/src/kernels/sparse_resultant.rs
+  sha256: f802e2f2039aaf0b912e33114b4ddc8fb8fe0ae6feb4c3087725dc19ade87303
+  purpose: "FCR-P4 code: sparse resultant pure planning and execute trace"
+- path: geosolver-core/src/kernels/specialization_interpolation.rs
+  sha256: 68c5b7a988cf3c5db1f89f297081f8d5ad3af9c0ae8fa865a4b92f9263ea3405
+  purpose: "FCR-P4 code: specialization pure planning and execute trace"
+- path: geosolver-core/src/kernels/regular_chain_projection.rs
+  sha256: d07069d452c2474136521de9f3e66f5a6fdbcf04c704955a970ebb4d5f1585c8
+  purpose: "FCR-P4 code: regular-chain pure planning and execute trace"
+- path: geosolver-core/src/kernels/norm_trace_projection.rs
+  sha256: dfaf02509f624688e534a3ac81c0ada41868990670a98d04367ef0bd31564f89
+  purpose: "FCR-P4 code: norm-trace pure planning and execute trace"
+- path: geosolver-core/src/kernels/action_krylov.rs
+  sha256: 77d23970e4f513639bb0054fc20b7bd01f7d04d967d5045278c7439cb63a30fb
+  purpose: "FCR-P4 code: target-action pure planning and execute trace"
+- path: geosolver-core/src/kernels/universal_elimination.rs
+  sha256: b2372b3b427330556b5d82817012d103fd56b0aa5632e3307d7638893cc00a01
+  purpose: "FCR-P4 code: universal plan inspected for forbidden final-output execution"
+- path: geosolver-core/src/planner/kernel_plan.rs
+  sha256: 0a584475e3918693fffba24d14e0ada600db689b1df67d934ba1dab97f145cb6
+  purpose: "FCR-P4 code: plan classification model"
+- path: geosolver-core/tests/fcr_p4_pure_planning.rs
+  sha256: 6e1566104be229178afdf1a317814a717b38736d87225b7bef743e4fa9b6f675
+  purpose: "FCR-P4 tests: static plan/execute separation tests"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P4/commands.txt
+  sha256: 49c9dbaac5e77149e256e5ce2277b4ce3225afa5bb96143c6f811e8729ae9ab0
+  purpose: "FCR-P4 evidence: commands run"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P4/command_outputs.txt
+  sha256: 6351351880e2c3eb2b4142be6f712fb3855e278497125d6072e66a9986e979f1
+  purpose: "FCR-P4 evidence: command outputs and summaries"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P4/pure_planning_static_scan.txt
+  sha256: 2b991dae563fdcaa93d5019b9d718eec634c92d2fb998cedaf629a2589432e04
+  purpose: "FCR-P4 evidence: static plan/probe forbidden-call scan"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P4/guardian_boundary_reviewer_pass.md
+  sha256: 4958ebe1a3bb80e17e4e7bf916c3dfdbda507469bc6284c0af422f187d2b66be
+  purpose: "FCR-P4 evidence: guardian PASS response"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P4/20260705-165124Z/prompt.md
+  sha256: 3180f954d439bd9a73d0a53a0b98bd257b6661876d1aed5be0ac0ef08b2dcd39
+  purpose: "FCR-P4 archived reviewer prompt"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P4/20260705-165124Z/response.md
+  sha256: 4958ebe1a3bb80e17e4e7bf916c3dfdbda507469bc6284c0af422f187d2b66be
+  purpose: "FCR-P4 archived reviewer response"
+command_outputs:
+- command: cargo fmt
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P4/command_outputs.txt
+  output_sha256: 6351351880e2c3eb2b4142be6f712fb3855e278497125d6072e66a9986e979f1
+  finished_at_utc: 20260705-165124Z
+- command: cargo test
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P4/command_outputs.txt
+  output_sha256: 6351351880e2c3eb2b4142be6f712fb3855e278497125d6072e66a9986e979f1
+  finished_at_utc: 20260705-165124Z
+- command: cargo check
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P4/command_outputs.txt
+  output_sha256: 6351351880e2c3eb2b4142be6f712fb3855e278497125d6072e66a9986e979f1
+  finished_at_utc: 20260705-165124Z
+- command: git diff --check
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P4/command_outputs.txt
+  output_sha256: 6351351880e2c3eb2b4142be6f712fb3855e278497125d6072e66a9986e979f1
+  finished_at_utc: 20260705-165124Z
+- command: cargo test --test fcr_p4_pure_planning
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P4/command_outputs.txt
+  output_sha256: 6351351880e2c3eb2b4142be6f712fb3855e278497125d6072e66a9986e979f1
+  finished_at_utc: 20260705-165124Z
+- command: static FCR-P4 plan/probe scan
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P4/pure_planning_static_scan.txt
+  output_sha256: 2b991dae563fdcaa93d5019b9d718eec634c92d2fb998cedaf629a2589432e04
+  finished_at_utc: 20260705-165124Z
+- command: guardian_boundary_reviewer FCR-P4
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P4/guardian_boundary_reviewer_pass.md
+  output_sha256: 4958ebe1a3bb80e17e4e7bf916c3dfdbda507469bc6284c0af422f187d2b66be
+  finished_at_utc: 20260705-165124Z
+- command: schema and hash validation for FCR-P4 review archive
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P4/command_outputs.txt
+  output_sha256: 6351351880e2c3eb2b4142be6f712fb3855e278497125d6072e66a9986e979f1
+  finished_at_utc: 20260705-165124Z
+static_scans:
+- scan_id: fcr-p4-no-plan-final-relation-builders
+  command: cargo test --test fcr_p4_pure_planning
+  forbidden_pattern: plan/probe body calls final relation generator builders
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P4/pure_planning_static_scan.txt
+- scan_id: fcr-p4-execute-recomputes-and-certifies
+  command: cargo test --test fcr_p4_pure_planning
+  forbidden_pattern: execute path lacks trace recomputation or certificate binding
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P4/pure_planning_static_scan.txt
+- scan_id: fcr-p4-no-certified-probe-hide-final-output
+  command: reviewer code inspection and static tests
+  forbidden_pattern: CertifiedProbePlan hiding final output construction during planning
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P4/guardian_boundary_reviewer_pass.md
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_PRODUCTION_AUDIT.md
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P4/guardian_boundary_reviewer_pass.md
+known_limitations:
+- KernelExecutionPlan::new still defaults to PurePlan; future non-pure planners must not use it without explicit classification.
+- FCR-P4 only admits current plan/execute separation and does not close generic advanced-kernel readiness.
+- Candidate-cover core readiness, exact-image readiness, source fidelity, and acceptance completion remain forbidden.
+- No R-ID is marked VERIFIED.
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-011
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-011
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

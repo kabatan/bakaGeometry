@@ -79,6 +79,14 @@ struct NormTraceProjectionTrace {
     trace_hash: Hash,
 }
 
+#[derive(Debug, Clone)]
+struct NormTracePlanProbe {
+    tower: TowerPlanDescription,
+    matrix_cols: usize,
+    max_degree: usize,
+    output_support_hash: Hash,
+}
+
 pub fn admit_norm_trace_projection(
     block: &ProjectionBlock,
     ctx: &KernelContext,
@@ -113,19 +121,19 @@ pub fn plan_norm_trace_projection(
         .map(|input| input.polynomial.clone())
         .collect::<Vec<_>>();
     let exported = sorted_set(&block.exported_variables);
-    let trace = build_norm_trace_trace(&relations, &exported)?;
+    let probe = probe_norm_trace_plan(&relations, &exported)?;
     let mut support_plan = KernelSupportPlan {
         dense_relation_search_schedule: None,
         affine_elimination_order: None,
         template_plan: Some(template_plan(
             1,
-            trace.relation.terms.len().max(1),
-            trace.tower.tower_hash,
-            trace.relation.hash,
+            probe.matrix_cols,
+            probe.tower.tower_hash,
+            probe.output_support_hash,
         )),
         rank_plan: Some(rank_plan(1)),
         universal_strategy_sequence: Vec::new(),
-        degree_bound: trace.max_degree,
+        degree_bound: probe.max_degree,
         support_hash: hash_sequence("kernel-support-plan", &[]),
     };
     support_plan.support_hash = support_plan_hash(&support_plan);
@@ -134,8 +142,8 @@ pub fn plan_norm_trace_projection(
         max_matrix_cols: solver_ctx
             .options
             .max_matrix_cols
-            .or(Some(trace.relation.terms.len().max(1))),
-        max_export_degree: Some(trace.max_degree),
+            .or(Some(probe.matrix_cols)),
+        max_export_degree: Some(probe.max_degree),
         max_multiplier_total_degree: None,
         max_local_elimination_steps: Some(relations.len().max(1)),
         max_memory_bytes: solver_ctx.options.max_memory_bytes,
@@ -212,10 +220,19 @@ pub fn execute_norm_trace_projection(
         return Err(implementation_bug("norm-trace plan lacks template plan"));
     };
     if template.row_monomial_hash != trace.tower.tower_hash
-        || template.column_support_hash != trace.relation.hash
+        || template.column_support_hash
+            != planned_norm_output_support_hash(
+                &plan.exported_variables,
+                plan.support_plan.degree_bound,
+            )
     {
         return Err(implementation_bug(
             "norm-trace projection trace does not match plan support",
+        ));
+    }
+    if trace.max_degree > plan.support_plan.degree_bound {
+        return Err(implementation_bug(
+            "norm-trace execution exceeded planned export degree bound",
         ));
     }
     validate_exported_relation(&trace.relation, &plan.exported_variables)?;
@@ -262,6 +279,24 @@ pub fn execute_norm_trace_projection(
     Ok(message)
 }
 
+fn probe_norm_trace_plan(
+    relations: &[SparsePolynomialQ],
+    exported: &[VariableId],
+) -> Result<NormTracePlanProbe, SolverError> {
+    let Some(tower) = detect_explicit_tower_plan(relations, exported) else {
+        return Err(algorithmic_hard_case(
+            "no explicit algebraic tower detected by algebraic form",
+        ));
+    };
+    let max_degree = planned_tower_degree_bound(&tower);
+    Ok(NormTracePlanProbe {
+        matrix_cols: tower.source_relation_hashes.len().max(1),
+        output_support_hash: planned_norm_output_support_hash(exported, max_degree),
+        tower,
+        max_degree,
+    })
+}
+
 fn build_norm_trace_trace(
     relations: &[SparsePolynomialQ],
     exported: &[VariableId],
@@ -304,6 +339,40 @@ fn build_norm_trace_trace(
         max_degree,
         trace_hash,
     })
+}
+
+fn planned_norm_output_support_hash(exported: &[VariableId], max_degree: usize) -> Hash {
+    let mut chunks = Vec::new();
+    for variable in exported {
+        chunks.push(variable.0.to_be_bytes().to_vec());
+    }
+    chunks.push(max_degree.to_be_bytes().to_vec());
+    hash_sequence("norm-trace-planned-output-support", &chunks)
+}
+
+fn planned_tower_degree_bound(tower: &TowerPlanDescription) -> usize {
+    let mut degree = tower
+        .steps
+        .iter()
+        .map(|step| degree_in_variable(&tower.target_minus_expression, step.algebraic_variable))
+        .max()
+        .unwrap_or(1)
+        .max(1);
+    for step in &tower.steps {
+        degree = degree.saturating_mul(
+            degree_in_variable(&step.minimal_polynomial, step.algebraic_variable).max(1),
+        );
+    }
+    degree.max(1)
+}
+
+fn degree_in_variable(poly: &SparsePolynomialQ, var: VariableId) -> usize {
+    poly.terms
+        .iter()
+        .flat_map(|term| term.monomial.exponents.iter())
+        .filter_map(|(candidate, exponent)| (*candidate == var).then_some(*exponent as usize))
+        .max()
+        .unwrap_or(0)
 }
 
 fn validate_norm_trace_plan_binding(

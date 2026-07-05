@@ -83,6 +83,15 @@ struct SparseResultantTrace {
 }
 
 #[derive(Debug, Clone)]
+struct SparseResultantPlanProbe {
+    matrix_rows: usize,
+    matrix_cols: usize,
+    max_degree: usize,
+    template_trace_hash: Hash,
+    output_support_hash: Hash,
+}
+
+#[derive(Debug, Clone)]
 struct ResultantRelationInput {
     polynomial: SparsePolynomialQ,
     source_relation_ids: Vec<RelationId>,
@@ -144,20 +153,20 @@ pub fn plan_sparse_resultant_with_messages(
         .copied()
         .collect::<Vec<_>>();
     let max_dim = sparse_resultant_matrix_cap(solver_ctx, &relation_polys);
-    let trace = build_sparse_resultant_trace(&relation_polys, &eliminated, &exported, max_dim)?;
+    let probe = probe_sparse_resultant_plan(&relation_polys, &eliminated, &exported, max_dim)?;
     let template = template_plan(
-        trace.matrix_rows,
-        trace.matrix_cols,
-        trace.template_trace_hash,
-        trace.output_support_hash,
+        probe.matrix_rows,
+        probe.matrix_cols,
+        probe.template_trace_hash,
+        probe.output_support_hash,
     );
     let mut support_plan = KernelSupportPlan {
         dense_relation_search_schedule: None,
         affine_elimination_order: None,
         template_plan: Some(template),
-        rank_plan: Some(rank_plan(trace.matrix_rows.min(trace.matrix_cols))),
+        rank_plan: Some(rank_plan(probe.matrix_rows.min(probe.matrix_cols))),
         universal_strategy_sequence: Vec::new(),
-        degree_bound: trace.max_degree,
+        degree_bound: probe.max_degree,
         support_hash: hash_sequence("kernel-support-plan", &[]),
     };
     support_plan.support_hash = support_plan_hash(&support_plan);
@@ -165,12 +174,12 @@ pub fn plan_sparse_resultant_with_messages(
         max_matrix_rows: solver_ctx
             .options
             .max_matrix_rows
-            .or(Some(trace.matrix_rows)),
+            .or(Some(probe.matrix_rows)),
         max_matrix_cols: solver_ctx
             .options
             .max_matrix_cols
-            .or(Some(trace.matrix_cols)),
-        max_export_degree: Some(trace.max_degree),
+            .or(Some(probe.matrix_cols)),
+        max_export_degree: Some(probe.max_degree),
         max_multiplier_total_degree: None,
         max_local_elimination_steps: Some(eliminated.len().max(1)),
         max_memory_bytes: solver_ctx.options.max_memory_bytes,
@@ -264,11 +273,20 @@ pub fn execute_sparse_resultant(
     if template.matrix_rows != trace.matrix_rows
         || template.matrix_cols != trace.matrix_cols
         || template.row_monomial_hash != trace.template_trace_hash
-        || template.column_support_hash != trace.output_support_hash
+        || template.column_support_hash
+            != planned_resultant_output_support_hash(
+                &plan.exported_variables,
+                plan.support_plan.degree_bound,
+            )
         || support_plan_hash(&plan.support_plan) != plan.support_plan.support_hash
     {
         return Err(implementation_bug(
             "sparse resultant template plan is not reproducible from authorized relations",
+        ));
+    }
+    if trace.max_degree > plan.support_plan.degree_bound {
+        return Err(implementation_bug(
+            "sparse resultant execution exceeded planned export degree bound",
         ));
     }
     let exported = plan
@@ -327,6 +345,50 @@ pub fn execute_sparse_resultant(
     };
     message.package_hash = projection_message_hash(&message);
     Ok(message)
+}
+
+fn probe_sparse_resultant_plan(
+    relations: &[SparsePolynomialQ],
+    eliminated: &[VariableId],
+    exported: &[VariableId],
+    max_dim: usize,
+) -> Result<SparseResultantPlanProbe, SolverError> {
+    let mut template_hashes = Vec::new();
+    let mut matrix_rows = 0usize;
+    let mut matrix_cols = 0usize;
+    let mut max_degree = relations.iter().map(poly_total_degree).max().unwrap_or(1) as usize;
+    for eliminate in eliminated {
+        let Some((_left, _right, input)) =
+            selectable_resultant_pair(relations, *eliminate, max_dim)
+        else {
+            continue;
+        };
+        let template = build_sparse_resultant_template(input)?;
+        matrix_rows = matrix_rows.saturating_add(template.matrix_rows);
+        matrix_cols = matrix_cols.saturating_add(template.matrix_cols);
+        template_hashes.push(template.template_hash);
+        max_degree =
+            max_degree.saturating_add(template.matrix_rows.max(template.matrix_cols).max(1));
+    }
+    if template_hashes.is_empty() {
+        return Err(algorithmic_hard_case(
+            "sparse resultant template chain was not applicable",
+        ));
+    }
+    let template_trace_hash = hash_sequence(
+        "sparse-resultant-template-trace",
+        &template_hashes
+            .iter()
+            .map(|hash| hash.0.to_vec())
+            .collect::<Vec<_>>(),
+    );
+    Ok(SparseResultantPlanProbe {
+        matrix_rows,
+        matrix_cols,
+        max_degree,
+        template_trace_hash,
+        output_support_hash: planned_resultant_output_support_hash(exported, max_degree),
+    })
 }
 
 fn build_sparse_resultant_trace(
@@ -429,6 +491,15 @@ fn build_sparse_resultant_trace(
         output_support_hash,
         trace_hash,
     })
+}
+
+fn planned_resultant_output_support_hash(exported: &[VariableId], max_degree: usize) -> Hash {
+    let mut chunks = Vec::new();
+    for variable in exported {
+        chunks.push(variable.0.to_be_bytes().to_vec());
+    }
+    chunks.push(max_degree.to_be_bytes().to_vec());
+    hash_sequence("sparse-resultant-planned-output-support", &chunks)
 }
 
 fn selectable_resultant_pair(
@@ -674,7 +745,11 @@ fn sparse_resultant_certificate_hash(
     plan: &KernelExecutionPlan,
     trace: &SparseResultantTrace,
 ) -> Hash {
-    let mut chunks = vec![plan.plan_hash.0.to_vec(), trace.trace_hash.0.to_vec()];
+    let mut chunks = vec![
+        plan.plan_hash.0.to_vec(),
+        trace.trace_hash.0.to_vec(),
+        trace.output_support_hash.0.to_vec(),
+    ];
     for cert in &trace.certificates {
         chunks.push(resultant_certificate_hash(cert).0.to_vec());
     }

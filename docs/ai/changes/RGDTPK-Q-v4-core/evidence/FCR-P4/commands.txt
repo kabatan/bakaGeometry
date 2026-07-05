@@ -1,0 +1,8 @@
+cargo fmt
+cargo test
+cargo check
+git diff --check
+cargo test --test fcr_p4_pure_planning
+static inspection of FCR-P4 plan/probe and execute bodies
+guardian_boundary_reviewer FCR-P4
+schema and hash validation for FCR-P4 review archive
