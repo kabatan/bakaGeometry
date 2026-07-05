@@ -1,0 +1,22 @@
+FCR-P8 commands, run after the final code change:
+
+1. cargo fmt
+   cwd: geosolver-core
+
+2. cargo check
+   cwd: geosolver-core
+
+3. cargo test --lib fcr_p8_
+   cwd: geosolver-core
+
+4. cargo test --test p3_public_pipeline_integration
+   cwd: geosolver-core
+
+5. cargo test
+   cwd: geosolver-core
+
+6. git diff --check
+   cwd: repository root
+
+7. static FCR-P8 actual-DAG replay scan
+   cwd: repository root

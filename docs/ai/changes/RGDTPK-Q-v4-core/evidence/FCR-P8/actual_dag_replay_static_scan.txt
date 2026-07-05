@@ -1,0 +1,32 @@
+FCR-P8 static scan summary.
+
+Source requirements found:
+- FULL_CORE_REPAIR_PLAN.md: FCR-P8 requires replay_run_certificate to use actual blocks, not synthetic all-relations blocks.
+- FULL_CORE_REPAIR_BASE_SPEC.md: FCR-010 says synthetic all-relations replay is insufficient and replay must verify each ProjectionMessage against its actual ProjectionBlock from TargetProjectionDAG.
+- FULL_CORE_REPAIR_REVIEWER_PROMPTS.md: FCR-P8 reviewer prompt requires actual TargetProjectionDAG block replay and mandatory tamper tests.
+
+Production replay module exposure:
+- geosolver-core/src/verify/mod.rs exposes pub mod replay and pub use replay without cfg(test).
+
+Actual replay path:
+- geosolver-core/src/verify/replay.rs::replay_run_certificate calls replay_target_projection_dag on the recomputed compressed system.
+- replay checks cert.target_projection_dag_hash equals actual_dag.dag_hash.
+- replay recomputes build_final_dag_replay_evidence_from_dag and requires both cert.final_dag_replay_evidence_hash and cert.final_dag_replay_evidence to match the recomputed evidence.
+- replay derives message dependencies from actual_dag_message_dependencies, using block.child_block_ids.
+- replay verifies messages via verify_projection_messages_with_actual_blocks over actual_dag.blocks.
+
+Certificate binding:
+- geosolver-core/src/verify/run_certificate.rs::FinalDagReplayEvidence includes actual_projection_dag_hash, message hashes, plan hashes, message block ids, per-message source relation hashes, child dependency hashes, block authorization hashes, block relation ids, block relation hashes, child edges, edge authorization hashes, support certificate hash, root isolation hash, and decoded candidate hash.
+- geosolver-core/src/solver/pipeline.rs::step_core_certificate builds final DAG replay evidence from the actual dag and stores it in CoreRunCertificate.
+- geosolver-core/tests/p3_public_pipeline_integration.rs asserts final_dag_replay_evidence is present and replay_run_certificate accepts the public pipeline result.
+
+Negative/tamper coverage:
+- fcr_p8_replay_rejects_candidate_omission_and_duplicates covers candidate omission and duplication rejection.
+- fcr_p8_replay_rejects_duplicate_message_even_when_source_is_input_authorized covers duplicate/extra message rejection.
+- p12g_replay_rejects_message_using_relation_outside_original_block covers relation outside actual block authorization.
+- p12g_replay_rejects_child_message_not_on_declared_dag_edge covers non-edge child dependency rejection.
+- p11_replay_fails_on_input_canonical_dag_plan_and_squarefree_tamper covers DAG hash, plan hash, package hash, block relation authorization evidence, support certificate, invariant, compression, hypergraph, and squarefree tamper rejection.
+
+Residual synthetic references:
+- Synthetic block/message references remain only inside #[cfg(test)] negative tests or in test-only hash helpers in run_certificate.rs.
+- The production replay path no longer constructs a replay block containing compressed.relation_order as an accepted substitute for the actual DAG block.

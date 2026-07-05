@@ -1,0 +1,34 @@
+FCR-P8 command output summary, all run after the final code change.
+
+cargo fmt
+- exit_code: 0
+
+cargo check
+- exit_code: 0
+- Finished dev profile for geosolver-core with no warnings.
+
+cargo test --lib fcr_p8_
+- exit_code: 0
+- 2 passed, 0 failed.
+- Passed tests:
+  - verify::replay::tests::fcr_p8_replay_rejects_candidate_omission_and_duplicates
+  - verify::replay::tests::fcr_p8_replay_rejects_duplicate_message_even_when_source_is_input_authorized
+
+cargo test --test p3_public_pipeline_integration
+- exit_code: 0
+- 1 passed, 0 failed.
+- The public pipeline test now asserts that CoreRunCertificate includes final_dag_replay_evidence and replay_run_certificate accepts the public result against the original problem.
+
+cargo test
+- exit_code: 0
+- 207 lib tests passed.
+- Integration tests passed:
+  - tests/fcr_p4_pure_planning.rs: 7 passed
+  - tests/p12_roots_decode_integration.rs: 1 passed
+  - tests/p12g_generality_stress.rs: 1 passed
+  - tests/p3_public_pipeline_integration.rs: 1 passed
+  - doc tests: 0
+
+git diff --check
+- exit_code: 0
+- Output contained only CRLF conversion warnings from Git for modified files.

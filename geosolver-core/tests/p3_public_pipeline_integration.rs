@@ -8,6 +8,7 @@ use geosolver_core::types::polynomial::{
     constant_poly, poly_add, poly_mul, poly_scale, poly_sub, variable_poly,
 };
 use geosolver_core::types::rational::int_q;
+use geosolver_core::verify::replay_run_certificate;
 
 #[test]
 fn p3_public_api_runs_candidate_cover_pipeline_for_target_only_case() {
@@ -19,7 +20,7 @@ fn p3_public_api_runs_candidate_cover_pipeline_for_target_only_case() {
     );
     let problem = make_problem(vec![target], target, vec![support_relation], Vec::new());
 
-    let result = solve_target(problem, SolverOptions::default());
+    let result = solve_target(problem.clone(), SolverOptions::default());
 
     assert_eq!(result.status, SolverStatus::CertifiedCandidateCover);
     assert_eq!(result.target, target);
@@ -38,6 +39,8 @@ fn p3_public_api_runs_candidate_cover_pipeline_for_target_only_case() {
     );
     assert!(cert.global_support_certificate_hash.is_some());
     assert!(cert.final_dag_replay_evidence_hash.is_some());
+    assert!(cert.final_dag_replay_evidence.is_some());
+    assert!(replay_run_certificate(&result, &problem).accepted);
     assert_eq!(
         cert.global_support_hash,
         result

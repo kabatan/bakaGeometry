@@ -12,7 +12,7 @@ use crate::graph::separators::CostModel;
 use crate::graph::tree_decomposition::{build_target_rooted_decomposition, DecompositionTree};
 use crate::graph::weighted_primal::{build_weighted_primal_graph, WeightedPrimalGraph};
 use crate::kernels::traits::KernelContext;
-use crate::planner::kernel_plan::{hash_kernel_plan, KernelPlan};
+use crate::planner::kernel_plan::KernelPlan;
 use crate::planner::planner::plan_all_blocks;
 use crate::preprocess::compression::{
     max_coefficient_height_bits, pre_kernel_compress, CompressedSystemQ,
@@ -26,13 +26,13 @@ use crate::result::status::{AlgebraicReason, FailureKind, SolverError, SolverErr
 use crate::roots::decode::{decode_candidates, TargetCandidate};
 use crate::roots::isolate::{isolate_real_roots, RealRootRecord, RootIsolationOptions};
 use crate::roots::squarefree::squarefree_support;
-use crate::types::hash::{hash_sequence, Hash};
+use crate::types::hash::Hash;
 use crate::types::ids::{BlockId, VariableId};
 use crate::types::polynomial::{poly_monomial_count, poly_total_degree};
 use crate::types::univariate::UniPolynomialQ;
 use crate::verify::run_certificate::{
-    build_core_run_certificate, final_dag_replay_evidence, hash_projection_messages,
-    CoreRunCertificate, CoreRunCertificateInput,
+    build_core_run_certificate, build_final_dag_replay_evidence_from_dag, CoreRunCertificate,
+    CoreRunCertificateInput,
 };
 use crate::verify::verify_message::verify_projection_message;
 use crate::verify::verify_support::GlobalSupportCertificate;
@@ -305,8 +305,22 @@ pub fn step_core_certificate(
     roots: &RootCandidateBundle,
     support_certificate: Option<&GlobalSupportCertificate>,
 ) -> CoreRunCertificate {
-    let kernel_plan_hashes = plans.iter().map(hash_kernel_plan).collect::<Vec<_>>();
-    let replay_evidence = build_dag_replay_evidence(dag, &kernel_plan_hashes, messages);
+    let kernel_plan_hashes = executed_plan_hashes(plans, messages);
+    let root_isolation_hash = Some(crate::verify::run_certificate::hash_root_isolation(
+        &roots.root_isolation,
+    ));
+    let decoded_candidate_hash = Some(crate::verify::run_certificate::hash_decoded_candidates(
+        &roots.decoded_candidates,
+    ));
+    let replay_evidence = build_final_dag_replay_evidence_from_dag(
+        dag,
+        compressed,
+        kernel_plan_hashes.clone(),
+        messages,
+        support_certificate.map(|cert| cert.certificate_hash),
+        root_isolation_hash,
+        decoded_candidate_hash,
+    );
     build_core_run_certificate(CoreRunCertificateInput {
         input_hash: problem.input_hash,
         canonical_hash: canonical.canonical_hash,
@@ -321,7 +335,7 @@ pub fn step_core_certificate(
         root_isolation: &roots.root_isolation,
         decoded_candidates: &roots.decoded_candidates,
         global_support_certificate_hash: support_certificate.map(|cert| cert.certificate_hash),
-        final_dag_replay_evidence_hash: Some(replay_evidence.evidence_hash),
+        final_dag_replay_evidence: Some(replay_evidence),
     })
 }
 
@@ -407,77 +421,23 @@ fn block_depth_from_root(dag: &TargetProjectionDAG, block_id: BlockId) -> usize 
     depth
 }
 
-fn build_dag_replay_evidence(
-    dag: &TargetProjectionDAG,
-    kernel_plan_hashes: &[Hash],
-    messages: &[ProjectionMessage],
-) -> crate::verify::run_certificate::FinalDagReplayEvidence {
-    let message_hashes = hash_projection_messages(messages);
-    let message_block_ids = messages
-        .iter()
-        .map(|message| message.block_id)
-        .collect::<Vec<_>>();
-    let per_message_source_relation_hashes = messages
-        .iter()
-        .map(|message| message.certificate.source_relation_hashes.clone())
-        .collect::<Vec<_>>();
-    let message_child_dependency_hashes = messages
+fn executed_plan_hashes(plans: &[KernelPlan], messages: &[ProjectionMessage]) -> Vec<Hash> {
+    messages
         .iter()
         .map(|message| {
-            dag.blocks
+            plans
                 .iter()
-                .find(|block| block.block_id == message.block_id)
-                .map(|block| {
-                    block
-                        .child_block_ids
-                        .iter()
-                        .filter_map(|child_id| {
-                            messages
-                                .iter()
-                                .find(|candidate| candidate.block_id == *child_id)
-                                .map(|candidate| candidate.package_hash)
-                        })
-                        .collect::<Vec<_>>()
+                .find(|plan| {
+                    plan.block_id == message.block_id
+                        && plan
+                            .declared_ladder
+                            .iter()
+                            .any(|entry| entry.plan_hash == message.certificate.plan_hash)
                 })
-                .unwrap_or_default()
+                .map(|_| message.certificate.plan_hash)
+                .unwrap_or(message.certificate.plan_hash)
         })
-        .collect::<Vec<_>>();
-    let block_authorization_hashes = messages
-        .iter()
-        .filter_map(|message| {
-            dag.blocks
-                .iter()
-                .find(|block| block.block_id == message.block_id)
-                .map(|block| block.authorization_hash)
-        })
-        .collect::<Vec<_>>();
-    let edge_authorization_hashes = dag
-        .blocks
-        .iter()
-        .flat_map(|block| {
-            block.child_block_ids.iter().map(|child_id| {
-                hash_sequence(
-                    "projection-dag-edge-authorization",
-                    &[
-                        block.block_id.0.to_be_bytes().to_vec(),
-                        child_id.0.to_be_bytes().to_vec(),
-                        block.authorization_hash.0.to_vec(),
-                    ],
-                )
-            })
-        })
-        .collect::<Vec<_>>();
-    final_dag_replay_evidence(
-        Some(dag.dag_hash),
-        message_hashes,
-        kernel_plan_hashes.to_vec(),
-        message_block_ids,
-        per_message_source_relation_hashes,
-        message_child_dependency_hashes,
-        block_authorization_hashes,
-        edge_authorization_hashes,
-        true,
-    )
+        .collect()
 }
 
 fn algorithmic_hard_case(target: Option<VariableId>, hash: Hash, reason: &str) -> SolverError {

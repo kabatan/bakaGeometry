@@ -1,16 +1,21 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
+#[cfg(test)]
+use std::collections::BTreeSet;
 
 use serde::{Deserialize, Serialize};
 
 use crate::compose::message::{hash_projection_message, ProjectionMessage};
+use crate::graph::projection_dag::TargetProjectionDAG;
+use crate::preprocess::compression::CompressedSystemQ;
 use crate::result::status::{FailureKind, SolverError, SolverErrorKind};
 use crate::roots::decode::TargetCandidate;
 use crate::roots::isolate::RealRootRecord;
 use crate::types::hash::{hash_sequence, Hash};
-use crate::types::ids::{BlockId, VariableId};
+use crate::types::ids::{BlockId, RelationId, VariableId};
 use crate::types::rational::rational_to_bytes;
 use crate::types::univariate::UniPolynomialQ;
 use crate::verify::certificates::KernelCertificatePayload;
+#[cfg(test)]
 use crate::verify::verify_message::payload_source_hashes;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -29,6 +34,7 @@ pub struct CoreRunCertificate {
     pub decoded_candidate_hash: Option<Hash>,
     pub global_support_certificate_hash: Option<Hash>,
     pub final_dag_replay_evidence_hash: Option<Hash>,
+    pub final_dag_replay_evidence: Option<FinalDagReplayEvidence>,
     pub invariants: CoreInvariantFlags,
     pub invariant_evidence_hash: Hash,
     pub run_hash: Hash,
@@ -65,7 +71,13 @@ pub struct FinalDagReplayEvidence {
     pub per_message_source_relation_hashes: Vec<Vec<Hash>>,
     pub message_child_dependency_hashes: Vec<Vec<Hash>>,
     pub block_authorization_hashes: Vec<Hash>,
+    pub block_relation_ids: Vec<Vec<RelationId>>,
+    pub block_relation_hashes: Vec<Vec<Hash>>,
+    pub child_edges: Vec<(BlockId, BlockId)>,
     pub edge_authorization_hashes: Vec<Hash>,
+    pub support_certificate_hash: Option<Hash>,
+    pub root_isolation_hash: Option<Hash>,
+    pub decoded_candidate_hash: Option<Hash>,
     pub actual_dag_replay_verified: bool,
     pub evidence_hash: Hash,
 }
@@ -93,10 +105,14 @@ pub struct CoreRunCertificateInput<'a> {
     pub root_isolation: &'a [RealRootRecord],
     pub decoded_candidates: &'a [TargetCandidate],
     pub global_support_certificate_hash: Option<Hash>,
-    pub final_dag_replay_evidence_hash: Option<Hash>,
+    pub final_dag_replay_evidence: Option<FinalDagReplayEvidence>,
 }
 
 pub fn build_core_run_certificate(input: CoreRunCertificateInput<'_>) -> CoreRunCertificate {
+    let final_dag_replay_evidence_hash = input
+        .final_dag_replay_evidence
+        .as_ref()
+        .map(|evidence| evidence.evidence_hash);
     let mut cert = CoreRunCertificate {
         input_hash: input.input_hash,
         canonical_system_hash: input.canonical_hash,
@@ -111,7 +127,8 @@ pub fn build_core_run_certificate(input: CoreRunCertificateInput<'_>) -> CoreRun
         root_isolation_hash: Some(hash_root_isolation(input.root_isolation)),
         decoded_candidate_hash: Some(hash_decoded_candidates(input.decoded_candidates)),
         global_support_certificate_hash: input.global_support_certificate_hash,
-        final_dag_replay_evidence_hash: input.final_dag_replay_evidence_hash,
+        final_dag_replay_evidence_hash,
+        final_dag_replay_evidence: input.final_dag_replay_evidence,
         invariants: derive_core_invariant_flags(
             input.projection_messages,
             messages_have_verifiable_payloads(input.projection_messages),
@@ -181,7 +198,13 @@ pub fn final_dag_replay_evidence(
     per_message_source_relation_hashes: Vec<Vec<Hash>>,
     message_child_dependency_hashes: Vec<Vec<Hash>>,
     block_authorization_hashes: Vec<Hash>,
+    block_relation_ids: Vec<Vec<RelationId>>,
+    block_relation_hashes: Vec<Vec<Hash>>,
+    child_edges: Vec<(BlockId, BlockId)>,
     edge_authorization_hashes: Vec<Hash>,
+    support_certificate_hash: Option<Hash>,
+    root_isolation_hash: Option<Hash>,
+    decoded_candidate_hash: Option<Hash>,
     actual_dag_replay_verified: bool,
 ) -> FinalDagReplayEvidence {
     let mut evidence = FinalDagReplayEvidence {
@@ -192,12 +215,134 @@ pub fn final_dag_replay_evidence(
         per_message_source_relation_hashes,
         message_child_dependency_hashes,
         block_authorization_hashes,
+        block_relation_ids,
+        block_relation_hashes,
+        child_edges,
         edge_authorization_hashes,
+        support_certificate_hash,
+        root_isolation_hash,
+        decoded_candidate_hash,
         actual_dag_replay_verified,
         evidence_hash: hash_sequence("final-dag-replay-evidence", &[]),
     };
     evidence.evidence_hash = hash_final_dag_replay_evidence(&evidence);
     evidence
+}
+
+pub fn build_final_dag_replay_evidence_from_dag(
+    dag: &TargetProjectionDAG,
+    compressed: &CompressedSystemQ,
+    kernel_plan_hashes: Vec<Hash>,
+    messages: &[ProjectionMessage],
+    support_certificate_hash: Option<Hash>,
+    root_isolation_hash: Option<Hash>,
+    decoded_candidate_hash: Option<Hash>,
+) -> FinalDagReplayEvidence {
+    let relation_hashes = compressed
+        .relations
+        .iter()
+        .map(|relation| (relation.id, relation.hash))
+        .collect::<BTreeMap<_, _>>();
+    let projection_message_hashes = hash_projection_messages(messages);
+    let message_block_ids = messages
+        .iter()
+        .map(|message| message.block_id)
+        .collect::<Vec<_>>();
+    let per_message_source_relation_hashes = messages
+        .iter()
+        .map(|message| message.certificate.source_relation_hashes.clone())
+        .collect::<Vec<_>>();
+    let message_child_dependency_hashes = messages
+        .iter()
+        .map(|message| {
+            dag.blocks
+                .iter()
+                .find(|block| block.block_id == message.block_id)
+                .map(|block| {
+                    block
+                        .child_block_ids
+                        .iter()
+                        .filter_map(|child_id| {
+                            messages
+                                .iter()
+                                .find(|candidate| candidate.block_id == *child_id)
+                                .map(|candidate| candidate.package_hash)
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default()
+        })
+        .collect::<Vec<_>>();
+    let block_authorization_hashes = messages
+        .iter()
+        .filter_map(|message| {
+            dag.blocks
+                .iter()
+                .find(|block| block.block_id == message.block_id)
+                .map(|block| block.authorization_hash)
+        })
+        .collect::<Vec<_>>();
+    let block_relation_ids = dag
+        .blocks
+        .iter()
+        .map(|block| block.relation_ids.clone())
+        .collect::<Vec<_>>();
+    let block_relation_hashes = dag
+        .blocks
+        .iter()
+        .map(|block| {
+            block
+                .relation_ids
+                .iter()
+                .filter_map(|relation_id| relation_hashes.get(relation_id).copied())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+    let child_edges = dag
+        .blocks
+        .iter()
+        .flat_map(|block| {
+            block
+                .child_block_ids
+                .iter()
+                .map(|child_id| (block.block_id, *child_id))
+        })
+        .collect::<Vec<_>>();
+    let edge_authorization_hashes = child_edges
+        .iter()
+        .filter_map(|(parent_id, child_id)| {
+            dag.blocks
+                .iter()
+                .find(|block| block.block_id == *parent_id)
+                .map(|block| {
+                    hash_sequence(
+                        "projection-dag-edge-authorization",
+                        &[
+                            parent_id.0.to_be_bytes().to_vec(),
+                            child_id.0.to_be_bytes().to_vec(),
+                            block.authorization_hash.0.to_vec(),
+                        ],
+                    )
+                })
+        })
+        .collect::<Vec<_>>();
+    final_dag_replay_evidence(
+        Some(dag.dag_hash),
+        projection_message_hashes,
+        kernel_plan_hashes,
+        message_block_ids,
+        per_message_source_relation_hashes,
+        message_child_dependency_hashes,
+        block_authorization_hashes,
+        block_relation_ids,
+        block_relation_hashes,
+        child_edges,
+        edge_authorization_hashes,
+        support_certificate_hash,
+        root_isolation_hash,
+        decoded_candidate_hash,
+        true,
+    )
 }
 
 pub fn require_final_claim_dag_replay_evidence(
@@ -229,6 +374,8 @@ pub fn final_claim_dag_replay_structurally_bound_for_p12g(
         && evidence.per_message_source_relation_hashes.len() == message_count
         && evidence.message_child_dependency_hashes.len() == message_count
         && evidence.block_authorization_hashes.len() == message_count
+        && !evidence.block_relation_ids.is_empty()
+        && evidence.block_relation_ids.len() == evidence.block_relation_hashes.len()
         && (message_count <= 1 || !evidence.edge_authorization_hashes.is_empty())
 }
 
@@ -260,6 +407,7 @@ pub fn hash_decoded_candidates(candidates: &[TargetCandidate]) -> Hash {
     hash_sequence("decoded-target-candidates", &chunks)
 }
 
+#[cfg(test)]
 pub fn hash_projection_message_dag_binding(
     target: VariableId,
     messages: &[ProjectionMessage],
@@ -267,6 +415,7 @@ pub fn hash_projection_message_dag_binding(
     hash_projection_message_dag_binding_with_authorized_sources(target, messages, &[])
 }
 
+#[cfg(test)]
 pub fn hash_projection_message_dag_binding_with_authorized_sources(
     target: VariableId,
     messages: &[ProjectionMessage],
@@ -295,6 +444,7 @@ pub fn hash_projection_message_dag_binding_with_authorized_sources(
     hash_sequence("projection-message-dag-binding", &chunks)
 }
 
+#[cfg(test)]
 pub fn projection_message_dependency_indices(
     messages: &[ProjectionMessage],
     base_source_hashes: &[Hash],
@@ -334,6 +484,7 @@ pub fn projection_message_dependency_indices(
     dependency_graph_is_acyclic(&dependencies).then_some(dependencies)
 }
 
+#[cfg(test)]
 fn dependency_graph_is_acyclic(dependencies: &[Vec<usize>]) -> bool {
     #[derive(Clone, Copy, PartialEq, Eq)]
     enum Mark {
@@ -485,6 +636,12 @@ pub fn hash_core_run_certificate(cert: &CoreRunCertificate) -> Hash {
     chunks.push(optional_hash_bytes(cert.decoded_candidate_hash));
     chunks.push(optional_hash_bytes(cert.global_support_certificate_hash));
     chunks.push(optional_hash_bytes(cert.final_dag_replay_evidence_hash));
+    chunks.push(
+        cert.final_dag_replay_evidence
+            .as_ref()
+            .map(|evidence| evidence.evidence_hash.0.to_vec())
+            .unwrap_or_else(|| vec![0xff]),
+    );
     chunks.push(cert.invariant_evidence_hash.0.to_vec());
     chunks.push(vec![
         cert.invariants.no_geometry_dispatch as u8,
@@ -552,12 +709,34 @@ fn hash_final_dag_replay_evidence(evidence: &FinalDagReplayEvidence) -> Hash {
             .map(|hash| hash.0.to_vec()),
     );
     chunks.push(Vec::new());
+    for ids in &evidence.block_relation_ids {
+        for id in ids {
+            chunks.push(id.0.to_be_bytes().to_vec());
+        }
+        chunks.push(Vec::new());
+    }
+    chunks.push(Vec::new());
+    for hashes in &evidence.block_relation_hashes {
+        for hash in hashes {
+            chunks.push(hash.0.to_vec());
+        }
+        chunks.push(Vec::new());
+    }
+    chunks.push(Vec::new());
+    for (parent, child) in &evidence.child_edges {
+        chunks.push(parent.0.to_be_bytes().to_vec());
+        chunks.push(child.0.to_be_bytes().to_vec());
+    }
+    chunks.push(Vec::new());
     chunks.extend(
         evidence
             .edge_authorization_hashes
             .iter()
             .map(|hash| hash.0.to_vec()),
     );
+    chunks.push(optional_hash_bytes(evidence.support_certificate_hash));
+    chunks.push(optional_hash_bytes(evidence.root_isolation_hash));
+    chunks.push(optional_hash_bytes(evidence.decoded_candidate_hash));
     chunks.push(vec![evidence.actual_dag_replay_verified as u8]);
     hash_sequence("final-dag-replay-evidence", &chunks)
 }
@@ -617,6 +796,12 @@ mod tests {
             Vec::new(),
             Vec::new(),
             Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            None,
+            None,
+            None,
             false,
         );
 
@@ -652,7 +837,13 @@ mod tests {
                 hash_sequence("block-parent-auth", &[]),
                 hash_sequence("block-child-auth", &[]),
             ],
+            vec![Vec::new(), Vec::new()],
+            vec![Vec::new(), Vec::new()],
             Vec::new(),
+            Vec::new(),
+            None,
+            None,
+            None,
             true,
         );
         let cert = minimal_cert(
@@ -682,7 +873,13 @@ mod tests {
             vec![vec![hash_sequence("source", &[])]],
             vec![Vec::new()],
             vec![hash_sequence("block-auth", &[])],
+            vec![vec![RelationId(0)]],
+            vec![vec![hash_sequence("relation", &[])]],
             Vec::new(),
+            Vec::new(),
+            None,
+            None,
+            None,
             true,
         );
         let cert = minimal_cert(
@@ -739,6 +936,7 @@ mod tests {
             decoded_candidate_hash: None,
             global_support_certificate_hash: None,
             final_dag_replay_evidence_hash,
+            final_dag_replay_evidence: None,
             invariants: CoreInvariantFlags {
                 no_geometry_dispatch: false,
                 no_problem_id_dispatch: false,

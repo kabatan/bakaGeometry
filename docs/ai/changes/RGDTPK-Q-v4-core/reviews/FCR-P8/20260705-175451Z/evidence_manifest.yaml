@@ -1,0 +1,138 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: FCR-P8
+commit: 8a937400273ea6340095f3f6ac33dfac22833aab+fcr-p8-worktree
+algorithm_spec_source_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+failure_source_sha256: a97b50bf597ed590889a7609a2cb25d9ec40f7be27d47adf332e52d3fa8abe36
+base_spec_sha256: 1f73bd7a26b2566b08f53d31b14785110466e8ae6170b6769d1af17d50a36047
+plan_sha256: b836599108c1db4a4e828e672780e5074049045fe5fa590e94252cdc91850bb9
+source_map_sha256: 892b75221a3f724ab864e0214e3a0559e99331cda0b8fba4976f5a21372f08ec
+review_archive_schema_sha256: d3db02e4abc8cc3065e2be8e82614b3703266ad0c0ce6cf3c0ce85ad662d364c
+review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
+evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_BASE_SPEC.md
+  sha256: 1f73bd7a26b2566b08f53d31b14785110466e8ae6170b6769d1af17d50a36047
+  purpose: "FCR-P8 source: FCR-010 actual DAG/block replay requirement"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_PLAN.md
+  sha256: b836599108c1db4a4e828e672780e5074049045fe5fa590e94252cdc91850bb9
+  purpose: "FCR-P8 source: actual DAG/block replay and certificate finalization plan"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_SOURCE_SPEC_COMPLIANCE_MAP.md
+  sha256: 892b75221a3f724ab864e0214e3a0559e99331cda0b8fba4976f5a21372f08ec
+  purpose: "FCR-P8 source: claim limits"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_REVIEWER_PROMPTS.md
+  sha256: 28075ea55b02213c4b38f5304735f87b163ab7eddb15121eefe072878a1f387b
+  purpose: "FCR-P8 source: reviewer pass/fail prompt"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/BASE_SPEC.md
+  sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+  purpose: "FCR-P8 source: approved base spec and MECH-010"
+- path: geosolver-core/src/verify/replay.rs
+  sha256: 25e7f77bbebc4e3ff25eab209df944f7247e4e281417fa70e401af08cfd47fca
+  purpose: "FCR-P8 code: production replay_run_certificate uses actual TargetProjectionDAG blocks"
+- path: geosolver-core/src/verify/run_certificate.rs
+  sha256: 20384cf8e276046ebf772c9a182761a55589882a812b0772f00560e62d5ec902
+  purpose: "FCR-P8 code: CoreRunCertificate and FinalDagReplayEvidence bind actual DAG replay evidence"
+- path: geosolver-core/src/solver/pipeline.rs
+  sha256: 7683cf2f40283f9ec52a766eaba5b65b96f2106a67c96d7f6f66b8d816c92a7c
+  purpose: "FCR-P8 code: public pipeline builds certificate evidence from actual DAG"
+- path: geosolver-core/src/verify/mod.rs
+  sha256: 1d4b59c28d52b09aee15eb071531e0e9b22eed5345e349f5c242f3ea0e8e8d6f
+  purpose: "FCR-P8 code: replay module is production-exported"
+- path: geosolver-core/tests/p3_public_pipeline_integration.rs
+  sha256: 5dc2c682cb90bfffe99e6e3bf63ab6aece9fff8658a792b1d13bd229b43ebee7
+  purpose: "FCR-P8 test: public pipeline result replay accepted against original problem"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P8/commands.txt
+  sha256: 112ff83cf7fa82575569c778b77b36473197739dea3969972127093efd0f262e
+  purpose: "FCR-P8 evidence: commands run"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P8/command_outputs.txt
+  sha256: 5a2b47f9c287a7baf5250fdd0e088b91037a6e35160854e024eb76fd3336d2b9
+  purpose: "FCR-P8 evidence: command outputs and summaries"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P8/actual_dag_replay_static_scan.txt
+  sha256: d8abefdd13446e3e35788679ad48eb5e45db821bbd6cbc3c2ca9b833aec7bf21
+  purpose: "FCR-P8 evidence: actual DAG replay static scan"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P8/guardian_boundary_reviewer_pass.md
+  sha256: a24bf037294a48762807866cf1bc4d6ac7a46fa3b58b83e9bb46be927dd628bf
+  purpose: "FCR-P8 evidence: guardian PASS response"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P8/20260705-175451Z/prompt.md
+  sha256: 59f99e360c495fdb59d5e46be175f4215c4abdf89c45380e2f740610da986251
+  purpose: "FCR-P8 archived reviewer prompt"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P8/20260705-175451Z/response.md
+  sha256: a24bf037294a48762807866cf1bc4d6ac7a46fa3b58b83e9bb46be927dd628bf
+  purpose: "FCR-P8 archived reviewer response"
+command_outputs:
+- command: cargo fmt
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P8/command_outputs.txt
+  output_sha256: 5a2b47f9c287a7baf5250fdd0e088b91037a6e35160854e024eb76fd3336d2b9
+  finished_at_utc: 20260705-175451Z
+- command: cargo check
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P8/command_outputs.txt
+  output_sha256: 5a2b47f9c287a7baf5250fdd0e088b91037a6e35160854e024eb76fd3336d2b9
+  finished_at_utc: 20260705-175451Z
+- command: cargo test --lib fcr_p8_
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P8/command_outputs.txt
+  output_sha256: 5a2b47f9c287a7baf5250fdd0e088b91037a6e35160854e024eb76fd3336d2b9
+  finished_at_utc: 20260705-175451Z
+- command: cargo test --test p3_public_pipeline_integration
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P8/command_outputs.txt
+  output_sha256: 5a2b47f9c287a7baf5250fdd0e088b91037a6e35160854e024eb76fd3336d2b9
+  finished_at_utc: 20260705-175451Z
+- command: cargo test
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P8/command_outputs.txt
+  output_sha256: 5a2b47f9c287a7baf5250fdd0e088b91037a6e35160854e024eb76fd3336d2b9
+  finished_at_utc: 20260705-175451Z
+- command: git diff --check
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P8/command_outputs.txt
+  output_sha256: 5a2b47f9c287a7baf5250fdd0e088b91037a6e35160854e024eb76fd3336d2b9
+  finished_at_utc: 20260705-175451Z
+- command: static FCR-P8 actual-DAG replay scan
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P8/actual_dag_replay_static_scan.txt
+  output_sha256: d8abefdd13446e3e35788679ad48eb5e45db821bbd6cbc3c2ca9b833aec7bf21
+  finished_at_utc: 20260705-175451Z
+- command: guardian_boundary_reviewer FCR-P8
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P8/guardian_boundary_reviewer_pass.md
+  output_sha256: a24bf037294a48762807866cf1bc4d6ac7a46fa3b58b83e9bb46be927dd628bf
+  finished_at_utc: 20260705-175451Z
+static_scans:
+- scan_id: fcr-p8-production-replay-exported
+  command: rg replay_run_certificate and verify/mod.rs replay export
+  forbidden_pattern: replay module is cfg(test)-only or absent from production exports
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P8/actual_dag_replay_static_scan.txt
+- scan_id: fcr-p8-no-synthetic-main-replay-path
+  command: rg synthetic all-relations and actual DAG replay path
+  forbidden_pattern: replay_run_certificate accepts by constructing synthetic all-relations blocks
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P8/actual_dag_replay_static_scan.txt
+- scan_id: fcr-p8-certificate-binds-actual-dag-evidence
+  command: rg FinalDagReplayEvidence and build_final_dag_replay_evidence_from_dag
+  forbidden_pattern: CoreRunCertificate lacks actual DAG/block authorization evidence
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P8/actual_dag_replay_static_scan.txt
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_PRODUCTION_AUDIT.md
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P8/guardian_boundary_reviewer_pass.md
+known_limitations:
+- FCR-P8 proves actual DAG/block replay and certificate evidence binding only.
+- Synthetic references remain in cfg(test) negative/helper tests, not production replay.
+- This phase does not authorize P13, final source fidelity, exact-image readiness, acceptance completion, or full production readiness.
+- No R-ID is marked VERIFIED.
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-010
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-010
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

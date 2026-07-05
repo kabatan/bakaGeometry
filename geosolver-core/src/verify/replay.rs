@@ -1,8 +1,16 @@
 use std::collections::BTreeSet;
 
 use crate::compose::compose::{hash_composed_projection, ComposedProjection};
+use crate::compose::message::ProjectionMessage;
 use crate::graph::hypergraph::build_relation_variable_hypergraph;
-use crate::graph::projection_dag::{authorize_block_relations, ProjectionBlock};
+use crate::graph::influence::build_target_influence_graph;
+use crate::graph::projection_dag::{
+    authorize_block_relations, build_target_projection_dag, validate_projection_dag,
+    ProjectionBlock, TargetProjectionDAG,
+};
+use crate::graph::separators::CostModel;
+use crate::graph::tree_decomposition::build_target_rooted_decomposition;
+use crate::graph::weighted_primal::build_weighted_primal_graph;
 use crate::kernels::traits::ReplayResult;
 use crate::preprocess::compression::CompressionState;
 use crate::problem::canonicalize::canonicalize_system;
@@ -14,9 +22,9 @@ use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::BlockId;
 use crate::types::polynomial::{poly_variables, SparsePolynomialQ};
 use crate::verify::run_certificate::{
-    derive_core_invariant_flags, hash_core_run_certificate, hash_decoded_candidates,
-    hash_invariant_evidence, hash_projection_message_dag_binding_with_authorized_sources,
-    hash_projection_messages, hash_root_isolation, projection_message_dependency_indices,
+    build_final_dag_replay_evidence_from_dag, derive_core_invariant_flags,
+    hash_core_run_certificate, hash_decoded_candidates, hash_invariant_evidence,
+    hash_projection_messages, hash_root_isolation,
 };
 use crate::verify::verify_message::verify_projection_message;
 use crate::verify::verify_support::verify_global_support;
@@ -64,7 +72,6 @@ fn replay_checks(result: &TargetSolveResult, problem: &RationalTargetProblem) ->
         return false;
     }
     let compressed = CompressionState::from_system(canonical.clone()).to_compressed_system();
-    let base_source_hashes = base_source_hashes(&compressed);
     if cert.compression_hash != compressed.compressed_hash {
         return false;
     }
@@ -74,13 +81,10 @@ fn replay_checks(result: &TargetSolveResult, problem: &RationalTargetProblem) ->
     if cert.target_variable != result.target || result.target != problem.target {
         return false;
     }
-    if cert.target_projection_dag_hash
-        != hash_projection_message_dag_binding_with_authorized_sources(
-            result.target,
-            &result.projection_messages,
-            &base_source_hashes,
-        )
-    {
+    let Some(actual_dag) = replay_target_projection_dag(&compressed) else {
+        return false;
+    };
+    if cert.target_projection_dag_hash != actual_dag.dag_hash {
         return false;
     }
     if cert.projection_message_hashes != hash_projection_messages(&result.projection_messages) {
@@ -114,8 +118,22 @@ fn replay_checks(result: &TargetSolveResult, problem: &RationalTargetProblem) ->
     if cert.decoded_candidate_hash != Some(hash_decoded_candidates(&result.decoded_candidates)) {
         return false;
     }
+    let expected_replay_evidence = build_final_dag_replay_evidence_from_dag(
+        &actual_dag,
+        &compressed,
+        message_plan_hashes.clone(),
+        &result.projection_messages,
+        cert.global_support_certificate_hash,
+        cert.root_isolation_hash,
+        cert.decoded_candidate_hash,
+    );
+    if cert.final_dag_replay_evidence_hash != Some(expected_replay_evidence.evidence_hash)
+        || cert.final_dag_replay_evidence.as_ref() != Some(&expected_replay_evidence)
+    {
+        return false;
+    }
     let Some(message_dependencies) =
-        projection_message_dependency_indices(&result.projection_messages, &base_source_hashes)
+        actual_dag_message_dependencies(&actual_dag, &result.projection_messages)
     else {
         return false;
     };
@@ -131,8 +149,12 @@ fn replay_checks(result: &TargetSolveResult, problem: &RationalTargetProblem) ->
     {
         return false;
     }
-    let projection_messages_verified =
-        verify_projection_messages(result, &compressed, &message_dependencies);
+    let projection_messages_verified = verify_projection_messages_with_actual_blocks(
+        result,
+        &compressed,
+        &actual_dag.blocks,
+        &message_dependencies,
+    );
     let support_verified =
         verify_support_from_messages(result, cert.global_support_certificate_hash);
     let roots_and_candidates_verified = verify_roots_and_candidates(result);
@@ -150,52 +172,6 @@ fn replay_checks(result: &TargetSolveResult, problem: &RationalTargetProblem) ->
     roots_and_candidates_verified
 }
 
-fn verify_projection_messages(
-    result: &TargetSolveResult,
-    compressed: &crate::preprocess::compression::CompressedSystemQ,
-    message_dependencies: &[Vec<usize>],
-) -> bool {
-    if message_dependencies.len() != result.projection_messages.len() {
-        return false;
-    }
-    for (message_idx, message) in result.projection_messages.iter().enumerate() {
-        let mut local_variables = compressed
-            .variables
-            .iter()
-            .copied()
-            .collect::<BTreeSet<_>>();
-        local_variables.extend(message.exported_variables.iter().copied());
-        local_variables.extend(message.eliminated_variables.iter().copied());
-        let mut block = ProjectionBlock {
-            block_id: message.block_id,
-            local_variables,
-            relation_ids: compressed.relation_order.clone(),
-            exported_variables: message.exported_variables.iter().copied().collect(),
-            child_block_ids: Vec::new(),
-            parent_block_id: None,
-            authorization_hash: hash_sequence("replay-block-auth", &[]),
-            duplication_certificates: Vec::new(),
-            block_hash: hash_sequence("replay-block", &[]),
-        };
-        block.authorization_hash = authorize_block_relations(&block, &compressed);
-        let kctx = crate::kernels::traits::KernelContext {
-            block,
-            system: compressed.clone(),
-            child_messages: message_dependencies[message_idx]
-                .iter()
-                .filter_map(|dep_idx| result.projection_messages.get(*dep_idx).cloned())
-                .collect(),
-        };
-        if kctx.child_messages.len() != message_dependencies[message_idx].len() {
-            return false;
-        }
-        if verify_projection_message(message, &kctx).is_err() {
-            return false;
-        }
-    }
-    true
-}
-
 #[allow(dead_code)]
 pub(crate) fn verify_projection_messages_with_actual_blocks(
     result: &TargetSolveResult,
@@ -204,6 +180,21 @@ pub(crate) fn verify_projection_messages_with_actual_blocks(
     message_dependencies: &[Vec<usize>],
 ) -> bool {
     if message_dependencies.len() != result.projection_messages.len() {
+        return false;
+    }
+    if result.projection_messages.len() != blocks.len() {
+        return false;
+    }
+    let mut seen_blocks = BTreeSet::new();
+    for message in &result.projection_messages {
+        if !seen_blocks.insert(message.block_id) {
+            return false;
+        }
+    }
+    if !blocks
+        .iter()
+        .all(|block| seen_blocks.contains(&block.block_id))
+    {
         return false;
     }
     for (message_idx, message) in result.projection_messages.iter().enumerate() {
@@ -248,13 +239,48 @@ pub(crate) fn verify_projection_messages_with_actual_blocks(
     true
 }
 
-fn base_source_hashes(compressed: &crate::preprocess::compression::CompressedSystemQ) -> Vec<Hash> {
-    let mut hashes = BTreeSet::new();
-    for relation in &compressed.relations {
-        hashes.insert(relation.hash);
-        hashes.insert(relation.polynomial.hash);
+fn replay_target_projection_dag(
+    compressed: &crate::preprocess::compression::CompressedSystemQ,
+) -> Option<TargetProjectionDAG> {
+    let hypergraph = build_relation_variable_hypergraph(compressed);
+    let influence = build_target_influence_graph(&hypergraph, compressed.target);
+    let weighted_primal = build_weighted_primal_graph(compressed, &influence);
+    let decomposition = build_target_rooted_decomposition(
+        &weighted_primal,
+        compressed.target,
+        &CostModel::default(),
+    );
+    let dag = build_target_projection_dag(compressed, &influence, &decomposition).ok()?;
+    validate_projection_dag(&dag, compressed).ok()?;
+    Some(dag)
+}
+
+fn actual_dag_message_dependencies(
+    dag: &TargetProjectionDAG,
+    messages: &[ProjectionMessage],
+) -> Option<Vec<Vec<usize>>> {
+    let mut index_by_block = std::collections::BTreeMap::new();
+    for (idx, message) in messages.iter().enumerate() {
+        if index_by_block.insert(message.block_id, idx).is_some() {
+            return None;
+        }
     }
-    hashes.into_iter().collect()
+    if index_by_block.len() != dag.blocks.len() {
+        return None;
+    }
+    let mut dependencies = Vec::new();
+    for message in messages {
+        let block = dag
+            .blocks
+            .iter()
+            .find(|block| block.block_id == message.block_id)?;
+        let mut deps = Vec::new();
+        for child_id in &block.child_block_ids {
+            deps.push(*index_by_block.get(child_id)?);
+        }
+        dependencies.push(deps);
+    }
+    Some(dependencies)
 }
 
 fn verify_support_from_messages(
@@ -433,8 +459,10 @@ mod tests {
         TargetOnlySupportCertificate, UniversalProjectionCertificate,
     };
     use crate::verify::run_certificate::{
-        build_core_run_certificate, hash_core_run_certificate, hash_projection_message_dag_binding,
-        hash_projection_message_dag_binding_with_authorized_sources, CoreRunCertificateInput,
+        build_core_run_certificate, build_final_dag_replay_evidence_from_dag,
+        hash_core_run_certificate, hash_decoded_candidates, hash_projection_message_dag_binding,
+        hash_projection_message_dag_binding_with_authorized_sources, hash_root_isolation,
+        CoreRunCertificate, CoreRunCertificateInput,
     };
     use crate::verify::verify_message::verify_projection_message;
     use crate::verify::verify_support::verify_global_support;
@@ -518,7 +546,7 @@ mod tests {
             root_isolation: &[],
             decoded_candidates: &[],
             global_support_certificate_hash: None,
-            final_dag_replay_evidence_hash: None,
+            final_dag_replay_evidence: None,
         });
         let result = result(t, support, messages, cert);
 
@@ -624,7 +652,7 @@ mod tests {
             root_isolation: &[],
             decoded_candidates: &[],
             global_support_certificate_hash: None,
-            final_dag_replay_evidence_hash: None,
+            final_dag_replay_evidence: None,
         });
         let result = result(t, support, messages, cert);
 
@@ -651,24 +679,7 @@ mod tests {
             )],
             Vec::new(),
         );
-        let cert = build_core_run_certificate(CoreRunCertificateInput {
-            input_hash: problem.input_hash,
-            canonical_hash: canonical_hash(&problem),
-            target_variable: problem.target,
-            compression_hash: compression_hash(&problem),
-            hypergraph_hash: hypergraph_hash(&problem),
-            dag_hash: hash_projection_message_dag_binding(t, &messages),
-            kernel_plan_hashes: vec![message.certificate.plan_hash],
-            projection_messages: &messages,
-            support: Some(&support),
-            squarefree_support: Some(&support),
-            root_isolation: &[],
-            decoded_candidates: &[],
-            global_support_certificate_hash: Some(global_support_certificate_hash(
-                t, &messages, &support,
-            )),
-            final_dag_replay_evidence_hash: None,
-        });
+        let cert = replay_certificate(&problem, &messages, &support, &support, &[], &[]);
         let mut result = result(t, support, messages, cert);
         assert!(super::replay_run_certificate(&result, &problem).accepted);
         result.projection_messages.clear();
@@ -707,24 +718,14 @@ mod tests {
             )],
             Vec::new(),
         );
-        let cert = build_core_run_certificate(CoreRunCertificateInput {
-            input_hash: problem.input_hash,
-            canonical_hash: canonical_hash(&problem),
-            target_variable: problem.target,
-            compression_hash: compression_hash(&problem),
-            hypergraph_hash: hypergraph_hash(&problem),
-            dag_hash: hash_projection_message_dag_binding(t, &messages),
-            kernel_plan_hashes: vec![message.certificate.plan_hash],
-            projection_messages: &messages,
-            support: Some(&support),
-            squarefree_support: Some(&support),
-            root_isolation: std::slice::from_ref(&root),
-            decoded_candidates: std::slice::from_ref(&candidate),
-            global_support_certificate_hash: Some(global_support_certificate_hash(
-                t, &messages, &support,
-            )),
-            final_dag_replay_evidence_hash: None,
-        });
+        let cert = replay_certificate(
+            &problem,
+            &messages,
+            &support,
+            &support,
+            std::slice::from_ref(&root),
+            std::slice::from_ref(&candidate),
+        );
         let mut result = result(t, support.clone(), messages, cert);
         result.root_isolation = vec![root];
         result.decoded_candidates = vec![candidate];
@@ -745,7 +746,7 @@ mod tests {
     }
 
     #[test]
-    fn p12_replay_rejects_candidate_omission_and_duplicates_even_when_hashes_match() {
+    fn fcr_p8_replay_rejects_candidate_omission_and_duplicates() {
         let t = VariableId(0);
         let support = support_poly(t);
         let (message, _) = verified_target_univariate_message(t);
@@ -777,51 +778,27 @@ mod tests {
             Vec::new(),
         );
 
-        let omitted_cert = build_core_run_certificate(CoreRunCertificateInput {
-            input_hash: problem.input_hash,
-            canonical_hash: canonical_hash(&problem),
-            target_variable: problem.target,
-            compression_hash: compression_hash(&problem),
-            hypergraph_hash: hypergraph_hash(&problem),
-            dag_hash: hash_projection_message_dag_binding(t, &messages),
-            kernel_plan_hashes: vec![message.certificate.plan_hash],
-            projection_messages: &messages,
-            support: Some(&support),
-            squarefree_support: Some(&support),
-            root_isolation: std::slice::from_ref(&root),
-            decoded_candidates: &[],
-            global_support_certificate_hash: Some(global_support_certificate_hash(
-                t, &messages, &support,
-            )),
-            final_dag_replay_evidence_hash: None,
-        });
-        let mut omitted_result = result(t, support.clone(), messages.clone(), omitted_cert);
+        let complete_cert = replay_certificate(
+            &problem,
+            &messages,
+            &support,
+            &support,
+            std::slice::from_ref(&root),
+            std::slice::from_ref(&candidate),
+        );
+        let mut accepted = result(t, support.clone(), messages.clone(), complete_cert);
+        accepted.root_isolation = vec![root.clone()];
+        accepted.decoded_candidates = vec![candidate.clone()];
+        assert!(super::replay_run_certificate(&accepted, &problem).accepted);
+
+        let mut omitted_result = accepted.clone();
         omitted_result.root_isolation = vec![root.clone()];
         omitted_result.decoded_candidates = Vec::new();
         assert!(!super::replay_run_certificate(&omitted_result, &problem).accepted);
 
-        let duplicate_candidates = vec![candidate.clone(), candidate];
-        let duplicate_cert = build_core_run_certificate(CoreRunCertificateInput {
-            input_hash: problem.input_hash,
-            canonical_hash: canonical_hash(&problem),
-            target_variable: problem.target,
-            compression_hash: compression_hash(&problem),
-            hypergraph_hash: hypergraph_hash(&problem),
-            dag_hash: hash_projection_message_dag_binding(t, &messages),
-            kernel_plan_hashes: vec![message.certificate.plan_hash],
-            projection_messages: &messages,
-            support: Some(&support),
-            squarefree_support: Some(&support),
-            root_isolation: std::slice::from_ref(&root),
-            decoded_candidates: &duplicate_candidates,
-            global_support_certificate_hash: Some(global_support_certificate_hash(
-                t, &messages, &support,
-            )),
-            final_dag_replay_evidence_hash: None,
-        });
-        let mut duplicate_result = result(t, support, messages, duplicate_cert);
+        let mut duplicate_result = accepted;
         duplicate_result.root_isolation = vec![root];
-        duplicate_result.decoded_candidates = duplicate_candidates;
+        duplicate_result.decoded_candidates = vec![candidate.clone(), candidate];
         assert!(!super::replay_run_certificate(&duplicate_result, &problem).accepted);
     }
 
@@ -896,7 +873,7 @@ mod tests {
             global_support_certificate_hash: Some(global_support_certificate_hash(
                 t, &messages, &support,
             )),
-            final_dag_replay_evidence_hash: None,
+            final_dag_replay_evidence: None,
         });
         let result = result(t, support, messages, cert);
         assert!(!super::replay_run_certificate(&result, &problem).accepted);
@@ -917,24 +894,7 @@ mod tests {
             )],
             Vec::new(),
         );
-        let cert = build_core_run_certificate(CoreRunCertificateInput {
-            input_hash: problem.input_hash,
-            canonical_hash: canonical_hash(&problem),
-            target_variable: problem.target,
-            compression_hash: compression_hash(&problem),
-            hypergraph_hash: hypergraph_hash(&problem),
-            dag_hash: hash_projection_message_dag_binding(t, &messages),
-            kernel_plan_hashes: vec![message.certificate.plan_hash],
-            projection_messages: &messages,
-            support: Some(&support),
-            squarefree_support: Some(&support),
-            root_isolation: &[],
-            decoded_candidates: &[],
-            global_support_certificate_hash: Some(global_support_certificate_hash(
-                t, &messages, &support,
-            )),
-            final_dag_replay_evidence_hash: None,
-        });
+        let cert = replay_certificate(&problem, &messages, &support, &support, &[], &[]);
         let result = result(t, support.clone(), messages, cert);
         assert!(super::replay_run_certificate(&result, &problem).accepted);
 
@@ -966,6 +926,19 @@ mod tests {
         cert.kernel_plan_hashes[0] = Hash([7; 32]);
         cert.run_hash = hash_core_run_certificate(cert);
         assert!(!super::replay_run_certificate(&plan_tamper, &problem).accepted);
+
+        let mut package_tamper = result.clone();
+        package_tamper.projection_messages[0].package_hash = Hash([6; 32]);
+        assert!(!super::replay_run_certificate(&package_tamper, &problem).accepted);
+
+        let mut block_authorization_tamper = result.clone();
+        let cert = block_authorization_tamper.certificate.as_mut().unwrap();
+        cert.final_dag_replay_evidence
+            .as_mut()
+            .unwrap()
+            .block_relation_ids[0]
+            .clear();
+        assert!(!super::replay_run_certificate(&block_authorization_tamper, &problem).accepted);
 
         let mut support_cert_tamper = result.clone();
         let cert = support_cert_tamper.certificate.as_mut().unwrap();
@@ -1242,7 +1215,7 @@ mod tests {
                 &messages,
                 &forged_support,
             )),
-            final_dag_replay_evidence_hash: None,
+            final_dag_replay_evidence: None,
         });
         let result = result(t, forged_support, messages, cert);
         assert!(!super::replay_run_certificate(&result, &problem).accepted);
@@ -1336,14 +1309,14 @@ mod tests {
                 &messages,
                 &forged_support,
             )),
-            final_dag_replay_evidence_hash: None,
+            final_dag_replay_evidence: None,
         });
         let result = result(t, forged_support, messages, cert);
         assert!(!super::replay_run_certificate(&result, &problem).accepted);
     }
 
     #[test]
-    fn p11_replay_accepts_duplicate_hash_when_source_is_input_authorized() {
+    fn fcr_p8_replay_rejects_duplicate_message_even_when_source_is_input_authorized() {
         let t = VariableId(0);
         let seed_source = poly_sub(&variable_poly(t), &constant_poly(int_q(1)));
         let authorized_source =
@@ -1441,10 +1414,58 @@ mod tests {
             global_support_certificate_hash: Some(global_support_certificate_hash(
                 t, &messages, &support,
             )),
-            final_dag_replay_evidence_hash: None,
+            final_dag_replay_evidence: None,
         });
         let result = result(t, support, messages, cert);
-        assert!(super::replay_run_certificate(&result, &problem).accepted);
+        assert!(!super::replay_run_certificate(&result, &problem).accepted);
+    }
+
+    fn replay_certificate(
+        problem: &crate::problem::input::RationalTargetProblem,
+        messages: &[ProjectionMessage],
+        support: &UniPolynomialQ,
+        squarefree_support: &UniPolynomialQ,
+        roots: &[RealRootRecord],
+        candidates: &[TargetCandidate],
+    ) -> CoreRunCertificate {
+        let compressed = compressed_system(problem);
+        let dag = super::replay_target_projection_dag(&compressed).unwrap();
+        let kernel_plan_hashes = messages
+            .iter()
+            .map(|message| message.certificate.plan_hash)
+            .collect::<Vec<_>>();
+        let support_certificate_hash = Some(global_support_certificate_hash(
+            problem.target,
+            messages,
+            support,
+        ));
+        let root_hash = Some(hash_root_isolation(roots));
+        let candidate_hash = Some(hash_decoded_candidates(candidates));
+        let evidence = build_final_dag_replay_evidence_from_dag(
+            &dag,
+            &compressed,
+            kernel_plan_hashes.clone(),
+            messages,
+            support_certificate_hash,
+            root_hash,
+            candidate_hash,
+        );
+        build_core_run_certificate(CoreRunCertificateInput {
+            input_hash: problem.input_hash,
+            canonical_hash: canonical_hash(problem),
+            target_variable: problem.target,
+            compression_hash: compressed.compressed_hash,
+            hypergraph_hash: hypergraph_hash(problem),
+            dag_hash: dag.dag_hash,
+            kernel_plan_hashes,
+            projection_messages: messages,
+            support: Some(support),
+            squarefree_support: Some(squarefree_support),
+            root_isolation: roots,
+            decoded_candidates: candidates,
+            global_support_certificate_hash: support_certificate_hash,
+            final_dag_replay_evidence: Some(evidence),
+        })
     }
 
     fn support_poly(t: VariableId) -> UniPolynomialQ {
