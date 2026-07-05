@@ -1,0 +1,15 @@
+phase: P5R-e
+files:
+  - docs/ai/changes/RGDTPK-Q-v4-core/PRIMITIVE_SCOPE_LEDGER.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/PLAN.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/SOURCE_MAP.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/REVIEWER_PROMPTS.md
+ledger_entries:
+  - algebra/resultant.rs
+  - algebra/interpolation.rs
+  - algebra/regular_chain.rs
+  - algebra/norm_trace.rs
+  - algebra/f4.rs
+  - preprocess/linear_affine.rs
+  - algebra/quotient.rs
+  - algebra/krylov.rs

@@ -1,0 +1,170 @@
+
+===== linear-affine-tests-after-provenance-fix =====
+COMMAND: $env:CARGO_INCREMENTAL="0"; cargo test --manifest-path geosolver-core\Cargo.toml preprocess::linear_affine -- --nocapture
+   Compiling geosolver-core v0.1.0 (C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry\geosolver-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.67s
+     Running unittests src\lib.rs (geosolver-core\target\debug\deps\geosolver_core-b058bf3b6adefcca.exe)
+
+running 4 tests
+test preprocess::linear_affine::tests::rejects_nonconstant_affine_without_explicit_guard ... ok
+test preprocess::linear_affine::tests::unsafe_nonconstant_rational_affine_candidate_is_left_in_system ... ok
+test preprocess::linear_affine::tests::guarded_affine_pivot_records_denominator_guard ... ok
+test preprocess::linear_affine::tests::guarded_rational_affine_non_polynomial_case_clears_denominator ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 102 filtered out; finished in 0.01s
+
+EXIT_CODE: 0
+
+===== compression-tests-after-provenance-fix =====
+COMMAND: $env:CARGO_INCREMENTAL="0"; cargo test --manifest-path geosolver-core\Cargo.toml preprocess::compression -- --nocapture
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running unittests src\lib.rs (geosolver-core\target\debug\deps\geosolver_core-b058bf3b6adefcca.exe)
+
+running 2 tests
+test preprocess::compression::tests::pre_kernel_compression_runs_steps_in_required_order ... ok
+test preprocess::compression::tests::explicit_saturation_and_independent_obligation_survive_pipeline ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 104 filtered out; finished in 0.00s
+
+EXIT_CODE: 0
+
+===== linear-affine-tests-after-exact-certificate-assertions =====
+COMMAND: $env:CARGO_INCREMENTAL="0"; cargo test --manifest-path geosolver-core\Cargo.toml preprocess::linear_affine -- --nocapture
+   Compiling geosolver-core v0.1.0 (C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry\geosolver-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 9.53s
+     Running unittests src\lib.rs (geosolver-core\target\debug\deps\geosolver_core-b058bf3b6adefcca.exe)
+
+running 4 tests
+test preprocess::linear_affine::tests::rejects_nonconstant_affine_without_explicit_guard ... ok
+test preprocess::linear_affine::tests::unsafe_nonconstant_rational_affine_candidate_is_left_in_system ... ok
+test preprocess::linear_affine::tests::guarded_affine_pivot_records_denominator_guard ... ok
+
+thread 'preprocess::linear_affine::tests::guarded_rational_affine_non_polynomial_case_clears_denominator' (25916) panicked at src\preprocess\linear_affine.rs:458:9:
+assertion `left == right` failed
+  left: Hash([14, 176, 209, 23, 233, 184, 60, 88, 210, 127, 77, 35, 4, 187, 244, 157, 80, 34, 103, 149, 156, 170, 101, 83, 163, 147, 204, 225, 37, 242, 86, 3])
+ right: Hash([41, 47, 114, 215, 65, 246, 71, 181, 29, 204, 228, 77, 143, 1, 247, 178, 189, 50, 204, 7, 110, 177, 110, 237, 89, 140, 237, 58, 152, 206, 94, 11])
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test preprocess::linear_affine::tests::guarded_rational_affine_non_polynomial_case_clears_denominator ... FAILED
+
+failures:
+
+failures:
+    preprocess::linear_affine::tests::guarded_rational_affine_non_polynomial_case_clears_denominator
+
+test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 102 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--lib`
+EXIT_CODE: 101
+
+===== linear-affine-tests-after-final-relation-hash-fix =====
+COMMAND: $env:CARGO_INCREMENTAL="0"; cargo test --manifest-path geosolver-core\Cargo.toml preprocess::linear_affine -- --nocapture
+   Compiling geosolver-core v0.1.0 (C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry\geosolver-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.73s
+     Running unittests src\lib.rs (geosolver-core\target\debug\deps\geosolver_core-b058bf3b6adefcca.exe)
+
+running 4 tests
+test preprocess::linear_affine::tests::rejects_nonconstant_affine_without_explicit_guard ... ok
+test preprocess::linear_affine::tests::unsafe_nonconstant_rational_affine_candidate_is_left_in_system ... ok
+test preprocess::linear_affine::tests::guarded_affine_pivot_records_denominator_guard ... ok
+
+thread 'preprocess::linear_affine::tests::guarded_rational_affine_non_polynomial_case_clears_denominator' (36772) panicked at src\preprocess\linear_affine.rs:475:9:
+assertion `left == right` failed
+  left: Hash([12, 65, 208, 44, 212, 215, 107, 42, 234, 52, 191, 183, 231, 125, 236, 103, 5, 26, 56, 4, 152, 233, 58, 86, 56, 48, 26, 52, 55, 26, 138, 127])
+ right: Hash([75, 93, 38, 25, 131, 116, 123, 174, 50, 18, 60, 147, 136, 188, 19, 10, 50, 102, 176, 66, 12, 50, 145, 248, 107, 149, 106, 186, 39, 254, 41, 150])
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test preprocess::linear_affine::tests::guarded_rational_affine_non_polynomial_case_clears_denominator ... FAILED
+
+failures:
+
+failures:
+    preprocess::linear_affine::tests::guarded_rational_affine_non_polynomial_case_clears_denominator
+
+test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 102 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--lib`
+EXIT_CODE: 101
+
+===== linear-affine-tests-after-certificate-recompute-fix =====
+COMMAND: $env:CARGO_INCREMENTAL="0"; cargo test --manifest-path geosolver-core\Cargo.toml preprocess::linear_affine -- --nocapture
+   Compiling geosolver-core v0.1.0 (C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry\geosolver-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 16.10s
+     Running unittests src\lib.rs (geosolver-core\target\debug\deps\geosolver_core-b058bf3b6adefcca.exe)
+
+running 4 tests
+test preprocess::linear_affine::tests::rejects_nonconstant_affine_without_explicit_guard ... ok
+test preprocess::linear_affine::tests::unsafe_nonconstant_rational_affine_candidate_is_left_in_system ... ok
+test preprocess::linear_affine::tests::guarded_affine_pivot_records_denominator_guard ... ok
+
+thread 'preprocess::linear_affine::tests::guarded_rational_affine_non_polynomial_case_clears_denominator' (30448) panicked at src\preprocess\linear_affine.rs:447:9:
+assertion `left == right` failed
+  left: SparsePolynomialQ { terms: [TermQ { coeff: RationalQ { num: -1, den: 1 }, monomial: Monomial { exponents: [(VariableId(0), 1)] } }, TermQ { coeff: RationalQ { num: -1, den: 1 }, monomial: Monomial { exponents: [(VariableId(1), 1)] } }], hash: Hash([80, 11, 230, 100, 9, 3, 22, 62, 201, 203, 62, 197, 211, 148, 146, 228, 7, 86, 178, 89, 192, 37, 72, 195, 11, 101, 134, 239, 239, 149, 19, 118]) }
+ right: SparsePolynomialQ { terms: [TermQ { coeff: RationalQ { num: 1, den: 1 }, monomial: Monomial { exponents: [(VariableId(0), 1)] } }, TermQ { coeff: RationalQ { num: 1, den: 1 }, monomial: Monomial { exponents: [(VariableId(1), 1)] } }], hash: Hash([142, 16, 136, 114, 60, 97, 178, 107, 235, 102, 61, 0, 134, 18, 237, 132, 155, 27, 116, 12, 187, 186, 214, 59, 56, 104, 248, 204, 133, 231, 216, 171]) }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test preprocess::linear_affine::tests::guarded_rational_affine_non_polynomial_case_clears_denominator ... FAILED
+
+failures:
+
+failures:
+    preprocess::linear_affine::tests::guarded_rational_affine_non_polynomial_case_clears_denominator
+
+test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 102 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--lib`
+EXIT_CODE: 101
+
+===== linear-affine-tests-after-canonical-pivot-certificate-fix =====
+COMMAND: $env:CARGO_INCREMENTAL="0"; cargo test --manifest-path geosolver-core\Cargo.toml preprocess::linear_affine -- --nocapture
+   Compiling geosolver-core v0.1.0 (C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry\geosolver-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.04s
+     Running unittests src\lib.rs (geosolver-core\target\debug\deps\geosolver_core-b058bf3b6adefcca.exe)
+
+running 4 tests
+test preprocess::linear_affine::tests::rejects_nonconstant_affine_without_explicit_guard ... ok
+test preprocess::linear_affine::tests::unsafe_nonconstant_rational_affine_candidate_is_left_in_system ... ok
+test preprocess::linear_affine::tests::guarded_affine_pivot_records_denominator_guard ... ok
+
+thread 'preprocess::linear_affine::tests::guarded_rational_affine_non_polynomial_case_clears_denominator' (41848) panicked at src\preprocess\linear_affine.rs:459:9:
+assertion `left == right` failed
+  left: SparsePolynomialQ { terms: [TermQ { coeff: RationalQ { num: 1, den: 1 }, monomial: Monomial { exponents: [] } }, TermQ { coeff: RationalQ { num: 1, den: 1 }, monomial: Monomial { exponents: [(VariableId(1), 1)] } }], hash: Hash([61, 90, 120, 87, 143, 5, 116, 36, 112, 205, 17, 226, 135, 102, 56, 165, 208, 217, 36, 212, 88, 225, 130, 236, 165, 223, 126, 98, 107, 153, 93, 84]) }
+ right: SparsePolynomialQ { terms: [TermQ { coeff: RationalQ { num: -1, den: 1 }, monomial: Monomial { exponents: [] } }, TermQ { coeff: RationalQ { num: -1, den: 1 }, monomial: Monomial { exponents: [(VariableId(1), 1)] } }], hash: Hash([68, 147, 1, 181, 34, 84, 204, 70, 171, 171, 127, 225, 57, 24, 25, 114, 227, 143, 32, 168, 119, 25, 62, 132, 41, 178, 197, 210, 6, 21, 17, 196]) }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test preprocess::linear_affine::tests::guarded_rational_affine_non_polynomial_case_clears_denominator ... FAILED
+
+failures:
+
+failures:
+    preprocess::linear_affine::tests::guarded_rational_affine_non_polynomial_case_clears_denominator
+
+test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 102 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--lib`
+EXIT_CODE: 101
+
+===== linear-affine-tests-after-primitive-guard-certificate-fix =====
+COMMAND: $env:CARGO_INCREMENTAL="0"; cargo test --manifest-path geosolver-core\Cargo.toml preprocess::linear_affine -- --nocapture
+   Compiling geosolver-core v0.1.0 (C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry\geosolver-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.03s
+     Running unittests src\lib.rs (geosolver-core\target\debug\deps\geosolver_core-b058bf3b6adefcca.exe)
+
+running 4 tests
+test preprocess::linear_affine::tests::rejects_nonconstant_affine_without_explicit_guard ... ok
+test preprocess::linear_affine::tests::unsafe_nonconstant_rational_affine_candidate_is_left_in_system ... ok
+test preprocess::linear_affine::tests::guarded_affine_pivot_records_denominator_guard ... ok
+test preprocess::linear_affine::tests::guarded_rational_affine_non_polynomial_case_clears_denominator ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 102 filtered out; finished in 0.01s
+
+EXIT_CODE: 0
+
+===== compression-tests-after-relation-bound-certificate-fix =====
+COMMAND: $env:CARGO_INCREMENTAL="0"; cargo test --manifest-path geosolver-core\Cargo.toml preprocess::compression -- --nocapture
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.04s
+     Running unittests src\lib.rs (geosolver-core\target\debug\deps\geosolver_core-b058bf3b6adefcca.exe)
+
+running 2 tests
+test preprocess::compression::tests::pre_kernel_compression_runs_steps_in_required_order ... ok
+test preprocess::compression::tests::explicit_saturation_and_independent_obligation_survive_pipeline ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 104 filtered out; finished in 0.00s
+
+EXIT_CODE: 0

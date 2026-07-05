@@ -18,16 +18,18 @@ use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::{RelationId, VariableId};
 use crate::types::monomial::normalize_monomial;
 use crate::types::polynomial::{
-    clear_denominators_primitive, normalize_poly, poly_monomial_count, poly_total_degree,
-    poly_variables, substitute_poly, SparsePolynomialQ, SubstitutionMap, TermQ,
+    clear_denominators_primitive, constant_poly, normalize_poly, poly_add, poly_monomial_count,
+    poly_mul, poly_total_degree, poly_variables, substitute_poly, SparsePolynomialQ,
+    SubstitutionMap, TermQ,
 };
-use crate::types::rational::bit_height_q;
+use crate::types::rational::{bit_height_q, int_q};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CompressionTrace {
     pub step_count: usize,
     pub ordered_steps: Vec<CompressionStepKind>,
     pub substitution_count: usize,
+    pub guarded_rational_affine_pivot_count: usize,
     pub guard_count: usize,
     pub saturation_count: usize,
     pub target_independent_component_count: usize,
@@ -44,6 +46,7 @@ impl Default for CompressionTrace {
             step_count: 0,
             ordered_steps: Vec::new(),
             substitution_count: 0,
+            guarded_rational_affine_pivot_count: 0,
             guard_count: 0,
             saturation_count: 0,
             target_independent_component_count: 0,
@@ -74,6 +77,7 @@ pub struct CompressedSystemQ {
     pub semantic_encodings: Vec<RealConstraintEncoding>,
     pub substitutions: Vec<CompressionSubstitution>,
     pub guards: Vec<GuardRecord>,
+    pub rational_affine_transformations: Vec<RationalAffineTransformationCertificate>,
     pub saturations: Vec<SaturationRecord>,
     pub feasibility_obligations: Vec<FeasibilityObligation>,
     pub diagnostics: Vec<DiagnosticRecord>,
@@ -90,6 +94,7 @@ pub struct CompressionState {
     pub semantic_encodings: Vec<RealConstraintEncoding>,
     pub substitutions: Vec<CompressionSubstitution>,
     pub guards: Vec<GuardRecord>,
+    pub rational_affine_transformations: Vec<RationalAffineTransformationCertificate>,
     pub saturations: Vec<SaturationRecord>,
     pub target_independent_components: Vec<Component>,
     pub feasibility_obligations: Vec<FeasibilityObligation>,
@@ -101,11 +106,51 @@ pub struct CompressionState {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CompressionSubstitution {
     pub eliminated_variable: VariableId,
-    pub expression: SparsePolynomialQ,
+    pub expression: CompressionExpression,
     pub denominator_guard: Option<SparsePolynomialQ>,
     pub source_relation_id: RelationId,
     pub kind: SubstitutionKind,
     pub substitution_hash: Hash,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum CompressionExpression {
+    Polynomial(SparsePolynomialQ),
+    Rational(RationalExpressionQ),
+}
+
+impl CompressionExpression {
+    pub fn expression_hash(&self) -> Hash {
+        match self {
+            CompressionExpression::Polynomial(poly) => poly.hash,
+            CompressionExpression::Rational(expr) => expr.expression_hash,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RationalExpressionQ {
+    pub numerator: SparsePolynomialQ,
+    pub denominator: SparsePolynomialQ,
+    pub denominator_guard: GuardRecord,
+    pub source_witness_relation_ids: Vec<RelationId>,
+    pub expression_hash: Hash,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RationalAffineTransformationCertificate {
+    pub original_relation_id: RelationId,
+    pub transformed_relation_id: RelationId,
+    pub pivot_relation_id: RelationId,
+    pub eliminated_variable: VariableId,
+    pub numerator: SparsePolynomialQ,
+    pub denominator: SparsePolynomialQ,
+    pub denominator_clearing_power: u32,
+    pub denominator_guard: GuardRecord,
+    pub source_witness_relation_ids: Vec<RelationId>,
+    pub original_relation_hash: Hash,
+    pub transformed_relation_hash: Hash,
+    pub transformation_hash: Hash,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -183,6 +228,11 @@ pub fn pre_kernel_compress(
     state.trace.monomial_count_after = total_monomial_count(&state.relations);
     state.trace.coefficient_height_after_bits = max_coefficient_height_bits(&state.relations);
     state.trace.substitution_count = state.substitutions.len();
+    state.trace.guarded_rational_affine_pivot_count = state
+        .substitutions
+        .iter()
+        .filter(|sub| matches!(sub.expression, CompressionExpression::Rational(_)))
+        .count();
     state.trace.guard_count = state.guards.len();
     state.trace.saturation_count = state.saturations.len();
     state.trace.target_independent_component_count = state.target_independent_components.len();
@@ -208,6 +258,7 @@ impl CompressionState {
             semantic_encodings: system.semantic_encodings,
             substitutions: Vec::new(),
             guards: Vec::new(),
+            rational_affine_transformations: Vec::new(),
             saturations: Vec::new(),
             target_independent_components: Vec::new(),
             feasibility_obligations: Vec::new(),
@@ -244,6 +295,7 @@ impl CompressionState {
             semantic_encodings: self.semantic_encodings,
             substitutions: self.substitutions,
             guards: self.guards,
+            rational_affine_transformations: self.rational_affine_transformations,
             saturations: self.saturations,
             feasibility_obligations: self.feasibility_obligations,
             diagnostics: self.diagnostics,
@@ -261,6 +313,40 @@ impl CompressionState {
         &mut self,
         eliminated_variable: VariableId,
         expression: SparsePolynomialQ,
+        denominator_guard: Option<SparsePolynomialQ>,
+        source_relation_id: RelationId,
+        kind: SubstitutionKind,
+    ) {
+        self.add_substitution_expression(
+            eliminated_variable,
+            CompressionExpression::Polynomial(expression),
+            denominator_guard,
+            source_relation_id,
+            kind,
+        );
+    }
+
+    pub fn add_rational_substitution(
+        &mut self,
+        eliminated_variable: VariableId,
+        expression: RationalExpressionQ,
+        denominator_guard: Option<SparsePolynomialQ>,
+        source_relation_id: RelationId,
+        kind: SubstitutionKind,
+    ) {
+        self.add_substitution_expression(
+            eliminated_variable,
+            CompressionExpression::Rational(expression),
+            denominator_guard,
+            source_relation_id,
+            kind,
+        );
+    }
+
+    fn add_substitution_expression(
+        &mut self,
+        eliminated_variable: VariableId,
+        expression: CompressionExpression,
         denominator_guard: Option<SparsePolynomialQ>,
         source_relation_id: RelationId,
         kind: SubstitutionKind,
@@ -288,21 +374,24 @@ impl CompressionState {
         factor: SparsePolynomialQ,
         source_relation_ids: Vec<RelationId>,
         guard_kind: GuardKind,
-    ) {
+    ) -> GuardRecord {
         let factor = clear_denominators_primitive(&factor);
         let guard_hash = hash_guard(&factor, &source_relation_ids, guard_kind);
-        if !self
+        if let Some(existing) = self
             .guards
             .iter()
-            .any(|guard| guard.guard_hash == guard_hash)
+            .find(|guard| guard.guard_hash == guard_hash)
         {
-            self.guards.push(GuardRecord {
-                factor,
-                source_relation_ids,
-                guard_kind,
-                guard_hash,
-            });
+            return existing.clone();
         }
+        let record = GuardRecord {
+            factor,
+            source_relation_ids,
+            guard_kind,
+            guard_hash,
+        };
+        self.guards.push(record.clone());
+        record
     }
 
     pub fn add_saturation(
@@ -356,6 +445,55 @@ impl CompressionState {
         self.relation_order = self.relations.iter().map(|relation| relation.id).collect();
     }
 
+    pub fn apply_rational_affine_substitution(
+        &mut self,
+        eliminated_variable: VariableId,
+        numerator: &SparsePolynomialQ,
+        denominator: &SparsePolynomialQ,
+        source_relation_id: RelationId,
+        denominator_guard: GuardRecord,
+        source_witness_relation_ids: Vec<RelationId>,
+    ) {
+        self.relations = self
+            .relations
+            .iter()
+            .filter(|relation| relation.id != source_relation_id)
+            .filter_map(|relation| {
+                let (raw_transformed, denominator_clearing_power) =
+                    substitute_rational_and_clear_with_power(
+                        &relation.polynomial,
+                        eliminated_variable,
+                        numerator,
+                        denominator,
+                    );
+                let transformed = clear_denominators_primitive(&raw_transformed);
+                if transformed.terms.is_empty() {
+                    None
+                } else {
+                    let transformed_relation =
+                        relation_with_polynomial(relation.id, transformed, relation.source.clone());
+                    self.rational_affine_transformations.push(
+                        rational_affine_transformation_certificate(
+                            relation.id,
+                            relation.id,
+                            source_relation_id,
+                            eliminated_variable,
+                            numerator.clone(),
+                            denominator.clone(),
+                            denominator_clearing_power,
+                            denominator_guard.clone(),
+                            source_witness_relation_ids.clone(),
+                            relation.hash,
+                            transformed_relation.hash,
+                        ),
+                    );
+                    Some(transformed_relation)
+                }
+            })
+            .collect();
+        self.relation_order = self.relations.iter().map(|relation| relation.id).collect();
+    }
+
     pub fn replace_relations(&mut self, relations: Vec<CanonicalRelationQ>) {
         self.relations = relations;
         self.relation_order = self.relations.iter().map(|relation| relation.id).collect();
@@ -380,6 +518,9 @@ impl CompressionState {
         }
         for guard in &self.guards {
             chunks.push(guard.guard_hash.0.to_vec());
+        }
+        for transform in &self.rational_affine_transformations {
+            chunks.push(transform.transformation_hash.0.to_vec());
         }
         for sat in &self.saturations {
             chunks.push(sat.saturation_hash.0.to_vec());
@@ -562,7 +703,7 @@ fn enforce_height_limit(state: &CompressionState, ctx: &SolverContext) -> Result
 
 fn hash_substitution(
     eliminated_variable: VariableId,
-    expression: &SparsePolynomialQ,
+    expression: &CompressionExpression,
     denominator_guard: Option<&SparsePolynomialQ>,
     source_relation_id: RelationId,
     kind: SubstitutionKind,
@@ -571,12 +712,153 @@ fn hash_substitution(
         eliminated_variable.0.to_be_bytes().to_vec(),
         source_relation_id.0.to_be_bytes().to_vec(),
         vec![kind as u8],
-        expression.hash.0.to_vec(),
+        expression.expression_hash().0.to_vec(),
     ];
     if let Some(guard) = denominator_guard {
         chunks.push(guard.hash.0.to_vec());
     }
     hash_sequence("compression-substitution", &chunks)
+}
+
+pub fn rational_expression(
+    numerator: SparsePolynomialQ,
+    denominator: SparsePolynomialQ,
+    denominator_guard: GuardRecord,
+    source_witness_relation_ids: Vec<RelationId>,
+) -> RationalExpressionQ {
+    let expression_hash = hash_sequence(
+        "rational-expression-q",
+        &[
+            numerator.hash.0.to_vec(),
+            denominator.hash.0.to_vec(),
+            denominator_guard.guard_hash.0.to_vec(),
+        ],
+    );
+    RationalExpressionQ {
+        numerator,
+        denominator,
+        denominator_guard,
+        source_witness_relation_ids,
+        expression_hash,
+    }
+}
+
+pub fn rational_affine_transformation_certificate(
+    original_relation_id: RelationId,
+    transformed_relation_id: RelationId,
+    pivot_relation_id: RelationId,
+    eliminated_variable: VariableId,
+    numerator: SparsePolynomialQ,
+    denominator: SparsePolynomialQ,
+    denominator_clearing_power: u32,
+    denominator_guard: GuardRecord,
+    source_witness_relation_ids: Vec<RelationId>,
+    original_relation_hash: Hash,
+    transformed_relation_hash: Hash,
+) -> RationalAffineTransformationCertificate {
+    let transformation_hash = hash_sequence(
+        "rational-affine-transformation-certificate",
+        &[
+            original_relation_id.0.to_be_bytes().to_vec(),
+            transformed_relation_id.0.to_be_bytes().to_vec(),
+            pivot_relation_id.0.to_be_bytes().to_vec(),
+            eliminated_variable.0.to_be_bytes().to_vec(),
+            numerator.hash.0.to_vec(),
+            denominator.hash.0.to_vec(),
+            denominator_clearing_power.to_be_bytes().to_vec(),
+            denominator_guard.guard_hash.0.to_vec(),
+            original_relation_hash.0.to_vec(),
+            transformed_relation_hash.0.to_vec(),
+        ],
+    );
+    RationalAffineTransformationCertificate {
+        original_relation_id,
+        transformed_relation_id,
+        pivot_relation_id,
+        eliminated_variable,
+        numerator,
+        denominator,
+        denominator_clearing_power,
+        denominator_guard,
+        source_witness_relation_ids,
+        original_relation_hash,
+        transformed_relation_hash,
+        transformation_hash,
+    }
+}
+
+pub fn substitute_rational_and_clear(
+    poly: &SparsePolynomialQ,
+    variable: VariableId,
+    numerator: &SparsePolynomialQ,
+    denominator: &SparsePolynomialQ,
+) -> SparsePolynomialQ {
+    substitute_rational_and_clear_with_power(poly, variable, numerator, denominator).0
+}
+
+pub fn substitute_rational_and_clear_with_power(
+    poly: &SparsePolynomialQ,
+    variable: VariableId,
+    numerator: &SparsePolynomialQ,
+    denominator: &SparsePolynomialQ,
+) -> (SparsePolynomialQ, u32) {
+    let max_exp = poly
+        .terms
+        .iter()
+        .map(|term| variable_exponent(term, variable))
+        .max()
+        .unwrap_or(0);
+    let mut acc = crate::types::polynomial::zero_poly();
+    for term in &poly.terms {
+        let exp = variable_exponent(term, variable);
+        let without_variable = term_without_variable(term, variable);
+        let numerator_part = poly_pow(numerator, exp);
+        let denominator_part = poly_pow(denominator, max_exp.saturating_sub(exp));
+        let transformed_term = poly_mul(
+            &poly_mul(&without_variable, &numerator_part),
+            &denominator_part,
+        );
+        acc = poly_add(&acc, &transformed_term);
+    }
+    (normalize_poly(acc), max_exp)
+}
+
+fn variable_exponent(term: &TermQ, variable: VariableId) -> u32 {
+    term.monomial
+        .exponents
+        .iter()
+        .find(|(var, _)| *var == variable)
+        .map_or(0, |(_, exp)| *exp)
+}
+
+fn term_without_variable(term: &TermQ, variable: VariableId) -> SparsePolynomialQ {
+    normalize_poly(SparsePolynomialQ {
+        terms: vec![TermQ {
+            coeff: term.coeff.clone(),
+            monomial: normalize_monomial(
+                term.monomial
+                    .exponents
+                    .iter()
+                    .filter_map(|(var, exp)| {
+                        if *var == variable {
+                            None
+                        } else {
+                            Some((*var, *exp))
+                        }
+                    })
+                    .collect(),
+            ),
+        }],
+        hash: hash_sequence("poly", &[]),
+    })
+}
+
+fn poly_pow(base: &SparsePolynomialQ, exp: u32) -> SparsePolynomialQ {
+    let mut result = constant_poly(int_q(1));
+    for _ in 0..exp {
+        result = poly_mul(&result, base);
+    }
+    result
 }
 
 fn hash_guard(

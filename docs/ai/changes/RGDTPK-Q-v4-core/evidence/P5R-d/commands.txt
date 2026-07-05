@@ -1,0 +1,5 @@
+P5R-d commands
+
+cargo test --manifest-path geosolver-core/Cargo.toml algebra::quotient -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml algebra::krylov -- --nocapture
+rg quotient/action provenance and explicit handle scans

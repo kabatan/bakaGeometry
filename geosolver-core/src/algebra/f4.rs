@@ -9,49 +9,58 @@ use crate::types::ids::VariableId;
 use crate::types::polynomial::SparsePolynomialQ;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct F4Options {
-    pub groebner_options: GroebnerOptions,
+pub enum F4ImplementationLevel {
+    NotProductionF4,
 }
 
-impl Default for F4Options {
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct GroebnerBackedBatchOptions {
+    pub groebner_options: GroebnerOptions,
+    pub implementation_level: F4ImplementationLevel,
+}
+
+impl Default for GroebnerBackedBatchOptions {
     fn default() -> Self {
         Self {
             groebner_options: GroebnerOptions::default(),
+            implementation_level: F4ImplementationLevel::NotProductionF4,
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct F4BatchReductionResult {
+pub struct GroebnerBackedBatchReductionResult {
     pub reductions: Vec<ReductionResult>,
     pub matrix_rows: usize,
     pub matrix_cols: usize,
+    pub implementation_level: F4ImplementationLevel,
 }
 
-pub fn f4_reduce_batch(
+pub fn groebner_backed_batch_reduce_for_tests(
     reducers: &[SparsePolynomialQ],
     targets: &[SparsePolynomialQ],
     order: &MonomialOrder,
-    _options: F4Options,
-) -> Result<F4BatchReductionResult, SolverError> {
+    options: GroebnerBackedBatchOptions,
+) -> Result<GroebnerBackedBatchReductionResult, SolverError> {
     let reductions: Vec<ReductionResult> = targets
         .iter()
         .map(|target| reduce_by_set(target, reducers, order))
         .collect();
     let matrix_rows = targets.len();
     let matrix_cols = reducers.iter().map(|p| p.terms.len()).sum::<usize>();
-    Ok(F4BatchReductionResult {
+    Ok(GroebnerBackedBatchReductionResult {
         reductions,
         matrix_rows,
         matrix_cols,
+        implementation_level: options.implementation_level,
     })
 }
 
-pub fn f4_elimination_local(
+pub fn non_production_groebner_batch_elimination_for_tests(
     relations: &[SparsePolynomialQ],
     eliminate: &[VariableId],
     keep: &[VariableId],
-    options: F4Options,
+    options: GroebnerBackedBatchOptions,
 ) -> Result<LocalEliminationResult, SolverError> {
     let order = elimination_order(eliminate, keep);
     let basis = groebner_elimination_basis(relations, &order, options.groebner_options)?;
@@ -59,7 +68,7 @@ pub fn f4_elimination_local(
         relations,
         keep,
         basis,
-        LocalEliminationStrategyName::LocalF4,
+        LocalEliminationStrategyName::NonProductionGroebnerBatch,
     )
 }
 
@@ -73,7 +82,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn f4_reduce_batch_reduces_targets_and_records_matrix_shape() {
+    fn groebner_backed_batch_reduce_is_labelled_non_production() {
         let x = VariableId(1);
         let reducer = poly_sub(&variable_poly(x), &constant_poly(int_q(1)));
         let target = poly_sub(
@@ -82,15 +91,25 @@ mod tests {
         );
         let order = lex_order(&[x]);
 
-        let result = f4_reduce_batch(&[reducer], &[target], &order, F4Options::default()).unwrap();
+        let result = groebner_backed_batch_reduce_for_tests(
+            &[reducer],
+            &[target],
+            &order,
+            GroebnerBackedBatchOptions::default(),
+        )
+        .unwrap();
 
         assert_eq!(result.matrix_rows, 1);
         assert_eq!(result.matrix_cols, 2);
         assert!(result.reductions[0].remainder.terms.is_empty());
+        assert_eq!(
+            result.implementation_level,
+            F4ImplementationLevel::NotProductionF4
+        );
     }
 
     #[test]
-    fn f4_elimination_local_exports_keep_only_generators_with_certificates() {
+    fn non_production_groebner_batch_exports_keep_only_generators_with_certificates() {
         let x = VariableId(1);
         let y = VariableId(2);
         let relations = vec![
@@ -98,13 +117,22 @@ mod tests {
             poly_sub(&variable_poly(y), &constant_poly(int_q(1))),
         ];
 
-        let result = f4_elimination_local(&relations, &[y], &[x], F4Options::default()).unwrap();
+        let result = non_production_groebner_batch_elimination_for_tests(
+            &relations,
+            &[y],
+            &[x],
+            GroebnerBackedBatchOptions::default(),
+        )
+        .unwrap();
 
-        assert_eq!(result.strategy, LocalEliminationStrategyName::LocalF4);
+        assert_eq!(
+            result.strategy,
+            LocalEliminationStrategyName::NonProductionGroebnerBatch
+        );
         assert!(!result.generators.is_empty());
         validate_local_elimination_result(&result, &[x], &relations).unwrap();
         let order = elimination_order(&[y], &[x]);
-        let reduced = f4_reduce_batch(
+        let reduced = groebner_backed_batch_reduce_for_tests(
             &relations,
             &result
                 .generators
@@ -112,7 +140,7 @@ mod tests {
                 .map(|generator| generator.generator.clone())
                 .collect::<Vec<_>>(),
             &order,
-            F4Options::default(),
+            GroebnerBackedBatchOptions::default(),
         )
         .unwrap();
         assert_eq!(reduced.matrix_rows, result.generators.len());

@@ -1,0 +1,15 @@
+phase: P5R-d
+functions:
+  - path: geosolver-core/src/algebra/quotient.rs
+    implemented: DebugExplicitTargetQuotientHandle, ProductionProvenancedTargetQuotientHandle, NormalFormBasisCertificate with per-basis certificates, BasisElementNormalFormCertificate, NormalFormCertificate, ActionColumnCertificate, ProductionQuotientHandleInput, build_production_target_relevant_quotient_handle
+    validation: authorized relation hash recomputation, basis certificate hash recomputation, basis element exact membership verification, action normal-form certificate hash recomputation, action column exact membership verification
+  - path: geosolver-core/src/algebra/krylov.rs
+    implemented: production Krylov functions accept ProductionProvenancedTargetQuotientHandle; require_production_target_action_krylov_handle rejects debug handles; target action matrix is built from verified action-column certificates
+mandatory_tests:
+  - algebra::quotient::tests::malicious_injected_action_column_is_rejected_by_production_builder
+  - algebra::quotient::tests::debug_explicit_handle_is_not_production_provenanced
+  - algebra::quotient::tests::tampered_authorization_hash_is_rejected
+  - algebra::quotient::tests::tampered_action_certificate_hash_is_rejected
+  - algebra::quotient::tests::tampered_basis_certificate_hash_is_rejected
+  - algebra::krylov::tests::debug_explicit_handle_is_rejected_by_production_krylov_boundary
+  - algebra::krylov::tests::single_vector_krylov_undercoverage_is_rejected

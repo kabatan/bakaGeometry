@@ -1,0 +1,13 @@
+P5R-f commands
+
+cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml preprocess::linear_affine -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml preprocess::compression -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml algebra::f4 -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml algebra::elimination -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml algebra::quotient -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml algebra::krylov -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml graph -- --nocapture
+rg static scans required by P5R-f
+schema validation for P5R review archives

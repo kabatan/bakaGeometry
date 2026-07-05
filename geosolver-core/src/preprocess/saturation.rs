@@ -6,7 +6,9 @@ use crate::problem::semantic::RealConstraintEncoding;
 use crate::result::status::SolverError;
 use crate::types::ids::{RelationId, VariableId};
 use crate::types::monomial::normalize_monomial;
-use crate::types::polynomial::{constant_poly, normalize_poly, SparsePolynomialQ, TermQ};
+use crate::types::polynomial::{
+    clear_denominators_primitive, constant_poly, normalize_poly, SparsePolynomialQ, TermQ,
+};
 use crate::types::rational::{int_q, is_zero_q, neg_q};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -47,10 +49,10 @@ pub fn find_explicit_nonzero_witness(
     state: &CompressionState,
     factor: &SparsePolynomialQ,
 ) -> Option<ExplicitNonzeroWitness> {
-    let normalized = normalize_poly(factor.clone());
+    let normalized = clear_denominators_primitive(factor);
     explicit_nonzero_witnesses(state)
         .into_iter()
-        .find(|witness| witness.factor == normalized)
+        .find(|witness| clear_denominators_primitive(&witness.factor) == normalized)
 }
 
 pub fn explicit_nonzero_witnesses(state: &CompressionState) -> Vec<ExplicitNonzeroWitness> {

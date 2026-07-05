@@ -1,0 +1,12 @@
+phase: P5R-b
+route: demote_current_f4_wrapper
+functions:
+  - path: geosolver-core/src/algebra/f4.rs
+    implemented: GroebnerBackedBatchOptions, F4ImplementationLevel::NotProductionF4, groebner_backed_batch_reduce_for_tests, non_production_groebner_batch_elimination_for_tests
+    limitation: not production F4
+  - path: geosolver-core/src/algebra/elimination.rs
+    implemented: production dispatch rejects NonProductionGroebnerBatchForTests as CertificateDesignGap
+    removed: EliminationStrategy::LocalF4 production path
+mandatory_tests:
+  - algebra::f4::tests::groebner_backed_batch_reduce_is_labelled_non_production
+  - algebra::elimination::tests::production_dispatch_rejects_non_production_groebner_batch_strategy

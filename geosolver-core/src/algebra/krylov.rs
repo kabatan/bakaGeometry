@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-use crate::algebra::quotient::{unit_vector, vector_hash, BasisHandleId, TargetQuotientHandle};
+use crate::algebra::quotient::{
+    BasisHandleId, ProductionProvenancedTargetQuotientHandle, TargetQuotientHandle,
+};
 use crate::result::status::{FailureKind, SolverError, SolverErrorKind};
 use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::VariableId;
 use crate::types::matrix::VectorQ;
-use crate::types::polynomial::{poly_mul, variable_poly};
 use crate::types::rational::{
     add_q, div_q, int_q, is_zero_q, mul_q, neg_q, sub_q, zero_q, RationalQ,
 };
@@ -64,7 +65,7 @@ pub struct AnnihilatorCertificate {
 }
 
 pub fn block_krylov_sequence(
-    handle: &dyn TargetQuotientHandle,
+    handle: &ProductionProvenancedTargetQuotientHandle,
     target: VariableId,
     plan: KrylovPlan,
 ) -> Result<KrylovSequence, SolverError> {
@@ -101,6 +102,18 @@ pub fn block_krylov_sequence(
     })
 }
 
+pub fn require_production_target_action_krylov_handle(
+    handle: &dyn TargetQuotientHandle,
+) -> Result<(), SolverError> {
+    if handle.is_production_provenanced() {
+        Ok(())
+    } else {
+        Err(certificate_design_gap(
+            "TargetActionKrylov production path requires a provenance-bound quotient handle",
+        ))
+    }
+}
+
 pub fn recover_recurrence(seq: &KrylovSequence) -> Result<RecurrencePolynomial, SolverError> {
     for degree in 1..=seq.basis_size {
         if let Some(coeffs) = solve_monic_recurrence(seq, degree) {
@@ -124,7 +137,7 @@ pub fn recover_recurrence(seq: &KrylovSequence) -> Result<RecurrencePolynomial, 
 pub fn certify_krylov_coverage(
     seq: &KrylovSequence,
     recurrence: &RecurrencePolynomial,
-    handle: &dyn TargetQuotientHandle,
+    handle: &ProductionProvenancedTargetQuotientHandle,
 ) -> Result<CoverageCertificate, SolverError> {
     if seq.basis_id != handle.basis_id() || seq.basis_size != handle.basis_size() {
         return Err(certificate_design_gap(
@@ -155,7 +168,7 @@ pub fn certify_krylov_coverage(
 }
 
 pub fn verify_annihilator(
-    handle: &dyn TargetQuotientHandle,
+    handle: &ProductionProvenancedTargetQuotientHandle,
     poly: &UniPolynomialQ,
 ) -> Result<AnnihilatorCertificate, SolverError> {
     let (matrix, _) = target_action_matrix(handle, poly.variable)?;
@@ -174,25 +187,23 @@ pub fn verify_annihilator(
 }
 
 fn target_action_matrix(
-    handle: &dyn TargetQuotientHandle,
+    handle: &ProductionProvenancedTargetQuotientHandle,
     target: VariableId,
 ) -> Result<(Vec<Vec<RationalQ>>, Vec<Hash>), SolverError> {
     let n = handle.basis_size();
     let mut columns = Vec::with_capacity(n);
     let mut hashes = Vec::with_capacity(n);
     for col in 0..n {
-        let basis_vector = unit_vector(n, col);
-        let action_column = handle.multiply_by_variable(&basis_vector, target)?;
-        let basis_poly = handle
-            .basis_polynomial(col)
-            .ok_or_else(|| certificate_design_gap("missing basis polynomial"))?;
-        let expected = handle.normal_form(&poly_mul(&variable_poly(target), &basis_poly))?;
-        if action_column != expected {
+        let certificate = handle
+            .action_column_certificate(target, col)
+            .ok_or_else(|| certificate_design_gap("missing target action column certificate"))?;
+        if certificate.source_relation_authorization_hash != handle.authorized_relation_hash() {
             return Err(certificate_design_gap(
-                "target action column failed exact normal-form verification",
+                "target action column is not bound to the quotient authorization hash",
             ));
         }
-        hashes.push(vector_hash(&action_column));
+        let action_column = certificate.normal_form_vector.clone();
+        hashes.push(certificate.normal_form_certificate.certificate_hash);
         columns.push(action_column);
     }
     let mut rows = vec![vec![zero_q(); n]; n];
@@ -511,32 +522,71 @@ fn implementation_bug(message: &str) -> SolverError {
 mod tests {
     use std::collections::BTreeMap;
 
+    use crate::algebra::normal_form::{MembershipCertificate, MembershipTerm};
     use crate::algebra::quotient::{
-        build_target_relevant_quotient_handle, monomial_basis_polynomials, BasisHandleId,
-        BasisScope, QuotientHandleInput,
+        build_debug_explicit_target_quotient_handle,
+        build_production_target_relevant_quotient_handle, hash_authorized_relations,
+        make_action_column_certificate, monomial_basis_polynomials, normal_form_basis_certificate,
+        unit_vector, BasisHandleId, BasisScope, DebugQuotientHandleInput,
+        ProductionProvenancedTargetQuotientHandle, ProductionQuotientHandleInput,
     };
     use crate::result::status::SolverStatus;
+    use crate::types::polynomial::{constant_poly, poly_add, poly_mul, poly_sub, variable_poly};
 
     use super::*;
 
-    fn companion_handle(target: VariableId) -> Box<dyn TargetQuotientHandle> {
-        build_target_relevant_quotient_handle(QuotientHandleInput {
+    fn companion_handle(target: VariableId) -> ProductionProvenancedTargetQuotientHandle {
+        let basis = monomial_basis_polynomials(target, 2);
+        let relation = poly_add(
+            &poly_sub(
+                &poly_mul(&variable_poly(target), &variable_poly(target)),
+                &poly_mul(&constant_poly(int_q(3)), &variable_poly(target)),
+            ),
+            &constant_poly(int_q(2)),
+        );
+        let relations = vec![relation];
+        let auth_hash = hash_authorized_relations(&relations);
+        let col0 = make_action_column_certificate(
+            target,
+            0,
+            &basis,
+            &relations,
+            auth_hash,
+            VectorQ {
+                entries: vec![int_q(0), int_q(1)],
+            },
+            MembershipCertificate {
+                combination_terms: Vec::new(),
+            },
+        )
+        .unwrap();
+        let col1 = make_action_column_certificate(
+            target,
+            1,
+            &basis,
+            &relations,
+            auth_hash,
+            VectorQ {
+                entries: vec![int_q(-2), int_q(3)],
+            },
+            MembershipCertificate {
+                combination_terms: vec![MembershipTerm {
+                    relation_id: 0,
+                    multiplier: constant_poly(int_q(1)),
+                }],
+            },
+        )
+        .unwrap();
+        build_production_target_relevant_quotient_handle(ProductionQuotientHandleInput {
             basis_id: BasisHandleId(2),
             basis_scope: BasisScope::TargetRelevant {
                 variables: vec![target],
             },
-            basis_polynomials: monomial_basis_polynomials(target, 2),
-            variable_action_columns: BTreeMap::from([(
-                target,
-                vec![
-                    VectorQ {
-                        entries: vec![int_q(0), int_q(1)],
-                    },
-                    VectorQ {
-                        entries: vec![int_q(-2), int_q(3)],
-                    },
-                ],
-            )]),
+            authorized_relation_hash: auth_hash,
+            authorized_relations: relations,
+            basis_polynomials: basis.clone(),
+            normal_form_basis_certificate: normal_form_basis_certificate(&basis, auth_hash),
+            action_columns: BTreeMap::from([(target, vec![col0, col1])]),
             no_coordinate_roots_exported: true,
             no_full_coordinate_rur_exported: true,
         })
@@ -548,7 +598,7 @@ mod tests {
         let target = VariableId(5);
         let handle = companion_handle(target);
         let seq = block_krylov_sequence(
-            handle.as_ref(),
+            &handle,
             target,
             KrylovPlan {
                 start_vectors: vec![unit_vector(2, 0), unit_vector(2, 1)],
@@ -557,8 +607,8 @@ mod tests {
         )
         .unwrap();
         let recurrence = recover_recurrence(&seq).unwrap();
-        let coverage = certify_krylov_coverage(&seq, &recurrence, handle.as_ref()).unwrap();
-        let ann = verify_annihilator(handle.as_ref(), &coverage.characteristic_polynomial).unwrap();
+        let coverage = certify_krylov_coverage(&seq, &recurrence, &handle).unwrap();
+        let ann = verify_annihilator(&handle, &coverage.characteristic_polynomial).unwrap();
 
         assert_eq!(
             coverage.coverage_kind,
@@ -582,7 +632,7 @@ mod tests {
             entries: vec![int_q(-2), int_q(1)],
         };
         let seq = block_krylov_sequence(
-            handle.as_ref(),
+            &handle,
             target,
             KrylovPlan {
                 start_vectors: vec![missed_eigenvalue_start],
@@ -591,12 +641,40 @@ mod tests {
         )
         .unwrap();
         let recurrence = recover_recurrence(&seq).unwrap();
-        let err = certify_krylov_coverage(&seq, &recurrence, handle.as_ref()).unwrap_err();
+        let err = certify_krylov_coverage(&seq, &recurrence, &handle).unwrap_err();
 
         assert_eq!(
             recurrence.polynomial.coeffs_low_to_high,
             vec![int_q(-1), int_q(1)]
         );
+        assert_eq!(err.public_status(), SolverStatus::CertificateDesignGap);
+    }
+
+    #[test]
+    fn debug_explicit_handle_is_rejected_by_production_krylov_boundary() {
+        let target = VariableId(5);
+        let debug = build_debug_explicit_target_quotient_handle(DebugQuotientHandleInput {
+            basis_id: BasisHandleId(99),
+            basis_scope: BasisScope::TargetRelevant {
+                variables: vec![target],
+            },
+            basis_polynomials: monomial_basis_polynomials(target, 2),
+            variable_action_columns: BTreeMap::from([(
+                target,
+                vec![
+                    VectorQ {
+                        entries: vec![int_q(0), int_q(1)],
+                    },
+                    VectorQ {
+                        entries: vec![int_q(-2), int_q(3)],
+                    },
+                ],
+            )]),
+            no_coordinate_roots_exported: true,
+            no_full_coordinate_rur_exported: true,
+        })
+        .unwrap();
+        let err = require_production_target_action_krylov_handle(&debug).unwrap_err();
         assert_eq!(err.public_status(), SolverStatus::CertificateDesignGap);
     }
 }

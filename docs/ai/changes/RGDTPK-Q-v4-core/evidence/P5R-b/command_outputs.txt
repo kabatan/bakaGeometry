@@ -1,0 +1,28 @@
+
+===== f4-tests =====
+COMMAND: $env:CARGO_INCREMENTAL="0"; cargo test --manifest-path geosolver-core\Cargo.toml algebra::f4 -- --nocapture
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running unittests src\lib.rs (geosolver-core\target\debug\deps\geosolver_core-b058bf3b6adefcca.exe)
+
+running 2 tests
+test algebra::f4::tests::groebner_backed_batch_reduce_is_labelled_non_production ... ok
+test algebra::f4::tests::non_production_groebner_batch_exports_keep_only_generators_with_certificates ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 101 filtered out; finished in 0.00s
+
+EXIT_CODE: 0
+
+===== elimination-tests =====
+COMMAND: $env:CARGO_INCREMENTAL="0"; cargo test --manifest-path geosolver-core\Cargo.toml algebra::elimination -- --nocapture
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.04s
+     Running unittests src\lib.rs (geosolver-core\target\debug\deps\geosolver_core-b058bf3b6adefcca.exe)
+
+running 4 tests
+test algebra::elimination::tests::dispatcher_checks_disjoint_keep_and_eliminate_sets ... ok
+test algebra::elimination::tests::non_keep_export_is_implementation_bug ... ok
+test algebra::elimination::tests::production_dispatch_rejects_non_production_groebner_batch_strategy ... ok
+test algebra::elimination::tests::dispatcher_exports_keep_only_generator_with_certificate ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 99 filtered out; finished in 0.00s
+
+EXIT_CODE: 0

@@ -1,0 +1,74 @@
+schema_version: rgdtpk-p5r-claim-consistency-v1
+phase_id: P5R-a
+observed_head: "212da9fa7f56aaec1568d578087d3851151d7036"
+worktree_state: dirty_by_design_before_p5r_commit
+claim_ceiling: PARTIAL_MECHANISM_READY:MECH-004
+active_documents:
+  - path: docs/ai/ACTIVE_CONTEXT.md
+    status: active
+    claim_ceiling: PARTIAL_MECHANISM_READY:MECH-004
+    forbidden_strings_present: false
+    negative_claims_present: true
+  - path: docs/ai/changes/RGDTPK-Q-v4-core/CLOSURE.md
+    status: active
+    claim_ceiling: PARTIAL_MECHANISM_READY:MECH-004
+    forbidden_strings_present: false
+    negative_claims_present: true
+  - path: docs/ai/changes/RGDTPK-Q-v4-core/P6_READINESS.md
+    status: active
+    claim_ceiling: PARTIAL_MECHANISM_READY:MECH-004
+    p6_may_begin: no_until_p5r_f_final_review
+    forbidden_strings_present: false
+p5_historical_archives:
+  status: superseded_for_continuation_by_p5r_overlay
+  contains_unborn_master_strings: true
+  classification: historical_pre_first_commit_records_not_active_continuation_evidence
+p5r_overlay:
+  reran_fmt: true
+  reran_full_tests: true
+  reran_p5_graph_tests: true
+  reran_p5_static_scans: true
+  latest_full_test_count: 106
+  records_git_status: true
+  final_commit_binding_required_in_p5r_f: true
+negative_claims:
+  planner_admission: not_complete
+  kernel_planning: not_complete
+  projection_message_execution: not_complete
+  candidate_cover_construction: not_complete
+  exact_image_classification: not_complete
+  run_certificate_replay: not_complete
+  public_orchestration: not_complete
+  performance_claim: not_complete
+  RGDTPK_Q_V4_ACCEPTANCE_COMPLETE: not_complete
+current_git_status_short: |   M docs/ai/ACTIVE_CONTEXT.md
+   M docs/ai/changes/RGDTPK-Q-v4-core/CLOSURE.md
+   M docs/ai/changes/RGDTPK-Q-v4-core/PLAN.md
+   M docs/ai/changes/RGDTPK-Q-v4-core/REVIEWER_PROMPTS.md
+   M docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_SUMMARY_SCHEMA.yaml
+   M docs/ai/changes/RGDTPK-Q-v4-core/SOURCE_MAP.md
+   M docs/ai/changes/RGDTPK-Q-v4-core/schemas/evidence_manifest.schema.yaml
+   M docs/ai/changes/RGDTPK-Q-v4-core/schemas/review_summary.schema.yaml
+   M geosolver-core/src/algebra/elimination.rs
+   M geosolver-core/src/algebra/f4.rs
+   M geosolver-core/src/algebra/krylov.rs
+   M geosolver-core/src/algebra/quotient.rs
+   M geosolver-core/src/preprocess/compression.rs
+   M geosolver-core/src/preprocess/linear_affine.rs
+   M geosolver-core/src/preprocess/saturation.rs
+  ?? docs/ai/changes/RGDTPK-Q-v4-core/P5R_ACCEPTANCE_CHECKLIST.yaml
+  ?? docs/ai/changes/RGDTPK-Q-v4-core/P5R_BASE_SPEC_AMENDMENT.md
+  ?? docs/ai/changes/RGDTPK-Q-v4-core/P5R_PACK_MANIFEST.sha256
+  ?? docs/ai/changes/RGDTPK-Q-v4-core/P5R_PATCH_NOTES.md
+  ?? docs/ai/changes/RGDTPK-Q-v4-core/P5R_PLAN.md
+  ?? docs/ai/changes/RGDTPK-Q-v4-core/P5R_QUICK_GUARDIAN_PROMPT.md
+  ?? docs/ai/changes/RGDTPK-Q-v4-core/P5R_REVIEWER_PROMPTS.md
+  ?? docs/ai/changes/RGDTPK-Q-v4-core/P6_READINESS.md
+  ?? docs/ai/changes/RGDTPK-Q-v4-core/PRIMITIVE_SCOPE_LEDGER.md
+  ?? docs/ai/changes/RGDTPK-Q-v4-core/README_P5R.md
+  ?? docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-a/
+  ?? docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-b/
+  ?? docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-c/
+  ?? docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-d/
+  ?? docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-e/
+

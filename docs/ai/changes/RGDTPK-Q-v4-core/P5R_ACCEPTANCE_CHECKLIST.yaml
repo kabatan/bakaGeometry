@@ -1,0 +1,59 @@
+schema_version: rgdtpk-p5r-acceptance-v1
+phase_group: P5R
+required_before_phase: P6
+claim_ceiling_after_p5r: PARTIAL_MECHANISM_READY:MECH-004
+
+mandatory_subphases:
+  - id: P5R-a
+    name: commit_bound_evidence_and_claim_consistency
+    must_have_review_archive: true
+    must_have_current_commit_sha: true
+    forbidden_active_strings:
+      - unborn-master-no-commit
+      - No implementation closure exists yet
+      - Allowed current claim: documentation pack prepared for user approval
+  - id: P5R-b
+    name: fake_f4_elimination
+    route_required: [real_local_f4, demote_current_f4_wrapper]
+    fail_if: production_can_select_groebner_wrapper_as_f4
+  - id: P5R-c
+    name: guarded_rational_affine
+    required_safe_case: guarded_nonconstant_denominator_not_polynomial_quotient
+    fail_if: safe_guarded_nonconstant_affine_requires_polynomial_expression_only
+  - id: P5R-d
+    name: quotient_action_provenance
+    fail_if: target_action_krylov_can_use_self_certifying_injected_action_columns
+  - id: P5R-e
+    name: primitive_scope_ledger
+    required_file: docs/ai/changes/RGDTPK-Q-v4-core/PRIMITIVE_SCOPE_LEDGER.md
+    fail_if: narrow_primitives_can_be_overclaimed_as_generic_kernels
+  - id: P5R-f
+    name: p6_readiness_audit
+    required_file: docs/ai/changes/RGDTPK-Q-v4-core/P6_READINESS.md
+    final_answer_required: "P6 may begin: yes"
+
+required_static_scans:
+  - pattern: "TODO|todo|stub|placeholder|dummy|fake|unimplemented!|panic!(\"TODO\")"
+  - pattern: "Unsupported|NotYetImplemented|Skipped"
+  - pattern: "coordinate solution|coordinate roots|full coordinate RUR|QE|CAD|homotopy"
+  - pattern: "CertifiedNonFiniteTargetImage"
+  - pattern: "F4"
+  - pattern: "unborn-master-no-commit"
+
+active_claims_forbidden_after_p5r:
+  - CandidateCoverReady
+  - ExactImageReady
+  - KernelExecutionReady
+  - PlannerReadyWithoutP6
+  - PerformanceClaimReady
+  - RGDTPK_Q_V4_ACCEPTANCE_COMPLETE
+
+must_remain_true:
+  - no_geometry_dispatch
+  - no_problem_id_dispatch
+  - no_expected_answer_dispatch
+  - no_full_coordinate_solution_list
+  - no_full_coordinate_rur
+  - no_hidden_fallback
+  - no_ordinary_unsupported_for_well_formed_q_polynomial_input
+  - no_certified_nonfinite_without_positive_certificate

@@ -1,0 +1,95 @@
+
+===== old-explicit-production-builder =====
+COMMAND: rg -n "build_target_relevant_quotient_handle|QuotientHandleInput|ExplicitTargetQuotientHandle" geosolver-core\src
+geosolver-core\src\algebra\quotient.rs:25:pub struct DebugQuotientHandleInput {
+geosolver-core\src\algebra\quotient.rs:61:pub struct ProductionQuotientHandleInput {
+geosolver-core\src\algebra\quotient.rs:87:pub struct DebugExplicitTargetQuotientHandle {
+geosolver-core\src\algebra\quotient.rs:88:    input: DebugQuotientHandleInput,
+geosolver-core\src\algebra\quotient.rs:95:    input: ProductionQuotientHandleInput,
+geosolver-core\src\algebra\quotient.rs:102:    input: DebugQuotientHandleInput,
+geosolver-core\src\algebra\quotient.rs:103:) -> Result<DebugExplicitTargetQuotientHandle, SolverError> {
+geosolver-core\src\algebra\quotient.rs:107:    Ok(DebugExplicitTargetQuotientHandle {
+geosolver-core\src\algebra\quotient.rs:115:    input: ProductionQuotientHandleInput,
+geosolver-core\src\algebra\quotient.rs:158:impl TargetQuotientHandle for DebugExplicitTargetQuotientHandle {
+geosolver-core\src\algebra\quotient.rs:386:fn validate_debug_input(input: &DebugQuotientHandleInput) -> Result<(), SolverError> {
+geosolver-core\src\algebra\quotient.rs:395:fn validate_production_input(input: &ProductionQuotientHandleInput) -> Result<(), SolverError> {
+geosolver-core\src\algebra\quotient.rs:630:fn hash_debug_handle(input: &DebugQuotientHandleInput, basis_hash: Hash) -> Hash {
+geosolver-core\src\algebra\quotient.rs:643:fn hash_production_handle(input: &ProductionQuotientHandleInput, basis_hash: Hash) -> Hash {
+geosolver-core\src\algebra\quotient.rs:686:    fn production_input(target: VariableId) -> ProductionQuotientHandleInput {
+geosolver-core\src\algebra\quotient.rs:728:        ProductionQuotientHandleInput {
+geosolver-core\src\algebra\quotient.rs:746:        let input = DebugQuotientHandleInput {
+geosolver-core\src\algebra\krylov.rs:518:        ProductionQuotientHandleInput,
+geosolver-core\src\algebra\krylov.rs:567:        build_production_target_relevant_quotient_handle(ProductionQuotientHandleInput {
+EXIT_CODE: 0
+CLASSIFICATION: pass: old production-looking explicit handle names removed.
+
+===== provenance-code-paths =====
+COMMAND: rg -n "ProductionProvenancedTargetQuotientHandle|DebugExplicitTargetQuotientHandle|ActionColumnCertificate|NormalFormCertificate|hash_authorized_relations|source_relation_authorization_hash|malicious_injected_action_column|tampered_authorization_hash" geosolver-core\src\algebra
+geosolver-core\src\algebra\krylov.rs:4:    BasisHandleId, ProductionProvenancedTargetQuotientHandle, TargetQuotientHandle,
+geosolver-core\src\algebra\krylov.rs:68:    handle: &ProductionProvenancedTargetQuotientHandle,
+geosolver-core\src\algebra\krylov.rs:128:    handle: &ProductionProvenancedTargetQuotientHandle,
+geosolver-core\src\algebra\krylov.rs:159:    handle: &ProductionProvenancedTargetQuotientHandle,
+geosolver-core\src\algebra\krylov.rs:178:    handle: &ProductionProvenancedTargetQuotientHandle,
+geosolver-core\src\algebra\krylov.rs:188:        if certificate.source_relation_authorization_hash != handle.authorized_relation_hash() {
+geosolver-core\src\algebra\krylov.rs:515:        build_production_target_relevant_quotient_handle, hash_authorized_relations,
+geosolver-core\src\algebra\krylov.rs:517:        unit_vector, BasisHandleId, BasisScope, ProductionProvenancedTargetQuotientHandle,
+geosolver-core\src\algebra\krylov.rs:525:    fn companion_handle(target: VariableId) -> ProductionProvenancedTargetQuotientHandle {
+geosolver-core\src\algebra\krylov.rs:535:        let auth_hash = hash_authorized_relations(&relations);
+geosolver-core\src\algebra\quotient.rs:37:    pub source_relation_authorization_hash: Hash,
+geosolver-core\src\algebra\quotient.rs:42:pub struct NormalFormCertificate {
+geosolver-core\src\algebra\quotient.rs:50:pub struct ActionColumnCertificate {
+geosolver-core\src\algebra\quotient.rs:55:    pub normal_form_certificate: NormalFormCertificate,
+geosolver-core\src\algebra\quotient.rs:56:    pub source_relation_authorization_hash: Hash,
+geosolver-core\src\algebra\quotient.rs:68:    pub action_columns: BTreeMap<VariableId, Vec<ActionColumnCertificate>>,
+geosolver-core\src\algebra\quotient.rs:87:pub struct DebugExplicitTargetQuotientHandle {
+geosolver-core\src\algebra\quotient.rs:94:pub struct ProductionProvenancedTargetQuotientHandle {
+geosolver-core\src\algebra\quotient.rs:103:) -> Result<DebugExplicitTargetQuotientHandle, SolverError> {
+geosolver-core\src\algebra\quotient.rs:107:    Ok(DebugExplicitTargetQuotientHandle {
+geosolver-core\src\algebra\quotient.rs:116:) -> Result<ProductionProvenancedTargetQuotientHandle, SolverError> {
+geosolver-core\src\algebra\quotient.rs:133:    Ok(ProductionProvenancedTargetQuotientHandle {
+geosolver-core\src\algebra\quotient.rs:141:impl ProductionProvenancedTargetQuotientHandle {
+geosolver-core\src\algebra\quotient.rs:150:    ) -> Option<&ActionColumnCertificate> {
+geosolver-core\src\algebra\quotient.rs:158:impl TargetQuotientHandle for DebugExplicitTargetQuotientHandle {
+geosolver-core\src\algebra\quotient.rs:209:impl TargetQuotientHandle for ProductionProvenancedTargetQuotientHandle {
+geosolver-core\src\algebra\quotient.rs:290:pub fn hash_authorized_relations(relations: &[SparsePolynomialQ]) -> Hash {
+geosolver-core\src\algebra\quotient.rs:302:    source_relation_authorization_hash: Hash,
+geosolver-core\src\algebra\quotient.rs:309:            source_relation_authorization_hash.0.to_vec(),
+geosolver-core\src\algebra\quotient.rs:314:        source_relation_authorization_hash,
+geosolver-core\src\algebra\quotient.rs:324:    source_relation_authorization_hash: Hash,
+geosolver-core\src\algebra\quotient.rs:327:) -> Result<ActionColumnCertificate, SolverError> {
+geosolver-core\src\algebra\quotient.rs:343:    Ok(ActionColumnCertificate {
+geosolver-core\src\algebra\quotient.rs:349:        source_relation_authorization_hash,
+geosolver-core\src\algebra\quotient.rs:368:) -> NormalFormCertificate {
+geosolver-core\src\algebra\quotient.rs:378:    NormalFormCertificate {
+geosolver-core\src\algebra\quotient.rs:396:    if input.authorized_relation_hash != hash_authorized_relations(&input.authorized_relations) {
+geosolver-core\src\algebra\quotient.rs:405:            .source_relation_authorization_hash
+geosolver-core\src\algebra\quotient.rs:485:    cert: &ActionColumnCertificate,
+geosolver-core\src\algebra\quotient.rs:490:    source_relation_authorization_hash: Hash,
+geosolver-core\src\algebra\quotient.rs:494:        || cert.source_relation_authorization_hash != source_relation_authorization_hash
+geosolver-core\src\algebra\quotient.rs:696:        let auth_hash = hash_authorized_relations(&relations);
+geosolver-core\src\algebra\quotient.rs:788:    fn malicious_injected_action_column_is_rejected_by_production_builder() {
+geosolver-core\src\algebra\quotient.rs:801:    fn tampered_authorization_hash_is_rejected() {
+EXIT_CODE: 0
+CLASSIFICATION: pass: production/debug split and independent action-column certificate paths are present.
+
+===== basis-and-action-certificate-hash-validation =====
+COMMAND: rg -n "BasisElementNormalFormCertificate|hash_normal_form_certificate|hash_normal_form_basis_certificate|hash_basis_element_certificate|tampered_action_certificate_hash|tampered_basis_certificate_hash|require_production_target_action_krylov_handle" geosolver-core\src\algebra
+geosolver-core\src\algebra\krylov.rs:105:pub fn require_production_target_action_krylov_handle(
+geosolver-core\src\algebra\krylov.rs:677:        let err = require_production_target_action_krylov_handle(&debug).unwrap_err();
+geosolver-core\src\algebra\quotient.rs:38:    pub basis_element_certificates: Vec<BasisElementNormalFormCertificate>,
+geosolver-core\src\algebra\quotient.rs:43:pub struct BasisElementNormalFormCertificate {
+geosolver-core\src\algebra\quotient.rs:330:            let certificate_hash = hash_basis_element_certificate(
+geosolver-core\src\algebra\quotient.rs:337:            BasisElementNormalFormCertificate {
+geosolver-core\src\algebra\quotient.rs:424:    cert.certificate_hash = hash_normal_form_certificate(&cert);
+geosolver-core\src\algebra\quotient.rs:428:fn hash_normal_form_certificate(cert: &NormalFormCertificate) -> Hash {
+geosolver-core\src\algebra\quotient.rs:462:            != hash_normal_form_basis_certificate(&input.normal_form_basis_certificate)
+geosolver-core\src\algebra\quotient.rs:572:        != hash_normal_form_certificate(&cert.normal_form_certificate)
+geosolver-core\src\algebra\quotient.rs:610:                != hash_basis_element_certificate(
+geosolver-core\src\algebra\quotient.rs:618:                != hash_normal_form_certificate(&element.normal_form_certificate)
+geosolver-core\src\algebra\quotient.rs:753:fn hash_basis_element_certificate(
+geosolver-core\src\algebra\quotient.rs:772:fn hash_normal_form_basis_certificate(cert: &NormalFormBasisCertificate) -> Hash {
+geosolver-core\src\algebra\quotient.rs:968:    fn tampered_action_certificate_hash_is_rejected() {
+geosolver-core\src\algebra\quotient.rs:979:    fn tampered_basis_certificate_hash_is_rejected() {
+geosolver-core\src\algebra\quotient.rs:987:            hash_normal_form_basis_certificate(&input.normal_form_basis_certificate);
+EXIT_CODE: 0
+CLASSIFICATION: pass: basis/action certificate hashes are recomputed and tamper tests exist.

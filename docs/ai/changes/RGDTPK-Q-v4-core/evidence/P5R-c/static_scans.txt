@@ -1,0 +1,104 @@
+
+===== polynomial-expression-required-pivot =====
+COMMAND: rg -n "polynomial_expression\.clone\?\(|let expression = candidate\.polynomial_expression\.clone\?" geosolver-core\src\preprocess\linear_affine.rs
+<no matches>
+EXIT_CODE: 1
+CLASSIFICATION: pass: old polynomial-expression-required pivot path removed.
+
+===== guarded-rational-code-paths =====
+COMMAND: rg -n "CompressionExpression::Rational|RationalExpressionQ|apply_rational_affine_substitution|substitute_rational_and_clear|guarded_rational_affine_non_polynomial_case|unsafe_nonconstant_rational_affine" geosolver-core\src\preprocess
+geosolver-core\src\preprocess\linear_affine.rs:215:                state.apply_rational_affine_substitution(
+geosolver-core\src\preprocess\linear_affine.rs:359:    fn guarded_rational_affine_non_polynomial_case_clears_denominator() {
+geosolver-core\src\preprocess\linear_affine.rs:388:                && matches!(sub.expression, CompressionExpression::Rational(_))
+geosolver-core\src\preprocess\linear_affine.rs:412:    fn unsafe_nonconstant_rational_affine_candidate_is_left_in_system() {
+geosolver-core\src\preprocess\compression.rs:117:    Rational(RationalExpressionQ),
+geosolver-core\src\preprocess\compression.rs:124:            CompressionExpression::Rational(expr) => expr.expression_hash,
+geosolver-core\src\preprocess\compression.rs:130:pub struct RationalExpressionQ {
+geosolver-core\src\preprocess\compression.rs:216:        .filter(|sub| matches!(sub.expression, CompressionExpression::Rational(_)))
+geosolver-core\src\preprocess\compression.rs:312:        expression: RationalExpressionQ,
+geosolver-core\src\preprocess\compression.rs:319:            CompressionExpression::Rational(expression),
+geosolver-core\src\preprocess\compression.rs:428:    pub fn apply_rational_affine_substitution(
+geosolver-core\src\preprocess\compression.rs:440:                let transformed = clear_denominators_primitive(&substitute_rational_and_clear(
+geosolver-core\src\preprocess\compression.rs:688:) -> RationalExpressionQ {
+geosolver-core\src\preprocess\compression.rs:697:    RationalExpressionQ {
+geosolver-core\src\preprocess\compression.rs:706:pub fn substitute_rational_and_clear(
+EXIT_CODE: 0
+CLASSIFICATION: pass: guarded rational representation, denominator clearing, and required tests are present.
+
+===== transformation-certificate-fields =====
+COMMAND: rg -n "RationalAffineTransformationCertificate|denominator_clearing_power|rational_affine_transformations|substitute_rational_and_clear_with_power|transformation_hash" geosolver-core\src\preprocess
+geosolver-core\src\preprocess\linear_affine.rs:396:        assert!(state.rational_affine_transformations.iter().any(|cert| {
+geosolver-core\src\preprocess\linear_affine.rs:398:                && cert.denominator_clearing_power == 1
+geosolver-core\src\preprocess\linear_affine.rs:402:                && !cert.transformation_hash.0.iter().all(|byte| *byte == 0)
+geosolver-core\src\preprocess\compression.rs:80:    pub rational_affine_transformations: Vec<RationalAffineTransformationCertificate>,
+geosolver-core\src\preprocess\compression.rs:97:    pub rational_affine_transformations: Vec<RationalAffineTransformationCertificate>,
+geosolver-core\src\preprocess\compression.rs:141:pub struct RationalAffineTransformationCertificate {
+geosolver-core\src\preprocess\compression.rs:148:    pub denominator_clearing_power: u32,
+geosolver-core\src\preprocess\compression.rs:153:    pub transformation_hash: Hash,
+geosolver-core\src\preprocess\compression.rs:261:            rational_affine_transformations: Vec::new(),
+geosolver-core\src\preprocess\compression.rs:298:            rational_affine_transformations: self.rational_affine_transformations,
+geosolver-core\src\preprocess\compression.rs:462:                let (raw_transformed, denominator_clearing_power) =
+geosolver-core\src\preprocess\compression.rs:463:                    substitute_rational_and_clear_with_power(
+geosolver-core\src\preprocess\compression.rs:473:                    self.rational_affine_transformations.push(
+geosolver-core\src\preprocess\compression.rs:481:                            denominator_clearing_power,
+geosolver-core\src\preprocess\compression.rs:524:        for transform in &self.rational_affine_transformations {
+geosolver-core\src\preprocess\compression.rs:525:            chunks.push(transform.transformation_hash.0.to_vec());
+geosolver-core\src\preprocess\compression.rs:755:    denominator_clearing_power: u32,
+geosolver-core\src\preprocess\compression.rs:760:) -> RationalAffineTransformationCertificate {
+geosolver-core\src\preprocess\compression.rs:761:    let transformation_hash = hash_sequence(
+geosolver-core\src\preprocess\compression.rs:770:            denominator_clearing_power.to_be_bytes().to_vec(),
+geosolver-core\src\preprocess\compression.rs:776:    RationalAffineTransformationCertificate {
+geosolver-core\src\preprocess\compression.rs:783:        denominator_clearing_power,
+geosolver-core\src\preprocess\compression.rs:788:        transformation_hash,
+geosolver-core\src\preprocess\compression.rs:798:    substitute_rational_and_clear_with_power(poly, variable, numerator, denominator).0
+geosolver-core\src\preprocess\compression.rs:801:pub fn substitute_rational_and_clear_with_power(
+EXIT_CODE: 0
+CLASSIFICATION: pass: per-relation rational affine transformation certificate and denominator power are persisted.
+
+===== refreshed-after-exact-provenance-assertions =====
+COMMAND: rg -n "RationalAffineTransformationCertificate|rational_affine_transformations|rational_affine_transformation_certificate|original_relation_hash|transformed_relation_hash|denominator_clearing_power|source_witness_relation_ids|guarded_rational_affine_non_polynomial_case|unsafe_nonconstant_rational_affine" geosolver-core\src\preprocess
+geosolver-core\src\preprocess\compression.rs:80:    pub rational_affine_transformations: Vec<RationalAffineTransformationCertificate>,
+geosolver-core\src\preprocess\compression.rs:97:    pub rational_affine_transformations: Vec<RationalAffineTransformationCertificate>,
+geosolver-core\src\preprocess\compression.rs:136:    pub source_witness_relation_ids: Vec<RelationId>,
+geosolver-core\src\preprocess\compression.rs:141:pub struct RationalAffineTransformationCertificate {
+geosolver-core\src\preprocess\compression.rs:148:    pub denominator_clearing_power: u32,
+geosolver-core\src\preprocess\compression.rs:150:    pub source_witness_relation_ids: Vec<RelationId>,
+geosolver-core\src\preprocess\compression.rs:151:    pub original_relation_hash: Hash,
+geosolver-core\src\preprocess\compression.rs:152:    pub transformed_relation_hash: Hash,
+geosolver-core\src\preprocess\compression.rs:261:            rational_affine_transformations: Vec::new(),
+geosolver-core\src\preprocess\compression.rs:298:            rational_affine_transformations: self.rational_affine_transformations,
+geosolver-core\src\preprocess\compression.rs:455:        source_witness_relation_ids: Vec<RelationId>,
+geosolver-core\src\preprocess\compression.rs:462:                let (raw_transformed, denominator_clearing_power) =
+geosolver-core\src\preprocess\compression.rs:475:                    self.rational_affine_transformations.push(
+geosolver-core\src\preprocess\compression.rs:476:                        rational_affine_transformation_certificate(
+geosolver-core\src\preprocess\compression.rs:483:                            denominator_clearing_power,
+geosolver-core\src\preprocess\compression.rs:485:                            source_witness_relation_ids.clone(),
+geosolver-core\src\preprocess\compression.rs:522:        for transform in &self.rational_affine_transformations {
+geosolver-core\src\preprocess\compression.rs:727:    source_witness_relation_ids: Vec<RelationId>,
+geosolver-core\src\preprocess\compression.rs:741:        source_witness_relation_ids,
+geosolver-core\src\preprocess\compression.rs:746:pub fn rational_affine_transformation_certificate(
+geosolver-core\src\preprocess\compression.rs:753:    denominator_clearing_power: u32,
+geosolver-core\src\preprocess\compression.rs:755:    source_witness_relation_ids: Vec<RelationId>,
+geosolver-core\src\preprocess\compression.rs:756:    original_relation_hash: Hash,
+geosolver-core\src\preprocess\compression.rs:757:    transformed_relation_hash: Hash,
+geosolver-core\src\preprocess\compression.rs:758:) -> RationalAffineTransformationCertificate {
+geosolver-core\src\preprocess\compression.rs:768:            denominator_clearing_power.to_be_bytes().to_vec(),
+geosolver-core\src\preprocess\compression.rs:770:            original_relation_hash.0.to_vec(),
+geosolver-core\src\preprocess\compression.rs:771:            transformed_relation_hash.0.to_vec(),
+geosolver-core\src\preprocess\compression.rs:774:    RationalAffineTransformationCertificate {
+geosolver-core\src\preprocess\compression.rs:781:        denominator_clearing_power,
+geosolver-core\src\preprocess\compression.rs:783:        source_witness_relation_ids,
+geosolver-core\src\preprocess\compression.rs:784:        original_relation_hash,
+geosolver-core\src\preprocess\compression.rs:785:        transformed_relation_hash,
+geosolver-core\src\preprocess\linear_affine.rs:300:        rational_affine_transformation_certificate, CompressionExpression,
+geosolver-core\src\preprocess\linear_affine.rs:366:    fn guarded_rational_affine_non_polynomial_case_clears_denominator() {
+geosolver-core\src\preprocess\linear_affine.rs:442:            .rational_affine_transformations
+geosolver-core\src\preprocess\linear_affine.rs:455:        assert_eq!(cert.denominator_clearing_power, 1);
+geosolver-core\src\preprocess\linear_affine.rs:456:        assert_eq!(cert.source_witness_relation_ids, vec![witness_relation.id]);
+geosolver-core\src\preprocess\linear_affine.rs:469:        assert_eq!(cert.original_relation_hash, y_minus_two_relation.hash);
+geosolver-core\src\preprocess\linear_affine.rs:471:            cert.transformed_relation_hash,
+geosolver-core\src\preprocess\linear_affine.rs:474:        let recomputed = rational_affine_transformation_certificate(
+geosolver-core\src\preprocess\linear_affine.rs:488:        let tampered = rational_affine_transformation_certificate(
+geosolver-core\src\preprocess\linear_affine.rs:505:    fn unsafe_nonconstant_rational_affine_candidate_is_left_in_system() {
+EXIT_CODE: 0
+CLASSIFICATION: pass: latest code persists relation-bound rational affine certificates and the safe stress test asserts exact ids, guard source ids, relation hashes, recomputed transformation hash, and tamper hash difference.

@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use serde::{Deserialize, Serialize};
 
-use crate::algebra::f4::{f4_elimination_local, F4Options};
+use crate::algebra::f4::GroebnerBackedBatchOptions;
 use crate::algebra::groebner::{
     extract_certified_elimination_generators, groebner_elimination_basis, implementation_bug,
     polynomial_in_keep_variables, CertifiedPolynomialQ, GroebnerBasisResult, GroebnerOptions,
@@ -10,20 +10,21 @@ use crate::algebra::groebner::{
 use crate::algebra::monomial_order::elimination_order;
 use crate::algebra::normal_form::{verify_membership_by_certificate, MembershipCertificate};
 use crate::problem::context::SolverContext;
-use crate::result::status::SolverError;
+use crate::result::status::{FailureKind, SolverError, SolverErrorKind};
+use crate::types::hash::hash_sequence;
 use crate::types::ids::VariableId;
 use crate::types::polynomial::{poly_variables, SparsePolynomialQ};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum EliminationStrategy {
     LocalGroebner(GroebnerOptions),
-    LocalF4(F4Options),
+    NonProductionGroebnerBatchForTests(GroebnerBackedBatchOptions),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LocalEliminationStrategyName {
     LocalGroebner,
-    LocalF4,
+    NonProductionGroebnerBatch,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -61,8 +62,8 @@ pub fn eliminate_to_keep_variables(
                 LocalEliminationStrategyName::LocalGroebner,
             )?
         }
-        EliminationStrategy::LocalF4(options) => {
-            f4_elimination_local(relations, eliminate, keep, options)?
+        EliminationStrategy::NonProductionGroebnerBatchForTests(_) => {
+            return Err(non_production_batch_not_admitted());
         }
     };
     validate_local_elimination_result(&result, keep, relations)?;
@@ -138,6 +139,20 @@ fn ensure_disjoint(eliminate: &[VariableId], keep: &[VariableId]) -> Result<(), 
         ));
     }
     Ok(())
+}
+
+fn non_production_batch_not_admitted() -> SolverError {
+    SolverError {
+        target: None,
+        kind: SolverErrorKind::Failure(FailureKind::CertificateDesignGap {
+            constructed_object_hash: hash_sequence(
+                "non-production-groebner-batch",
+                &[b"not-production-f4".to_vec()],
+            ),
+            missing_certificate_kind: "real local F4 batch matrix reduction is not implemented"
+                .to_string(),
+        }),
+    }
 }
 
 #[allow(dead_code)]
@@ -221,6 +236,31 @@ mod tests {
         assert_eq!(
             err.public_status(),
             crate::result::status::SolverStatus::ImplementationBug
+        );
+    }
+
+    #[test]
+    fn production_dispatch_rejects_non_production_groebner_batch_strategy() {
+        let x = VariableId(1);
+        let y = VariableId(2);
+        let relations = vec![
+            poly_sub(&variable_poly(y), &variable_poly(x)),
+            poly_sub(&variable_poly(y), &constant_poly(int_q(1))),
+        ];
+        let mut ctx = new_context(SolverOptions::default());
+        let err = eliminate_to_keep_variables(
+            &relations,
+            &[y],
+            &[x],
+            EliminationStrategy::NonProductionGroebnerBatchForTests(
+                GroebnerBackedBatchOptions::default(),
+            ),
+            &mut ctx,
+        )
+        .unwrap_err();
+        assert_eq!(
+            err.public_status(),
+            crate::result::status::SolverStatus::CertificateDesignGap
         );
     }
 }

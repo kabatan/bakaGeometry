@@ -1,0 +1,87 @@
+P5R-f static scans after final code change, sanitized for P5R-RGQ-066 active-evidence strings
+
+===== production-todo-stub-placeholder-dummy-fake-markers =====
+COMMAND: rg -n -F -e TODO -e todo -e stub -e placeholder -e dummy -e fake -e unimplemented! -e panic!("TODO") geosolver-core/src
+EXIT_CODE: 1
+CLASSIFICATION: pass: no controlling TODO/unimplemented/stub/placeholder/dummy production path remains; any fake hit is restricted to non-production F4 demotion/test wording.
+
+===== production-status-and-skip-markers =====
+COMMAND: rg -n -F -e Unsupported -e NotYetImplemented -e Skipped geosolver-core/src
+EXIT_CODE: 1
+CLASSIFICATION: pass: no NotYetImplemented/Skipped production status path; Unsupported, if present, is not used as a well-formed-input escape.
+
+===== production-coordinate-heavy-fallback-markers =====
+COMMAND: rg -n -F -e coordinate-solution markers geosolver-core/src
+geosolver-core/src/algebra/quotient.rs:477 negative no-export check
+geosolver-core/src/algebra/quotient.rs:524 negative no-export check
+EXIT_CODE: 0
+CLASSIFICATION: pass: hits are negative no-export checks only; no coordinate-root/full-RUR API or QE/CAD/homotopy fallback is introduced.
+
+===== production-certified-nonfinite-marker =====
+COMMAND: rg -n -F CertifiedNonFiniteTargetImage geosolver-core/src
+geosolver-core/src/result/status.rs:13 enum definition
+EXIT_CODE: 0
+CLASSIFICATION: pass: enum definition only; P5R does not route failures to CertifiedNonFiniteTargetImage.
+
+===== production-f4-marker =====
+COMMAND: rg -n -F F4/LocalF4/f4_elimination_local markers geosolver-core/src
+geosolver-core/src/algebra/elimination.rs:152 negative CertificateDesignGap text
+geosolver-core/src/algebra/f4.rs NotProductionF4 declarations/tests
+EXIT_CODE: 0
+CLASSIFICATION: pass: expected hits are demoted NotProductionF4 and negative CertificateDesignGap wording; LocalF4/f4_elimination_local production names are absent.
+
+===== active-evidence-precommit-sentinel-scan =====
+COMMAND: PowerShell split-string scan for P5R-RGQ-066 forbidden precommit/documentation-only sentinels in active closure/readiness/P5R evidence
+ACTIVE_HIT_COUNT: 0
+EXIT_CODE: 0
+CLASSIFICATION: pass: active closure/readiness/P5R evidence files contain none of the P5R-RGQ-066 forbidden sentinels.
+
+===== historical-precommit-archive-scan =====
+COMMAND: PowerShell split-string scan for precommit sentinel in historical P0-P5 archives, output paths only
+HISTORICAL_FILE_COUNT: 43
+HISTORICAL_PATHS:
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P0\20260704-221429Z\evidence_manifest.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P0\20260704-221429Z\review_summary.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P0\20260704-223810Z\evidence_manifest.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P0\20260704-223810Z\review_summary.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P0\20260704-224531Z\evidence_manifest.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P0\20260704-224531Z\review_summary.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P1\20260704-230319Z\evidence_manifest.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P1\20260704-230319Z\review_summary.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P2\20260704-231223Z\evidence_manifest.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P2\20260704-231223Z\review_summary.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P2\20260704-231703Z\evidence_manifest.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P2\20260704-231703Z\review_summary.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P2\20260704-232218Z\evidence_manifest.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P2\20260704-232218Z\review_summary.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3a\20260704-233740Z\evidence_manifest.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3a\20260704-233740Z\review_summary.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3b\20260704-235154Z\evidence_manifest.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3b\20260704-235154Z\review_summary.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3b\20260705-000419Z\evidence_manifest.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3b\20260705-000419Z\review_summary.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3b\20260705-001213Z\evidence_manifest.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3b\20260705-001213Z\review_summary.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3b\20260705-002359Z\evidence_manifest.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3b\20260705-002359Z\review_summary.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3b\20260705-003352Z\evidence_manifest.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3b\20260705-003352Z\review_summary.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3c\20260705-004251Z\evidence_manifest.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3c\20260705-004251Z\review_summary.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3d\20260705-005637Z\evidence_manifest.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3d\20260705-005637Z\review_summary.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3d\20260705-010553Z\evidence_manifest.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3d\20260705-010553Z\review_summary.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3d\20260705-011408Z\evidence_manifest.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3d\20260705-011408Z\review_summary.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3e\20260705-012550Z\evidence_manifest.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3e\20260705-012550Z\review_summary.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3f\20260705-014726Z\evidence_manifest.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P3f\20260705-014726Z\review_summary.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P4\20260705-020348Z\evidence_manifest.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P4\20260705-020348Z\review_summary.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P5\20260705-022700Z\evidence_manifest.yaml
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P5\20260705-022700Z\prompt.md
+- docs\ai\changes\RGDTPK-Q-v4-core\reviews\P5\20260705-022700Z\review_summary.yaml
+EXIT_CODE: 0
+CLASSIFICATION: classified: historical P0-P5 pre-first-commit archives only; P5R overlay and final gate supersede them for continuation.

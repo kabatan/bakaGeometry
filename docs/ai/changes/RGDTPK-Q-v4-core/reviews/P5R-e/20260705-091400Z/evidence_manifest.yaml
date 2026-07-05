@@ -1,0 +1,65 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: P5R-e
+commit: 212da9fa7f56aaec1568d578087d3851151d7036
+algorithm_spec_source_sha256: 2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed
+failure_source_sha256: df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: cd5c9147a5f48d50d12142c67e5160f95a1ccdbfe43eee925d5e0bb1a8fee779
+evidence_manifest_schema_sha256: 74e0fe22b6ba77e38edf96c8e6851eb5be8beb717599cbfb0c345abe4617a253
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-e/command_outputs.txt
+  sha256: a1e73a2cfc6bb5a2d8b012672ad1bedc2b8d97814e51e35c4a171f11e13deb30
+  purpose: 'P5R-e evidence file: command_outputs.txt'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-e/commands.txt
+  sha256: 5e740348d114f406085941ae88c39555d3c6b89f65a6f0d62dcd90bae8784f53
+  purpose: 'P5R-e evidence file: commands.txt'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-e/function_implementation_table.yaml
+  sha256: 4466fc8f6373c123ca1172385c4b164014183cd4a5b7512fb77e7e803c1301a9
+  purpose: 'P5R-e evidence file: function_implementation_table.yaml'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-e/notes.md
+  sha256: 7a2a88d0bc802eb7a9b8a82de442670f550778ae9266dbd75ce495ef8c543475
+  purpose: 'P5R-e evidence file: notes.md'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-e/static_scans.txt
+  sha256: ca057b77f843e08d4dddecac935473a8ddbec54a1ff8fac75066e6be238832d3
+  purpose: 'P5R-e evidence file: static_scans.txt'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-e/20260705-091400Z/prompt.md
+  sha256: 7f8111ccca760ddaa79749e6e1541ef6ee8eb653f3502360f00614e8e532f01b
+  purpose: Archived P5R-e reviewer prompt.md
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-e/20260705-091400Z/response.md
+  sha256: 98649360bf81cf8a3ee0d976858cdc316f62293b399ece06f76dcc210ab88d50
+  purpose: Archived P5R-e reviewer response.md
+command_outputs:
+- command: rg required primitive ledger entries
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-e/command_outputs.txt
+  output_sha256: a1e73a2cfc6bb5a2d8b012672ad1bedc2b8d97814e51e35c4a171f11e13deb30
+  finished_at_utc: 20260705-091400Z
+- command: rg later-phase ledger wiring in PLAN/SOURCE_MAP/REVIEWER_PROMPTS
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-e/command_outputs.txt
+  output_sha256: a1e73a2cfc6bb5a2d8b012672ad1bedc2b8d97814e51e35c4a171f11e13deb30
+  finished_at_utc: 20260705-091400Z
+static_scans:
+- scan_id: p5r-e-static-scan
+  command: see static_scans.txt
+  forbidden_pattern: P5R scoped forbidden patterns and overclaim markers
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-e/static_scans.txt
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-e/function_implementation_table.yaml
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-e/20260705-091400Z/response.md
+known_limitations:
+- The ledger is a barrier against overclaim, not permission to treat narrow primitives
+  as generic solver mechanisms.
+- No P5R subphase review grants P6 admission, candidate-cover readiness, exact-image
+  readiness, public orchestration, performance readiness, or acceptance completion.
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-004
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-004
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

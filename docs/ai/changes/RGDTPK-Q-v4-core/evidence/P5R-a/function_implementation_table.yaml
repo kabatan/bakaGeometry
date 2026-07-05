@@ -1,0 +1,7 @@
+P5R-a function/documentation implementation table
+
+- docs/ai/ACTIVE_CONTEXT.md: navigation updated to identify P5R as mandatory before P6 and claim ceiling PARTIAL_MECHANISM_READY:MECH-004.
+- docs/ai/changes/RGDTPK-Q-v4-core/CLOSURE.md: active closure wording replaced with non-final P5R closure state and explicit negative claims.
+- docs/ai/changes/RGDTPK-Q-v4-core/P6_READINESS.md: created with seven P5R-RGQ-071 readiness answers and final gate line.
+- docs/ai/changes/RGDTPK-Q-v4-core/P5R_*: remediation instruction pack copied into repo with P5R_PACK_MANIFEST.sha256.
+- docs/ai/changes/RGDTPK-Q-v4-core/PLAN.md: P5R inserted after P5 and before P6; P6 prerequisites include P5R-a through P5R-f.

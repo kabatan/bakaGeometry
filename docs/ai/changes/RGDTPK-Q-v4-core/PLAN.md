@@ -311,12 +311,121 @@ P3 is not a closeable phase. It is a group label for P3a through P3f. The Agent 
 
 ---
 
+## 6R. Mandatory remediation barrier before planner work
+
+### P5R — Pre-planner remediation after P5 and before P6
+
+**Supports R-IDs:** `P5R-RGQ-065` through `P5R-RGQ-072` in `P5R_BASE_SPEC_AMENDMENT.md`.  
+**Parent phase:** P5.  
+**Blocks:** P6, P7, P8, P9, and every later planner/kernel/acceptance phase until P5R-a through P5R-f are closed.  
+**MECHs:** does not close a new generic kernel MECH. It preserves the current maximum claim ceiling `PARTIAL_MECHANISM_READY:MECH-004`.
+
+P5R is a mandatory phase group inserted by `P5R_PLAN.md`. It is not optional reviewer commentary and it is not satisfied by wording-only changes. P5R closes only after all six subphases below have implemented behavior, fresh command evidence, archived reviewer prompt/response, schema-valid `review_summary.yaml`, and a current Git commit binding.
+
+P5R must not claim candidate-cover readiness, exact-image readiness, planner readiness, kernel-execution readiness, public pipeline readiness, performance readiness, or `RGDTPK_Q_V4_ACCEPTANCE_COMPLETE`.
+
+#### P5R-a — Commit-bound evidence and claim consistency
+
+**Supports:** `P5R-RGQ-065`, `P5R-RGQ-066`, `P5R-RGQ-071`.  
+**Files:** `docs/ai/ACTIVE_CONTEXT.md`, `CLOSURE.md`, P5 evidence, P5R evidence overlay, and `P6_READINESS.md`.
+
+Required work:
+
+1. Record `git rev-parse --verify HEAD`.
+2. Rerun `cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check`, full crate tests, P5 graph tests, and the P5 static scans.
+3. Bind P5/P5R evidence to the current commit.
+4. Repair `CLOSURE.md` and active context so the current claim ceiling is exactly `PARTIAL_MECHANISM_READY:MECH-004`.
+5. State explicit negative claims for candidate cover, exact image, planner, kernel execution, public pipeline, performance, and acceptance completion.
+6. Create or update `P6_READINESS.md`; P5R-f finalizes it.
+
+**Reviewer prompt.** Use `P5R_REVIEWER_PROMPTS.md#P5R-a`.
+
+#### P5R-b — Eliminate fake F4 claim path
+
+**Supports:** `P5R-RGQ-067`.  
+**Files:** `geosolver-core/src/algebra/f4.rs`, `geosolver-core/src/algebra/elimination.rs`, `geosolver-core/src/algebra/mod.rs`, diagnostics/cost trace files if needed, and `PRIMITIVE_SCOPE_LEDGER.md`.
+
+Required work:
+
+1. Choose exactly one route in `PRIMITIVE_SCOPE_LEDGER.md`: real local F4 or demote the current wrapper.
+2. If real F4 is not implemented, production code must not select or claim `LocalF4` semantics for the Groebner-backed wrapper.
+3. Any compatibility helper must be named as non-production Groebner-backed batch reduction.
+4. Tests must fail if the current Groebner wrapper is exposed as production F4.
+5. Exact Q membership verification of exported generators must remain mandatory.
+
+**Reviewer prompt.** Use `P5R_REVIEWER_PROMPTS.md#P5R-b`.
+
+#### P5R-c — Guarded rational affine semantics
+
+**Supports:** `P5R-RGQ-068`.  
+**Files:** `geosolver-core/src/preprocess/linear_affine.rs`, `compression.rs`, `mod.rs`, `saturation.rs`, `problem/semantic.rs`, diagnostics, and optional helper files.
+
+Required work:
+
+1. Safe nonconstant affine denominators with explicit nonzero witness must be usable even when numerator divided by denominator is not a polynomial.
+2. The denominator guard and source witness must be recorded.
+3. Remaining relations must be transformed by exact denominator clearing or by an equivalent rational-substitution representation with exact provenance.
+4. Unsafe nonconstant denominators without witness must be rejected as pivots without returning ordinary unsupported or invalid input for that reason.
+5. Target variable must never be eliminated by preprocessing.
+6. Add the two required algebraic stress tests from `P5R_PLAN.md`.
+
+**Reviewer prompt.** Use `P5R_REVIEWER_PROMPTS.md#P5R-c`.
+
+#### P5R-d — Production quotient/action provenance for TargetActionKrylov
+
+**Supports:** `P5R-RGQ-069`.  
+**Files:** `geosolver-core/src/algebra/quotient.rs`, `krylov.rs`, `normal_form.rs`, `elimination.rs`, certificate files if needed, and optional provenance helpers.
+
+Required work:
+
+1. Split production-provenanced quotient handles from debug/test explicit handles.
+2. Production handles must be constructed from authorized block relations or an object carrying the authorization hash.
+3. Every action column must have an independent normal-form certificate from authorized relations.
+4. Production `TargetActionKrylov` paths must not verify an injected action column by a `normal_form` implementation that itself uses that injected column.
+5. Tests must reject malicious injected columns, debug handles in production, tampered authorization hashes, and undercoverage.
+
+**Reviewer prompt.** Use `P5R_REVIEWER_PROMPTS.md#P5R-d`.
+
+#### P5R-e — Primitive scope ledger and anti-overclaim wiring
+
+**Supports:** `P5R-RGQ-070`.  
+**Files:** `PRIMITIVE_SCOPE_LEDGER.md`, `SOURCE_MAP.md`, `PLAN.md`, and reviewer prompts.
+
+Required work:
+
+1. Create `PRIMITIVE_SCOPE_LEDGER.md` covering at least `algebra/resultant.rs`, `algebra/interpolation.rs`, `algebra/regular_chain.rs`, `algebra/norm_trace.rs`, `algebra/f4.rs`, `preprocess/linear_affine.rs`, `algebra/quotient.rs`, and `algebra/krylov.rs`.
+2. Each entry must state capability, exact limitations, allowed production use, required exact verification, allowed failure, forbidden claim, and the later phase that must expand or replace it.
+3. P6, P8, and P9 must not treat these narrow primitives as completed generic kernels.
+4. Later reviewers must consult the ledger.
+
+**Reviewer prompt.** Use `P5R_REVIEWER_PROMPTS.md#P5R-e`.
+
+#### P5R-f — P6 readiness audit
+
+**Supports:** `P5R-RGQ-065` through `P5R-RGQ-072`.  
+**Files:** `P6_READINESS.md`, `CLOSURE.md`, `ACTIVE_CONTEXT.md`, `PLAN.md`, and `REVIEWER_PROMPTS.md`.
+
+Required work:
+
+1. Run full crate tests and all P5R-specific tests.
+2. Run and classify the static scans listed in `P5R_PLAN.md`.
+3. Finalize `P6_READINESS.md` with explicit answers to the seven readiness questions in `P5R-RGQ-071`.
+4. Confirm all P5R-a through P5R-e review archives PASS.
+5. State the final P5R claim ceiling only as `PARTIAL_MECHANISM_READY:MECH-004`.
+6. P6 may begin only if `P6_READINESS.md` explicitly says `P6 may begin: yes`.
+
+**Reviewer prompt.** Use `P5R_REVIEWER_PROMPTS.md#P5R-f`.
+
+---
+
 ## 7. Planner, admissions, cost model, declared ladders
 
 ### P6 — Deterministic planner with support-producing plans
 
 **Supports R-IDs:** `RGQ-015`, `RGQ-039`, `RGQ-041`, `RGQ-042`, `RGQ-047`, `RGQ-062`.  
 **MECHs:** closes `MECH-005` and starts `MECH-013`, `MECH-016`.
+
+**Prerequisites.** P5R-a, P5R-b, P5R-c, P5R-d, P5R-e, and P5R-f must all have PASS review archives and `P6_READINESS.md` must state `P6 may begin: yes`. P6 reviewers must consult `PRIMITIVE_SCOPE_LEDGER.md` before accepting any admission, plan, or ladder claim.
 
 **Implementation tasks.**
 
@@ -330,6 +439,7 @@ P3 is not a closeable phase. It is a group label for P3a through P3f. The Agent 
 8. Cost probes may affect ordering but are never proof.
 9. Add determinism tests: repeated planning yields identical plan hashes.
 10. Add hidden-fallback tests: runtime cannot choose a kernel absent from the declared ladder.
+11. P6 must not treat binary resultant, one-variable interpolation, single-chain regular-chain, single-variable tower norm/trace, non-production F4, polynomial-only affine substitution, or debug explicit quotient/action handles as completed generic kernels.
 
 **Reviewer prompt.** Use `REVIEWER_PROMPTS.md#P6`.
 
@@ -362,6 +472,8 @@ P8 is not a closeable phase. It is a group label for P8a through P8d. The Agent 
 **Supports R-IDs:** `RGQ-019`, `RGQ-042`, `RGQ-043`, `RGQ-055`.  
 **MECHs:** closes `MECH-006` and `MECH-013` only after schedule reproducibility and exact membership tests pass.
 
+**Prerequisite ledger check.** Reviewers must consult `PRIMITIVE_SCOPE_LEDGER.md` and fail P8a if TargetRelationSearch is treated as a narrow feature gate rather than a support-producing declared schedule.
+
 **Implementation tasks.**
 
 1. Implement all required functions from `RGQ-042` in `kernels/target_relation_search.rs`.
@@ -379,6 +491,8 @@ P8 is not a closeable phase. It is a group label for P8a through P8d. The Agent 
 **Supports R-IDs:** `RGQ-020`, `RGQ-025`, `RGQ-043`.  
 **MECHs:** continues `MECH-007`.
 
+**Prerequisite ledger check.** Reviewers must consult `PRIMITIVE_SCOPE_LEDGER.md`. Existing binary resultant and one-variable interpolation primitives cannot close generic SparseResultantProjectionKernel or SpecializationInterpolationKernel without the expansions and exact verification stated in the ledger.
+
 **Implementation tasks.**
 
 1. Implement `kernels/sparse_resultant.rs` admission, planning, execution, and replay.
@@ -393,6 +507,8 @@ P8 is not a closeable phase. It is a group label for P8a through P8d. The Agent 
 
 **Supports R-IDs:** `RGQ-021`, `RGQ-044`, `RGQ-054`.  
 **MECHs:** closes `MECH-014`.
+
+**Prerequisite ledger check.** Reviewers must consult `PRIMITIVE_SCOPE_LEDGER.md`. A debug explicit or externally injected quotient/action handle cannot close production TargetActionKrylovKernel.
 
 **Implementation tasks.**
 
@@ -409,6 +525,8 @@ P8 is not a closeable phase. It is a group label for P8a through P8d. The Agent 
 
 **Supports R-IDs:** `RGQ-022`, `RGQ-036`, `RGQ-041`, `RGQ-051`, `RGQ-056`.  
 **MECHs:** closes `MECH-008` only after one-large-block and anti-heavy-fallback tests pass.
+
+**Prerequisite ledger check.** Reviewers must consult `PRIMITIVE_SCOPE_LEDGER.md`. The Universal local elimination route cannot be closed by non-production F4 naming, by binary/single-variable helper primitives alone, or by debug quotient/action handles.
 
 **Implementation tasks.**
 
@@ -430,6 +548,8 @@ P8 is not a closeable phase. It is a group label for P8a through P8d. The Agent 
 
 **Supports R-IDs:** `RGQ-023`, `RGQ-024`, `RGQ-033`.  
 **MECHs:** closes remaining `MECH-007`.
+
+**Prerequisite ledger check.** Reviewers must consult `PRIMITIVE_SCOPE_LEDGER.md`. Existing single-chain regular-chain and single-variable tower norm/trace primitives cannot be overclaimed as completed generic P9 kernels until the ledger's expansion requirements are implemented.
 
 **Implementation tasks.**
 

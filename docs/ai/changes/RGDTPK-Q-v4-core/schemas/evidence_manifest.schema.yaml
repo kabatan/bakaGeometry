@@ -28,7 +28,7 @@ properties:
   schema_version: {const: "rgdtpk-evidence-manifest-v2.2"}
   phase_id:
     type: string
-    pattern: "^P(0|1|2|3a|3b|3c|3d|3e|3f|4|5|6|7|8a|8b|8c|8d|9|10|11|12|13|14|15|16)$"
+    pattern: "^P(0|1|2|3a|3b|3c|3d|3e|3f|4|5|5R-a|5R-b|5R-c|5R-d|5R-e|5R-f|6|7|8a|8b|8c|8d|9|10|11|12|13|14|15|16)$"
   commit: {type: string, minLength: 1}
   algorithm_spec_source_sha256: {$ref: "#/$defs/sha256"}
   failure_source_sha256: {$ref: "#/$defs/sha256"}

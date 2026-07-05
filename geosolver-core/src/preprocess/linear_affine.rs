@@ -1,11 +1,13 @@
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeSet;
 
 use crate::algebra::monomial_order::lex_order;
 use crate::algebra::polynomial_ops::reduce_by_set;
 use crate::preprocess::compression::{
-    affine_parts_in_variable, sort_dedup_variables, CompressionState, GuardKind, SubstitutionKind,
+    affine_parts_in_variable, rational_expression, sort_dedup_variables, CompressionState,
+    GuardKind, SubstitutionKind,
 };
-use crate::preprocess::saturation::find_explicit_nonzero_witness;
+use crate::preprocess::saturation::{find_explicit_nonzero_witness, ExplicitNonzeroWitness};
 use crate::problem::context::SolverContext;
 use crate::result::status::SolverError;
 use crate::types::ids::{RelationId, VariableId};
@@ -22,6 +24,7 @@ pub struct LinearAffineCandidate {
     pub numerator: SparsePolynomialQ,
     pub denominator_is_constant_nonzero: bool,
     pub denominator_has_recorded_nonzero_semantics: bool,
+    pub denominator_nonzero_witness: Option<ExplicitNonzeroWitness>,
     pub polynomial_expression: Option<SparsePolynomialQ>,
     pub score: usize,
 }
@@ -36,9 +39,20 @@ pub struct AffinePivot {
     pub variable: VariableId,
     pub source_relation_id: RelationId,
     pub denominator: SparsePolynomialQ,
-    pub expression: SparsePolynomialQ,
+    pub numerator: SparsePolynomialQ,
+    pub expression: AffinePivotExpression,
     pub denominator_is_constant_nonzero: bool,
     pub denominator_has_recorded_nonzero_semantics: bool,
+    pub denominator_nonzero_witness: Option<ExplicitNonzeroWitness>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum AffinePivotExpression {
+    Polynomial(SparsePolynomialQ),
+    Rational {
+        numerator: SparsePolynomialQ,
+        denominator: SparsePolynomialQ,
+    },
 }
 
 pub fn find_linear_affine_candidates(state: &CompressionState) -> Vec<LinearAffineCandidate> {
@@ -59,8 +73,13 @@ pub fn find_linear_affine_candidates(state: &CompressionState) -> Vec<LinearAffi
             }
             let numerator = poly_scale(&rest, &int_q(-1));
             let denominator_is_constant_nonzero = constant_nonzero(&denominator).is_some();
-            let denominator_has_recorded_nonzero_semantics =
-                find_explicit_nonzero_witness(state, &denominator).is_some();
+            let denominator_nonzero_witness = find_explicit_nonzero_witness(state, &denominator);
+            if denominator_nonzero_witness.as_ref().is_some_and(|witness| {
+                witness.witness_relation_id == relation.id && witness.slack_variable == variable
+            }) {
+                continue;
+            }
+            let denominator_has_recorded_nonzero_semantics = denominator_nonzero_witness.is_some();
             let polynomial_expression = exact_polynomial_quotient(&numerator, &denominator);
             candidates.push(LinearAffineCandidate {
                 variable,
@@ -69,6 +88,7 @@ pub fn find_linear_affine_candidates(state: &CompressionState) -> Vec<LinearAffi
                 numerator,
                 denominator_is_constant_nonzero,
                 denominator_has_recorded_nonzero_semantics,
+                denominator_nonzero_witness,
                 polynomial_expression,
                 score: relation.polynomial.terms.len(),
             });
@@ -90,23 +110,45 @@ pub fn select_safe_affine_pivots(
     candidates: &[LinearAffineCandidate],
     _policy: PivotPolicy,
 ) -> Vec<AffinePivot> {
+    let variables_with_unguarded_nonconstant_denominator = candidates
+        .iter()
+        .filter(|candidate| {
+            !candidate.denominator_is_constant_nonzero
+                && !candidate.denominator_has_recorded_nonzero_semantics
+        })
+        .map(|candidate| candidate.variable)
+        .collect::<BTreeSet<_>>();
     candidates
         .iter()
         .filter_map(|candidate| {
-            let expression = candidate.polynomial_expression.clone()?;
+            if variables_with_unguarded_nonconstant_denominator.contains(&candidate.variable) {
+                return None;
+            }
             if !candidate.denominator_is_constant_nonzero
                 && !candidate.denominator_has_recorded_nonzero_semantics
             {
                 return None;
             }
+            let expression = match &candidate.polynomial_expression {
+                Some(poly) => AffinePivotExpression::Polynomial(poly.clone()),
+                None if candidate.denominator_has_recorded_nonzero_semantics => {
+                    AffinePivotExpression::Rational {
+                        numerator: candidate.numerator.clone(),
+                        denominator: candidate.denominator.clone(),
+                    }
+                }
+                None => return None,
+            };
             Some(AffinePivot {
                 variable: candidate.variable,
                 source_relation_id: candidate.source_relation_id,
                 denominator: candidate.denominator.clone(),
+                numerator: candidate.numerator.clone(),
                 expression,
                 denominator_is_constant_nonzero: candidate.denominator_is_constant_nonzero,
                 denominator_has_recorded_nonzero_semantics: candidate
                     .denominator_has_recorded_nonzero_semantics,
+                denominator_nonzero_witness: candidate.denominator_nonzero_witness.clone(),
             })
         })
         .collect()
@@ -125,37 +167,75 @@ pub fn eliminate_linear_affine_variables(
         else {
             break;
         };
-        let guard = if pivot.denominator_is_constant_nonzero {
+        let guard_record = if pivot.denominator_is_constant_nonzero {
             state.add_guard(
                 pivot.denominator.clone(),
                 vec![pivot.source_relation_id],
                 GuardKind::ConstantNonZeroPivot,
-            );
-            None
+            )
         } else {
+            let mut source_ids = vec![pivot.source_relation_id];
+            if let Some(witness) = &pivot.denominator_nonzero_witness {
+                source_ids.push(witness.witness_relation_id);
+            }
             state.add_guard(
                 pivot.denominator.clone(),
-                vec![pivot.source_relation_id],
+                source_ids,
                 GuardKind::AffineDenominator,
-            );
+            )
+        };
+        let guard = if pivot.denominator_is_constant_nonzero {
+            None
+        } else {
             Some(pivot.denominator.clone())
         };
-        state.apply_polynomial_substitution(
-            pivot.variable,
-            &pivot.expression,
-            pivot.source_relation_id,
-        );
-        state.add_substitution(
-            pivot.variable,
-            pivot.expression,
-            guard,
-            pivot.source_relation_id,
-            if pivot.denominator_is_constant_nonzero {
-                SubstitutionKind::LinearAffineConstantPivot
-            } else {
-                SubstitutionKind::LinearAffineGuardedPivot
-            },
-        );
+        match pivot.expression {
+            AffinePivotExpression::Polynomial(expression) => {
+                state.apply_polynomial_substitution(
+                    pivot.variable,
+                    &expression,
+                    pivot.source_relation_id,
+                );
+                state.add_substitution(
+                    pivot.variable,
+                    expression,
+                    guard,
+                    pivot.source_relation_id,
+                    if pivot.denominator_is_constant_nonzero {
+                        SubstitutionKind::LinearAffineConstantPivot
+                    } else {
+                        SubstitutionKind::LinearAffineGuardedPivot
+                    },
+                );
+            }
+            AffinePivotExpression::Rational {
+                numerator,
+                denominator,
+            } => {
+                let witness_ids = pivot
+                    .denominator_nonzero_witness
+                    .as_ref()
+                    .map(|witness| vec![witness.witness_relation_id])
+                    .unwrap_or_default();
+                state.apply_rational_affine_substitution(
+                    pivot.variable,
+                    &numerator,
+                    &denominator,
+                    pivot.source_relation_id,
+                    guard_record.clone(),
+                    witness_ids.clone(),
+                );
+                let expression =
+                    rational_expression(numerator, denominator, guard_record, witness_ids);
+                state.add_rational_substitution(
+                    pivot.variable,
+                    expression,
+                    guard,
+                    pivot.source_relation_id,
+                    SubstitutionKind::LinearAffineGuardedPivot,
+                );
+            }
+        }
     }
     Ok(state)
 }
@@ -201,9 +281,10 @@ fn safe_rank(candidate: &LinearAffineCandidate) -> usize {
         candidate.denominator_has_recorded_nonzero_semantics,
         candidate.polynomial_expression.is_some(),
     ) {
-        (true, _, true) => 0,
+        (false, true, false) => 0,
         (false, true, true) => 1,
-        _ => 2,
+        (true, _, true) => 2,
+        _ => 3,
     }
 }
 
@@ -215,10 +296,16 @@ fn one() -> SparsePolynomialQ {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::preprocess::compression::{
+        rational_affine_transformation_certificate, CompressionExpression,
+    };
     use crate::problem::canonicalize::canonicalize_system;
     use crate::problem::input::make_problem;
     use crate::problem::validate::validate_input;
-    use crate::types::polynomial::{constant_poly, poly_mul, poly_sub, variable_poly};
+    use crate::types::ids::RelationId;
+    use crate::types::polynomial::{
+        clear_denominators_primitive, constant_poly, poly_add, poly_mul, poly_sub, variable_poly,
+    };
     use crate::types::rational::int_q;
 
     fn state_from_relations(relations: Vec<SparsePolynomialQ>) -> CompressionState {
@@ -273,5 +360,176 @@ mod tests {
             .guards
             .iter()
             .any(|guard| guard.guard_kind == GuardKind::AffineDenominator));
+    }
+
+    #[test]
+    fn guarded_rational_affine_non_polynomial_case_clears_denominator() {
+        let t = VariableId(0);
+        let x = VariableId(1);
+        let y = VariableId(2);
+        let s = VariableId(3);
+        let denominator = poly_add(&variable_poly(x), &constant_poly(int_q(1)));
+        let witness = poly_sub(
+            &poly_mul(&denominator, &variable_poly(s)),
+            &constant_poly(int_q(1)),
+        );
+        let affine = poly_sub(
+            &poly_mul(&denominator, &variable_poly(y)),
+            &poly_add(&variable_poly(t), &variable_poly(x)),
+        );
+        let y_minus_two = poly_sub(&variable_poly(y), &constant_poly(int_q(2)));
+        let state = state_from_relations(vec![witness, affine, y_minus_two]);
+        let witness_relation = state
+            .relations
+            .iter()
+            .find(|relation| relation.id == RelationId(0))
+            .expect("witness relation is assigned the first canonical id")
+            .clone();
+        let pivot_relation = state
+            .relations
+            .iter()
+            .find(|relation| relation.id == RelationId(1))
+            .expect("affine pivot relation is assigned the second canonical id")
+            .clone();
+        let y_minus_two_relation = state
+            .relations
+            .iter()
+            .find(|relation| relation.id == RelationId(2))
+            .expect("y - 2 relation is assigned the third canonical id")
+            .clone();
+        let candidates = find_linear_affine_candidates(&state);
+        let rational_candidate = candidates
+            .iter()
+            .find(|candidate| {
+                candidate.variable == y
+                    && candidate.denominator_has_recorded_nonzero_semantics
+                    && candidate.polynomial_expression.is_none()
+            })
+            .expect("guarded non-polynomial rational affine pivot is selectable");
+        let expected_pivot_numerator = rational_candidate.numerator.clone();
+        let expected_pivot_denominator = rational_candidate.denominator.clone();
+
+        let mut ctx =
+            crate::problem::context::new_context(crate::solver::options::SolverOptions::default());
+        let state = eliminate_linear_affine_variables(state, &mut ctx).unwrap();
+
+        assert!(state.substitutions.iter().any(|sub| {
+            sub.kind == SubstitutionKind::LinearAffineGuardedPivot
+                && matches!(sub.expression, CompressionExpression::Rational(_))
+        }));
+        assert!(state
+            .guards
+            .iter()
+            .any(|guard| guard.guard_kind == GuardKind::AffineDenominator));
+        assert!(state
+            .relations
+            .iter()
+            .all(|relation| !poly_variables(&relation.polynomial).contains(&y)));
+        let expected = poly_sub(
+            &poly_sub(
+                &poly_mul(&constant_poly(int_q(2)), &denominator),
+                &variable_poly(t),
+            ),
+            &variable_poly(x),
+        );
+        let transformed_y_minus_two_relation = state
+            .relations
+            .iter()
+            .find(|relation| relation.id == y_minus_two_relation.id)
+            .expect("the transformed y - 2 relation remains relation-id bound");
+        assert_eq!(transformed_y_minus_two_relation.polynomial, expected);
+        let cert = state
+            .rational_affine_transformations
+            .iter()
+            .find(|cert| cert.original_relation_id == y_minus_two_relation.id)
+            .expect("the transformed y - 2 relation has a rational affine certificate");
+        assert_eq!(cert.original_relation_id, y_minus_two_relation.id);
+        assert_eq!(
+            cert.transformed_relation_id,
+            transformed_y_minus_two_relation.id
+        );
+        assert_eq!(cert.pivot_relation_id, pivot_relation.id);
+        assert_eq!(cert.eliminated_variable, y);
+        assert_eq!(cert.numerator, expected_pivot_numerator);
+        assert_eq!(cert.denominator, expected_pivot_denominator);
+        assert_eq!(cert.denominator_clearing_power, 1);
+        assert_eq!(cert.source_witness_relation_ids, vec![witness_relation.id]);
+        assert_eq!(
+            cert.denominator_guard.guard_kind,
+            GuardKind::AffineDenominator
+        );
+        assert_eq!(
+            cert.denominator_guard.factor,
+            clear_denominators_primitive(&cert.denominator)
+        );
+        assert_eq!(
+            cert.denominator_guard.source_relation_ids,
+            vec![pivot_relation.id, witness_relation.id]
+        );
+        assert_eq!(cert.original_relation_hash, y_minus_two_relation.hash);
+        assert_eq!(
+            cert.transformed_relation_hash,
+            transformed_y_minus_two_relation.hash
+        );
+        let recomputed = rational_affine_transformation_certificate(
+            y_minus_two_relation.id,
+            transformed_y_minus_two_relation.id,
+            pivot_relation.id,
+            y,
+            cert.numerator.clone(),
+            cert.denominator.clone(),
+            1,
+            cert.denominator_guard.clone(),
+            vec![witness_relation.id],
+            y_minus_two_relation.hash,
+            transformed_y_minus_two_relation.hash,
+        );
+        assert_eq!(cert.transformation_hash, recomputed.transformation_hash);
+        let tampered = rational_affine_transformation_certificate(
+            y_minus_two_relation.id,
+            transformed_y_minus_two_relation.id,
+            pivot_relation.id,
+            y,
+            cert.numerator.clone(),
+            cert.denominator.clone(),
+            0,
+            cert.denominator_guard.clone(),
+            vec![witness_relation.id],
+            y_minus_two_relation.hash,
+            transformed_y_minus_two_relation.hash,
+        );
+        assert_ne!(cert.transformation_hash, tampered.transformation_hash);
+    }
+
+    #[test]
+    fn unsafe_nonconstant_rational_affine_candidate_is_left_in_system() {
+        let t = VariableId(0);
+        let x = VariableId(1);
+        let y = VariableId(2);
+        let denominator = poly_add(&variable_poly(x), &constant_poly(int_q(1)));
+        let affine = poly_sub(
+            &poly_mul(&denominator, &variable_poly(y)),
+            &poly_add(&variable_poly(t), &variable_poly(x)),
+        );
+        let y_minus_two = poly_sub(&variable_poly(y), &constant_poly(int_q(2)));
+        let state = state_from_relations(vec![affine.clone(), y_minus_two]);
+        let candidates = find_linear_affine_candidates(&state);
+        assert!(candidates.iter().any(|candidate| {
+            candidate.variable == y
+                && !candidate.denominator_has_recorded_nonzero_semantics
+                && candidate.polynomial_expression.is_none()
+        }));
+        assert!(
+            select_safe_affine_pivots(&candidates, PivotPolicy::MarkowitzLikePolicy).is_empty()
+        );
+
+        let mut ctx =
+            crate::problem::context::new_context(crate::solver::options::SolverOptions::default());
+        let state = eliminate_linear_affine_variables(state, &mut ctx).unwrap();
+        assert!(state.substitutions.is_empty());
+        assert!(state.relations.iter().any(|relation| {
+            let vars = poly_variables(&relation.polynomial);
+            vars.contains(&y) && vars.contains(&x) && vars.contains(&t)
+        }));
     }
 }

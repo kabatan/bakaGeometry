@@ -1,0 +1,14 @@
+phase: P5R-f
+functions:
+  - path: docs/ai/changes/RGDTPK-Q-v4-core/P6_READINESS.md
+    implemented: final P6 readiness gate answers P5R-RGQ-071 explicitly after P5R-a through P5R-e pass
+  - path: docs/ai/changes/RGDTPK-Q-v4-core/CLOSURE.md
+    implemented: P5R closure wording with claim ceiling and explicit negative claims only
+  - path: docs/ai/ACTIVE_CONTEXT.md
+    implemented: active context points to P5R closure and keeps P6 blocked until explicit user continuation
+  - path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-a..P5R-f
+    implemented: archived prompts, responses, review summaries, and evidence manifests
+  - path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-f/schema_validation.txt
+    implemented: P5R-a through P5R-e PASS archive existence check and schema validation
+  - path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-f/static_scans.txt
+    implemented: P5R-f required static scans with classifications for expected hits

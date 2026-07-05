@@ -1,0 +1,72 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: P5R-b
+commit: 212da9fa7f56aaec1568d578087d3851151d7036
+algorithm_spec_source_sha256: 2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed
+failure_source_sha256: df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: cd5c9147a5f48d50d12142c67e5160f95a1ccdbfe43eee925d5e0bb1a8fee779
+evidence_manifest_schema_sha256: 74e0fe22b6ba77e38edf96c8e6851eb5be8beb717599cbfb0c345abe4617a253
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-b/command_outputs.txt
+  sha256: 4136a722004a13587814de0e059f0925afe15c4024d8a90139c5f196fbc26129
+  purpose: 'P5R-b evidence file: command_outputs.txt'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-b/commands.txt
+  sha256: 8318397d742b5d28056e38788509bd8b46955e1b72ea9881c0fd64a1f1288e46
+  purpose: 'P5R-b evidence file: commands.txt'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-b/function_implementation_table.yaml
+  sha256: a7ca4e0958505a2e6cc0bdc99f8b5c3d6dc08d40158cae0db473be5b2c13e9fe
+  purpose: 'P5R-b evidence file: function_implementation_table.yaml'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-b/notes.md
+  sha256: d39eb0b305bb3bf50c107db872246fdeaf8cfebd4891595331e99a0736d4597a
+  purpose: 'P5R-b evidence file: notes.md'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-b/static_scans.txt
+  sha256: 25e512e21bc52cf269dafc09bb71289ad86918de4e102bb5e51e7357363d3f56
+  purpose: 'P5R-b evidence file: static_scans.txt'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-b/20260705-091100Z/prompt.md
+  sha256: be5fc419c903d0e5069ab55d8125cee1d8bc3392d2aa655a9c6b8257442563ea
+  purpose: Archived P5R-b reviewer prompt.md
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-b/20260705-091100Z/response.md
+  sha256: 627e973c33bcb65c41d6e0622c69446f561c064f8578a65e133bf57f146d6c28
+  purpose: Archived P5R-b reviewer response.md
+command_outputs:
+- command: cargo test --manifest-path geosolver-core/Cargo.toml algebra::f4 -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-b/command_outputs.txt
+  output_sha256: 4136a722004a13587814de0e059f0925afe15c4024d8a90139c5f196fbc26129
+  finished_at_utc: 20260705-091100Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml algebra::elimination
+    -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-b/command_outputs.txt
+  output_sha256: 4136a722004a13587814de0e059f0925afe15c4024d8a90139c5f196fbc26129
+  finished_at_utc: 20260705-091100Z
+- command: rg fake F4 / LocalF4 production-name scans
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-b/command_outputs.txt
+  output_sha256: 4136a722004a13587814de0e059f0925afe15c4024d8a90139c5f196fbc26129
+  finished_at_utc: 20260705-091100Z
+static_scans:
+- scan_id: p5r-b-static-scan
+  command: see static_scans.txt
+  forbidden_pattern: P5R scoped forbidden patterns and overclaim markers
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-b/static_scans.txt
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-b/function_implementation_table.yaml
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-b/20260705-091100Z/response.md
+known_limitations:
+- Real local F4 is not implemented; current helper must not be used for LocalF4 or
+  performance claims.
+- No P5R subphase review grants P6 admission, candidate-cover readiness, exact-image
+  readiness, public orchestration, performance readiness, or acceptance completion.
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-004
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-004
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

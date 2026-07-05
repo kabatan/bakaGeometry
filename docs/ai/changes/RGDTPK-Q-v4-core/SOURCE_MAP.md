@@ -19,6 +19,7 @@ Context Packet Authority: non-authoritative digest.
 | SRC-FAIL-20260704 | `docs/ai/sources/geosolver_failure_causes_generalized_2026_07_04.md` | `df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e` | EXACT for failure-prevention; reference-only for historical names | Anti-drift, anti-slice, anti-fallback, reviewer behavior, generalized stress |
 | HARDENING-v2 | `BASE_SPEC.md` §8A | N/A | NORMATIVE AMENDMENT | Removes interpretation freedom in Universal, TargetRelationSearch, ActionKrylov, nonfinite proof, phase closure, review archive, and P15/P16 claims |
 | HARDENING-v2.2 | `BASE_SPEC.md` §8B | N/A | NORMATIVE CONSISTENCY AMENDMENT | Adds Appendix override map, closed status set, required-function strictness, schema mirror checks, suite partition, cost-compression evidence, fixture-free stress templates, and mandatory consistency audit |
+| P5R-REMEDIATION | `P5R_BASE_SPEC_AMENDMENT.md` | `1118c64cdc8e7de288be81e77829af32d05f75fd8957852627975acd86dd1f84` | MANDATORY TIGHTENING AMENDMENT | Inserts a barrier after P5 and before P6; prevents fake F4 claims, polynomial-only affine narrowing, self-certifying quotient/action handles, primitive overclaim, and commit-unbound evidence |
 
 ---
 
@@ -98,6 +99,19 @@ Context Packet Authority: non-authoritative digest.
 | Performance-first could be reduced to late benchmark wording instead of cost-compression evidence | `RGQ-062` | P6, P8a–P8d, P10, P14, P15, P16 | P6, P8a–P8d, P10, P14, P15, P16 |
 | Generalized stress could still become fixture/string dispatch or toy-only coverage | `RGQ-063` | P15, P16 | P15, P16 |
 | The instruction pack needs an explicit consistency audit artifact | `RGQ-064` | P0, P16 | P0, P16 |
+
+## P5R remediation mapping
+
+| P5R issue | P5R R-ID | Plan phase(s) | Reviewer prompt(s) |
+|---|---|---|---|
+| P5R must block P6 until closed | `P5R-RGQ-065` | P5R-a, P5R-f, P6 | P5R-a, P5R-f, P6 |
+| P0-P5 evidence and claims must be rebound to a current commit | `P5R-RGQ-066` | P5R-a, P5R-f | P5R-a, P5R-f |
+| Groebner-backed wrapper must not be claimed as production F4 | `P5R-RGQ-067` | P5R-b, P8d | P5R-b, P8d |
+| Guarded affine preprocessing must support rational affine semantics | `P5R-RGQ-068` | P5R-c, P7 | P5R-c, P7 |
+| TargetActionKrylov production handles must be provenance-bound | `P5R-RGQ-069` | P5R-d, P8c | P5R-d, P8c |
+| Narrow primitives must be recorded and blocked from overclaim | `P5R-RGQ-070` | P5R-e, P6, P8a-P8d, P9 | P5R-e, P6, P8a-P8d, P9 |
+| P6 readiness must be explicit and support-producing | `P5R-RGQ-071` | P5R-a, P5R-f, P6 | P5R-a, P5R-f, P6 |
+| P5R review must inspect algorithmic drift, not just evidence format | `P5R-RGQ-072` | P5R-a-P5R-f | P5R-a-P5R-f |
 
 ## Appendix A hardening override map required by RGQ-057
 

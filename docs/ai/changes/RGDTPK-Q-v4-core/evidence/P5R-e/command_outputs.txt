@@ -1,0 +1,34 @@
+
+===== ledger-required-entries =====
+COMMAND: rg -n "algebra/resultant.rs|algebra/interpolation.rs|algebra/regular_chain.rs|algebra/norm_trace.rs|algebra/f4.rs|preprocess/linear_affine.rs|algebra/quotient.rs|algebra/krylov.rs" docs\ai\changes\RGDTPK-Q-v4-core\PRIMITIVE_SCOPE_LEDGER.md
+9:## algebra/resultant.rs
+39:## algebra/interpolation.rs
+69:## algebra/regular_chain.rs
+99:## algebra/norm_trace.rs
+129:## algebra/f4.rs
+159:## preprocess/linear_affine.rs
+189:## algebra/quotient.rs
+219:## algebra/krylov.rs
+EXIT_CODE: 0
+
+===== later-phase-ledger-wiring =====
+COMMAND: rg -n "PRIMITIVE_SCOPE_LEDGER|ledger" docs\ai\changes\RGDTPK-Q-v4-core\PLAN.md docs\ai\changes\RGDTPK-Q-v4-core\SOURCE_MAP.md docs\ai\changes\RGDTPK-Q-v4-core\REVIEWER_PROMPTS.md
+docs\ai\changes\RGDTPK-Q-v4-core\PLAN.md:346:**Files:** `geosolver-core/src/algebra/f4.rs`, `geosolver-core/src/algebra/elimination.rs`, `geosolver-core/src/algebra/mod.rs`, diagnostics/cost trace files if needed, and `PRIMITIVE_SCOPE_LEDGER.md`.
+docs\ai\changes\RGDTPK-Q-v4-core\PLAN.md:350:1. Choose exactly one route in `PRIMITIVE_SCOPE_LEDGER.md`: real local F4 or demote the current wrapper.
+docs\ai\changes\RGDTPK-Q-v4-core\PLAN.md:389:#### P5R-e — Primitive scope ledger and anti-overclaim wiring
+docs\ai\changes\RGDTPK-Q-v4-core\PLAN.md:392:**Files:** `PRIMITIVE_SCOPE_LEDGER.md`, `SOURCE_MAP.md`, `PLAN.md`, and reviewer prompts.
+docs\ai\changes\RGDTPK-Q-v4-core\PLAN.md:396:1. Create `PRIMITIVE_SCOPE_LEDGER.md` covering at least `algebra/resultant.rs`, `algebra/interpolation.rs`, `algebra/regular_chain.rs`, `algebra/norm_trace.rs`, `algebra/f4.rs`, `preprocess/linear_affine.rs`, `algebra/quotient.rs`, and `algebra/krylov.rs`.
+docs\ai\changes\RGDTPK-Q-v4-core\PLAN.md:399:4. Later reviewers must consult the ledger.
+docs\ai\changes\RGDTPK-Q-v4-core\PLAN.md:428:**Prerequisites.** P5R-a, P5R-b, P5R-c, P5R-d, P5R-e, and P5R-f must all have PASS review archives and `P6_READINESS.md` must state `P6 may begin: yes`. P6 reviewers must consult `PRIMITIVE_SCOPE_LEDGER.md` before accepting any admission, plan, or ladder claim.
+docs\ai\changes\RGDTPK-Q-v4-core\PLAN.md:475:**Prerequisite ledger check.** Reviewers must consult `PRIMITIVE_SCOPE_LEDGER.md` and fail P8a if TargetRelationSearch is treated as a narrow feature gate rather than a support-producing declared schedule.
+docs\ai\changes\RGDTPK-Q-v4-core\PLAN.md:494:**Prerequisite ledger check.** Reviewers must consult `PRIMITIVE_SCOPE_LEDGER.md`. Existing binary resultant and one-variable interpolation primitives cannot close generic SparseResultantProjectionKernel or SpecializationInterpolationKernel without the expansions and exact verification stated in the ledger.
+docs\ai\changes\RGDTPK-Q-v4-core\PLAN.md:511:**Prerequisite ledger check.** Reviewers must consult `PRIMITIVE_SCOPE_LEDGER.md`. A debug explicit or externally injected quotient/action handle cannot close production TargetActionKrylovKernel.
+docs\ai\changes\RGDTPK-Q-v4-core\PLAN.md:529:**Prerequisite ledger check.** Reviewers must consult `PRIMITIVE_SCOPE_LEDGER.md`. The Universal local elimination route cannot be closed by non-production F4 naming, by binary/single-variable helper primitives alone, or by debug quotient/action handles.
+docs\ai\changes\RGDTPK-Q-v4-core\PLAN.md:552:**Prerequisite ledger check.** Reviewers must consult `PRIMITIVE_SCOPE_LEDGER.md`. Existing single-chain regular-chain and single-variable tower norm/trace primitives cannot be overclaimed as completed generic P9 kernels until the ledger's expansion requirements are implemented.
+docs\ai\changes\RGDTPK-Q-v4-core\REVIEWER_PROMPTS.md:137:P6 prerequisite: inspect `PRIMITIVE_SCOPE_LEDGER.md` and `P6_READINESS.md`. Fail if P6 begins before P5R-a through P5R-f have PASS review archives, or if P6 treats binary resultants, one-variable interpolation, single-chain regular-chain, single-variable tower norm/trace, non-production F4, polynomial-only affine substitution, or debug explicit quotient/action handles as completed generic kernels.
+docs\ai\changes\RGDTPK-Q-v4-core\REVIEWER_PROMPTS.md:164:Also inspect `PRIMITIVE_SCOPE_LEDGER.md`. Fail if TargetRelationSearch is used as a narrow feature gate or if P8a claims generic support-producing readiness without the declared dense schedule and exact membership route.
+docs\ai\changes\RGDTPK-Q-v4-core\REVIEWER_PROMPTS.md:174:Also inspect `PRIMITIVE_SCOPE_LEDGER.md`. Fail if the current binary resultant or one-variable interpolation helpers are overclaimed as generic P8b kernels.
+docs\ai\changes\RGDTPK-Q-v4-core\REVIEWER_PROMPTS.md:184:Also inspect `PRIMITIVE_SCOPE_LEDGER.md`. Fail if production TargetActionKrylov can accept debug explicit handles or externally injected self-certifying action columns.
+docs\ai\changes\RGDTPK-Q-v4-core\REVIEWER_PROMPTS.md:194:Also inspect `PRIMITIVE_SCOPE_LEDGER.md`. Fail if Universal local elimination is closed by non-production F4 naming, narrow helper primitives alone, or debug quotient/action handles.
+docs\ai\changes\RGDTPK-Q-v4-core\REVIEWER_PROMPTS.md:204:Also inspect `PRIMITIVE_SCOPE_LEDGER.md`. Fail if single-chain regular-chain helpers or single-variable tower norm/trace helpers are overclaimed as generic P9 kernel completion.
+EXIT_CODE: 0

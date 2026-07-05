@@ -1,0 +1,25 @@
+P5R-f schema validation and subphase archive check
+
+P5R-a: PASS archive present at docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-a/20260705-091000Z
+P5R-a: review_status=PASS, phase_closable=True
+P5R-a: evidence_manifest schema PASS, review_summary schema PASS
+
+P5R-b: PASS archive present at docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-b/20260705-091100Z
+P5R-b: review_status=PASS, phase_closable=True
+P5R-b: evidence_manifest schema PASS, review_summary schema PASS
+
+P5R-c: PASS archive present at docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-c/20260705-091200Z
+P5R-c: review_status=PASS, phase_closable=True
+P5R-c: evidence_manifest schema PASS, review_summary schema PASS
+
+P5R-d: PASS archive present at docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-d/20260705-091300Z
+P5R-d: review_status=PASS, phase_closable=True
+P5R-d: evidence_manifest schema PASS, review_summary schema PASS
+
+P5R-e: PASS archive present at docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-e/20260705-091400Z
+P5R-e: review_status=PASS, phase_closable=True
+P5R-e: evidence_manifest schema PASS, review_summary schema PASS
+
+P5R-f: PASS archive present at docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-f/20260705-091500Z
+P5R-f: review_status=PASS, phase_closable=True
+P5R-f: evidence_manifest schema PASS, review_summary schema PASS

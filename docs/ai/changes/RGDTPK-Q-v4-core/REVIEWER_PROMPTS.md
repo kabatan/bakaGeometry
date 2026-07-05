@@ -134,6 +134,8 @@ Review target: Plan P6.
 
 Check all kernels are admitted/probed, Universal admission is true for well-formed blocks, selected plans contain concrete support-producing information, TargetRelationSearch plans use RGQ-042, Universal plans use RGQ-041, and declared ladder is hash-bound before execution. Fail if admission is just a feature label or runtime chooses unplanned kernels.
 
+P6 prerequisite: inspect `PRIMITIVE_SCOPE_LEDGER.md` and `P6_READINESS.md`. Fail if P6 begins before P5R-a through P5R-f have PASS review archives, or if P6 treats binary resultants, one-variable interpolation, single-chain regular-chain, single-variable tower norm/trace, non-production F4, polynomial-only affine substitution, or debug explicit quotient/action handles as completed generic kernels.
+
 ---
 
 ## P7 — Kernel infrastructure, TargetUnivariate, LinearAffine
@@ -159,6 +161,8 @@ Check RGQ-042 exactly:
 
 Fail if there is sparse-only search, hand-picked degree/support bounds, stress-specific supports, or relation return without exact identity.
 
+Also inspect `PRIMITIVE_SCOPE_LEDGER.md`. Fail if TargetRelationSearch is used as a narrow feature gate or if P8a claims generic support-producing readiness without the declared dense schedule and exact membership route.
+
 ---
 
 ## P8b — SparseResultant and SpecializationInterpolation kernels
@@ -166,6 +170,8 @@ Fail if there is sparse-only search, hand-picked degree/support bounds, stress-s
 Review target: Plan P8b.
 
 Check actual exact verification functions for resultant and interpolated relations, not hook-only placeholders. Fail if “not sparse” becomes unsupported, if interpolation proof is only sample agreement, if candidate generation is treated as proof, or if Appendix A §10.12–§10.13 required functions are deferred.
+
+Also inspect `PRIMITIVE_SCOPE_LEDGER.md`. Fail if the current binary resultant or one-variable interpolation helpers are overclaimed as generic P8b kernels.
 
 ---
 
@@ -175,6 +181,8 @@ Review target: Plan P8c.
 
 Check RGQ-044 and RGQ-054. The only accepted coverage kind is `VerifiedCharacteristicSupportCoverage`; the support polynomial is the exact characteristic polynomial of the verified target-action matrix. The undercoverage regression must be present. Fail any candidate from weaker Krylov coverage.
 
+Also inspect `PRIMITIVE_SCOPE_LEDGER.md`. Fail if production TargetActionKrylov can accept debug explicit handles or externally injected self-certifying action columns.
+
 ---
 
 ## P8d — UniversalTargetEliminationKernel
@@ -183,6 +191,8 @@ Review target: Plan P8d.
 
 Check RGQ-041 and RGQ-056. Universal must be bounded, local, preplanned, authorization-bound, and target/separator-export only. It must use exactly the fixed strategy sequence, must not return local nonfinite, and must not use global coordinate-first elimination. Fail on unbounded Groebner/F4, hidden fallback, full coordinate RUR/roots, or relation-search failure routed to nonfinite.
 
+Also inspect `PRIMITIVE_SCOPE_LEDGER.md`. Fail if Universal local elimination is closed by non-production F4 naming, narrow helper primitives alone, or debug quotient/action handles.
+
 ---
 
 ## P9 — RegularChain and NormTrace kernels
@@ -190,6 +200,8 @@ Check RGQ-041 and RGQ-056. Universal must be bounded, local, preplanned, authori
 Review target: Plan P9.
 
 Check component/guard/projection semantics and algebraic tower norm verification. Fail on geometry-name detection, unverified norm relation, or dropped component semantics.
+
+Also inspect `PRIMITIVE_SCOPE_LEDGER.md`. Fail if single-chain regular-chain helpers or single-variable tower norm/trace helpers are overclaimed as generic P9 kernel completion.
 
 ---
 

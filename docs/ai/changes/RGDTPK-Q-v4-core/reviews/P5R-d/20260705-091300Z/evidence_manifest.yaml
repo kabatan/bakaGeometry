@@ -1,0 +1,73 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: P5R-d
+commit: 212da9fa7f56aaec1568d578087d3851151d7036
+algorithm_spec_source_sha256: 2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed
+failure_source_sha256: df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: cd5c9147a5f48d50d12142c67e5160f95a1ccdbfe43eee925d5e0bb1a8fee779
+evidence_manifest_schema_sha256: 74e0fe22b6ba77e38edf96c8e6851eb5be8beb717599cbfb0c345abe4617a253
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-d/command_outputs.txt
+  sha256: d8189f30d6ae115966a6bcb2d0e0f5f73bc244f57b7896b9de76b5a1bd703aef
+  purpose: 'P5R-d evidence file: command_outputs.txt'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-d/commands.txt
+  sha256: 8c06772909fdf3a2c1844ef308e67e588f54c7fb9cb19681f3a808b0071b0b5c
+  purpose: 'P5R-d evidence file: commands.txt'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-d/function_implementation_table.yaml
+  sha256: 89b6977bb1d2f09f2484422fa5a54b1c61db21b30d87fa9450cdc83229262800
+  purpose: 'P5R-d evidence file: function_implementation_table.yaml'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-d/notes.md
+  sha256: dae0e470c4f2d02fbc37f155463af3280534976ab2c3be15ba0f9bbbf24ac648
+  purpose: 'P5R-d evidence file: notes.md'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-d/static_scans.txt
+  sha256: a902a0fb5e993f3f738eb2165f5b5f6c2135a263eea67a1f04bca09b4b671b80
+  purpose: 'P5R-d evidence file: static_scans.txt'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-d/20260705-091300Z/prompt.md
+  sha256: 0963495c725dd41cacbd9fd1d0c1219da4d734e833ce1c909a7e3df5c1a74418
+  purpose: Archived P5R-d reviewer prompt.md
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-d/20260705-091300Z/response.md
+  sha256: ca4344db9708a5f8fba5be96d3252c12036fe0ad5e43e176b9582b6f06c27b48
+  purpose: Archived P5R-d reviewer response.md
+command_outputs:
+- command: cargo test --manifest-path geosolver-core/Cargo.toml algebra::quotient
+    -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-d/command_outputs.txt
+  output_sha256: d8189f30d6ae115966a6bcb2d0e0f5f73bc244f57b7896b9de76b5a1bd703aef
+  finished_at_utc: 20260705-091300Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml algebra::krylov --
+    --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-d/command_outputs.txt
+  output_sha256: d8189f30d6ae115966a6bcb2d0e0f5f73bc244f57b7896b9de76b5a1bd703aef
+  finished_at_utc: 20260705-091300Z
+- command: rg quotient/krylov provenance and coordinate-root scans
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-d/command_outputs.txt
+  output_sha256: d8189f30d6ae115966a6bcb2d0e0f5f73bc244f57b7896b9de76b5a1bd703aef
+  finished_at_utc: 20260705-091300Z
+static_scans:
+- scan_id: p5r-d-static-scan
+  command: see static_scans.txt
+  forbidden_pattern: P5R scoped forbidden patterns and overclaim markers
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-d/static_scans.txt
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-d/function_implementation_table.yaml
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-d/20260705-091300Z/response.md
+known_limitations:
+- This does not claim generic quotient-basis construction for all block shapes or
+  full P8c production readiness.
+- No P5R subphase review grants P6 admission, candidate-cover readiness, exact-image
+  readiness, public orchestration, performance readiness, or acceptance completion.
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-004
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-004
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

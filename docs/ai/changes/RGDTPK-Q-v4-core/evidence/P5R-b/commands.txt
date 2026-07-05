@@ -1,0 +1,5 @@
+P5R-b Route B commands
+
+cargo test --manifest-path geosolver-core/Cargo.toml algebra::f4 -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml algebra::elimination -- --nocapture
+rg fake F4 production names in geosolver-core/src

@@ -1,0 +1,8 @@
+P5R-c commands
+
+cargo test --manifest-path geosolver-core/Cargo.toml preprocess::linear_affine -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml preprocess::compression -- --nocapture
+rg guarded rational affine implementation and unsafe rejection scans
+cargo test --manifest-path geosolver-core/Cargo.toml preprocess::linear_affine -- --nocapture (after exact certificate assertion fix)
+cargo test --manifest-path geosolver-core/Cargo.toml preprocess::compression -- --nocapture (after relation-bound certificate fix)
+rg RationalAffineTransformationCertificate relation-bound provenance scans

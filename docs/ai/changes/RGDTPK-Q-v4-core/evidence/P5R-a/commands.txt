@@ -1,0 +1,5 @@
+git rev-parse --verify HEAD
+cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+cargo test --manifest-path geosolver-core/Cargo.toml graph -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture
+rg claim consistency and forbidden pre-commit strings

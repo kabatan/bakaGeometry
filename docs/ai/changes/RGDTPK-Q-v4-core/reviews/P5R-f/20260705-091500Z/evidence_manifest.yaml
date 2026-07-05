@@ -1,0 +1,86 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: P5R-f
+commit: 212da9fa7f56aaec1568d578087d3851151d7036+p5r-pre-final-commit
+algorithm_spec_source_sha256: 2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed
+failure_source_sha256: df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: cd5c9147a5f48d50d12142c67e5160f95a1ccdbfe43eee925d5e0bb1a8fee779
+evidence_manifest_schema_sha256: 74e0fe22b6ba77e38edf96c8e6851eb5be8beb717599cbfb0c345abe4617a253
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-f/command_outputs.txt
+  sha256: 216d8edd3eb8c385ef5fa7b706fe194ddb1b8d3088b7da611fec8459f0cd5378
+  purpose: 'P5R-f evidence file: command_outputs.txt'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-f/commands.txt
+  sha256: 77e6d9553b0734b3b4097f36716243ecbff11c1a729c02f277d7ab4267da9c74
+  purpose: 'P5R-f evidence file: commands.txt'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-f/function_implementation_table.yaml
+  sha256: 4ab5c227de35ad3b0a0488b3d6cdefc325f20eae367954cab22b31e6fab37a95
+  purpose: 'P5R-f evidence file: function_implementation_table.yaml'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-f/notes.md
+  sha256: 372bfb263cb1c3e51f829d387fbb41f8df42cc4020fd114641c4ff3f2bbc6a81
+  purpose: 'P5R-f evidence file: notes.md'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-f/schema_validation.txt
+  sha256: 8c25566d8e0a22d151f1cb35fd2cb6890020205cbefda0314c2a84a12980928b
+  purpose: 'P5R-f evidence file: schema_validation.txt'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-f/static_scans.txt
+  sha256: d1fedb4fea401b3daa0d20cdcd0c03b86166d8bbaf64eaf4db537d88b023353e
+  purpose: 'P5R-f evidence file: static_scans.txt'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-f/20260705-091500Z/prompt.md
+  sha256: 64bc31ba383cd97f1dce5126e3f7395845975926c34482e8dc0e0a48664408b0
+  purpose: Archived P5R-f reviewer prompt.md
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-f/20260705-091500Z/response.md
+  sha256: e4a14ecd245dfea8eaea115f712afa58efbdf1a4f5de8266ebc6acef66ce5493
+  purpose: Archived P5R-f reviewer response.md
+command_outputs:
+- command: cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-f/command_outputs.txt
+  output_sha256: 216d8edd3eb8c385ef5fa7b706fe194ddb1b8d3088b7da611fec8459f0cd5378
+  finished_at_utc: 20260705-091500Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-f/command_outputs.txt
+  output_sha256: 216d8edd3eb8c385ef5fa7b706fe194ddb1b8d3088b7da611fec8459f0cd5378
+  finished_at_utc: 20260705-091500Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml P5R targeted tests
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-f/command_outputs.txt
+  output_sha256: 216d8edd3eb8c385ef5fa7b706fe194ddb1b8d3088b7da611fec8459f0cd5378
+  finished_at_utc: 20260705-091500Z
+- command: schema validation for P5R-a through P5R-e review archives
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-f/schema_validation.txt
+  output_sha256: 8c25566d8e0a22d151f1cb35fd2cb6890020205cbefda0314c2a84a12980928b
+  finished_at_utc: 20260705-091500Z
+static_scans:
+- scan_id: p5r-f-required-static-scans
+  command: see static_scans.txt
+  forbidden_pattern: TODO/todo/stub/placeholder/dummy/fake/unimplemented/panic TODO;
+    Unsupported/NotYetImplemented/Skipped; coordinate roots/RUR/QE/CAD/homotopy; CertifiedNonFiniteTargetImage;
+    F4; P5R-RGQ-066 sentinels
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-f/static_scans.txt
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P5R-f/function_implementation_table.yaml
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-a/20260705-091000Z/response.md
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-b/20260705-091100Z/response.md
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-c/20260705-091200Z/response.md
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-d/20260705-091300Z/response.md
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-e/20260705-091400Z/response.md
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P5R-f/20260705-091500Z/response.md
+known_limitations:
+- P5R closes only the remediation barrier before P6; it does not start P6 or close
+  planner, kernel execution, candidate cover, exact image, public orchestration, performance,
+  or final acceptance.
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-004
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-004
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

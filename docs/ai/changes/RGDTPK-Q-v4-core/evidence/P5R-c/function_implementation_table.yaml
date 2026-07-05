@@ -1,0 +1,13 @@
+phase: P5R-c
+functions:
+  - path: geosolver-core/src/preprocess/compression.rs
+    implemented: CompressionExpression::Rational, RationalExpressionQ, RationalAffineTransformationCertificate, rational_affine_transformations in CompressedSystemQ, guarded_rational_affine_pivot_count, apply_rational_affine_substitution, substitute_rational_and_clear_with_power
+    certificate_fields: original_relation_id, transformed_relation_id, pivot_relation_id, eliminated_variable, numerator, denominator, denominator_clearing_power, denominator_guard, source_witness_relation_ids, original_relation_hash, transformed_relation_hash, transformation_hash
+    certificate_hash_binding: transformed_relation_hash is the final canonical transformed relation hash; transformation_hash is recomputed from relation ids, pivot id, eliminated variable, numerator/denominator hashes, denominator-clearing power, guard hash, and original/transformed relation hashes
+  - path: geosolver-core/src/preprocess/linear_affine.rs
+    implemented: guarded nonconstant affine pivot selection without polynomial quotient requirement; unsafe nonconstant denominators left uneliminated; witness slack relation protected; safe stress asserts exact transformation certificate provenance ids, relation hashes, recomputed transformation hash, and tamper hash inequality
+  - path: geosolver-core/src/preprocess/saturation.rs
+    implemented: explicit nonzero witness matching after primitive denominator normalization
+mandatory_tests:
+  - preprocess::linear_affine::tests::guarded_rational_affine_non_polynomial_case_clears_denominator
+  - preprocess::linear_affine::tests::unsafe_nonconstant_rational_affine_candidate_is_left_in_system

@@ -1,0 +1,5 @@
+@"
+P5R-e commands
+
+rg required primitive ledger entries
+rg P6/P8/P9 ledger references in PLAN.md and REVIEWER_PROMPTS.md

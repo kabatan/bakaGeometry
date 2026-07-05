@@ -1,0 +1,27 @@
+
+===== fake-f4-production-names =====
+COMMAND: rg -n "f4_elimination_local|EliminationStrategy::LocalF4|LocalEliminationStrategyName::LocalF4|F4Options|F4BatchReductionResult|f4_reduce_batch" geosolver-core\src
+<no matches>
+EXIT_CODE: 1
+CLASSIFICATION: pass: no matches for old fake-F4 production API names in source.
+
+===== remaining-f4-mentions =====
+COMMAND: rg -n "F4|f4" geosolver-core\src\algebra\f4.rs geosolver-core\src\algebra\elimination.rs docs\ai\changes\RGDTPK-Q-v4-core\PRIMITIVE_SCOPE_LEDGER.md
+docs\ai\changes\RGDTPK-Q-v4-core\PRIMITIVE_SCOPE_LEDGER.md:129:## algebra/f4.rs
+docs\ai\changes\RGDTPK-Q-v4-core\PRIMITIVE_SCOPE_LEDGER.md:133:Route B is chosen for P5R-b. The current file contains only `GroebnerBackedBatchOptions`, `F4ImplementationLevel::NotProductionF4`, `groebner_backed_batch_reduce_for_tests`, and `non_production_groebner_batch_elimination_for_tests`.
+docs\ai\changes\RGDTPK-Q-v4-core\PRIMITIVE_SCOPE_LEDGER.md:137:No real local F4-style symbolic row collection, Macaulay/F4 matrix construction, modular row reduction, rational reconstruction, or F4 matrix trace is implemented in P5R.
+docs\ai\changes\RGDTPK-Q-v4-core\PRIMITIVE_SCOPE_LEDGER.md:141:Not allowed as production F4. `EliminationStrategy::NonProductionGroebnerBatchForTests` is rejected by production dispatch with `CertificateDesignGap`. Local Groebner remains separately named as `LocalGroebner`.
+docs\ai\changes\RGDTPK-Q-v4-core\PRIMITIVE_SCOPE_LEDGER.md:145:Low-level helper tests still verify exported generators by exact Q membership, but this does not prove F4 semantics.
+docs\ai\changes\RGDTPK-Q-v4-core\PRIMITIVE_SCOPE_LEDGER.md:153:Do not claim `LocalF4`, F4-style sparse linear algebra, Universal local F4 readiness, or performance readiness from the Groebner-backed helper.
+docs\ai\changes\RGDTPK-Q-v4-core\PRIMITIVE_SCOPE_LEDGER.md:157:P8d if the Universal local route needs real F4; otherwise it must choose an honestly named local Groebner route under the fixed plan and resource/certificate bounds.
+geosolver-core\src\algebra\f4.rs:12:pub enum F4ImplementationLevel {
+geosolver-core\src\algebra\f4.rs:13:    NotProductionF4,
+geosolver-core\src\algebra\f4.rs:19:    pub implementation_level: F4ImplementationLevel,
+geosolver-core\src\algebra\f4.rs:26:            implementation_level: F4ImplementationLevel::NotProductionF4,
+geosolver-core\src\algebra\f4.rs:36:    pub implementation_level: F4ImplementationLevel,
+geosolver-core\src\algebra\f4.rs:107:            F4ImplementationLevel::NotProductionF4
+geosolver-core\src\algebra\elimination.rs:5:use crate::algebra::f4::GroebnerBackedBatchOptions;
+geosolver-core\src\algebra\elimination.rs:150:                &[b"not-production-f4".to_vec()],
+geosolver-core\src\algebra\elimination.rs:152:            missing_certificate_kind: "real local F4 batch matrix reduction is not implemented"
+EXIT_CODE: 0
+CLASSIFICATION: classified: remaining mentions are NotProductionF4 labels, file/module naming, Route B ledger text, and tests preventing production overclaim.
