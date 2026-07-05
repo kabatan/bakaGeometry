@@ -1,0 +1,7 @@
+cargo fmt
+cargo check
+cargo test
+rg temporary_pipeline_not_connected / TemporaryPipelineNotConnected in solver/api/status
+rg required FCR-P3 pipeline step calls in solver/api
+rg required execution/verification/certificate helpers in solver/run_certificate
+git diff --check

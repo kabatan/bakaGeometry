@@ -507,6 +507,7 @@ mod tests {
         let cert = build_core_run_certificate(CoreRunCertificateInput {
             input_hash: problem.input_hash,
             canonical_hash: canonical_hash(&problem),
+            target_variable: problem.target,
             compression_hash: compression_hash(&problem),
             hypergraph_hash: hypergraph_hash(&problem),
             dag_hash: hash_projection_message_dag_binding(t, &messages),
@@ -517,6 +518,7 @@ mod tests {
             root_isolation: &[],
             decoded_candidates: &[],
             global_support_certificate_hash: None,
+            final_dag_replay_evidence_hash: None,
         });
         let result = result(t, support, messages, cert);
 
@@ -608,6 +610,7 @@ mod tests {
         let cert = build_core_run_certificate(CoreRunCertificateInput {
             input_hash: problem.input_hash,
             canonical_hash: canonical_hash(&problem),
+            target_variable: problem.target,
             compression_hash: compression_hash(&problem),
             hypergraph_hash: hypergraph_hash(&problem),
             dag_hash: hash_projection_message_dag_binding(t, &messages),
@@ -621,6 +624,7 @@ mod tests {
             root_isolation: &[],
             decoded_candidates: &[],
             global_support_certificate_hash: None,
+            final_dag_replay_evidence_hash: None,
         });
         let result = result(t, support, messages, cert);
 
@@ -650,6 +654,7 @@ mod tests {
         let cert = build_core_run_certificate(CoreRunCertificateInput {
             input_hash: problem.input_hash,
             canonical_hash: canonical_hash(&problem),
+            target_variable: problem.target,
             compression_hash: compression_hash(&problem),
             hypergraph_hash: hypergraph_hash(&problem),
             dag_hash: hash_projection_message_dag_binding(t, &messages),
@@ -662,6 +667,7 @@ mod tests {
             global_support_certificate_hash: Some(global_support_certificate_hash(
                 t, &messages, &support,
             )),
+            final_dag_replay_evidence_hash: None,
         });
         let mut result = result(t, support, messages, cert);
         assert!(super::replay_run_certificate(&result, &problem).accepted);
@@ -704,6 +710,7 @@ mod tests {
         let cert = build_core_run_certificate(CoreRunCertificateInput {
             input_hash: problem.input_hash,
             canonical_hash: canonical_hash(&problem),
+            target_variable: problem.target,
             compression_hash: compression_hash(&problem),
             hypergraph_hash: hypergraph_hash(&problem),
             dag_hash: hash_projection_message_dag_binding(t, &messages),
@@ -716,6 +723,7 @@ mod tests {
             global_support_certificate_hash: Some(global_support_certificate_hash(
                 t, &messages, &support,
             )),
+            final_dag_replay_evidence_hash: None,
         });
         let mut result = result(t, support.clone(), messages, cert);
         result.root_isolation = vec![root];
@@ -772,6 +780,7 @@ mod tests {
         let omitted_cert = build_core_run_certificate(CoreRunCertificateInput {
             input_hash: problem.input_hash,
             canonical_hash: canonical_hash(&problem),
+            target_variable: problem.target,
             compression_hash: compression_hash(&problem),
             hypergraph_hash: hypergraph_hash(&problem),
             dag_hash: hash_projection_message_dag_binding(t, &messages),
@@ -784,6 +793,7 @@ mod tests {
             global_support_certificate_hash: Some(global_support_certificate_hash(
                 t, &messages, &support,
             )),
+            final_dag_replay_evidence_hash: None,
         });
         let mut omitted_result = result(t, support.clone(), messages.clone(), omitted_cert);
         omitted_result.root_isolation = vec![root.clone()];
@@ -794,6 +804,7 @@ mod tests {
         let duplicate_cert = build_core_run_certificate(CoreRunCertificateInput {
             input_hash: problem.input_hash,
             canonical_hash: canonical_hash(&problem),
+            target_variable: problem.target,
             compression_hash: compression_hash(&problem),
             hypergraph_hash: hypergraph_hash(&problem),
             dag_hash: hash_projection_message_dag_binding(t, &messages),
@@ -806,6 +817,7 @@ mod tests {
             global_support_certificate_hash: Some(global_support_certificate_hash(
                 t, &messages, &support,
             )),
+            final_dag_replay_evidence_hash: None,
         });
         let mut duplicate_result = result(t, support, messages, duplicate_cert);
         duplicate_result.root_isolation = vec![root];
@@ -871,6 +883,7 @@ mod tests {
         let cert = build_core_run_certificate(CoreRunCertificateInput {
             input_hash: problem.input_hash,
             canonical_hash: canonical_hash(&problem),
+            target_variable: problem.target,
             compression_hash: compression_hash(&problem),
             hypergraph_hash: hypergraph_hash(&problem),
             dag_hash: hash_projection_message_dag_binding(t, &messages),
@@ -883,6 +896,7 @@ mod tests {
             global_support_certificate_hash: Some(global_support_certificate_hash(
                 t, &messages, &support,
             )),
+            final_dag_replay_evidence_hash: None,
         });
         let result = result(t, support, messages, cert);
         assert!(!super::replay_run_certificate(&result, &problem).accepted);
@@ -906,6 +920,7 @@ mod tests {
         let cert = build_core_run_certificate(CoreRunCertificateInput {
             input_hash: problem.input_hash,
             canonical_hash: canonical_hash(&problem),
+            target_variable: problem.target,
             compression_hash: compression_hash(&problem),
             hypergraph_hash: hypergraph_hash(&problem),
             dag_hash: hash_projection_message_dag_binding(t, &messages),
@@ -918,6 +933,7 @@ mod tests {
             global_support_certificate_hash: Some(global_support_certificate_hash(
                 t, &messages, &support,
             )),
+            final_dag_replay_evidence_hash: None,
         });
         let result = result(t, support.clone(), messages, cert);
         assert!(super::replay_run_certificate(&result, &problem).accepted);
@@ -1211,6 +1227,7 @@ mod tests {
         let cert = build_core_run_certificate(CoreRunCertificateInput {
             input_hash: problem.input_hash,
             canonical_hash: canonical_hash(&problem),
+            target_variable: problem.target,
             compression_hash: compression_hash(&problem),
             hypergraph_hash: hypergraph_hash(&problem),
             dag_hash: hash_projection_message_dag_binding(t, &messages),
@@ -1225,6 +1242,7 @@ mod tests {
                 &messages,
                 &forged_support,
             )),
+            final_dag_replay_evidence_hash: None,
         });
         let result = result(t, forged_support, messages, cert);
         assert!(!super::replay_run_certificate(&result, &problem).accepted);
@@ -1300,6 +1318,7 @@ mod tests {
         let cert = build_core_run_certificate(CoreRunCertificateInput {
             input_hash: problem.input_hash,
             canonical_hash: canonical_hash(&problem),
+            target_variable: problem.target,
             compression_hash: compression_hash(&problem),
             hypergraph_hash: hypergraph_hash(&problem),
             dag_hash: hash_projection_message_dag_binding(t, &messages),
@@ -1317,6 +1336,7 @@ mod tests {
                 &messages,
                 &forged_support,
             )),
+            final_dag_replay_evidence_hash: None,
         });
         let result = result(t, forged_support, messages, cert);
         assert!(!super::replay_run_certificate(&result, &problem).accepted);
@@ -1401,6 +1421,7 @@ mod tests {
         let cert = build_core_run_certificate(CoreRunCertificateInput {
             input_hash: problem.input_hash,
             canonical_hash: canonical_hash(&problem),
+            target_variable: problem.target,
             compression_hash: compression_hash(&problem),
             hypergraph_hash: hypergraph_hash(&problem),
             dag_hash: hash_projection_message_dag_binding_with_authorized_sources(
@@ -1420,6 +1441,7 @@ mod tests {
             global_support_certificate_hash: Some(global_support_certificate_hash(
                 t, &messages, &support,
             )),
+            final_dag_replay_evidence_hash: None,
         });
         let result = result(t, support, messages, cert);
         assert!(super::replay_run_certificate(&result, &problem).accepted);

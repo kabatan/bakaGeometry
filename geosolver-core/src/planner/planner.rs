@@ -6,7 +6,7 @@ use crate::planner::ladder::build_declared_ladder;
 use crate::planner::probes::run_cost_probes;
 use crate::preprocess::compression::CompressedSystemQ;
 use crate::problem::context::SolverContext;
-use crate::result::status::SolverError;
+use crate::result::status::{AlgebraicReason, FailureKind, SolverError, SolverErrorKind, StageId};
 
 pub fn plan_all_blocks(
     dag: &TargetProjectionDAG,
@@ -25,6 +25,18 @@ pub fn plan_all_blocks(
             .map(|admission| estimate_kernel_cost(block, admission.kind, &probes))
             .collect::<Vec<_>>();
         let ladder = build_declared_ladder(&admissions, &cost_estimates);
+        if ladder.is_empty() {
+            return Err(SolverError {
+                target: Some(system.target),
+                kind: SolverErrorKind::Failure(FailureKind::AlgorithmicHardCase {
+                    stage: StageId("PlanProjectionMessages".to_owned()),
+                    reason: AlgebraicReason(
+                        "no admitted production projection kernel for block".to_owned(),
+                    ),
+                    minimal_block_hash: block.block_hash,
+                }),
+            });
+        }
         let plan = KernelPlan::new(block.block_id, ladder, admissions, cost_estimates)?;
         plans.push(plan);
     }

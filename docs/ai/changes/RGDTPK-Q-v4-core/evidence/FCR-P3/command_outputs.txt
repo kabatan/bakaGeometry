@@ -1,0 +1,47 @@
+--- cargo fmt ---
+exit_code: 0
+summary: rustfmt completed.
+
+--- cargo check ---
+exit_code: 0
+summary:
+    Checking geosolver-core v0.1.0
+    Finished `dev` profile [unoptimized + debuginfo]
+
+--- cargo test ---
+exit_code: 0
+summary:
+    lib tests: 198 passed; 0 failed
+    integration tests:
+      p12_roots_decode_integration: 1 passed
+      p12g_generality_stress: 1 passed
+      p3_public_pipeline_integration: 1 passed
+    doc tests: 0 passed; 0 failed
+
+--- temporary pipeline scan ---
+exit_code: 0
+summary:
+    PASS - no temporary_pipeline_not_connected call remains in api.rs, solver/orchestrator.rs, or solver/pipeline.rs.
+    NOTE - result/status.rs still defines TemporaryPipelineNotConnected for historical/failure mapping only.
+
+--- FCR-P3 required step call scan ---
+exit_code: 0
+summary:
+    PASS - solve_with_context calls step_validate, step_canonicalize, step_compress, step_build_graphs, step_build_dag, step_plan, step_execute, step_verify_messages, step_compose, step_support, step_roots, step_core_certificate, and finalize_success_result.
+    PASS - solver/pipeline.rs defines public step functions for validation, canonicalization, compression, graph construction, DAG construction, planning, execution, verification, composition, support/nonfinite, roots, cost trace, and core certificate construction.
+
+--- execution/verification/certificate helper scan ---
+exit_code: 0
+summary:
+    PASS - step_plan calls plan_all_blocks.
+    PASS - step_execute uses kernels::all_kernels and executes declared ladder plans.
+    PASS - step_execute and step_verify_messages call verify_projection_message against actual block KernelContext.
+    PASS - step_compose calls compose_projection_messages.
+    PASS - step_support calls build_final_support_or_nonfinite.
+    PASS - orchestrator calls verify_global_support before finite success.
+    PASS - step_core_certificate calls build_core_run_certificate with final DAG replay evidence hash.
+
+--- git diff --check ---
+exit_code: 0
+summary:
+    Only LF->CRLF working-copy warnings were emitted for changed Rust files.

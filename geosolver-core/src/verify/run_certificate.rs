@@ -82,6 +82,7 @@ impl CoreInvariantFlags {
 pub struct CoreRunCertificateInput<'a> {
     pub input_hash: Hash,
     pub canonical_hash: Hash,
+    pub target_variable: VariableId,
     pub compression_hash: Hash,
     pub hypergraph_hash: Hash,
     pub dag_hash: Hash,
@@ -92,16 +93,14 @@ pub struct CoreRunCertificateInput<'a> {
     pub root_isolation: &'a [RealRootRecord],
     pub decoded_candidates: &'a [TargetCandidate],
     pub global_support_certificate_hash: Option<Hash>,
+    pub final_dag_replay_evidence_hash: Option<Hash>,
 }
 
 pub fn build_core_run_certificate(input: CoreRunCertificateInput<'_>) -> CoreRunCertificate {
     let mut cert = CoreRunCertificate {
         input_hash: input.input_hash,
         canonical_system_hash: input.canonical_hash,
-        target_variable: input
-            .support
-            .or(input.squarefree_support)
-            .map_or(VariableId(0), |support| support.variable),
+        target_variable: input.target_variable,
         compression_hash: input.compression_hash,
         hypergraph_hash: input.hypergraph_hash,
         target_projection_dag_hash: input.dag_hash,
@@ -112,7 +111,7 @@ pub fn build_core_run_certificate(input: CoreRunCertificateInput<'_>) -> CoreRun
         root_isolation_hash: Some(hash_root_isolation(input.root_isolation)),
         decoded_candidate_hash: Some(hash_decoded_candidates(input.decoded_candidates)),
         global_support_certificate_hash: input.global_support_certificate_hash,
-        final_dag_replay_evidence_hash: None,
+        final_dag_replay_evidence_hash: input.final_dag_replay_evidence_hash,
         invariants: derive_core_invariant_flags(
             input.projection_messages,
             messages_have_verifiable_payloads(input.projection_messages),

@@ -1,0 +1,133 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: FCR-P3
+commit: 9aecc2ae3b5dd3841a262521a00b1edddca831e0+fcr-p3-worktree
+algorithm_spec_source_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+failure_source_sha256: a97b50bf597ed590889a7609a2cb25d9ec40f7be27d47adf332e52d3fa8abe36
+base_spec_sha256: 1f73bd7a26b2566b08f53d31b14785110466e8ae6170b6769d1af17d50a36047
+plan_sha256: b836599108c1db4a4e828e672780e5074049045fe5fa590e94252cdc91850bb9
+source_map_sha256: 892b75221a3f724ab864e0214e3a0559e99331cda0b8fba4976f5a21372f08ec
+review_archive_schema_sha256: d3db02e4abc8cc3065e2be8e82614b3703266ad0c0ce6cf3c0ce85ad662d364c
+review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
+evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_BASE_SPEC.md
+  sha256: 1f73bd7a26b2566b08f53d31b14785110466e8ae6170b6769d1af17d50a36047
+  purpose: 'FCR-P3 source: full core repair base spec'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_PLAN.md
+  sha256: b836599108c1db4a4e828e672780e5074049045fe5fa590e94252cdc91850bb9
+  purpose: 'FCR-P3 source: public pipeline integration plan'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_SOURCE_SPEC_COMPLIANCE_MAP.md
+  sha256: 892b75221a3f724ab864e0214e3a0559e99331cda0b8fba4976f5a21372f08ec
+  purpose: 'FCR-P3 source: compliance map and current claim limits'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_REVIEWER_PROMPTS.md
+  sha256: 28075ea55b02213c4b38f5304735f87b163ab7eddb15121eefe072878a1f387b
+  purpose: 'FCR-P3 source: reviewer prompt requirements'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/BASE_SPEC.md
+  sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+  purpose: 'FCR-P3 source: approved base spec'
+- path: geosolver-core/src/solver/pipeline.rs
+  sha256: 5c006dead1c0e670c922779f4a60f6b7fc6174ae722f395ce5a51c12dc5a84a4
+  purpose: 'FCR-P3 code: public pipeline stages'
+- path: geosolver-core/src/solver/orchestrator.rs
+  sha256: 81336d7a6a89ca677e567c5a17f4e91db30830b728bd8982968af6d25b9f693b
+  purpose: 'FCR-P3 code: solve_with_context public stage wiring'
+- path: geosolver-core/src/planner/planner.rs
+  sha256: aea5bad25fd28b288a05a66769652a9df3b3771971d2babf52f80a2d5dd1929f
+  purpose: 'FCR-P3 code: bounded failure for empty declared ladder'
+- path: geosolver-core/src/verify/run_certificate.rs
+  sha256: b4e12d16ac152b6b65f8c1bebe1cdceb3fdc7d23b9c09f91dc4b3e6970f2a630
+  purpose: 'FCR-P3 code: target and final DAG replay evidence binding'
+- path: geosolver-core/src/verify/replay.rs
+  sha256: 991b9a630e03da457b25593cc56bfa60f95b66f4f3a04437580fa7322eeecee6
+  purpose: 'FCR-P3 code: test-only certificate input updates'
+- path: geosolver-core/tests/p3_public_pipeline_integration.rs
+  sha256: ab17f51acdfbd236981a26ffc06769fbe36b0906b86820ca25bdcd1f82f2aad1
+  purpose: 'FCR-P3 test: public API candidate-cover pipeline'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P3/commands.txt
+  sha256: 92baf09563ff02108a19418bf52a92fed511a5d289617b40033c1870afdf82b1
+  purpose: 'FCR-P3 evidence: commands run'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P3/command_outputs.txt
+  sha256: bf115071b08b29e964eac165c5f317fe038a93c3c75fd1b8ca68a6e4d1ca585b
+  purpose: 'FCR-P3 evidence: command outputs and summaries'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P3/pipeline_static_scan.txt
+  sha256: f9f939af7105ac3206d0a79e3cd08bbb115bd60da186f750cf9e5663d0a3f086
+  purpose: 'FCR-P3 evidence: public pipeline static scan'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P3/guardian_boundary_reviewer_pass.md
+  sha256: 4916e6a24a3ee237383119f2c239c2ff59907cc3f513224a8578eb8c289d9087
+  purpose: 'FCR-P3 evidence: guardian PASS response'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P3/20260706-013600Z/prompt.md
+  sha256: 01ca48e56885b692a29498053cdfa4b1270a2a2fe10f865b1d292cbc050782e6
+  purpose: FCR-P3 archived reviewer prompt
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P3/20260706-013600Z/response.md
+  sha256: 4916e6a24a3ee237383119f2c239c2ff59907cc3f513224a8578eb8c289d9087
+  purpose: FCR-P3 archived reviewer response
+command_outputs:
+- command: cargo fmt
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P3/command_outputs.txt
+  output_sha256: bf115071b08b29e964eac165c5f317fe038a93c3c75fd1b8ca68a6e4d1ca585b
+  finished_at_utc: 20260706-013600Z
+- command: cargo check
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P3/command_outputs.txt
+  output_sha256: bf115071b08b29e964eac165c5f317fe038a93c3c75fd1b8ca68a6e4d1ca585b
+  finished_at_utc: 20260706-013600Z
+- command: cargo test
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P3/command_outputs.txt
+  output_sha256: bf115071b08b29e964eac165c5f317fe038a93c3c75fd1b8ca68a6e4d1ca585b
+  finished_at_utc: 20260706-013600Z
+- command: static public pipeline scan
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P3/pipeline_static_scan.txt
+  output_sha256: f9f939af7105ac3206d0a79e3cd08bbb115bd60da186f750cf9e5663d0a3f086
+  finished_at_utc: 20260706-013600Z
+- command: git diff --check
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P3/command_outputs.txt
+  output_sha256: bf115071b08b29e964eac165c5f317fe038a93c3c75fd1b8ca68a6e4d1ca585b
+  finished_at_utc: 20260706-013600Z
+- command: guardian_boundary_reviewer FCR-P3
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P3/guardian_boundary_reviewer_pass.md
+  output_sha256: 4916e6a24a3ee237383119f2c239c2ff59907cc3f513224a8578eb8c289d9087
+  finished_at_utc: 20260706-013600Z
+static_scans:
+- scan_id: fcr-p3-no-temporary-pipeline-call
+  command: rg temporary_pipeline_not_connected / TemporaryPipelineNotConnected in solver/api/status
+  forbidden_pattern: temporary_pipeline_not_connected call in api.rs or solver/*.rs
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P3/pipeline_static_scan.txt
+- scan_id: fcr-p3-required-stage-calls
+  command: rg required FCR-P3 pipeline step calls in solver/api
+  forbidden_pattern: missing validation/compression/DAG/planning/execution/composition/support/root/certificate stage call
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P3/pipeline_static_scan.txt
+- scan_id: fcr-p3-message-verification
+  command: rg required execution/verification/certificate helpers in solver/run_certificate
+  forbidden_pattern: projection messages not verified against actual block KernelContext
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P3/pipeline_static_scan.txt
+- scan_id: fcr-p3-finite-success-certificate
+  command: rg required execution/verification/certificate helpers in solver/run_certificate
+  forbidden_pattern: finite success lacks CoreRunCertificate or final DAG replay evidence hash
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P3/pipeline_static_scan.txt
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_PRODUCTION_AUDIT.md
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P3/guardian_boundary_reviewer_pass.md
+known_limitations:
+- FCR-P3 wires the public pipeline and a finite target-only success path; advanced kernels remain quarantined or incomplete until later FCR phases.
+- Candidate-cover core readiness, exact-image readiness, source fidelity, and acceptance completion remain forbidden.
+- No R-ID is marked VERIFIED.
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-011
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-011
+commands_are_fresh: true
+no_untracked_evidence_omitted: true
