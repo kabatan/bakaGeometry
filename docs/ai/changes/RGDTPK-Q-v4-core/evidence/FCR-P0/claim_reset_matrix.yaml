@@ -1,0 +1,51 @@
+schema_version: rgdtpk-fcr-claim-reset-v1
+phase: FCR-P0
+source_zip_sha256: d1408d26716af877e0953688da7abb84a40d12603467608d80373aaa825819be
+repair_spec: RGDTPK-Q-v4-full-core-repair-v1
+claim_ceiling_after_import: PARTIAL_MECHANISM_READY:MECH-011
+claims_reset:
+  p13_readiness_after_p12g:
+    previous_state: "P13 may resume after P12G report"
+    reset_state: blocked_by_full_core_repair
+    evidence:
+      - docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_BASE_SPEC.md
+      - docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_PLAN.md
+      - docs/ai/changes/RGDTPK-Q-v4-core/P12G_READINESS.md
+  p14_public_orchestration:
+    previous_state: blocked_after_p12g_until_actual_dag_replay
+    reset_state: blocked_by_full_core_repair
+    evidence:
+      - docs/ai/changes/RGDTPK-Q-v4-core/CLOSURE.md
+  p15_acceptance:
+    previous_state: not_started
+    reset_state: blocked_by_full_core_repair
+    evidence:
+      - docs/ai/ACTIVE_CONTEXT.md
+  p16_final_closure:
+    previous_state: not_started
+    reset_state: blocked_by_full_core_repair
+    evidence:
+      - docs/ai/ACTIVE_CONTEXT.md
+  p8c_generic_target_action_krylov:
+    previous_state: "Route A alias/univariate only; not generic quotient-basis constructor"
+    reset_state: "not closed as generic TargetActionKrylov"
+    evidence:
+      - docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_BASE_SPEC.md
+      - docs/ai/changes/RGDTPK-Q-v4-core/CLOSURE.md
+  p8b_p9_plan_time_execution_and_kernel_generality:
+    previous_state: historical partial mechanism claims
+    reset_state: reopened_for_fcr_audit
+    evidence:
+      - docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_CURRENT_DEFECT_AUDIT.md
+      - docs/ai/ACTIVE_CONTEXT.md
+forbidden_after_import:
+  - CANDIDATE_COVER_CORE_READY
+  - SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC
+  - RGDTPK_Q_V4_ACCEPTANCE_COMPLETE
+  - P13 readiness
+  - P14 readiness
+  - P15 readiness
+  - P16 readiness
+notes:
+  - "Historical P0-P12G reviews remain evidence only for their original scopes."
+  - "FCR phases must not pass by documenting limitations or using previous PASS summaries as proof of generic implementation."

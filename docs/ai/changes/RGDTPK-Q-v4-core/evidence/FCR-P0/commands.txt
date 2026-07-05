@@ -1,0 +1,5 @@
+git rev-parse --verify HEAD
+cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture
+git diff --check
+full core repair pack import hash validation

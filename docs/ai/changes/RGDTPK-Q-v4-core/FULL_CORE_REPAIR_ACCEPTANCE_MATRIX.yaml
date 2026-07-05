@@ -1,0 +1,179 @@
+schema_version: rgdtpk-full-core-repair-acceptance-v1
+phase_group: FULL_CORE_REPAIR
+required_final_claim: CANDIDATE_COVER_CORE_READY
+exact_image_required: false
+public_pipeline_required: true
+
+hard_blockers:
+  - solve_with_context_returns_temporary_pipeline_not_connected
+  - production_reachable_partial_slice_solver
+  - target_action_krylov_only_target_univariate_or_alias_univariate
+  - plan_time_final_relation_construction
+  - synthetic_all_relations_replay_as_main_path
+  - fake_or_nonproduction_f4_reachable_from_production
+  - support_producing_acceptance_case_returns_hardcase_or_nonfinite
+  - module_only_stress_used_as_final_acceptance
+  - no_core_run_certificate_on_success
+  - no_exact_q_support_verification_on_success
+
+support_producing_suites:
+  - id: A1_no_initial_target_only_relation
+    required_path: public_or_near_public_pipeline
+    required_status: CertifiedCandidateCover
+    required_checks:
+      - no_preexisting_target_only_relation
+      - nonzero_support
+      - exact_q_support_verification
+      - exact_root_isolation
+      - decoded_candidates_bound_to_support_hash
+      - variable_id_permutation
+      - relation_order_permutation
+
+  - id: A2_multivariate_quotient_action
+    required_kernel_evidence: TargetActionKrylov
+    forbidden_shortcuts:
+      - target_univariate_relation_initially_present
+      - local_univariate_plus_linear_alias_only
+      - target_relation_search_first_then_action
+      - coordinate_roots
+      - full_coordinate_rur
+    required_checks:
+      - quotient_basis_from_authorized_relations
+      - action_columns_membership_certified
+      - full_coverage_characteristic_support
+      - replay_tamper_rejects_basis_column_source_output
+
+  - id: A3_nonlinear_target_expression
+    required_path: planner_kernel_message_support
+    required_checks:
+      - target_expression_not_linear_alias
+      - multivariate_basis_used
+      - no_expected_answer_dispatch
+
+  - id: A4_multi_separator_projection_composition
+    required_path: dag_planner_child_messages_compose
+    required_checks:
+      - child_message_required
+      - removing_child_fails_or_changes_support
+      - separator_elimination_uses_message_relations_only
+
+  - id: A5_sparse_resultant_eliminant
+    required_kernel_evidence: SparseResultantProjection
+    required_checks:
+      - no_initial_target_only_relation
+      - declared_template_plan
+      - execute_constructs_relation
+      - exact_resultant_or_membership_verification
+      - not_pairwise_binary_only_if_claimed_generic
+
+  - id: A6_specialization_interpolation
+    required_kernel_evidence: SpecializationInterpolation
+    required_checks:
+      - declared_sample_schedule
+      - inner_plans_declared
+      - execute_runs_samples
+      - interpolated_relation_exact_q_verified
+      - sample_agreement_not_sole_proof
+
+  - id: A7_guarded_rational_affine_through_pipeline
+    required_path: compress_dag_plan_execute_support
+    required_checks:
+      - guard_recorded
+      - denominator_not_polynomial_quotient_only
+      - support_verified_after_compression
+
+  - id: A8_no_useful_separator_one_large_block
+    required_kernel_evidence: UniversalTargetElimination
+    required_checks:
+      - one_large_block_created
+      - target_separator_only_output
+      - no_coordinate_solution_or_rur
+      - resource_trace_present
+
+  - id: A9_regular_chain_projection
+    required_kernel_evidence: RegularChainProjection
+    required_checks:
+      - execute_not_plan_decomposition
+      - component_or_guard_semantics_preserved
+      - output_exported_only
+      - exact_replay
+
+  - id: A10_norm_trace_multistep_tower
+    required_kernel_evidence: NormTraceProjection
+    required_checks:
+      - execute_not_plan_norm_construction
+      - at_least_two_step_tower_if_claimed
+      - exact_norm_relation_verification
+
+  - id: A11_nonreal_support_empty_cover
+    required_status: CertifiedCandidateCover
+    required_checks:
+      - support_retained
+      - squarefree_support_retained
+      - root_isolation_empty
+      - decoded_candidates_empty
+      - no_algorithmic_hardcase
+
+failure_semantics_suites:
+  - id: B1_certified_nonfinite_positive_only
+    required_checks:
+      - positive_nonfinite_certificate_kind
+      - no_relation_search_failure_not_nonfinite
+      - bounded_witness_failure_not_nonfinite
+
+  - id: B2_resource_bound_hardcase
+    required_checks:
+      - FiniteResourceFailure_or_AlgorithmicHardCase
+      - cost_trace_identifies_block_matrix_degree
+      - no_Unsupported
+      - no_CertifiedNonFiniteTargetImage
+
+anti_hack_scans:
+  - command: rg -n "circle|triangle|tangent|distance|area|incircle|circumcircle|orthic|mixtilinear|fixture|expected|answer|problem_id|official" geosolver-core/src || true
+    expected: no_production_dispatch_hits
+  - command: rg -n "temporary_pipeline_not_connected|NotProductionF4|for_tests|fake|stub|placeholder|dummy|unimplemented!|todo!" geosolver-core/src || true
+    expected: no_production_hits
+  - command: rg -n "coordinate solution|coordinate roots|full coordinate RUR|solve_all_coordinates|CAD|QE|RCF" geosolver-core/src || true
+    expected: no_production_hits
+
+required_final_commands:
+  - cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+  - cargo clippy --manifest-path geosolver-core/Cargo.toml --all-targets --all-features -- -D warnings
+  - cargo test --manifest-path geosolver-core/Cargo.toml --all-targets --all-features -- --nocapture
+  - git diff --check
+
+closure_required_files:
+  - FULL_CORE_PRODUCTION_AUDIT.md
+  - FULL_CORE_CLEANUP_REPORT.md
+  - FULL_CORE_ACCEPTANCE_RESULTS.md
+  - FULL_CORE_REPLAY_TAMPER_RESULTS.md
+  - FULL_CORE_COST_TRACE_SUMMARY.md
+  - CLOSURE.md
+
+
+
+v2_meta_acceptance:
+  agent_failure_mode_reset:
+    required_file: FULL_CORE_AGENT_FAILURE_MODE_RESET.md
+    must_be_operational: true
+  source_spec_compliance_map:
+    required_file: FULL_CORE_SOURCE_SPEC_COMPLIANCE_MAP.md
+    covers_v4_sections: "0-34"
+    every_file_function_mapped: true
+  reviewer_meta_protocol:
+    adversarial_algorithm_review_required: true
+    evidence_only_review_invalid: true
+    must_generate_new_counterexamples: true
+  exact_image_scope_boundary:
+    candidate_cover_ready_allowed_after_fcr: true
+    exact_image_ready_allowed_after_fcr_alone: false
+    source_faithful_allowed_after_fcr_alone: false
+  prohibited_completion_patterns:
+    target_univariate_only: fail
+    affine_only: fail
+    alias_univariate_action_only: fail
+    binary_resultant_only: fail
+    explicit_tower_only: fail
+    module_helper_only: fail
+    plan_time_output_construction: fail
+    synthetic_dag_replay_final_claim: fail

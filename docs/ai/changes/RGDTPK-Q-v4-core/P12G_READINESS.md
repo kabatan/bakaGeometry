@@ -1,9 +1,14 @@
 # P12G Readiness Before P13/P14
 
-Status: P12G remediation readiness file after spec_verifier PASS and quality_reviewer PASS.
+Status: superseded by Full Core Repair overlay.
 
-P13 may resume after the user accepts this P12G remediation report. P14 remains blocked after P12G
-unless actual DAG/block replay replaces synthetic all-relations replay for final claims.
+This file records the pre-FCR P12G readiness state only. `FULL_CORE_REPAIR_BASE_SPEC.md` and
+`FULL_CORE_REPAIR_PLAN.md` now block P13, P14, P15, and P16. Do not use this P12G readiness file to
+resume P13 or to claim general candidate-cover core readiness.
+
+Historical P12G result before FCR: P12G spec and quality reviews passed for the narrowed P12G
+remediation scope. FCR later determined that the current implementation remains insufficient as a
+general R-GDTPK candidate-cover core.
 
 ## Required State
 

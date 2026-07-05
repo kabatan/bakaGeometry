@@ -50,7 +50,7 @@ properties:
     const: "rgdtpk-review-v2.2"
   phase_id:
     type: string
-    pattern: "^P(0|1|2|3a|3b|3c|3d|3e|3f|4|5|5R-a|5R-b|5R-c|5R-d|5R-e|5R-f|6|7|8a|8b|8c|8d|9|10|11|12|12G-a|12G-b|12G-c|12G-d|12G-e|12G-f|12G-g|12G-h|13|14|15|16)$"
+    pattern: "^(P(0|1|2|3a|3b|3c|3d|3e|3f|4|5|5R-a|5R-b|5R-c|5R-d|5R-e|5R-f|6|7|8a|8b|8c|8d|9|10|11|12|12G-a|12G-b|12G-c|12G-d|12G-e|12G-f|12G-g|12G-h|13|14|15|16)|FCR-P(0A|1A|0|1|2|3|4|5|6|7|8|9|10|11|12))$"
   phase_kind:
     enum: [setup, data_model, algorithmic, integration, acceptance, closure]
   review_status:
@@ -75,13 +75,13 @@ properties:
   evidence_manifest_sha256: {$ref: "#/$defs/sha256"}
   prompt_path:
     type: string
-    pattern: '^docs/ai/changes/RGDTPK-Q-v4-core/reviews/P(0|1|2|3a|3b|3c|3d|3e|3f|4|5|5R-a|5R-b|5R-c|5R-d|5R-e|5R-f|6|7|8a|8b|8c|8d|9|10|11|12|12G-a|12G-b|12G-c|12G-d|12G-e|12G-f|12G-g|12G-h|13|14|15|16)/[0-9]{8}-[0-9]{6}Z/prompt\.md$'
+    pattern: '^docs/ai/changes/RGDTPK-Q-v4-core/reviews/(P(0|1|2|3a|3b|3c|3d|3e|3f|4|5|5R-a|5R-b|5R-c|5R-d|5R-e|5R-f|6|7|8a|8b|8c|8d|9|10|11|12|12G-a|12G-b|12G-c|12G-d|12G-e|12G-f|12G-g|12G-h|13|14|15|16)|FCR-P(0A|1A|0|1|2|3|4|5|6|7|8|9|10|11|12))/[0-9]{8}-[0-9]{6}Z/prompt\.md$'
   response_path:
     type: string
-    pattern: '^docs/ai/changes/RGDTPK-Q-v4-core/reviews/P(0|1|2|3a|3b|3c|3d|3e|3f|4|5|5R-a|5R-b|5R-c|5R-d|5R-e|5R-f|6|7|8a|8b|8c|8d|9|10|11|12|12G-a|12G-b|12G-c|12G-d|12G-e|12G-f|12G-g|12G-h|13|14|15|16)/[0-9]{8}-[0-9]{6}Z/response\.md$'
+    pattern: '^docs/ai/changes/RGDTPK-Q-v4-core/reviews/(P(0|1|2|3a|3b|3c|3d|3e|3f|4|5|5R-a|5R-b|5R-c|5R-d|5R-e|5R-f|6|7|8a|8b|8c|8d|9|10|11|12|12G-a|12G-b|12G-c|12G-d|12G-e|12G-f|12G-g|12G-h|13|14|15|16)|FCR-P(0A|1A|0|1|2|3|4|5|6|7|8|9|10|11|12))/[0-9]{8}-[0-9]{6}Z/response\.md$'
   evidence_manifest_path:
     type: string
-    pattern: '^docs/ai/changes/RGDTPK-Q-v4-core/reviews/P(0|1|2|3a|3b|3c|3d|3e|3f|4|5|5R-a|5R-b|5R-c|5R-d|5R-e|5R-f|6|7|8a|8b|8c|8d|9|10|11|12|12G-a|12G-b|12G-c|12G-d|12G-e|12G-f|12G-g|12G-h|13|14|15|16)/[0-9]{8}-[0-9]{6}Z/evidence_manifest\.yaml$'
+    pattern: '^docs/ai/changes/RGDTPK-Q-v4-core/reviews/(P(0|1|2|3a|3b|3c|3d|3e|3f|4|5|5R-a|5R-b|5R-c|5R-d|5R-e|5R-f|6|7|8a|8b|8c|8d|9|10|11|12|12G-a|12G-b|12G-c|12G-d|12G-e|12G-f|12G-g|12G-h|13|14|15|16)|FCR-P(0A|1A|0|1|2|3|4|5|6|7|8|9|10|11|12))/[0-9]{8}-[0-9]{6}Z/evidence_manifest\.yaml$'
   reviewer_identity:
     type: string
     minLength: 1
@@ -90,7 +90,7 @@ properties:
     minItems: 1
     items:
       type: string
-      pattern: "^(RGQ-[0-9]{3}|P5R-RGQ-[0-9]{3}|P12G-RGQ-[0-9]{3})$"
+      pattern: "^(RGQ-[0-9]{3}|P5R-RGQ-[0-9]{3}|P12G-RGQ-[0-9]{3}|FCR-[0-9]{3}|FCR-P(0A|1A|0|1|2|3|4|5|6|7|8|9|10|11|12))$"
   reviewed_mechs:
     type: array
     items:
@@ -191,7 +191,7 @@ properties:
       required: [appendix_section, controlling_requirement, verdict, evidence, reviewer_rationale]
       properties:
         appendix_section: {type: string, minLength: 1}
-        controlling_requirement: {type: string, pattern: "^(RGQ-[0-9]{3}|P5R-RGQ-[0-9]{3}|P12G-RGQ-[0-9]{3})$"}
+        controlling_requirement: {type: string, pattern: "^(RGQ-[0-9]{3}|P5R-RGQ-[0-9]{3}|P12G-RGQ-[0-9]{3}|FCR-[0-9]{3}|FCR-P(0A|1A|0|1|2|3|4|5|6|7|8|9|10|11|12))$"}
         verdict: {enum: [pass, fail, not_applicable]}
         evidence: {type: string, minLength: 1}
         reviewer_rationale: {type: string, minLength: 1}

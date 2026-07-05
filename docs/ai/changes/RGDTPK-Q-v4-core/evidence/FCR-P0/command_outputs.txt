@@ -1,0 +1,254 @@
+===== git rev-parse --verify HEAD =====
+bdd5090d62597b6f378aba777b5ede914f4505d2
+
+EXIT_CODE=0
+
+===== cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check =====
+
+EXIT_CODE=0
+
+===== cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture =====
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.19s
+     Running unittests src\lib.rs (geosolver-core\target\debug\deps\geosolver_core-bcb5dad8bd0bd994.exe)
+
+running 197 tests
+test algebra::crt::tests::crt_round_trip_combines_coprime_moduli ... ok
+test algebra::elimination::tests::dispatcher_checks_disjoint_keep_and_eliminate_sets ... ok
+test algebra::dense_matrix::tests::dense_rank_matches_sparse_algorithm ... ok
+test algebra::elimination::tests::non_keep_export_is_implementation_bug ... ok
+test algebra::elimination::tests::production_dispatch_rejects_non_production_groebner_batch_strategy ... ok
+test algebra::crt::tests::incompatible_crt_returns_none_in_checked_api ... ok
+test algebra::linear_solve::tests::inhomogeneous_reconstruction_uses_only_stable_rank_profile_suffix ... ok
+test algebra::linear_solve::tests::inhomogeneous_modular_solve_returns_candidate_solution_not_proof ... ok
+test algebra::linear_solve::tests::every_prime_in_solve_sequence_avoids_matrix_denominators_and_coefficients ... ok
+test algebra::linear_solve::tests::homogeneous_does_not_reconstruct_without_stability ... ok
+test algebra::interpolation::tests::specialization_points_are_deterministic_and_specialization_is_exact ... ok
+test algebra::krylov::tests::debug_explicit_handle_is_rejected_by_production_krylov_boundary ... ok
+test algebra::linear_solve::tests::homogeneous_modular_solve_exposes_candidate_trace_only ... ok
+test algebra::linear_solve::tests::inhomogeneous_prime_sequence_avoids_rhs_denominators ... ok
+test algebra::f4::tests::groebner_backed_batch_reduce_is_labelled_non_production ... ok
+test algebra::linear_solve::tests::modular_solve_waits_for_stable_rank_profile_not_rank_only ... ok
+test algebra::modular::tests::prime_choice_is_deterministic_and_avoids_denominators_and_coefficients ... ok
+test algebra::linear_solve::tests::inhomogeneous_does_not_reconstruct_without_stability ... ok
+test algebra::modular::tests::rational_coefficients_reduce_and_lift_exactly ... ok
+test algebra::interpolation::tests::bad_interpolation_sample_fails_final_verification ... ok
+test algebra::groebner::tests::local_groebner_eliminates_to_keep_variable_with_certificate ... ok
+test algebra::f4::tests::non_production_groebner_batch_exports_keep_only_generators_with_certificates ... ok
+test algebra::norm_trace::tests::detects_explicit_tower_by_algebraic_form ... ok
+test algebra::norm_trace::tests::noncanonical_exported_variables_do_not_detect_a_tower ... ok
+test algebra::norm_trace::tests::tower_hash_is_stable ... ok
+test algebra::normal_form::tests::out_of_range_relation_reference_fails ... ok
+test algebra::normal_form::tests::incorrect_membership_certificate_fails_exact_identity ... ok
+test algebra::polynomial_ops::tests::leading_term_uses_declared_order ... ok
+test algebra::normal_form::tests::correct_membership_certificate_reconstructs_identity ... ok
+test algebra::normal_form::tests::normal_form_returns_exact_remainder ... ok
+test algebra::polynomial_ops::tests::content_and_primitive_part_reconstruct_input ... ok
+test algebra::interpolation::tests::bad_multiseparator_sample_fails_exact_interpolation_verification ... ok
+test algebra::elimination::tests::dispatcher_exports_keep_only_generator_with_certificate ... ok
+test algebra::polynomial_ops::tests::reduction_respects_coefficients_and_records_quotients ... ok
+test algebra::interpolation::tests::sparse_coefficient_interpolation_reconstructs_relation_candidate ... ok
+test algebra::polynomial_ops::tests::s_polynomial_cancels_leading_terms ... ok
+test algebra::quotient::tests::debug_explicit_handle_is_not_production_provenanced ... ok
+test algebra::rational_reconstruction::tests::rational_reconstruction_round_trip_is_exact ... ok
+test algebra::rational_reconstruction::tests::polynomial_reconstruction_normalizes_terms ... ok
+test algebra::rational_reconstruction::tests::unstable_reconstruction_fails_when_multiple_small_lifts_exist ... ok
+test algebra::krylov::tests::single_vector_krylov_undercoverage_is_rejected ... ok
+test algebra::regular_chain::tests::duplicate_main_variables_create_component_dag ... ok
+test algebra::krylov::tests::verified_characteristic_support_coverage_is_accepted ... ok
+test algebra::regular_chain::tests::union_combination_multiplies_component_generators ... ok
+test algebra::quotient::tests::tampered_authorization_hash_is_rejected ... ok
+test algebra::real_root::tests::sturm_sequence_counts_two_real_roots_exactly ... ok
+test algebra::resultant::tests::resultant_template_rejects_non_keep_variables ... ok
+test algebra::quotient::tests::malicious_injected_action_column_is_rejected_by_production_builder ... ok
+test algebra::resultant::tests::resultant_template_rejects_noncanonical_keep_order ... ok
+test algebra::resultant::tests::resultant_template_rejects_overlapping_or_duplicate_keep_variables ... ok
+test algebra::quotient::tests::tampered_basis_certificate_hash_is_rejected ... ok
+test algebra::quotient::tests::tampered_action_certificate_hash_is_rejected ... ok
+test algebra::interpolation::tests::multiseparator_sparse_interpolation_reconstructs_candidate_then_exact_checks_samples ... ok
+test algebra::quotient::tests::production_handle_verifies_action_columns_from_authorized_relations ... ok
+test algebra::resultant::tests::resultant_certificate_rejects_nonprime_trace_modulus ... ok
+test algebra::sparse_matrix::tests::sparse_rank_and_nullspace_are_exact_mod_prime ... ok
+test algebra::real_root::tests::rational_midpoint_roots_do_not_break_isolation ... ok
+test algebra::regular_chain::tests::regular_chain_projection_preserves_guards_and_keep_variables ... ok
+test algebra::resultant::tests::resultant_support_template_and_certificate_are_exact ... ok
+test algebra::resultant::tests::resultant_certificate_rejects_tampered_trace_prime_without_panic ... ok
+test algebra::resultant::tests::resultant_certificate_rejects_tampered_relation_hash ... ok
+test algebra::norm_trace::tests::multistep_tower_norm_eliminates_each_algebraic_variable ... ok
+test algebra::norm_trace::tests::norm_relation_is_exactly_recomputed ... ok
+test compose::compose::tests::p10_tampered_message_relation_is_rejected_before_composition ... ok
+test algebra::sign::tests::sign_at_isolated_root_is_exact_when_interval_has_no_guard_root ... ok
+test compose::compose::tests::p10_certified_nonfinite_system_uses_positive_certificate_only ... ok
+test compose::final_support::tests::p12g_nonfinite_certificate_kind_is_positive_and_hash_bound ... ok
+test algebra::sign::tests::thom_encoding_records_derivative_signs ... ok
+test graph::hypergraph::tests::hypergraph_represents_every_polynomial_occurrence ... ok
+test compose::final_support::tests::p12g_candidate_cover_with_no_real_roots_is_empty_cover_not_hard_case ... ok
+test graph::separators::tests::articulation_candidate_is_algebraic_incidence_based ... ok
+test graph::projection_dag::tests::relation_duplication_without_certificate_fails ... ok
+test graph::projection_dag::tests::authorization_mismatch_fails_validation ... ok
+test graph::projection_dag::tests::no_separator_builds_one_large_target_block ... ok
+test graph::weighted_primal::tests::weighted_primal_weights_are_algebraic_only ... ok
+test graph::metrics::tests::structural_metrics_use_authorized_relations_only ... ok
+test graph::projection_dag::tests::relation_deletion_fails_validation ... ok
+test graph::tree_decomposition::tests::no_useful_separator_keeps_one_large_root ... ok
+test compose::compose::tests::p10_relation_search_exhaustion_is_hardcase_not_nonfinite ... ok
+test kernels::linear_affine::tests::p7_linear_affine_rejects_unsafe_nonconstant_pivot ... ok
+test kernels::linear_affine::tests::p7_linear_affine_rejects_auth_and_source_hash_tamper ... ok
+test kernels::action_krylov::tests::p8c_action_krylov_rejects_auth_and_source_hash_tamper ... ok
+test kernels::action_krylov::tests::p12g_plan_does_not_silently_execute_final_relation ... ok
+test kernels::norm_trace_projection::tests::p9_norm_trace_detection_uses_algebraic_form_and_rejects_tamper ... ok
+test kernels::action_krylov::tests::p8c_quotient_handle_rejects_coordinate_root_or_rur_export ... ok
+test kernels::linear_affine::tests::p7_linear_affine_exports_only_allowed_variables_with_safe_constant_pivot ... ok
+test kernels::sparse_resultant::tests::p12g_sparse_resultant_template_plan_does_not_overclaim_binary_chain ... ok
+test kernels::linear_affine::tests::p7_linear_affine_reports_stale_incomplete_plan_as_hard_case ... ok
+test kernels::norm_trace_projection::tests::p9_norm_trace_kernel_exports_verified_tower_support ... ok
+test kernels::regular_chain_projection::tests::p9_regular_chain_rejects_auth_source_and_plan_tamper ... ok
+test kernels::sparse_resultant::tests::p8b_sparse_resultant_rejects_source_hash_tamper ... ok
+test kernels::sparse_resultant::tests::p8b_sparse_resultant_consumes_child_message_relations_and_rejects_tamper ... ok
+test kernels::regular_chain_projection::tests::p9_regular_chain_kernel_projects_triangular_component ... ok
+test kernels::regular_chain_projection::tests::p9_regular_chain_guard_binding_is_operational ... ok
+test kernels::target_relation_search::tests::p8a_exact_membership_verification_rejects_tampered_multiplier ... ok
+test kernels::action_krylov::tests::p12g_certified_probe_plan_hash_tamper_fails ... ok
+test kernels::sparse_resultant::tests::p8b_sparse_resultant_kernel_produces_exact_exported_relation ... ok
+test kernels::action_krylov::tests::p8c_planner_admits_target_action_krylov_for_verified_characteristic_path ... ok
+test kernels::action_krylov::tests::p8c_action_krylov_kernel_produces_verified_characteristic_support ... ok
+test kernels::target_relation_search::tests::rgq042_option_cap_is_not_silently_widened ... ok
+test kernels::action_krylov::tests::p12g_action_krylov_plan_probe_classification_is_replayed_in_execute ... ok
+test kernels::norm_trace_projection::tests::p9_norm_trace_multistep_tower_exports_verified_support ... ok
+test kernels::target_univariate::tests::p7_target_univariate_rejects_auth_source_and_child_message_tamper ... ok
+test kernels::target_relation_search::tests::p8a_target_relation_search_exhaustion_is_hardcase_not_nonfinite ... ok
+test kernels::tests::p7_registry_lists_all_nine_kernels_in_appendix_order ... ok
+test compose::compose::tests::p10_multiblock_composition_eliminates_separator_from_message_relations_only ... ok
+test kernels::target_univariate::tests::p7_target_univariate_support_is_primitive_lcm_squarefree ... ok
+test kernels::target_univariate::tests::p7_target_univariate_uses_child_message_target_relation ... ok
+test kernels::universal_elimination::tests::p8d_universal_child_message_hash_binding_is_operational ... ok
+test kernels::action_krylov::tests::p12g_action_krylov_builds_non_target_only_quotient_action ... ok
+test kernels::action_krylov::tests::p8c_undercovered_single_vector_recurrence_cannot_escape_as_support ... ok
+test kernels::target_relation_search::tests::rgq042_dense_schedule_is_recomputable_from_j_y_z_and_options ... ok
+test kernels::norm_trace_projection::tests::p12g_g7_norm_trace_stress_covers_single_and_two_step_towers ... ok
+test kernels::universal_elimination::tests::p8d_universal_requires_fixed_strategy_sequence_and_resource_caps ... ok
+test kernels::target_relation_search::tests::p8a_required_rgq042_public_api_reconstructs_only_verified_candidates ... ok
+test preprocess::binomial::tests::binomial_simplification_removes_scaled_duplicates_without_factor_split ... ok
+test preprocess::compression::tests::pre_kernel_compression_runs_steps_in_required_order ... ok
+test compose::compose::tests::p12g_g6_multiseparator_composition_requires_child_message ... ok
+test preprocess::definitional::tests::finds_constant_pivot_definitions_without_using_target ... ok
+test preprocess::independent::tests::target_independent_component_becomes_feasibility_obligation ... ok
+test preprocess::compression::tests::explicit_saturation_and_independent_obligation_survive_pipeline ... ok
+test kernels::target_univariate::tests::p7_target_univariate_rejects_separator_only_planner_admission ... ok
+test kernels::universal_elimination::tests::p8d_static_forbidden_fallback_apis_absent ... ok
+test kernels::universal_elimination::tests::p8d_universal_exhaustion_uses_only_allowed_failure_statuses ... ok
+test preprocess::linear_affine::tests::guarded_affine_pivot_records_denominator_guard ... ok
+test preprocess::linear_affine::tests::rejects_nonconstant_affine_without_explicit_guard ... ok
+test preprocess::saturation::tests::saturation_records_only_explicit_nonzero_witnesses ... ok
+test problem::canonicalize::tests::denominator_normalization_is_preserved ... ok
+test problem::canonicalize::tests::nonzero_constant_relation_is_contradiction ... ok
+test problem::semantic::tests::semantic_reference_check_rejects_unknown_slack_variable ... ok
+test problem::canonicalize::tests::zero_relations_are_removed_with_diagnostics ... ok
+test problem::semantic::tests::semantic_relations_are_collected_without_role_dispatch ... ok
+test problem::validate::tests::invalid_semantic_reference_is_rejected ... ok
+test problem::validate::tests::invalid_semantic_slack_variable_is_rejected ... ok
+test problem::validate::tests::invalid_target_is_rejected ... ok
+test preprocess::linear_affine::tests::unsafe_nonconstant_rational_affine_candidate_is_left_in_system ... ok
+test problem::validate::tests::roles_do_not_affect_validation ... ok
+test problem::validate::tests::slack_and_branch_semantics_are_accepted_when_references_exist ... ok
+test planner::planner::tests::p6_hidden_fallback_is_rejected_when_kernel_absent_from_declared_ladder ... ok
+test roots::tests::p12_algebraic_records_bind_interval_hash_and_compare_disjoint_roots ... ok
+test roots::tests::p12_decode_candidates_bind_target_support_index_interval_and_hash ... ok
+test roots::tests::p12_squarefree_rejects_zero_and_removes_repeated_factors ... ok
+test types::ids::tests::stable_ids_are_namespace_bound ... ok
+test types::ids::tests::fresh_ids_are_monotone ... ok
+test types::interval::tests::interval_invariants_hold ... ok
+test preprocess::linear_affine::tests::p12g_g5_guarded_rational_affine_records_guard_and_preserves_target_support ... ok
+test types::monomial::tests::monomial_division_is_exact_when_possible ... ok
+test types::matrix::tests::matrix_shape_density_and_hash_are_deterministic ... ok
+test types::monomial::tests::monomial_normalization_sorts_and_combines ... ok
+test types::polynomial::tests::clear_denominators_makes_primitive_integer_poly ... ok
+test preprocess::linear_affine::tests::p12g_g4_quadratic_structure_preprocesses_to_target_support ... ok
+test types::polynomial::tests::derivative_and_substitution_are_exact ... ok
+test types::rational::tests::exact_arithmetic_identity ... ok
+test types::rational::tests::normalizes_sign_and_gcd ... ok
+test roots::tests::p12_exact_isolation_handles_irrational_repeated_and_high_coefficient_roots ... ok
+test types::polynomial::tests::normalization_merges_terms_and_hashes_deterministically ... ok
+test types::rational::tests::zero_is_canonical ... ok
+test types::univariate::tests::derivative_and_eval_are_exact ... ok
+test types::univariate::tests::hash_is_stable_for_equal_polynomials ... ok
+test preprocess::linear_affine::tests::guarded_rational_affine_non_polynomial_case_clears_denominator ... ok
+test types::univariate::tests::gcd_and_squarefree_are_monic ... ok
+test verify::replay::tests::p11_global_support_rejects_tampered_support_relation ... ok
+test roots::tests::p12_exact_isolation_handles_no_real_one_rational_and_multiple_rational_roots ... ok
+test planner::planner::tests::p6_declared_ladder_rejects_execution_plan_field_tampering ... ok
+test verify::replay::tests::p11_rejects_universal_inner_payload_with_unauthorized_sources ... ok
+test verify::replay::tests::p11_rejects_forged_sparse_resultant_payload_in_message_and_kernel_replay ... ok
+test verify::replay::tests::p11_rejects_forged_regular_chain_payload_in_message_and_kernel_replay ... ok
+test kernels::universal_elimination::tests::p8d_universal_rejects_plan_auth_and_replay_tamper ... ok
+test kernels::specialization_interpolation::tests::p8b_specialization_interpolation_rejects_authorization_tamper ... ok
+test preprocess::linear_affine::tests::p12g_g3_bilinear_structure_preprocesses_to_target_support_under_permutation ... ok
+test kernels::universal_elimination::tests::p8d_universal_one_large_block_exports_target_relation ... ok
+test kernels::target_relation_search::tests::rgq055_schedule_reproducibility_covers_three_local_shapes ... ok
+test verify::replay::tests::p11_replay_fails_when_projection_message_is_deleted ... ok
+test verify::replay::tests::p11_replay_rejects_mutual_projection_message_source_cycle ... ok
+test verify::run_certificate::tests::p12g_final_dag_claim_is_blocked_without_actual_dag_replay_evidence ... ok
+test verify::run_certificate::tests::p12g_dag_authorization_hash_bound_into_run_certificate ... ok
+test verify::replay::tests::p11_replay_fails_on_support_root_and_candidate_tamper ... ok
+test verify::replay::tests::p11_rejects_forged_norm_trace_payload_source_and_tower_hash ... ok
+test verify::replay::tests::p12g_replay_rejects_child_message_not_on_declared_dag_edge ... ok
+test verify::run_certificate::tests::p12g_final_invariant_claim_is_blocked_without_explicit_evidence ... ok
+test verify::replay::tests::p11_replay_fails_on_input_canonical_dag_plan_and_squarefree_tamper ... ok
+test verify::replay::tests::p11_replay_rejects_synthetic_projection_certificate_even_when_hashes_match ... ok
+test verify::replay::tests::p11_verify_projection_message_rejects_synthetic_and_tampered_certificates ... ok
+test verify::replay::tests::p12g_replay_rejects_message_using_relation_outside_original_block ... ok
+test verify::run_certificate::tests::p12g_replay_rejects_child_message_not_on_declared_dag_edge ... ok
+test verify::replay::tests::p11_replay_accepts_duplicate_hash_when_source_is_input_authorized ... ok
+test verify::replay::tests::p11_rejects_forged_target_action_payload_in_message_and_kernel_replay ... ok
+test kernels::target_relation_search::tests::p8a_target_relation_search_produces_multi_separator_relation ... ok
+test verify::replay::tests::p12_replay_rejects_candidate_omission_and_duplicates_even_when_hashes_match ... ok
+test planner::planner::tests::p6_planning_is_deterministic_and_declares_universal_last ... ok
+test kernels::target_relation_search::tests::p8a_target_relation_search_produces_bilinear_quadratic_relation ... ok
+test kernels::specialization_interpolation::tests::p8b_specialization_interpolation_consumes_child_messages_and_rejects_tamper ... ok
+test kernels::target_relation_search::tests::p12g_g1_projection_without_initial_target_only_relation_finds_support ... ok
+test kernels::target_relation_search::tests::p8a_target_relation_search_produces_one_large_block_relation ... ok
+test kernels::specialization_interpolation::tests::p12g_specialization_interpolation_inner_schedule_is_declared ... ok
+test kernels::specialization_interpolation::tests::p8b_planner_admits_sparse_resultant_and_specialization_plans ... ok
+test kernels::specialization_interpolation::tests::p8b_specialization_interpolation_kernel_verifies_multiseparator_relation ... ok
+
+test result: ok. 197 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.26s
+
+     Running tests\p12_roots_decode_integration.rs (geosolver-core\target\debug\deps\p12_roots_decode_integration-4e90515da8472ef5.exe)
+
+running 1 test
+test p12_candidate_cover_finalizer_returns_exact_roots_and_nonplaceholder_candidates ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\p12g_generality_stress.rs (geosolver-core\target\debug\deps\p12g_generality_stress-d61201cac8fff8da.exe)
+
+running 1 test
+test p12g_generality_stress_manifest_lists_required_cases ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests geosolver_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+EXIT_CODE=0
+
+===== git diff --check =====
+warning: in the working copy of 'docs/ai/ACTIVE_CONTEXT.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/ai/changes/RGDTPK-Q-v4-core/CLOSURE.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/ai/changes/RGDTPK-Q-v4-core/P12G_READINESS.md', LF will be replaced by CRLF the next time Git touches it
+
+EXIT_CODE=0
+
+===== full core repair pack import hash validation =====
+SOURCE_ZIP_SHA256=d1408d26716af877e0953688da7abb84a40d12603467608d80373aaa825819be
+MANIFEST_SELF_EXPECTED=428e0d258f8b8ee824b34493a27bb62fe07a909e6ea945d37b9588157a1e6167
+MANIFEST_SELF_ACTUAL=357e6eec0393d53cea956594bc2a894fd4f389967abc655ab04ed261ac20bd72
+MANIFEST_SELF_STATUS=recorded_self_hash_mismatch_in_source_pack
+MANIFEST_NON_SELF_OK_COUNT=9
+MANIFEST_NON_SELF_FAIL_COUNT=0
+
+EXIT_CODE=0
+
