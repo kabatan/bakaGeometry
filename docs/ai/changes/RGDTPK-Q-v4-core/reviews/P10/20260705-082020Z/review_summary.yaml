@@ -1,0 +1,193 @@
+schema_version: rgdtpk-review-v2.2
+phase_id: P10
+phase_kind: algorithmic
+review_status: PASS
+phase_closable: true
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-015
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: cd5c9147a5f48d50d12142c67e5160f95a1ccdbfe43eee925d5e0bb1a8fee779
+evidence_manifest_schema_sha256: 74e0fe22b6ba77e38edf96c8e6851eb5be8beb717599cbfb0c345abe4617a253
+schema_mirror_sha256: cd5c9147a5f48d50d12142c67e5160f95a1ccdbfe43eee925d5e0bb1a8fee779
+commit: 45c33932033e308f004262b23130d59a30a93c36+p10-worktree
+prompt_sha256: 423026a906cc82b5df0b5f1d6c02cf34567244cc9c74ac97d1fbc50090c2388e
+response_sha256: dd0c2992a7fcb9bb69f4ddabb898d0638ba139a3a71cd9b63b990d542a6deef1
+evidence_manifest_sha256: 46e86fc9b552ff6aa5ac27b8cc70ebdece48627c6b1bea780aa28dd758bb9333
+prompt_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P10/20260705-082020Z/prompt.md
+response_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P10/20260705-082020Z/response.md
+evidence_manifest_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P10/20260705-082020Z/evidence_manifest.yaml
+reviewer_identity: guardian_boundary_reviewer
+reviewed_rids:
+- RGQ-026
+- RGQ-032
+- RGQ-038
+- RGQ-045
+- RGQ-051
+- RGQ-057
+- RGQ-058
+reviewed_mechs:
+- MECH-009
+- MECH-015
+source_sections_checked:
+- PLAN.md P10
+- BASE_SPEC.md RGQ-026, RGQ-032, RGQ-038, RGQ-045, RGQ-051, RGQ-057, RGQ-058
+- BASE_SPEC.md Appendix A section 24.3
+- BASE_SPEC.md Appendix A section 24.4
+- BASE_SPEC.md MECH-009
+- BASE_SPEC.md MECH-015
+- REVIEWER_PROMPTS.md P10
+files_inspected:
+- geosolver-core/src/compose/message.rs
+- geosolver-core/src/compose/compose.rs
+- geosolver-core/src/compose/separator_elimination.rs
+- geosolver-core/src/compose/final_support.rs
+- geosolver-core/src/compose/mod.rs
+- geosolver-core/src/result/status.rs
+- geosolver-core/src/result/output.rs
+- geosolver-core/src/kernels/target_relation_search.rs
+- geosolver-core/src/kernels/universal_elimination.rs
+evidence_inspected:
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/commands.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/command_outputs.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/function_implementation_table.yaml
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/static_scans.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/notes.md
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/test_first_failure.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/spec_verifier_pass.md
+commands_inspected:
+- cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+- cargo test --manifest-path geosolver-core/Cargo.toml p10_ -- --nocapture
+- cargo test --manifest-path geosolver-core/Cargo.toml
+- rg forbidden P10 shortcut names and fallback APIs in compose, status, Universal, and TargetRelationSearch files
+- rg CertifiedNonFiniteTargetImage locations
+- rg P10 hardcase and no-local-nonfinite polarity anchors
+- rg P10 implementation anchors
+- git diff --check
+- spec_verifier P10 read-only verification
+- guardian_boundary_reviewer P10 review
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/function_implementation_table.yaml
+algorithmic_sufficiency:
+  verdict: sufficient
+  rationale: Reviewer inspected P10 source, status mapping, nonfinite polarity paths, and evidence and found message-only composition, target-only final support, and positive certificate-gated nonfinite finalization sufficient for P10 scope.
+forbidden_pattern_scan:
+  heavy_fallback: pass
+  narrow_slice_escape: pass
+  hidden_fallback: pass
+  decorative_certificate: pass
+  placeholder_candidate: pass
+  geometry_dispatch: pass
+  unsupported_for_well_formed_input: pass
+  exact_image_overclaim: pass
+  target_relation_schedule_discretion: pass
+  weak_action_krylov_coverage: not_applicable
+  nonfinite_without_positive_proof: pass
+  non_spec_status: pass
+  required_function_deferred: pass
+  appendix_override_bypass: pass
+  stress_fixture_dispatch: pass
+not_applicable_justifications:
+  forbidden_pattern_scan.weak_action_krylov_coverage: ActionKrylov coverage belongs to P8c and is not modified by P10.
+  suite_partition_checks[0]: P15-only acceptance suite partition is not active in P10; no candidate-cover core, exact-image core, or final acceptance claim is made.
+raw_response_consistency:
+  raw_response_contains_blocker: false
+  raw_response_contains_required_fix: false
+  summary_overrides_raw_response: false
+  reviewer_declared_files_inspected: true
+phase_specific_checks:
+- check_id: p10-message-only-composition
+  required_by: RGQ-026
+  verdict: pass
+  evidence: Reviewer found compose.rs validates message hash/export boundaries and passes only merged message relations into separator elimination.
+  reviewer_rationale: P10 composition consumes projection messages rather than reconstructing the original full coordinate system.
+- check_id: p10-separator-elimination-message-only
+  required_by: RGQ-026
+  verdict: pass
+  evidence: Reviewer found separator_elimination.rs builds a synthetic message-only system and runs target-relation search.
+  reviewer_rationale: Separator elimination uses only message relations and target-direct kernels.
+- check_id: p10-target-only-final-support
+  required_by: RGQ-026
+  verdict: pass
+  evidence: Reviewer found final_support.rs builds support only from relations with variables contained in {T}; no support returns AlgorithmicHardCase.
+  reviewer_rationale: P10 does not turn no target-only support into nonfinite without a certificate.
+- check_id: p10-positive-nonfinite-certificate
+  required_by: RGQ-045
+  verdict: pass
+  evidence: Reviewer found NonFiniteCertificate creation and verification before public CertifiedNonFiniteTargetImage finalization.
+  reviewer_rationale: Relation-search exhaustion and local Universal failure remain disjoint from certified nonfinite status.
+- check_id: p10-rgq058-status-mapping
+  required_by: RGQ-058
+  verdict: pass
+  evidence: Reviewer found status.rs keeps statuses out of SolverErrorKind and output.rs maps SolverError through public_status; final nonfinite goes through TargetSolveResult finalization.
+  reviewer_rationale: Public status mapping is explicit and reviewed for P10.
+appendix_override_checks:
+- appendix_section: Appendix A section 24.3
+  controlling_requirement: RGQ-057
+  verdict: pass
+  evidence: Separator elimination is restricted to message relations and does not reintroduce original local coordinate relations.
+  reviewer_rationale: P10 follows RGQ-057 hardening over any weaker Appendix wording.
+- appendix_section: Appendix A section 24.4
+  controlling_requirement: RGQ-045
+  verdict: pass
+  evidence: Final support no-target-only branch does not certify nonfinite unless certify_nonfinite_target_image succeeds.
+  reviewer_rationale: P10 follows RGQ-045/RGQ-051 hardening requiring positive proof.
+status_mapping_checks:
+- error_or_internal_condition: No target-only relation after composition and nonfiniteness not certified
+  mapped_solver_status: AlgorithmicHardCase
+  verdict: pass
+  evidence: final_support.rs no-support branch returns AlgorithmicHardCase unless positive nonfinite certification succeeds.
+  reviewer_rationale: Matches RGQ-051 polarity.
+- error_or_internal_condition: TargetRelationSearch exhausts without target/separator relation
+  mapped_solver_status: AlgorithmicHardCase
+  verdict: pass
+  evidence: target_relation_search.rs exhaustion path remains AlgorithmicHardCase.
+  reviewer_rationale: Relation-search exhaustion is not nonfinite proof.
+- error_or_internal_condition: Verified positive NonFiniteCertificate finalized
+  mapped_solver_status: CertifiedNonFiniteTargetImage
+  verdict: pass
+  evidence: finalize_nonfinite_result re-verifies NonFiniteCertificate against the composed projection before returning TargetSolveResult with CertifiedNonFiniteTargetImage.
+  reviewer_rationale: CertifiedNonFiniteTargetImage is produced through the reviewed final-support positive-certificate route.
+suite_partition_checks:
+- suite_name: not_applicable
+  verdict: not_applicable
+  evidence: P15 acceptance suite partition is not active in P10.
+  reviewer_rationale: P10 closes MECH-009 and MECH-015 only and makes no candidate-cover core, exact-image core, or final acceptance claim.
+semantic_deletion_challenges: []
+tamper_challenges:
+- challenge_id: p10-tampered-message-relation
+  target: ProjectionMessage package-hash and exported-variable boundary before composition
+  verdict: pass
+  evidence: p10_tampered_message_relation_is_rejected_before_composition passes.
+  reviewer_rationale: Composition rejects tampered message relation before use.
+- challenge_id: p10-nonfinite-certificate-binding
+  target: NonFiniteCertificate binding to composed projection before public nonfinite finalization
+  verdict: pass
+  evidence: p10_certified_nonfinite_system_uses_positive_certificate_only passes and reviewer found final nonfinite re-verification.
+  reviewer_rationale: Public nonfinite status is certificate-gated.
+unresolved_risks:
+- The nonfinite certificate is intentionally narrow; broad nonfinite completeness is not claimed.
+- P10 does not assess P11 replay/certificate closure, P12 roots/decode, public orchestration, performance readiness, final acceptance, or exact-image completion beyond the P10 real-nonfinite certificate function.
+blocking_findings: []
+required_fixes: []
+pass_conditions:
+  schema_valid: true
+  schema_mirror_byte_identical: true
+  no_blocking_findings: true
+  no_required_fixes: true
+  raw_response_consistent: true
+  algorithmic_sufficiency_satisfied: true
+  all_forbidden_scans_pass: true
+  phase_specific_checks_pass: true
+  appendix_overrides_respected: true
+  status_mapping_respected: true
+  suite_partition_respected: true
+  reviewer_read_code_not_only_summary: true
+  no_controlling_stub_or_placeholder: true
+  exact_verification_present_where_required: true
+  no_failures_overridden_by_summary: true
+  fresh_evidence_after_last_code_change: true
+  pass_matches_raw_response: true
+  schema_hashes_match_current_files: true
+  prompt_and_response_archived: true
+  evidence_manifest_archived_and_valid: true

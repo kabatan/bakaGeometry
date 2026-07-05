@@ -24,6 +24,22 @@ pub struct TowerDescription {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TowerStep {
+    pub algebraic_variable: VariableId,
+    pub minimal_polynomial: SparsePolynomialQ,
+    pub step_hash: Hash,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TowerPlanDescription {
+    pub steps: Vec<TowerStep>,
+    pub exported_variables: Vec<VariableId>,
+    pub target_minus_expression: SparsePolynomialQ,
+    pub source_relation_hashes: Vec<Hash>,
+    pub tower_hash: Hash,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum UniOrMultiPolynomialQ {
     Multivariate(SparsePolynomialQ),
 }
@@ -46,6 +62,25 @@ pub fn detect_explicit_tower(
     relations: &[SparsePolynomialQ],
     exported: &[VariableId],
 ) -> Option<TowerDescription> {
+    let plan = detect_explicit_tower_plan(relations, exported)?;
+    if plan.steps.len() != 1 {
+        return None;
+    }
+    let step = plan.steps[0].clone();
+    Some(TowerDescription {
+        algebraic_variable: step.algebraic_variable,
+        exported_variables: plan.exported_variables,
+        minimal_polynomial: step.minimal_polynomial,
+        target_minus_expression: plan.target_minus_expression,
+        source_relation_hashes: plan.source_relation_hashes,
+        tower_hash: plan.tower_hash,
+    })
+}
+
+pub fn detect_explicit_tower_plan(
+    relations: &[SparsePolynomialQ],
+    exported: &[VariableId],
+) -> Option<TowerPlanDescription> {
     let exported_variables = canonical_variables(exported)?;
     let exported_set: BTreeSet<_> = exported_variables.iter().copied().collect();
     let normalized_relations = relations
@@ -61,62 +96,90 @@ pub fn detect_explicit_tower(
         .iter()
         .flat_map(poly_variables)
         .collect::<BTreeSet<_>>();
-    let algebraic_variables = all_variables
+    let mut algebraic_variables = all_variables
         .difference(&exported_set)
         .copied()
         .collect::<Vec<_>>();
-    if algebraic_variables.len() != 1 {
+    if algebraic_variables.is_empty() {
         return None;
     }
-    let algebraic_variable = algebraic_variables[0];
-
-    let mut minimal_candidates = normalized_relations
-        .iter()
-        .filter(|relation| {
-            let vars = poly_variables(relation);
-            !vars.is_empty()
-                && vars.iter().all(|var| *var == algebraic_variable)
-                && degree_in_variable(relation, algebraic_variable) > 0
-        })
-        .cloned()
-        .collect::<Vec<_>>();
-    minimal_candidates
-        .sort_by_key(|poly| (degree_in_variable(poly, algebraic_variable), poly.hash));
-    let minimal_polynomial = minimal_candidates.first()?.clone();
-
-    let allowed: BTreeSet<_> = exported_set
-        .iter()
-        .copied()
-        .chain(std::iter::once(algebraic_variable))
-        .collect();
+    algebraic_variables.sort();
     let mut expression_candidates = normalized_relations
         .iter()
-        .filter(|relation| relation.hash != minimal_polynomial.hash)
         .filter(|relation| {
             let vars = poly_variables(relation);
-            vars.iter().all(|var| allowed.contains(var))
+            vars.iter()
+                .all(|var| exported_set.contains(var) || algebraic_variables.contains(var))
                 && vars.iter().any(|var| exported_set.contains(var))
+                && vars.iter().any(|var| algebraic_variables.contains(var))
         })
         .cloned()
         .collect::<Vec<_>>();
     expression_candidates.sort_by_key(|poly| (poly_variables(poly).len(), poly.hash));
     let target_minus_expression = expression_candidates.first()?.clone();
 
+    let mut remaining_relation_hashes = BTreeSet::new();
+    remaining_relation_hashes.insert(target_minus_expression.hash);
+    let mut steps = Vec::new();
+    for algebraic_variable in algebraic_variables.iter().rev().copied() {
+        let allowed: BTreeSet<_> = exported_set
+            .iter()
+            .copied()
+            .chain(
+                algebraic_variables
+                    .iter()
+                    .copied()
+                    .filter(|var| *var <= algebraic_variable),
+            )
+            .collect();
+        let mut minimal_candidates = normalized_relations
+            .iter()
+            .filter(|relation| !remaining_relation_hashes.contains(&relation.hash))
+            .filter(|relation| {
+                let vars = poly_variables(relation);
+                !vars.is_empty()
+                    && vars.iter().all(|var| allowed.contains(var))
+                    && vars.iter().any(|var| *var == algebraic_variable)
+                    && degree_in_variable(relation, algebraic_variable) > 0
+            })
+            .cloned()
+            .collect::<Vec<_>>();
+        minimal_candidates.sort_by_key(|poly| {
+            (
+                poly_variables(poly).len(),
+                degree_in_variable(poly, algebraic_variable),
+                poly.hash,
+            )
+        });
+        let minimal_polynomial = minimal_candidates.first()?.clone();
+        remaining_relation_hashes.insert(minimal_polynomial.hash);
+        let step_hash = hash_sequence(
+            "tower-step",
+            &[
+                algebraic_variable.0.to_be_bytes().to_vec(),
+                minimal_polynomial.hash.0.to_vec(),
+            ],
+        );
+        steps.push(TowerStep {
+            algebraic_variable,
+            minimal_polynomial,
+            step_hash,
+        });
+    }
+
     let source_relation_hashes = normalized_relations
         .iter()
         .map(|relation| relation.hash)
         .collect::<Vec<_>>();
-    let tower_hash = hash_tower(
-        algebraic_variable,
+    let tower_hash = hash_tower_plan(
+        &steps,
         &exported_variables,
-        &minimal_polynomial,
         &target_minus_expression,
         &source_relation_hashes,
     );
-    Some(TowerDescription {
-        algebraic_variable,
+    Some(TowerPlanDescription {
+        steps,
         exported_variables,
-        minimal_polynomial,
         target_minus_expression,
         source_relation_hashes,
         tower_hash,
@@ -156,6 +219,57 @@ pub fn norm_of_target_minus_expression(
     Ok(UniOrMultiPolynomialQ::Multivariate(primitive))
 }
 
+pub fn norm_relation_for_tower_plan(
+    tower: &TowerPlanDescription,
+) -> Result<UniOrMultiPolynomialQ, SolverError> {
+    let mut relation = normalize_poly(tower.target_minus_expression.clone());
+    for (idx, step) in tower.steps.iter().enumerate() {
+        if degree_in_variable(&relation, step.algebraic_variable) == 0 {
+            continue;
+        }
+        let keep_variables = tower
+            .exported_variables
+            .iter()
+            .copied()
+            .chain(
+                tower
+                    .steps
+                    .iter()
+                    .skip(idx + 1)
+                    .map(|remaining| remaining.algebraic_variable),
+            )
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>();
+        let dim = degree_in_variable(&step.minimal_polynomial, step.algebraic_variable)
+            + degree_in_variable(&relation, step.algebraic_variable);
+        if dim == 0 {
+            return Err(algorithmic_hard_case(
+                step.algebraic_variable,
+                "NormTraceResultant",
+                "tower norm step requires positive degree in the algebraic variable",
+            ));
+        }
+        let template = build_sparse_resultant_template(ResultantInput {
+            polynomials: vec![step.minimal_polynomial.clone(), relation],
+            eliminate: step.algebraic_variable,
+            keep_variables,
+            max_matrix_dim: dim as usize,
+        })?;
+        relation = clear_denominators_primitive(
+            &compute_resultant_relation(&template, ModularOptions::default())?.relation,
+        );
+        if relation.terms.is_empty() {
+            return Err(algorithmic_hard_case(
+                step.algebraic_variable,
+                "NormTraceResultant",
+                "tower norm computation produced the zero polynomial",
+            ));
+        }
+    }
+    Ok(UniOrMultiPolynomialQ::Multivariate(relation))
+}
+
 pub fn verify_norm_relation(tower: &TowerDescription, relation: &SparsePolynomialQ) -> bool {
     let Ok(recomputed) =
         norm_of_target_minus_expression(tower, tower.target_minus_expression.clone())
@@ -164,6 +278,53 @@ pub fn verify_norm_relation(tower: &TowerDescription, relation: &SparsePolynomia
     };
     clear_denominators_primitive(recomputed.as_multivariate())
         == clear_denominators_primitive(&normalize_poly(relation.clone()))
+}
+
+pub fn verify_norm_tower_plan_relation(
+    tower: &TowerPlanDescription,
+    relation: &SparsePolynomialQ,
+) -> bool {
+    if !verify_tower_plan_hashes(tower) {
+        return false;
+    }
+    let Ok(recomputed) = norm_relation_for_tower_plan(tower) else {
+        return false;
+    };
+    clear_denominators_primitive(recomputed.as_multivariate())
+        == clear_denominators_primitive(&normalize_poly(relation.clone()))
+}
+
+fn verify_tower_plan_hashes(tower: &TowerPlanDescription) -> bool {
+    let source_hashes = tower
+        .source_relation_hashes
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    if !source_hashes.contains(&tower.target_minus_expression.hash) {
+        return false;
+    }
+    for step in &tower.steps {
+        if !source_hashes.contains(&step.minimal_polynomial.hash) {
+            return false;
+        }
+        let expected_step_hash = hash_sequence(
+            "tower-step",
+            &[
+                step.algebraic_variable.0.to_be_bytes().to_vec(),
+                step.minimal_polynomial.hash.0.to_vec(),
+            ],
+        );
+        if step.step_hash != expected_step_hash {
+            return false;
+        }
+    }
+    tower.tower_hash
+        == hash_tower_plan(
+            &tower.steps,
+            &tower.exported_variables,
+            &tower.target_minus_expression,
+            &tower.source_relation_hashes,
+        )
 }
 
 fn validate_tower_expression(
@@ -225,24 +386,25 @@ fn exponent_of(monomial: &Monomial, var: VariableId) -> u32 {
         .map_or(0, |(_, exp)| *exp)
 }
 
-fn hash_tower(
-    algebraic_variable: VariableId,
+fn hash_tower_plan(
+    steps: &[TowerStep],
     exported_variables: &[VariableId],
-    minimal_polynomial: &SparsePolynomialQ,
     target_minus_expression: &SparsePolynomialQ,
     source_relation_hashes: &[Hash],
 ) -> Hash {
     let mut chunks = Vec::new();
-    chunks.push(algebraic_variable.0.to_be_bytes().to_vec());
+    for step in steps {
+        chunks.push(step.step_hash.0.to_vec());
+    }
+    chunks.push(Vec::new());
     for var in exported_variables {
         chunks.push(var.0.to_be_bytes().to_vec());
     }
-    chunks.push(poly_bytes(minimal_polynomial));
     chunks.push(poly_bytes(target_minus_expression));
     for hash in source_relation_hashes {
         chunks.push(hash.0.to_vec());
     }
-    hash_sequence("tower-description", &chunks)
+    hash_sequence("tower-plan-description", &chunks)
 }
 
 fn poly_bytes(poly: &SparsePolynomialQ) -> Vec<u8> {
@@ -289,6 +451,10 @@ mod tests {
 
     fn target() -> VariableId {
         VariableId(2)
+    }
+
+    fn beta() -> VariableId {
+        VariableId(3)
     }
 
     #[test]
@@ -344,5 +510,35 @@ mod tests {
         let second = detect_explicit_tower(&[min, expr], &[target()]).unwrap();
         assert_eq!(first.tower_hash, second.tower_hash);
         assert_ne!(first.tower_hash, hash_sequence("tower-description", &[]));
+    }
+
+    #[test]
+    fn multistep_tower_norm_eliminates_each_algebraic_variable() {
+        let a = variable_poly(alpha());
+        let b = variable_poly(beta());
+        let t = variable_poly(target());
+        let min_a = poly_sub(&poly_mul(&a, &a), &constant_poly(int_q(2)));
+        let min_b = poly_sub(&poly_mul(&b, &b), &a);
+        let expr = poly_sub(&t, &b);
+        let tower = detect_explicit_tower_plan(&[min_a, min_b, expr], &[target()]).unwrap();
+        assert_eq!(
+            tower
+                .steps
+                .iter()
+                .map(|step| step.algebraic_variable)
+                .collect::<Vec<_>>(),
+            vec![beta(), alpha()]
+        );
+        let relation = norm_relation_for_tower_plan(&tower)
+            .unwrap()
+            .into_multivariate();
+        let t2 = poly_mul(&t, &t);
+        let expected = poly_sub(&poly_mul(&t2, &t2), &constant_poly(int_q(2)));
+        assert!(same_up_to_sign(&relation, &expected));
+        assert!(verify_norm_tower_plan_relation(&tower, &relation));
+    }
+
+    fn same_up_to_sign(left: &SparsePolynomialQ, right: &SparsePolynomialQ) -> bool {
+        left == right || poly_add(left, right).terms.is_empty()
     }
 }

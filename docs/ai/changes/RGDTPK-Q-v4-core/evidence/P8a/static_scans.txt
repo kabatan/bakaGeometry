@@ -1,0 +1,25 @@
+Static checks for P8a:
+
+1. Required function scan
+   command: rg -n "MembershipMatrixBuilder|VerifiedRelationSearchCandidate|build_membership_matrix_builder|reconstruct_and_verify_relation|execute_target_relation_search|build_membership_matrix|verify_membership_exact|solve_homogeneous_modular|p8a_" geosolver-core/src/kernels/target_relation_search.rs -S
+   result: P8a execute, RGQ-042 public API, matrix builder, exact verifier, modular candidate generation, and tests are present.
+
+2. Dense schedule scan
+   command: rg -n "build_dense_relation_search_schedule|z_seed|e_cap|build_export_monomial_support|build_multiplier_supports|build_row_monomial_support" geosolver-core/src/kernels/target_relation_search.rs -S
+   result: RGQ-042 schedule and support functions are present.
+
+3. Exact identity scan
+   command: rg -n "verify_membership_exact|poly_sub\\(relation, &sum\\)|CandidateOnlyRequiresExactQCheck|p8a_exact_membership" geosolver-core/src -S
+   result: modular solve is candidate-only and P8a verifies exact Q identity before returning.
+
+4. Status boundary scan
+   command: rg -n "CertifiedNonFiniteTargetImage|AlgorithmicHardCase|FiniteResourceFailure" geosolver-core/src/kernels/target_relation_search.rs geosolver-core/src/result/status.rs -S
+   result: TargetRelationSearch exhaustion uses AlgorithmicHardCase/resource failure paths and does not return CertifiedNonFiniteTargetImage.
+
+5. Primitive ledger check
+   command: inspect PRIMITIVE_SCOPE_LEDGER.md
+   result: TargetRelationSearch P8a does not rely on narrow P3/P4 primitives as a feature gate; it builds the dense declared schedule and exact membership route.
+
+6. Reviewer blocker remediation scan
+   command: rg -n "MembershipMatrixBuilder|VerifiedRelationSearchCandidate|build_membership_matrix_builder|reconstruct_and_verify_relation|p8a_required_rgq042_public_api" geosolver-core/src/kernels/target_relation_search.rs -S
+   result: required RGQ-042 public surface and regression test are present.

@@ -1,0 +1,168 @@
+schema_version: rgdtpk-review-v2.2
+phase_id: P6
+phase_kind: algorithmic
+review_status: PASS
+phase_closable: true
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-005
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: cd5c9147a5f48d50d12142c67e5160f95a1ccdbfe43eee925d5e0bb1a8fee779
+evidence_manifest_schema_sha256: 74e0fe22b6ba77e38edf96c8e6851eb5be8beb717599cbfb0c345abe4617a253
+schema_mirror_sha256: cd5c9147a5f48d50d12142c67e5160f95a1ccdbfe43eee925d5e0bb1a8fee779
+commit: 45c33932033e308f004262b23130d59a30a93c36+p6-worktree
+prompt_sha256: 86db20c61562e9af8c2f3306fbd34b55f5f520f155596d2cfcb959fd676d2cf7
+response_sha256: 1b485667247078538e0747394d4385e94dbdd556365ab61d5fcc0b894b4eee51
+evidence_manifest_sha256: 952b3f2c25fb10eadccbff89765e940fc3652e716632bc8e45601c94df04b523
+prompt_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P6/20260705-051710Z/prompt.md
+response_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P6/20260705-051710Z/response.md
+evidence_manifest_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P6/20260705-051710Z/evidence_manifest.yaml
+reviewer_identity: guardian_boundary_reviewer
+reviewed_rids:
+- RGQ-015
+- RGQ-039
+- RGQ-041
+- RGQ-042
+- RGQ-047
+- RGQ-055
+- RGQ-062
+reviewed_mechs:
+- MECH-005
+- MECH-013
+- MECH-016
+source_sections_checked:
+- PLAN.md P6
+- BASE_SPEC.md RGQ-015, RGQ-039, RGQ-041, RGQ-042, RGQ-047, RGQ-055, RGQ-062
+- BASE_SPEC.md MECH-005, MECH-013, MECH-016
+- REVIEWER_PROMPTS.md P6
+- P6_READINESS.md
+- PRIMITIVE_SCOPE_LEDGER.md
+files_inspected:
+- geosolver-core/src/planner/cost_model.rs
+- geosolver-core/src/planner/probes.rs
+- geosolver-core/src/planner/admission.rs
+- geosolver-core/src/planner/kernel_plan.rs
+- geosolver-core/src/planner/ladder.rs
+- geosolver-core/src/planner/planner.rs
+- geosolver-core/src/kernels/target_relation_search.rs
+- geosolver-core/src/solver/options.rs
+- docs/ai/changes/RGDTPK-Q-v4-core/P6_READINESS.md
+- docs/ai/changes/RGDTPK-Q-v4-core/PRIMITIVE_SCOPE_LEDGER.md
+evidence_inspected:
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/command_outputs.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/commands.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/function_implementation_table.yaml
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/notes.md
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/static_scans.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/test_first_failure.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/reviewer_fail_fix.md
+commands_inspected:
+- cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+- cargo test --manifest-path geosolver-core/Cargo.toml p6_ -- --nocapture
+- cargo test --manifest-path geosolver-core/Cargo.toml rgq -- --nocapture
+- cargo test --manifest-path geosolver-core/Cargo.toml
+- P6 static scans
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/function_implementation_table.yaml
+algorithmic_sufficiency:
+  verdict: sufficient
+  rationale: Reviewer inspected the P6 planner and RGQ-042 schedule code paths after remediation and passed deep ladder hash binding, deterministic planning, Universal fixed sequence, RGQ-055 reproducibility coverage, and primitive overclaim barriers.
+forbidden_pattern_scan:
+  heavy_fallback: pass
+  narrow_slice_escape: pass
+  hidden_fallback: pass
+  decorative_certificate: pass
+  placeholder_candidate: pass
+  geometry_dispatch: pass
+  unsupported_for_well_formed_input: pass
+  exact_image_overclaim: pass
+  target_relation_schedule_discretion: pass
+  weak_action_krylov_coverage: pass
+  nonfinite_without_positive_proof: pass
+  non_spec_status: pass
+  required_function_deferred: pass
+  appendix_override_bypass: pass
+  stress_fixture_dispatch: pass
+not_applicable_justifications:
+  suite_partition_checks[0]: P15 acceptance suite partition is not active in P6; no acceptance, candidate-cover, or exact-image claim is made.
+raw_response_consistency:
+  raw_response_contains_blocker: false
+  raw_response_contains_required_fix: false
+  summary_overrides_raw_response: false
+  reviewer_declared_files_inspected: true
+phase_specific_checks:
+- check_id: p6-deterministic-planner-declared-ladder
+  required_by: RGQ-015 and MECH-005
+  verdict: pass
+  evidence: plan_all_blocks builds deterministic KernelPlan values and p6_planning_is_deterministic_and_declares_universal_last passes.
+  reviewer_rationale: All nine kernels are considered and Universal is final in the declared ladder.
+- check_id: p6-support-producing-plan-fields
+  required_by: RGQ-039
+  verdict: pass
+  evidence: KernelExecutionPlan stores exported variables, eliminated variables, support/template/rank plans, resource bounds, certificate route, and failure behavior.
+  reviewer_rationale: Admitted plans carry concrete data rather than feature labels.
+- check_id: p6-deep-ladder-hash-binding
+  required_by: RGQ-015, RGQ-047, MECH-005, and MECH-016
+  verdict: pass
+  evidence: hash_kernel_plan and hash_kernel_execution_plan recompute nested content; p6_declared_ladder_rejects_execution_plan_field_tampering passes.
+  reviewer_rationale: Stored stale child hashes cannot authorize tampered execution-plan content.
+- check_id: p6-rgq042-rgq055-schedule-planning
+  required_by: RGQ-042 and RGQ-055
+  verdict: pass
+  evidence: build_dense_relation_search_schedule follows RGQ-042 e_cap formula and rgq055_schedule_reproducibility_covers_three_local_shapes passes.
+  reviewer_rationale: Dense schedule planning is deterministic and independently reproducible across three local shapes.
+appendix_override_checks:
+- appendix_section: Appendix A section 20.3 and 20.4 Universal local elimination
+  controlling_requirement: RGQ-041
+  verdict: pass
+  evidence: Universal plans use the fixed RGQ-041 strategy sequence and NoLocalCertifiedNonFinite.
+  reviewer_rationale: P6 does not permit hidden Universal strategies or local nonfinite certification.
+status_mapping_checks:
+- error_or_internal_condition: Missing declared kernel, ladder hash mismatch, relation-search exhaustion, and Universal local failure
+  mapped_solver_status: ImplementationBug for tamper/missing ladder; AlgorithmicHardCase/FiniteResourceFailure/CertificateDesignGap for planned kernel failure; not CertifiedNonFiniteTargetImage
+  verdict: pass
+  evidence: require_declared_kernel_plan returns ImplementationBug for tamper/missing plans; PlannedFailureBehavior excludes CertifiedNonFiniteTargetImage for local Universal.
+  reviewer_rationale: Matches RGQ-041 and RGQ-051 polarity boundaries for P6 planning.
+suite_partition_checks:
+- suite_name: not_applicable
+  verdict: not_applicable
+  evidence: P15 acceptance suite partition is not active in P6.
+  reviewer_rationale: No candidate-cover, exact-image, or acceptance-complete claim is made.
+semantic_deletion_challenges: []
+tamper_challenges:
+- challenge_id: p6-hidden-fallback-deleted-ladder-entry
+  target: KernelPlan declared ladder
+  verdict: pass
+  evidence: p6_hidden_fallback_is_rejected_when_kernel_absent_from_declared_ladder deletes TargetRelationSearch and verifies ImplementationBug.
+  reviewer_rationale: Runtime cannot choose a kernel absent from the declared ladder.
+- challenge_id: p6-execution-plan-field-tamper
+  target: KernelExecutionPlan nested fields
+  verdict: pass
+  evidence: p6_declared_ladder_rejects_execution_plan_field_tampering mutates exported variables, support degree, resource bounds, and failure behavior.
+  reviewer_rationale: Nested plan content is rehashed before execution.
+unresolved_risks:
+- P8a still owns RGQ-042 execution and exact membership verification.
+- P6 does not close MECH-013, candidate-cover, exact-image, replay, public orchestration, performance readiness, or final acceptance.
+blocking_findings: []
+required_fixes: []
+pass_conditions:
+  schema_valid: true
+  schema_mirror_byte_identical: true
+  no_blocking_findings: true
+  no_required_fixes: true
+  raw_response_consistent: true
+  algorithmic_sufficiency_satisfied: true
+  all_forbidden_scans_pass: true
+  phase_specific_checks_pass: true
+  appendix_overrides_respected: true
+  status_mapping_respected: true
+  suite_partition_respected: true
+  reviewer_read_code_not_only_summary: true
+  no_controlling_stub_or_placeholder: true
+  exact_verification_present_where_required: true
+  no_failures_overridden_by_summary: true
+  fresh_evidence_after_last_code_change: true
+  pass_matches_raw_response: true
+  schema_hashes_match_current_files: true
+  prompt_and_response_archived: true
+  evidence_manifest_archived_and_valid: true

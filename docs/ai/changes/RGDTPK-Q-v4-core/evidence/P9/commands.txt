@@ -1,0 +1,15 @@
+cargo test --manifest-path geosolver-core/Cargo.toml p9_ -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml p9_ -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml p9_ -- --nocapture
+cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+cargo test --manifest-path geosolver-core/Cargo.toml p6_ -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml p8d_ -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml p9_ -- --nocapture
+cargo fmt --manifest-path geosolver-core/Cargo.toml
+cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+cargo test --manifest-path geosolver-core/Cargo.toml p9_ -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml
+rg -n "circle|triangle|tangent|distance|area|incircle|circumcircle|orthic|mixtilinear|fixture|official solution|expected answer|coordinate_root|coordinate_solution|full_coordinate|full_rur|RUR|solve_all_coordinates|kernel-not-ready|P9 .*not yet" geosolver-core/src/kernels/regular_chain_projection.rs geosolver-core/src/kernels/norm_trace_projection.rs geosolver-core/src/planner/admission.rs
+rg -n "build_component_chains|guards: guards|GuardRecord|detect_explicit_tower_plan|TowerPlanDescription|norm_relation_for_tower_plan|verify_norm_tower_plan_relation|p9_regular_chain_guard_binding|p9_norm_trace_multistep" geosolver-core/src/algebra/regular_chain.rs geosolver-core/src/kernels/regular_chain_projection.rs geosolver-core/src/algebra/norm_trace.rs geosolver-core/src/kernels/norm_trace_projection.rs
+git diff --check
+git status --short

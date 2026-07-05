@@ -1,0 +1,132 @@
+# P11 Command Outputs
+
+Focused test after implementation:
+
+```text
+cargo test --manifest-path geosolver-core/Cargo.toml p11_ -- --nocapture
+running 13 tests
+test verify::replay::tests::p11_global_support_rejects_tampered_support_relation ... ok
+test verify::replay::tests::p11_replay_rejects_synthetic_projection_certificate_even_when_hashes_match ... ok
+test verify::replay::tests::p11_verify_projection_message_rejects_synthetic_and_tampered_certificates ... ok
+test verify::replay::tests::p11_rejects_universal_inner_payload_with_unauthorized_sources ... ok
+test verify::replay::tests::p11_replay_rejects_mutual_projection_message_source_cycle ... ok
+test verify::replay::tests::p11_rejects_forged_sparse_resultant_payload_in_message_and_kernel_replay ... ok
+test verify::replay::tests::p11_rejects_forged_norm_trace_payload_source_and_tower_hash ... ok
+test verify::replay::tests::p11_replay_accepts_duplicate_hash_when_source_is_input_authorized ... ok
+test verify::replay::tests::p11_replay_fails_when_projection_message_is_deleted ... ok
+test verify::replay::tests::p11_replay_fails_on_input_canonical_dag_plan_and_squarefree_tamper ... ok
+test verify::replay::tests::p11_replay_fails_on_support_root_and_candidate_tamper ... ok
+test verify::replay::tests::p11_rejects_forged_regular_chain_payload_in_message_and_kernel_replay ... ok
+test verify::replay::tests::p11_rejects_forged_target_action_payload_in_message_and_kernel_replay ... ok
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 158 filtered out
+```
+
+Formatting:
+
+```text
+cargo fmt --manifest-path geosolver-core/Cargo.toml
+cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+exit code 0
+```
+
+Full test suite:
+
+```text
+cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture
+running 171 tests
+test result: ok. 171 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+Doc-tests geosolver_core
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+```
+
+Whitespace:
+
+```text
+git diff --check
+exit code 0
+```
+
+`git diff --check` emitted only CRLF conversion warnings from Git for the working copy; it reported no whitespace errors.
+
+P11 remediation verification:
+
+```text
+cargo test --manifest-path geosolver-core/Cargo.toml p11_ -- --nocapture
+running 13 tests
+test verify::replay::tests::p11_global_support_rejects_tampered_support_relation ... ok
+test verify::replay::tests::p11_replay_rejects_synthetic_projection_certificate_even_when_hashes_match ... ok
+test verify::replay::tests::p11_verify_projection_message_rejects_synthetic_and_tampered_certificates ... ok
+test verify::replay::tests::p11_replay_fails_when_projection_message_is_deleted ... ok
+test verify::replay::tests::p11_rejects_forged_regular_chain_payload_in_message_and_kernel_replay ... ok
+test verify::replay::tests::p11_rejects_forged_sparse_resultant_payload_in_message_and_kernel_replay ... ok
+test verify::replay::tests::p11_rejects_forged_norm_trace_payload_source_and_tower_hash ... ok
+test verify::replay::tests::p11_replay_fails_on_support_root_and_candidate_tamper ... ok
+test verify::replay::tests::p11_replay_fails_on_input_canonical_dag_plan_and_squarefree_tamper ... ok
+test verify::replay::tests::p11_rejects_universal_inner_payload_with_unauthorized_sources ... ok
+test verify::replay::tests::p11_replay_rejects_mutual_projection_message_source_cycle ... ok
+test verify::replay::tests::p11_replay_accepts_duplicate_hash_when_source_is_input_authorized ... ok
+test verify::replay::tests::p11_rejects_forged_target_action_payload_in_message_and_kernel_replay ... ok
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 158 filtered out
+```
+
+P11 public replay remediation verification:
+
+```text
+cargo test --manifest-path geosolver-core/Cargo.toml p11_ -- --nocapture
+running 13 tests
+test verify::replay::tests::p11_global_support_rejects_tampered_support_relation ... ok
+test verify::replay::tests::p11_replay_rejects_synthetic_projection_certificate_even_when_hashes_match ... ok
+test verify::replay::tests::p11_verify_projection_message_rejects_synthetic_and_tampered_certificates ... ok
+test verify::replay::tests::p11_rejects_universal_inner_payload_with_unauthorized_sources ... ok
+test verify::replay::tests::p11_replay_fails_when_projection_message_is_deleted ... ok
+test verify::replay::tests::p11_replay_rejects_mutual_projection_message_source_cycle ... ok
+test verify::replay::tests::p11_rejects_forged_sparse_resultant_payload_in_message_and_kernel_replay ... ok
+test verify::replay::tests::p11_rejects_forged_norm_trace_payload_source_and_tower_hash ... ok
+test verify::replay::tests::p11_replay_accepts_duplicate_hash_when_source_is_input_authorized ... ok
+test verify::replay::tests::p11_replay_fails_on_support_root_and_candidate_tamper ... ok
+test verify::replay::tests::p11_replay_fails_on_input_canonical_dag_plan_and_squarefree_tamper ... ok
+test verify::replay::tests::p11_rejects_forged_regular_chain_payload_in_message_and_kernel_replay ... ok
+test verify::replay::tests::p11_rejects_forged_target_action_payload_in_message_and_kernel_replay ... ok
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 158 filtered out
+```
+
+P11 boundary-review remediation verification:
+
+```text
+cargo test --manifest-path geosolver-core/Cargo.toml p11_ -- --nocapture
+running 13 tests
+test verify::replay::tests::p11_global_support_rejects_tampered_support_relation ... ok
+test verify::replay::tests::p11_replay_rejects_synthetic_projection_certificate_even_when_hashes_match ... ok
+test verify::replay::tests::p11_verify_projection_message_rejects_synthetic_and_tampered_certificates ... ok
+test verify::replay::tests::p11_rejects_universal_inner_payload_with_unauthorized_sources ... ok
+test verify::replay::tests::p11_replay_rejects_mutual_projection_message_source_cycle ... ok
+test verify::replay::tests::p11_replay_fails_when_projection_message_is_deleted ... ok
+test verify::replay::tests::p11_rejects_forged_regular_chain_payload_in_message_and_kernel_replay ... ok
+test verify::replay::tests::p11_replay_fails_on_support_root_and_candidate_tamper ... ok
+test verify::replay::tests::p11_rejects_forged_sparse_resultant_payload_in_message_and_kernel_replay ... ok
+test verify::replay::tests::p11_rejects_forged_norm_trace_payload_source_and_tower_hash ... ok
+test verify::replay::tests::p11_replay_fails_on_input_canonical_dag_plan_and_squarefree_tamper ... ok
+test verify::replay::tests::p11_replay_accepts_duplicate_hash_when_source_is_input_authorized ... ok
+test verify::replay::tests::p11_rejects_forged_target_action_payload_in_message_and_kernel_replay ... ok
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 158 filtered out
+```
+
+```text
+cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture
+running 171 tests
+test result: ok. 171 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+Doc-tests geosolver_core
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+```
+
+```text
+cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+exit code 0
+```
+
+```text
+git diff --check
+exit code 0
+```
+
+`git diff --check` emitted only CRLF conversion warnings from Git for the working copy; it reported no whitespace errors.

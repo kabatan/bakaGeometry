@@ -1,0 +1,26 @@
+Static scan 1: forbidden Universal fallback APIs
+
+Command:
+rg -n "CertifiedNonFiniteTargetImage|coordinate_root|coordinate_solution|full_coordinate|full_rur|RUR|quantifier_elimination|\bCAD\b|solve_all_coordinates|NonProductionGroebnerBatch" geosolver-core/src/kernels/universal_elimination.rs geosolver-core/src/planner/admission.rs
+
+Result:
+No matches.
+
+Interpretation:
+The P8d Universal implementation and planner admission path contain no direct local nonfinite status, coordinate root/solution path, full coordinate/RUR marker, QE/CAD marker, solve-all-coordinates marker, or non-production Groebner batch route marker.
+
+Static scan 2: fixed sequence and policy anchors
+
+Command:
+rg -n "UniversalStrategy|LocalGroebnerEliminationToKeepZ|NoLocalCertifiedNonFinite|UniversalFixedLocalElimination|plan_universal_elimination" geosolver-core/src/kernels/universal_elimination.rs geosolver-core/src/planner/admission.rs geosolver-core/src/planner/kernel_plan.rs
+
+Required anchors observed:
+- planner/admission.rs imports and calls plan_universal_elimination for KernelKind::UniversalTargetElimination.
+- kernel_plan.rs defines the four UniversalStrategy variants and the UniversalFixedLocalElimination certificate route.
+- universal_elimination.rs validates the exact strategy order:
+  TargetRelationSearchEscalated,
+  SparseResultantIfSquareOrOverdetermined,
+  SpecializeProjectInterpolateVerify,
+  LocalGroebnerEliminationToKeepZ.
+- universal_elimination.rs checks CertificateRoute::UniversalFixedLocalElimination and LocalNonfinitePolicy::NoLocalCertifiedNonFinite before execution.
+- universal_elimination.rs uses EliminationStrategy::LocalGroebner, not the non-production Groebner batch route.

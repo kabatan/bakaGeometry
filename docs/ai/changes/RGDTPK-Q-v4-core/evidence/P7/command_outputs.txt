@@ -1,0 +1,83 @@
+P7 focused test failure before final fix:
+
+running 5 tests
+test kernels::tests::p7_registry_lists_all_nine_kernels_in_appendix_order ... ok
+test kernels::linear_affine::tests::p7_linear_affine_rejects_unsafe_nonconstant_pivot ... ok
+test kernels::target_univariate::tests::p7_target_univariate_support_is_primitive_lcm_squarefree ... FAILED
+test kernels::linear_affine::tests::p7_linear_affine_exports_only_allowed_variables_with_safe_constant_pivot ... ok
+test kernels::linear_affine::tests::p7_linear_affine_reports_stale_incomplete_plan_as_hard_case ... ok
+
+failure root cause: TargetUnivariate converted the monic univariate squarefree support through clear_denominators_primitive, whose global polynomial sign convention makes the first term positive. P7 TargetUnivariate support now performs target-univariate primitive integerization with highest-degree coefficient positive.
+
+P7 focused test after final fix:
+
+running 5 tests
+test kernels::tests::p7_registry_lists_all_nine_kernels_in_appendix_order ... ok
+test kernels::linear_affine::tests::p7_linear_affine_rejects_unsafe_nonconstant_pivot ... ok
+test kernels::linear_affine::tests::p7_linear_affine_exports_only_allowed_variables_with_safe_constant_pivot ... ok
+test kernels::linear_affine::tests::p7_linear_affine_reports_stale_incomplete_plan_as_hard_case ... ok
+test kernels::target_univariate::tests::p7_target_univariate_support_is_primitive_lcm_squarefree ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 112 filtered out.
+
+P6 regression after P7:
+
+running 3 tests
+test planner::planner::tests::p6_hidden_fallback_is_rejected_when_kernel_absent_from_declared_ladder ... ok
+test planner::planner::tests::p6_declared_ladder_rejects_execution_plan_field_tampering ... ok
+test planner::planner::tests::p6_planning_is_deterministic_and_declares_universal_last ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 114 filtered out.
+
+Full suite after P7:
+
+running 117 tests
+test result: ok. 117 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out.
+
+Doc-tests:
+
+running 0 tests
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out.
+
+Guardian review before remediation:
+
+RESULT: FAIL_FIXABLE
+
+Blocking findings:
+- TargetUnivariate missed child-message relations required by Appendix section 15.
+- Planner TargetUnivariate admission admitted separator-only exported-variable relations, causing admission/execute mismatch.
+- P7 execute/replay paths needed stronger auth/source/message tamper checks.
+
+Focused tests after reviewer fixes:
+
+running 9 tests
+test kernels::tests::p7_registry_lists_all_nine_kernels_in_appendix_order ... ok
+test kernels::linear_affine::tests::p7_linear_affine_rejects_unsafe_nonconstant_pivot ... ok
+test kernels::target_univariate::tests::p7_target_univariate_rejects_auth_source_and_child_message_tamper ... ok
+test kernels::target_univariate::tests::p7_target_univariate_uses_child_message_target_relation ... ok
+test kernels::linear_affine::tests::p7_linear_affine_rejects_auth_and_source_hash_tamper ... ok
+test kernels::linear_affine::tests::p7_linear_affine_exports_only_allowed_variables_with_safe_constant_pivot ... ok
+test kernels::linear_affine::tests::p7_linear_affine_reports_stale_incomplete_plan_as_hard_case ... ok
+test kernels::target_univariate::tests::p7_target_univariate_support_is_primitive_lcm_squarefree ... ok
+test kernels::target_univariate::tests::p7_target_univariate_rejects_separator_only_planner_admission ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 112 filtered out.
+
+P6 regression after reviewer fixes:
+
+running 3 tests
+test planner::planner::tests::p6_hidden_fallback_is_rejected_when_kernel_absent_from_declared_ladder ... ok
+test planner::planner::tests::p6_declared_ladder_rejects_execution_plan_field_tampering ... ok
+test planner::planner::tests::p6_planning_is_deterministic_and_declares_universal_last ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 118 filtered out.
+
+Full suite after reviewer fixes:
+
+running 121 tests
+test result: ok. 121 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out.
+
+Doc-tests after reviewer fixes:
+
+running 0 tests
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out.

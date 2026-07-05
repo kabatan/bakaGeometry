@@ -1,0 +1,20 @@
+P8b test-first failure before implementation:
+
+Command:
+
+cargo test --manifest-path geosolver-core/Cargo.toml p8b_ -- --nocapture
+
+Result:
+
+running 4 tests
+test kernels::sparse_resultant::tests::p8b_sparse_resultant_rejects_source_hash_tamper ... FAILED
+test kernels::specialization_interpolation::tests::p8b_specialization_interpolation_rejects_authorization_tamper ... FAILED
+test kernels::specialization_interpolation::tests::p8b_specialization_interpolation_kernel_verifies_multiseparator_relation ... FAILED
+test kernels::sparse_resultant::tests::p8b_sparse_resultant_kernel_produces_exact_exported_relation ... FAILED
+
+Root cause:
+
+- SparseResultantProjectionKernel still declined admission and returned the later-phase CertificateDesignGap placeholder.
+- SpecializationInterpolationKernel still declined admission and returned the later-phase CertificateDesignGap placeholder.
+
+This failure preceded P8b implementation.

@@ -1,0 +1,34 @@
+Freshness point: after implementing P6 deterministic planner, kernel admissions, cost probes, hash-bound declared ladders, RGQ-042 dense relation-search schedule planning, and reviewer FAIL_FIXABLE remediation.
+
+Commands run:
+
+1. cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+2. cargo test --manifest-path geosolver-core/Cargo.toml p6_ -- --nocapture
+3. cargo test --manifest-path geosolver-core/Cargo.toml rgq042 -- --nocapture
+4. cargo test --manifest-path geosolver-core/Cargo.toml
+5. git rev-parse --verify HEAD
+6. git status -sb
+7. rg -n "todo!|unimplemented!|NotYetImplemented|Unsupported|geometry|fixture|expected-answer|expected answer|full coordinate RUR|coordinate solution enumeration|generic QE|CAD|hidden fallback|NonProductionGroebnerBatchForTests|DebugExplicitTargetQuotientHandle|implemented in P6|implemented in P7|implemented in P8|implemented in P9" geosolver-core/src/planner geosolver-core/src/kernels/target_relation_search.rs geosolver-core/src/solver/options.rs
+8. rg -n "plan_all_blocks|collect_kernel_admissions|all_planner_kernel_kinds|estimate_kernel_cost|compare_cost|run_cost_probes|modular_rank_probe|local_macaulay_size_probe|mixed_support_probe|build_declared_ladder|require_declared_kernel_plan|build_dense_relation_search_schedule|relation_search_default_export_degree_cap|build_export_monomial_support|build_multiplier_supports" geosolver-core/src/planner geosolver-core/src/kernels/target_relation_search.rs
+9. rg -n "TargetRelationSearchEscalated|SparseResultantIfSquareOrOverdetermined|SpecializeProjectInterpolateVerify|LocalGroebnerEliminationToKeepZ|NoLocalCertifiedNonFinite|UniversalTargetElimination" geosolver-core/src/planner
+10. rg -n "not yet admitted|generic sparse resultant|verified characteristic coverage|regular-chain projection plan|norm/trace tower|specialization-interpolation" geosolver-core/src/planner/admission.rs
+
+Test-first evidence:
+
+- Before implementation, `cargo test --manifest-path geosolver-core/Cargo.toml p6_ -- --nocapture` failed to compile because `plan_all_blocks`, `all_planner_kernel_kinds`, `require_declared_kernel_plan`, and RGQ-042 dense schedule APIs were absent.
+- The failure confirmed that the added P6 tests were active oracles rather than post-hoc checks.
+
+Reviewer remediation loop:
+
+- Guardian P6 review returned `FAIL_FIXABLE`.
+- Blocker 1: top-level plan hash used stored child plan hashes. Fix: `hash_kernel_plan` now recomputes child execution-plan hashes, and `hash_kernel_execution_plan` recomputes support-plan, resource-bound, failure-behavior, relation-search schedule, Universal strategy, and rank hashes from current contents.
+- Blocker 2: RGQ-055 had only one schedule reproducibility case. Fix: added a three-shape reproducibility test covering different `|Y|`, `|Z|`, and degrees with independent support, row monomial, matrix-dimension, and stage-order recomputation.
+- Blocker 3: RGQ-042 option cap was widened with `.max(z_seed)`. Fix: `e_cap` now follows the Base Spec formula exactly, and a regression test proves too-low caps are not silently widened.
+
+Verification summary after remediation:
+
+- P6 focused tests: 3 passed.
+- RGQ-042/RGQ-055 schedule tests: 3 passed.
+- Full crate tests: 112 passed.
+- fmt check: passed.
+- forbidden-marker scan: no matches; pass.

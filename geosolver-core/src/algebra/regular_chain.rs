@@ -105,37 +105,22 @@ pub fn local_regular_chain_decomposition(
     }
 
     let main_variables = triangular_main_variables(&relations, &variables)?;
-    let main_set: BTreeSet<_> = main_variables.iter().copied().collect();
-    let free_variables = variables
-        .iter()
-        .copied()
-        .filter(|var| !main_set.contains(var))
-        .collect::<Vec<_>>();
-    let source_relation_hashes = relations
-        .iter()
-        .map(|relation| relation.hash)
-        .collect::<Vec<_>>();
-    let component_hash = hash_chain(
+    let chains = build_component_chains(
         &relations,
         &variables,
         &main_variables,
-        &free_variables,
         &guards,
         input.semantics,
+    )?;
+    let dag_hash = hash_sequence(
+        "regular-chain-dag",
+        &chains
+            .iter()
+            .map(|chain| chain.component_hash.0.to_vec())
+            .collect::<Vec<_>>(),
     );
-    let chain = RegularChain {
-        relations,
-        variables,
-        main_variables,
-        free_variables,
-        guards,
-        component_semantics: input.semantics,
-        source_relation_hashes,
-        component_hash,
-    };
-    let dag_hash = hash_sequence("regular-chain-dag", &[chain.component_hash.0.to_vec()]);
     Ok(RegularChainDAG {
-        chains: vec![chain],
+        chains,
         semantics: input.semantics,
         dag_hash,
     })
@@ -245,7 +230,6 @@ fn triangular_main_variables(
         .map(|(idx, var)| (*var, idx))
         .collect::<BTreeMap<_, _>>();
     let mut main_variables = Vec::new();
-    let mut seen = BTreeSet::new();
     for relation in relations {
         let vars = poly_variables(relation);
         let Some(main) = vars
@@ -259,16 +243,74 @@ fn triangular_main_variables(
                 "nonzero constant relation cannot be a regular-chain polynomial",
             ));
         };
-        if !seen.insert(main) {
-            return Err(algorithmic_hard_case(
-                Some(main),
-                "RegularChainDecomposition",
-                "relations do not have distinct triangular main variables",
-            ));
-        }
         main_variables.push(main);
     }
     Ok(main_variables)
+}
+
+fn build_component_chains(
+    relations: &[SparsePolynomialQ],
+    variables: &[VariableId],
+    main_variables: &[VariableId],
+    guards: &[SparsePolynomialQ],
+    semantics: UnionSemantics,
+) -> Result<Vec<RegularChain>, SolverError> {
+    let mut components: Vec<(
+        Vec<SparsePolynomialQ>,
+        Vec<VariableId>,
+        BTreeSet<VariableId>,
+    )> = Vec::new();
+    for (relation, main) in relations
+        .iter()
+        .cloned()
+        .zip(main_variables.iter().copied())
+    {
+        if let Some((component_relations, component_mains, seen_mains)) = components
+            .iter_mut()
+            .find(|(_, _, seen)| !seen.contains(&main))
+        {
+            component_relations.push(relation);
+            component_mains.push(main);
+            seen_mains.insert(main);
+        } else {
+            let mut seen_mains = BTreeSet::new();
+            seen_mains.insert(main);
+            components.push((vec![relation], vec![main], seen_mains));
+        }
+    }
+    components
+        .into_iter()
+        .map(|(component_relations, component_mains, _)| {
+            let main_set: BTreeSet<_> = component_mains.iter().copied().collect();
+            let free_variables = variables
+                .iter()
+                .copied()
+                .filter(|var| !main_set.contains(var))
+                .collect::<Vec<_>>();
+            let source_relation_hashes = component_relations
+                .iter()
+                .map(|relation| relation.hash)
+                .collect::<Vec<_>>();
+            let component_hash = hash_chain(
+                &component_relations,
+                variables,
+                &component_mains,
+                &free_variables,
+                guards,
+                semantics,
+            );
+            Ok(RegularChain {
+                relations: component_relations,
+                variables: variables.to_vec(),
+                main_variables: component_mains,
+                free_variables,
+                guards: guards.to_vec(),
+                component_semantics: semantics,
+                source_relation_hashes,
+                component_hash,
+            })
+        })
+        .collect()
 }
 
 fn canonical_variables(vars: &[VariableId]) -> Result<Vec<VariableId>, SolverError> {
@@ -406,10 +448,10 @@ mod tests {
     }
 
     #[test]
-    fn duplicate_main_variables_are_rejected() {
+    fn duplicate_main_variables_create_component_dag() {
         let x_poly = variable_poly(x());
         let y_poly = variable_poly(y());
-        let err = local_regular_chain_decomposition(RegularChainInput {
+        let dag = local_regular_chain_decomposition(RegularChainInput {
             relations: vec![
                 poly_sub(&y_poly, &x_poly),
                 poly_sub(&y_poly, &constant_poly(int_q(1))),
@@ -418,11 +460,9 @@ mod tests {
             guards: Vec::new(),
             semantics: UnionSemantics::ComponentUnion,
         })
-        .unwrap_err();
-        assert_eq!(
-            err.public_status(),
-            crate::result::status::SolverStatus::AlgorithmicHardCase
-        );
+        .unwrap();
+        assert_eq!(dag.chains.len(), 2);
+        assert_ne!(dag.chains[0].component_hash, dag.chains[1].component_hash);
     }
 
     #[test]

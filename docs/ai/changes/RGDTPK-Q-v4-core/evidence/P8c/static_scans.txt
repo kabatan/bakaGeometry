@@ -1,0 +1,18 @@
+P8c static scans
+
+Command:
+rg -n "TargetActionKrylov|VerifiedCharacteristicSupportCoverage|DebugExplicit|build_debug_explicit|block Wiedemann|trace power|coordinate roots|full coordinate RUR|kernel-not-ready|P8c verified" geosolver-core\src\kernels\action_krylov.rs geosolver-core\src\algebra\krylov.rs geosolver-core\src\algebra\quotient.rs geosolver-core\src\planner\admission.rs docs\ai\changes\RGDTPK-Q-v4-core\PRIMITIVE_SCOPE_LEDGER.md docs\ai\changes\RGDTPK-Q-v4-core\BASE_SPEC.md -S
+
+Relevant hits:
+- geosolver-core/src/kernels/action_krylov.rs uses `CertificateRoute::VerifiedCharacteristicSupportCoverage`.
+- geosolver-core/src/kernels/action_krylov.rs rejects coverage with `no_coordinate_roots_exported == false` or `no_full_coordinate_rur_exported == false`.
+- geosolver-core/src/kernels/action_krylov.rs contains no `build_debug_explicit_target_quotient_handle` use.
+- geosolver-core/src/kernels/action_krylov.rs contains no `kernel-not-ready` or "P8c verified ... not yet admitted" placeholder.
+- geosolver-core/src/algebra/krylov.rs keeps `CoverageKind::VerifiedCharacteristicSupportCoverage` as the only coverage enum variant.
+- geosolver-core/src/algebra/krylov.rs still contains the debug explicit rejection test and production-boundary helper.
+- geosolver-core/src/algebra/quotient.rs keeps debug explicit handles separate from production-provenanced handles and rejects coordinate-root/RUR export flags in production validation.
+- geosolver-core/src/planner/admission.rs routes `KernelKind::TargetActionKrylov` to `plan_target_action_krylov`.
+- BASE_SPEC RGQ-044 and RGQ-054 require only `VerifiedCharacteristicSupportCoverage` and the undercoverage regression.
+
+Interpretation:
+The production P8c kernel path is type-bound to `ProductionProvenancedTargetQuotientHandle`, constructs action columns with exact membership certificates from authorized target relations, verifies exact characteristic coverage through the P3e primitive, and does not use debug explicit handles or weaker coverage kinds.

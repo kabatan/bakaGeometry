@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SolverOptions {
     pub exact_image_mode: bool,
+    pub max_relation_search_export_degree: Option<usize>,
     pub max_memory_bytes: Option<u64>,
     pub max_matrix_rows: Option<usize>,
     pub max_matrix_cols: Option<usize>,
@@ -27,6 +28,7 @@ impl Default for SolverOptions {
     fn default() -> Self {
         SolverOptions {
             exact_image_mode: false,
+            max_relation_search_export_degree: None,
             max_memory_bytes: None,
             max_matrix_rows: None,
             max_matrix_cols: None,

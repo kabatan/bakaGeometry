@@ -1,0 +1,120 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: P8a
+commit: 45c33932033e308f004262b23130d59a30a93c36+p8a-worktree
+algorithm_spec_source_sha256: 2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed
+failure_source_sha256: df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: cd5c9147a5f48d50d12142c67e5160f95a1ccdbfe43eee925d5e0bb1a8fee779
+evidence_manifest_schema_sha256: 74e0fe22b6ba77e38edf96c8e6851eb5be8beb717599cbfb0c345abe4617a253
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8a/command_outputs.txt
+  sha256: 9304713236a713190c3430b95d383d864d8a426970c1cee4b04c284cc39dc53c
+  purpose: P8a command output capture before and after reviewer remediation.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8a/commands.txt
+  sha256: 7abc94120b7575c668675562062090b8ffa112f95e03e84271f6550a55ae163a
+  purpose: P8a command list, remediation loop, and final regression summaries.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8a/function_implementation_table.yaml
+  sha256: 9c048c10f3f114b76e013b151d58a3e8b42a04f4544ba5fbde0682c5f9743dc9
+  purpose: P8a requirement-to-function implementation table.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8a/notes.md
+  sha256: cb3603dea4994ceab967e43cf6885b36c116a4d7cb4fc9c5bb9457f00f21520b
+  purpose: P8a evidence notes, status boundary notes, and claim limitations.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8a/reviewer_fail_fix.md
+  sha256: 7539eb621dfa32fc6ff297f956042867f1ba068ed788c2a279d7b3e164ea3d1e
+  purpose: P8a reviewer FAIL_FIXABLE remediation record.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8a/static_scans.txt
+  sha256: 64cd41648228bbc51a6ed28324639efb4e37edb10e12c95fd53511fa1648e5c0
+  purpose: P8a required-function, schedule, exact identity, and status-boundary static scans.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8a/test_first_failure.txt
+  sha256: 91150dfd0b7dbf0436d51ed7a73fcd43dc65997a67a252f94e0fee5908288aee
+  purpose: P8a pre-completion failing test evidence.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P8a/20260705-060732Z/prompt.md
+  sha256: 5aadb6883206d817fd802409730e3f2817ac0c5b7f18872e89a867c2b855d847
+  purpose: Archived P8a guardian reviewer remediation prompt.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P8a/20260705-060732Z/response.md
+  sha256: 4bdbd3ac8cb0da945a0552bc58a818674a104cb932f5ce5096a94e6f12efc259
+  purpose: Archived P8a guardian reviewer PASS response.
+command_outputs:
+- command: cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8a/command_outputs.txt
+  output_sha256: 9304713236a713190c3430b95d383d864d8a426970c1cee4b04c284cc39dc53c
+  finished_at_utc: 20260705-060732Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p8a_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8a/command_outputs.txt
+  output_sha256: 9304713236a713190c3430b95d383d864d8a426970c1cee4b04c284cc39dc53c
+  finished_at_utc: 20260705-060732Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p6_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8a/commands.txt
+  output_sha256: 7abc94120b7575c668675562062090b8ffa112f95e03e84271f6550a55ae163a
+  finished_at_utc: 20260705-060732Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p7_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8a/commands.txt
+  output_sha256: 7abc94120b7575c668675562062090b8ffa112f95e03e84271f6550a55ae163a
+  finished_at_utc: 20260705-060732Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8a/command_outputs.txt
+  output_sha256: 9304713236a713190c3430b95d383d864d8a426970c1cee4b04c284cc39dc53c
+  finished_at_utc: 20260705-060732Z
+- command: git diff --check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8a/commands.txt
+  output_sha256: 7abc94120b7575c668675562062090b8ffa112f95e03e84271f6550a55ae163a
+  finished_at_utc: 20260705-060732Z
+- command: guardian_boundary_reviewer P8a remediation review
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P8a/20260705-060732Z/response.md
+  output_sha256: 4bdbd3ac8cb0da945a0552bc58a818674a104cb932f5ce5096a94e6f12efc259
+  finished_at_utc: 20260705-060732Z
+static_scans:
+- scan_id: p8a-required-public-api-and-execute
+  command: rg MembershipMatrixBuilder, VerifiedRelationSearchCandidate, build_membership_matrix_builder, reconstruct_and_verify_relation, execute_target_relation_search, build_membership_matrix, verify_membership_exact, solve_homogeneous_modular, and p8a_ in geosolver-core/src/kernels/target_relation_search.rs
+  forbidden_pattern: absence of required P8a public API, execution, exact-verification, modular candidate, or tests
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8a/static_scans.txt
+- scan_id: p8a-dense-schedule
+  command: rg build_dense_relation_search_schedule, z_seed, e_cap, build_export_monomial_support, build_multiplier_supports, and build_row_monomial_support in target_relation_search.rs
+  forbidden_pattern: absence of RGQ-042 deterministic dense schedule construction
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8a/static_scans.txt
+- scan_id: p8a-exact-identity
+  command: rg verify_membership_exact, poly_sub relation identity, CandidateOnlyRequiresExactQCheck, and p8a_exact_membership in geosolver-core/src
+  forbidden_pattern: modular nullspace output accepted without exact Q identity verification
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8a/static_scans.txt
+- scan_id: p8a-status-boundary
+  command: rg CertifiedNonFiniteTargetImage, AlgorithmicHardCase, and FiniteResourceFailure in target_relation_search.rs and status.rs
+  forbidden_pattern: TargetRelationSearch exhaustion mapped to CertifiedNonFiniteTargetImage
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8a/static_scans.txt
+- scan_id: p8a-primitive-ledger-boundary
+  command: inspect PRIMITIVE_SCOPE_LEDGER.md against TargetRelationSearch implementation
+  forbidden_pattern: feature-gating TargetRelationSearch on narrow P3/P4 primitives instead of dense declared schedule and exact membership
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8a/static_scans.txt
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8a/function_implementation_table.yaml
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P8a/20260705-060732Z/response.md
+known_limitations:
+- P8a closes only TargetRelationSearch dense schedule and exact membership execution; SparseResultant, SpecializationInterpolation, ActionKrylov, NormTrace, RegularChain, Universal, and final composition remain open.
+- Replay/certificate closure remains bounded by later P11/P16 phases.
+- Candidate-cover completion, exact-image semantics, public orchestration, performance readiness, and final acceptance remain open.
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-013
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-013
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

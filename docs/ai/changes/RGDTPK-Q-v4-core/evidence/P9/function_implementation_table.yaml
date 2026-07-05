@@ -1,0 +1,83 @@
+phase: P9
+scope: RegularChainProjection and NormTraceProjection kernels for algebraically detected applicable structures, including the ledger-required guard/component and multi-step tower expansions used by these kernels
+supports:
+  - RGQ-023
+  - RGQ-024
+  - RGQ-033
+mechanisms:
+  closes_after_review:
+    - MECH-007
+review_state:
+  prior_review: FAIL_FIXABLE
+  prior_review_closes_phase: false
+  remediation_record: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P9/reviewer_fail_fix.md
+entries:
+  - function: geosolver-core/src/algebra/regular_chain.rs::local_regular_chain_decomposition
+    required_by: "BASE_SPEC.md RGQ-023; PLAN.md P9 prerequisite ledger check"
+    notes:
+      - "Builds a compact component DAG with one or more component chains instead of rejecting duplicate main variables as a single-chain-only helper."
+      - "Preserves input guard polynomials on each component chain so the kernel certificate can bind guard semantics."
+      - "DAG hash binds all component-chain hashes."
+  - function: geosolver-core/src/algebra/regular_chain.rs::build_component_chains
+    required_by: "PRIMITIVE_SCOPE_LEDGER.md algebra/regular_chain.rs expansion requirement"
+    notes:
+      - "Greedily splits relations into component chains when a relation main variable conflicts with an existing chain."
+      - "Stores component relation hashes, main variables, free variables, variables, guards, and semantics in each RegularChain."
+  - function: geosolver-core/src/kernels/regular_chain_projection.rs::admit_regular_chain_projection
+    required_by: "BASE_SPEC.md RGQ-023; PLAN.md P9 task 1"
+    notes:
+      - "Admits only when regular-chain decomposition and exported projection can produce certified exported generators."
+      - "Declines unsupported structures instead of using hidden fallback or geometry dispatch."
+  - function: geosolver-core/src/kernels/regular_chain_projection.rs::plan_regular_chain_projection
+    required_by: "BASE_SPEC.md Appendix A section 21.1; PLAN.md P9 prerequisite ledger check"
+    notes:
+      - "Builds a hash-bound plan with source relation hashes, authorization hash, exported/eliminated variables, RegularChainGuardedProjection certificate route, and explicit resource bounds."
+      - "Support plan binds the regular-chain DAG hash, component projection hashes, and compressed-system guards."
+  - function: geosolver-core/src/kernels/regular_chain_projection.rs::execute_regular_chain_projection
+    required_by: "BASE_SPEC.md Appendix A section 21.2; RGQ-023"
+    notes:
+      - "Revalidates plan hash, authorization hash, support hash, certificate route, guard-bound support trace, and source hash coverage before execution."
+      - "Runs local regular-chain decomposition, projects each component to exported variables, combines component relations by declared union semantics, validates exported-only generators, and emits TriangularChain."
+      - "Certificate hash binds plan hash, DAG hash, component projection hashes, guard hashes, trace hash, and output generator hashes."
+  - function: geosolver-core/src/algebra/norm_trace.rs::detect_explicit_tower_plan
+    required_by: "BASE_SPEC.md RGQ-024; PLAN.md P9 prerequisite ledger check"
+    notes:
+      - "Detects one-step or multi-step algebraic tower plans by polynomial support and degree form, not geometry names."
+      - "Rejects noncanonical exported variables and structures without a target-minus-expression relation."
+      - "Produces ordered TowerStep entries and a tower hash binding steps, source relation hashes, exported variables, and target-minus-expression hash."
+  - function: geosolver-core/src/algebra/norm_trace.rs::norm_relation_for_tower_plan
+    required_by: "BASE_SPEC.md Appendix A section 22.2; PRIMITIVE_SCOPE_LEDGER.md algebra/norm_trace.rs expansion requirement"
+    notes:
+      - "Eliminates each tower variable with sparse resultants in tower-step order."
+      - "Returns an exported-variable relation for the target expression."
+  - function: geosolver-core/src/algebra/norm_trace.rs::verify_norm_tower_plan_relation
+    required_by: "BASE_SPEC.md RGQ-024 exact norm relation verification"
+    notes:
+      - "Recomputes the tower-plan norm relation and compares it exactly to the claimed relation."
+  - function: geosolver-core/src/kernels/norm_trace_projection.rs::admit_norm_trace_projection
+    required_by: "BASE_SPEC.md RGQ-024; PLAN.md P9 task 2"
+    notes:
+      - "Admits only when detect_explicit_tower_plan finds an algebraic tower from polynomial form and exact norm-trace construction succeeds."
+      - "No geometry names or fixture identifiers are inspected."
+  - function: geosolver-core/src/kernels/norm_trace_projection.rs::plan_norm_trace_projection
+    required_by: "BASE_SPEC.md Appendix A section 22.1; PLAN.md P9 prerequisite ledger check"
+    notes:
+      - "Builds a hash-bound plan with source relation hashes, authorization hash, tower-plan hash, norm relation hash, NormTraceExactVerification route, and explicit resource bounds."
+  - function: geosolver-core/src/kernels/norm_trace_projection.rs::execute_norm_trace_projection
+    required_by: "BASE_SPEC.md Appendix A section 22.2; RGQ-024"
+    notes:
+      - "Revalidates plan hash, authorization hash, support hash, certificate route, and source hash coverage before execution."
+      - "Detects the tower plan by algebraic form, recomputes norm_relation_for_tower_plan, verifies it with verify_norm_tower_plan_relation, checks exported-only variables, and emits NormTraceTower."
+  - function: geosolver-core/src/planner/admission.rs::build_kernel_admission
+    required_by: "PLAN.md P9 planner connection"
+    notes:
+      - "Routes NormTraceProjection and RegularChainProjection admissions to P9 plan builders instead of the previous P9 placeholder declines."
+tests:
+  - algebra::regular_chain::tests::duplicate_main_variables_create_component_dag
+  - algebra::norm_trace::tests::multistep_tower_norm_eliminates_each_algebraic_variable
+  - p9_regular_chain_kernel_projects_triangular_component
+  - p9_regular_chain_rejects_auth_source_and_plan_tamper
+  - p9_regular_chain_guard_binding_is_operational
+  - p9_norm_trace_kernel_exports_verified_tower_support
+  - p9_norm_trace_detection_uses_algebraic_form_and_rejects_tamper
+  - p9_norm_trace_multistep_tower_exports_verified_support

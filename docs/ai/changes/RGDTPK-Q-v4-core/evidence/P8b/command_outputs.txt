@@ -1,0 +1,37 @@
+P8b focused pass after reviewer remediation:
+
+running 7 tests
+test kernels::sparse_resultant::tests::p8b_sparse_resultant_rejects_source_hash_tamper ... ok
+test kernels::sparse_resultant::tests::p8b_sparse_resultant_consumes_child_message_relations_and_rejects_tamper ... ok
+test kernels::sparse_resultant::tests::p8b_sparse_resultant_kernel_produces_exact_exported_relation ... ok
+test kernels::specialization_interpolation::tests::p8b_specialization_interpolation_rejects_authorization_tamper ... ok
+test kernels::specialization_interpolation::tests::p8b_specialization_interpolation_consumes_child_messages_and_rejects_tamper ... ok
+test kernels::specialization_interpolation::tests::p8b_specialization_interpolation_kernel_verifies_multiseparator_relation ... ok
+test kernels::specialization_interpolation::tests::p8b_planner_admits_sparse_resultant_and_specialization_plans ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 129 filtered out.
+
+Interpolation and resultant focused passes after reviewer remediation:
+
+interpolation: 9 passed.
+resultant: 11 passed.
+
+Regression passes:
+
+p6_: 3 passed.
+p7_: 9 passed.
+p8a_: 6 passed.
+
+Full suite:
+
+running 136 tests
+test result: ok. 136 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out.
+
+Doc-tests:
+
+running 0 tests
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out.
+
+git diff --check:
+
+exit code 0. Git reported CRLF conversion warnings only.

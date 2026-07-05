@@ -1,0 +1,65 @@
+P8c command outputs
+
+1. Initial test-first command:
+`cargo test --manifest-path geosolver-core/Cargo.toml p8c_ -- --nocapture`
+
+Result: failed before implementation, 0 passed, 2 failed. Failures showed TargetActionKrylov admission and planner admission were still declined by the placeholder.
+
+2. First post-implementation P8c test:
+`cargo test --manifest-path geosolver-core/Cargo.toml p8c_ -- --nocapture`
+
+Result: passed, 2 passed. One compiler warning for an unused import was removed before final verification.
+
+3. Expanded P8c regressions:
+`cargo test --manifest-path geosolver-core/Cargo.toml p8c_ -- --nocapture`
+
+Result: passed, 5 passed:
+- p8c_action_krylov_kernel_produces_verified_characteristic_support
+- p8c_planner_admits_target_action_krylov_for_verified_characteristic_path
+- p8c_undercovered_single_vector_recurrence_cannot_escape_as_support
+- p8c_quotient_handle_rejects_coordinate_root_or_rur_export
+- p8c_action_krylov_rejects_auth_and_source_hash_tamper
+
+4. Related primitive and prior-phase tests:
+`cargo test --manifest-path geosolver-core/Cargo.toml krylov -- --nocapture`
+
+Result: passed, 8 passed. This included algebra::krylov undercoverage and debug-explicit rejection tests plus the P8c kernel tests.
+
+`cargo test --manifest-path geosolver-core/Cargo.toml p6_ -- --nocapture`
+
+Result: passed, 3 passed.
+
+`cargo test --manifest-path geosolver-core/Cargo.toml p7_ -- --nocapture`
+
+Result: passed, 9 passed.
+
+`cargo test --manifest-path geosolver-core/Cargo.toml p8a_ -- --nocapture`
+
+Result: passed, 6 passed.
+
+`cargo test --manifest-path geosolver-core/Cargo.toml p8b_ -- --nocapture`
+
+Result: passed, 7 passed.
+
+5. Formatting:
+`cargo fmt --manifest-path geosolver-core/Cargo.toml --check`
+
+Result: failed before applying rustfmt, showing formatting-only diffs in action_krylov.rs.
+
+`cargo fmt --manifest-path geosolver-core/Cargo.toml`
+
+Result: applied formatting.
+
+`cargo fmt --manifest-path geosolver-core/Cargo.toml --check`
+
+Result: passed.
+
+6. Full crate verification:
+`cargo test --manifest-path geosolver-core/Cargo.toml`
+
+Result: passed, 141 passed, 0 failed, 0 ignored; doc tests passed, 0 tests.
+
+7. Diff whitespace check:
+`git diff --check`
+
+Result: exit 0. Output contained only Git CRLF conversion warnings for existing working-copy files.

@@ -39,6 +39,20 @@ pub fn sturm_sequence(p: &UniPolynomialQ) -> Vec<UniPolynomialQ> {
 }
 
 pub fn isolate_real_roots_sturm(p: &UniPolynomialQ) -> Result<Vec<RealRootRecord>, SolverError> {
+    isolate_real_roots_sturm_with_max_width(p, int_q(1))
+}
+
+pub fn isolate_real_roots_sturm_with_max_width(
+    p: &UniPolynomialQ,
+    max_width: RationalQ,
+) -> Result<Vec<RealRootRecord>, SolverError> {
+    if cmp_q(&max_width, &zero_q()) != Ordering::Greater {
+        return Err(algorithmic_hard_case(
+            p.variable,
+            "SturmIsolation",
+            "root isolation max interval width must be positive",
+        ));
+    }
     let squarefree = squarefree_part_uni(&normalize_univariate(p.clone()));
     if degree_uni(&squarefree).is_none() {
         if squarefree.coeffs_low_to_high.is_empty() {
@@ -57,7 +71,7 @@ pub fn isolate_real_roots_sturm(p: &UniPolynomialQ) -> Result<Vec<RealRootRecord
     let hi = bound;
     let total = root_count_between(&seq, &lo, &hi)?;
     let mut intervals = Vec::new();
-    isolate_interval(&seq, &squarefree, lo, hi, total, &mut intervals)?;
+    isolate_interval(&seq, &squarefree, lo, hi, total, &max_width, &mut intervals)?;
     intervals.sort_by(|a, b| cmp_q(&a.lo, &b.lo));
 
     Ok(intervals
@@ -83,12 +97,13 @@ fn isolate_interval(
     lo: RationalQ,
     hi: RationalQ,
     root_count: usize,
+    max_width: &RationalQ,
     intervals: &mut Vec<RationalInterval>,
 ) -> Result<(), SolverError> {
     if root_count == 0 {
         return Ok(());
     }
-    if root_count == 1 && !interval_width_gt_one(&lo, &hi) {
+    if root_count == 1 && !interval_width_gt(&lo, &hi, max_width) {
         intervals.push(RationalInterval { lo, hi });
         return Ok(());
     }
@@ -103,8 +118,16 @@ fn isolate_interval(
         ));
     }
     let right_count = root_count - left_count;
-    isolate_interval(seq, support, lo, split.clone(), left_count, intervals)?;
-    isolate_interval(seq, support, split, hi, right_count, intervals)
+    isolate_interval(
+        seq,
+        support,
+        lo,
+        split.clone(),
+        left_count,
+        max_width,
+        intervals,
+    )?;
+    isolate_interval(seq, support, split, hi, right_count, max_width, intervals)
 }
 
 fn choose_nonroot_split(
@@ -195,8 +218,8 @@ fn affine_interval_point(lo: &RationalQ, hi: &RationalQ, numer: i64, denom: i64)
     div_q(&weighted, &int_q(denom)).expect("positive denominator")
 }
 
-fn interval_width_gt_one(lo: &RationalQ, hi: &RationalQ) -> bool {
-    cmp_q(&sub_q(hi, lo), &int_q(1)) == Ordering::Greater
+fn interval_width_gt(lo: &RationalQ, hi: &RationalQ, max_width: &RationalQ) -> bool {
+    cmp_q(&sub_q(hi, lo), max_width) == Ordering::Greater
 }
 
 fn rem_uni(a: &UniPolynomialQ, b: &UniPolynomialQ) -> UniPolynomialQ {

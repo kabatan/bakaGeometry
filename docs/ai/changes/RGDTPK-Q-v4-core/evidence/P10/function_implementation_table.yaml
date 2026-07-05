@@ -1,0 +1,74 @@
+phase: P10
+scope: Composition, separator elimination from message relations, final target-only support, and positive certified-nonfinite separation
+supports:
+  - RGQ-026
+  - RGQ-032
+  - RGQ-038
+  - RGQ-045
+  - RGQ-051
+  - RGQ-057
+  - RGQ-058
+mechanisms:
+  closes_after_review:
+    - MECH-009
+    - MECH-015
+entries:
+  - function: geosolver-core/src/compose/message.rs::hash_projection_message
+    required_by: "PLAN.md P10 tampered message relation test; BASE_SPEC.md RGQ-026"
+    notes:
+      - "Exposes the same message hash shape used by kernels so composition can reject package tampering before using message relations."
+  - function: geosolver-core/src/compose/compose.rs::ComposedProjection
+    required_by: "BASE_SPEC.md Appendix A section 24; PLAN.md P10 task 1"
+    notes:
+      - "Records target, root block, message relations, final root relations, source message hashes, separator-elimination hashes, composition cost, and composed hash."
+  - function: geosolver-core/src/compose/compose.rs::compose_projection_messages
+    required_by: "BASE_SPEC.md RGQ-026; PLAN.md P10 task 1"
+    notes:
+      - "Validates every message package hash and exported-variable boundary before relation use."
+      - "Merges message relations and invokes separator elimination only when target-only root relations are not already present."
+      - "Does not read or reconstruct the original full coordinate system."
+  - function: geosolver-core/src/compose/separator_elimination.rs::eliminate_separators_from_message_relations
+    required_by: "BASE_SPEC.md RGQ-026 Appendix A section 24.3; PLAN.md P10 task 2"
+    notes:
+      - "Builds a pseudo block/system exclusively from message relations."
+      - "Uses TargetRelationSearchKernel as a target-direct kernel with declared keep/separator variables."
+      - "Returns AlgorithmicHardCase on relation-search exhaustion; it does not certify nonfinite."
+  - function: geosolver-core/src/compose/final_support.rs::build_global_support_polynomial
+    required_by: "BASE_SPEC.md Appendix A section 24.4; PLAN.md P10 task 3"
+    notes:
+      - "Builds a target-only support polynomial from composed root relations whose variables are contained in {T}."
+      - "Combines squarefree target-only relations exactly and returns AlgorithmicHardCase when no target-only support exists."
+  - function: geosolver-core/src/compose/final_support.rs::build_final_support_or_nonfinite
+    required_by: "BASE_SPEC.md RGQ-045, RGQ-051, RGQ-058; PLAN.md P10 tasks 4-5"
+    notes:
+      - "Returns Support when a target-only support exists."
+      - "Returns CertifiedNonFinite only after certify_nonfinite_target_image succeeds."
+      - "Returns AlgorithmicHardCase when no target-only relation exists and nonfiniteness is not certified."
+  - function: geosolver-core/src/compose/final_support.rs::certify_zero_target_elimination_ideal
+    required_by: "BASE_SPEC.md RGQ-045"
+    notes:
+      - "Provides a positive exact certificate for the structural case where composed root generators do not contain T and an exact rational consistency witness satisfies all root relations."
+      - "Does not treat relation-search exhaustion as proof."
+  - function: geosolver-core/src/compose/final_support.rs::certify_nonfinite_target_image
+    required_by: "BASE_SPEC.md RGQ-032, RGQ-045"
+    notes:
+      - "Builds NonFiniteCertificate from a verified TargetEliminationZeroCertificate."
+      - "In exact_image_mode, also requires certify_real_nonfinite_target_image."
+  - function: geosolver-core/src/compose/final_support.rs::verify_nonfinite_certificate
+    required_by: "BASE_SPEC.md RGQ-045"
+    notes:
+      - "Revalidates composed hash, zero-elimination certificate, optional real certificate, target binding, and certificate hash."
+  - function: geosolver-core/src/compose/final_support.rs::certify_real_nonfinite_target_image
+    required_by: "BASE_SPEC.md RGQ-045 item 5"
+    notes:
+      - "Constructs a real nonfinite certificate from the same exact rational witness when exact-image mode requests the stronger real proof."
+  - function: geosolver-core/src/compose/final_support.rs::finalize_nonfinite_result
+    required_by: "BASE_SPEC.md RGQ-058"
+    notes:
+      - "Re-verifies NonFiniteCertificate against the composed projection before mapping it to public SolverStatus::CertifiedNonFiniteTargetImage through TargetSolveResult."
+      - "Does not route local kernel errors to CertifiedNonFiniteTargetImage."
+tests:
+  - p10_multiblock_composition_eliminates_separator_from_message_relations_only
+  - p10_tampered_message_relation_is_rejected_before_composition
+  - p10_relation_search_exhaustion_is_hardcase_not_nonfinite
+  - p10_certified_nonfinite_system_uses_positive_certificate_only

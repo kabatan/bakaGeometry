@@ -1,0 +1,114 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: P6
+commit: 45c33932033e308f004262b23130d59a30a93c36+p6-worktree
+algorithm_spec_source_sha256: 2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed
+failure_source_sha256: df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: cd5c9147a5f48d50d12142c67e5160f95a1ccdbfe43eee925d5e0bb1a8fee779
+evidence_manifest_schema_sha256: 74e0fe22b6ba77e38edf96c8e6851eb5be8beb717599cbfb0c345abe4617a253
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/command_outputs.txt
+  sha256: 79095688fdac925510ac008df3716a2ce8d6a54c7b00446ce921cd58b7f77657
+  purpose: P6 command output capture after reviewer remediation.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/commands.txt
+  sha256: 8bd7d1a269cc22352c8d06c85968303e22a73077e9d1ea66fb9acbd88fd4afb0
+  purpose: P6 command list, test-first evidence, and remediation loop.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/function_implementation_table.yaml
+  sha256: 8d5c52bd506c765697c72afdc6ea904e458f7c93155d1772e6c3495cc96b1e33
+  purpose: P6 function implementation table.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/notes.md
+  sha256: 2c43f7057a0941c27a52458e6f772ccf86f78e48c22d1a83038b030c4473a4fd
+  purpose: P6 evidence notes and claim boundary.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/static_scans.txt
+  sha256: 71e022ec139153aa31ba32fa5437940567aee32542ebd1030ffa57a5bf212617
+  purpose: P6 forbidden-marker and required-function static scans.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/test_first_failure.txt
+  sha256: a325e5fb36b446deb71e189b3637cffa792175c347cb6dd9d87b54cbfdcb91c9
+  purpose: P6 pre-implementation failing test evidence.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/reviewer_fail_fix.md
+  sha256: 1782da7f5ec501a574956bcf389c1bd1b831892002a98005440d440e18f39aab
+  purpose: P6 reviewer FAIL_FIXABLE remediation notes.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P6/20260705-051710Z/prompt.md
+  sha256: 86db20c61562e9af8c2f3306fbd34b55f5f520f155596d2cfcb959fd676d2cf7
+  purpose: Archived P6 guardian reviewer prompt.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P6/20260705-051710Z/response.md
+  sha256: 1b485667247078538e0747394d4385e94dbdd556365ab61d5fcc0b894b4eee51
+  purpose: Archived P6 guardian reviewer PASS response.
+command_outputs:
+- command: cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/command_outputs.txt
+  output_sha256: 79095688fdac925510ac008df3716a2ce8d6a54c7b00446ce921cd58b7f77657
+  finished_at_utc: 20260705-051710Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p6_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/command_outputs.txt
+  output_sha256: 79095688fdac925510ac008df3716a2ce8d6a54c7b00446ce921cd58b7f77657
+  finished_at_utc: 20260705-051710Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml rgq -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/command_outputs.txt
+  output_sha256: 79095688fdac925510ac008df3716a2ce8d6a54c7b00446ce921cd58b7f77657
+  finished_at_utc: 20260705-051710Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/command_outputs.txt
+  output_sha256: 79095688fdac925510ac008df3716a2ce8d6a54c7b00446ce921cd58b7f77657
+  finished_at_utc: 20260705-051710Z
+- command: git rev-parse --verify HEAD
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/command_outputs.txt
+  output_sha256: 79095688fdac925510ac008df3716a2ce8d6a54c7b00446ce921cd58b7f77657
+  finished_at_utc: 20260705-051710Z
+- command: git status -sb
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/command_outputs.txt
+  output_sha256: 79095688fdac925510ac008df3716a2ce8d6a54c7b00446ce921cd58b7f77657
+  finished_at_utc: 20260705-051710Z
+static_scans:
+- scan_id: p6-forbidden-markers
+  command: rg forbidden implementation markers, hidden fallback, nonproduction handles, geometry/fixture dispatch, and status overclaim terms in P6 files
+  forbidden_pattern: todo/unimplemented/NotYetImplemented/Unsupported/geometry/fixture/coordinate RUR/QE/CAD/hidden fallback/nonproduction primitive overclaim markers
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/static_scans.txt
+- scan_id: p6-required-functions
+  command: rg P6 required planner and RGQ-042 schedule functions
+  forbidden_pattern: absence of required P6 functions
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/static_scans.txt
+- scan_id: p6-universal-fixed-sequence
+  command: rg RGQ-041 Universal fixed strategy sequence and NoLocalCertifiedNonFinite
+  forbidden_pattern: absence of fixed Universal sequence or local nonfinite policy
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/static_scans.txt
+- scan_id: p6-anti-overclaim-declines
+  command: rg later-phase generic kernel decline messages in planner admission
+  forbidden_pattern: overclaim of P5R narrow primitives as generic kernels
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/static_scans.txt
+- scan_id: p6-remediation-tests
+  command: rg remediation regression tests for deep hash binding, RGQ-055, and RGQ-042 e_cap
+  forbidden_pattern: absence of reviewer-remediation regression tests
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/static_scans.txt
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/function_implementation_table.yaml
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P6/20260705-051710Z/response.md
+known_limitations:
+- P6 closes deterministic planning and declared-ladder readiness only; it does not execute TargetRelationSearch or close MECH-013.
+- P7/P8/P9 generic kernels remain declined until their owning phases implement support-producing plans.
+- Candidate-cover, exact-image, replay, public orchestration, performance readiness, and final acceptance remain open.
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-005
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-005
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

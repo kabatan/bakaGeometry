@@ -1,0 +1,115 @@
+Static scans for P6 after reviewer remediation
+
+===== p6-forbidden-markers =====
+> rg -n "todo!|unimplemented!|NotYetImplemented|Unsupported|geometry|fixture|expected-answer|expected answer|full coordinate RUR|coordinate solution enumeration|generic QE|CAD|hidden fallback|NonProductionGroebnerBatchForTests|DebugExplicitTargetQuotientHandle|implemented in P6|implemented in P7|implemented in P8|implemented in P9" geosolver-core/src/planner geosolver-core/src/kernels/target_relation_search.rs geosolver-core/src/solver/options.rs
+exit_code=1
+interpretation=no matches; pass
+
+===== p6-required-functions =====
+> rg -n "plan_all_blocks|collect_kernel_admissions|all_planner_kernel_kinds|estimate_kernel_cost|compare_cost|run_cost_probes|modular_rank_probe|local_macaulay_size_probe|mixed_support_probe|build_declared_ladder|require_declared_kernel_plan|build_dense_relation_search_schedule|relation_search_default_export_degree_cap|build_export_monomial_support|build_multiplier_supports|hash_dense_relation_search_schedule|hash_kernel_execution_plan" geosolver-core/src/planner geosolver-core/src/kernels/target_relation_search.rs
+geosolver-core/src/kernels/target_relation_search.rs:43:pub fn relation_search_default_export_degree_cap(
+geosolver-core/src/kernels/target_relation_search.rs:62:pub fn build_dense_relation_search_schedule(
+geosolver-core/src/kernels/target_relation_search.rs:77:        relation_search_default_export_degree_cap(j, &eliminated_variables, &exported_variables);
+geosolver-core/src/kernels/target_relation_search.rs:87:        let export_support = build_export_monomial_support(&exported_variables, &bound);
+geosolver-core/src/kernels/target_relation_search.rs:89:            build_multiplier_supports(j, &eliminated_variables, &exported_variables, &bound);
+geosolver-core/src/kernels/target_relation_search.rs:126:    schedule.schedule_hash = hash_dense_relation_search_schedule(&schedule);
+geosolver-core/src/kernels/target_relation_search.rs:130:pub fn hash_dense_relation_search_schedule(schedule: &DenseRelationSearchSchedule) -> Hash {
+geosolver-core/src/kernels/target_relation_search.rs:168:pub fn build_export_monomial_support(
+geosolver-core/src/kernels/target_relation_search.rs:175:pub fn build_multiplier_supports(
+geosolver-core/src/kernels/target_relation_search.rs:287:        build_dense_relation_search_schedule, build_export_monomial_support,
+geosolver-core/src/kernels/target_relation_search.rs:288:        build_multiplier_supports, relation_search_default_export_degree_cap, RelationSearchBound,
+geosolver-core/src/kernels/target_relation_search.rs:320:        let cap = relation_search_default_export_degree_cap(&j, &eliminated, &exported);
+geosolver-core/src/kernels/target_relation_search.rs:323:        let schedule_a = build_dense_relation_search_schedule(&j, &eliminated, &exported, &options);
+geosolver-core/src/kernels/target_relation_search.rs:324:        let schedule_b = build_dense_relation_search_schedule(&j, &eliminated, &exported, &options);
+geosolver-core/src/kernels/target_relation_search.rs:337:        assert_eq!(build_export_monomial_support(&exported, &bound).len(), 3);
+geosolver-core/src/kernels/target_relation_search.rs:338:        let multiplier_supports = build_multiplier_supports(&j, &eliminated, &exported, &bound);
+geosolver-core/src/kernels/target_relation_search.rs:353:        let schedule = build_dense_relation_search_schedule(
+geosolver-core/src/kernels/target_relation_search.rs:426:            let schedule = build_dense_relation_search_schedule(
+geosolver-core/src/planner\probes.rs:45:pub fn run_cost_probes(
+geosolver-core/src/planner\probes.rs:51:    let modular_rank = modular_rank_probe(block, &[Prime(2), Prime(3), Prime(5)]);
+geosolver-core/src/planner\probes.rs:52:    let local_macaulay_size = local_macaulay_size_probe(block);
+geosolver-core/src/planner\probes.rs:53:    let mixed_support = mixed_support_probe(block);
+geosolver-core/src/planner\probes.rs:75:pub fn modular_rank_probe(block: &ProjectionBlock, primes: &[Prime]) -> RankProbeResult {
+geosolver-core/src/planner\probes.rs:89:pub fn local_macaulay_size_probe(block: &ProjectionBlock) -> MacaulaySizeProbe {
+geosolver-core/src/planner\probes.rs:101:pub fn mixed_support_probe(block: &ProjectionBlock) -> SparseSupportProbe {
+geosolver-core/src/planner\planner.rs:2:use crate::planner::admission::collect_kernel_admissions;
+geosolver-core/src/planner\planner.rs:3:use crate::planner::cost_model::estimate_kernel_cost;
+geosolver-core/src/planner\planner.rs:5:use crate::planner::ladder::build_declared_ladder;
+geosolver-core/src/planner\planner.rs:6:use crate::planner::probes::run_cost_probes;
+geosolver-core/src/planner\planner.rs:11:pub fn plan_all_blocks(
+geosolver-core/src/planner\planner.rs:21:        let probes = run_cost_probes(block, system, ctx);
+geosolver-core/src/planner\planner.rs:22:        let admissions = collect_kernel_admissions(block, system, &probes, ctx);
+geosolver-core/src/planner\planner.rs:25:            .map(|admission| estimate_kernel_cost(block, admission.kind, &probes))
+geosolver-core/src/planner\planner.rs:27:        let ladder = build_declared_ladder(&admissions, &cost_estimates);
+geosolver-core/src/planner\planner.rs:64:    use crate::kernels::target_relation_search::build_dense_relation_search_schedule;
+geosolver-core/src/planner\planner.rs:66:    use crate::planner::admission::all_planner_kernel_kinds;
+geosolver-core/src/planner\planner.rs:67:    use crate::planner::kernel_plan::require_declared_kernel_plan;
+geosolver-core/src/planner\planner.rs:78:    use super::plan_all_blocks;
+geosolver-core/src/planner\planner.rs:86:        let plans_a = plan_all_blocks(&dag, &compressed, &mut ctx_a).unwrap();
+geosolver-core/src/planner\planner.rs:87:        let plans_b = plan_all_blocks(&dag, &compressed, &mut ctx_b).unwrap();
+geosolver-core/src/planner\planner.rs:93:        assert_eq!(plan.admissions.len(), all_planner_kernel_kinds().len());
+geosolver-core/src/planner\planner.rs:104:            require_declared_kernel_plan(plan, KernelKind::TargetRelationSearch, plan.plan_hash)
+geosolver-core/src/planner\planner.rs:106:        let expected_schedule = build_dense_relation_search_schedule(
+geosolver-core/src/planner\planner.rs:131:        let mut plan = plan_all_blocks(&dag, &compressed, &mut ctx)
+geosolver-core/src/planner\planner.rs:138:            require_declared_kernel_plan(&plan, KernelKind::TargetRelationSearch, plan.plan_hash)
+geosolver-core/src/planner\planner.rs:147:        let plan = plan_all_blocks(&dag, &compressed, &mut ctx)
+geosolver-core/src/planner\planner.rs:158:            require_declared_kernel_plan(&exported_tampered, kernel_kind, original_hash)
+geosolver-core/src/planner\planner.rs:172:            require_declared_kernel_plan(&support_tampered, kernel_kind, original_hash)
+geosolver-core/src/planner\planner.rs:183:            require_declared_kernel_plan(&resource_tampered, kernel_kind, original_hash)
+geosolver-core/src/planner\planner.rs:195:            require_declared_kernel_plan(&failure_tampered, kernel_kind, original_hash)
+geosolver-core/src/planner\ladder.rs:3:use crate::planner::cost_model::{compare_cost, KernelCostEstimate};
+geosolver-core/src/planner\ladder.rs:6:pub fn build_declared_ladder(
+geosolver-core/src/planner\ladder.rs:23:        compare_cost(a_cost, b_cost)
+geosolver-core/src/planner\kernel_plan.rs:3:use crate::kernels::target_relation_search::hash_dense_relation_search_schedule;
+geosolver-core/src/planner\kernel_plan.rs:176:        plan.plan_hash = hash_kernel_execution_plan(&plan);
+geosolver-core/src/planner\kernel_plan.rs:181:pub fn require_declared_kernel_plan(
+geosolver-core/src/planner\kernel_plan.rs:200:        chunks.push(hash_kernel_execution_plan(ladder_plan).0.to_vec());
+geosolver-core/src/planner\kernel_plan.rs:213:pub fn hash_kernel_execution_plan(plan: &KernelExecutionPlan) -> Hash {
+geosolver-core/src/planner\kernel_plan.rs:257:        chunks.push(hash_dense_relation_search_schedule(schedule).0.to_vec());
+geosolver-core/src/planner\cost_model.rs:45:pub fn estimate_kernel_cost(
+geosolver-core/src/planner\cost_model.rs:87:pub fn compare_cost(a: &KernelCostEstimate, b: &KernelCostEstimate) -> Ordering {
+geosolver-core/src/planner\admission.rs:6:use crate::kernels::target_relation_search::build_dense_relation_search_schedule;
+geosolver-core/src/planner\admission.rs:44:pub fn all_planner_kernel_kinds() -> Vec<KernelKind> {
+geosolver-core/src/planner\admission.rs:58:pub fn collect_kernel_admissions(
+geosolver-core/src/planner\admission.rs:69:    all_planner_kernel_kinds()
+geosolver-core/src/planner\admission.rs:141:                let schedule = build_dense_relation_search_schedule(
+geosolver-core/src/planner\admission.rs:167:                let schedule = build_dense_relation_search_schedule(
+exit_code=0
+
+===== p6-universal-fixed-sequence =====
+> rg -n "TargetRelationSearchEscalated|SparseResultantIfSquareOrOverdetermined|SpecializeProjectInterpolateVerify|LocalGroebnerEliminationToKeepZ|NoLocalCertifiedNonFinite|UniversalTargetElimination" geosolver-core/src/planner
+geosolver-core/src/planner\planner.rs:96:            KernelKind::UniversalTargetElimination
+geosolver-core/src/planner\planner.rs:100:            == KernelKind::UniversalTargetElimination
+geosolver-core/src/planner\ladder.rs:27:        .position(|plan| plan.kernel_kind == KernelKind::UniversalTargetElimination)
+geosolver-core/src/planner\kernel_plan.rs:75:    TargetRelationSearchEscalated,
+geosolver-core/src/planner\kernel_plan.rs:76:    SparseResultantIfSquareOrOverdetermined,
+geosolver-core/src/planner\kernel_plan.rs:77:    SpecializeProjectInterpolateVerify,
+geosolver-core/src/planner\kernel_plan.rs:78:    LocalGroebnerEliminationToKeepZ,
+geosolver-core/src/planner\kernel_plan.rs:114:    NoLocalCertifiedNonFinite,
+geosolver-core/src/planner\cost_model.rs:110:        KernelKind::UniversalTargetElimination => 8,
+geosolver-core/src/planner\cost_model.rs:124:        KernelKind::UniversalTargetElimination => 100,
+geosolver-core/src/planner\admission.rs:54:        KernelKind::UniversalTargetElimination,
+geosolver-core/src/planner\admission.rs:163:        KernelKind::UniversalTargetElimination => {
+geosolver-core/src/planner\admission.rs:193:                    LocalNonfinitePolicy::NoLocalCertifiedNonFinite,
+geosolver-core/src/planner\admission.rs:374:            UniversalStrategy::TargetRelationSearchEscalated,
+geosolver-core/src/planner\admission.rs:379:            UniversalStrategy::SparseResultantIfSquareOrOverdetermined,
+geosolver-core/src/planner\admission.rs:384:            UniversalStrategy::SpecializeProjectInterpolateVerify,
+geosolver-core/src/planner\admission.rs:389:            UniversalStrategy::LocalGroebnerEliminationToKeepZ,
+exit_code=0
+
+===== p6-anti-overclaim-declines =====
+> rg -n "not yet admitted|generic sparse resultant|verified characteristic coverage|regular-chain projection plan|norm/trace tower|specialization-interpolation" geosolver-core/src/planner/admission.rs
+198:            "P7 guarded LinearAffineKernel projection plan is not yet admitted as a generic kernel",
+201:            declined("P8b generic sparse resultant projection plan is not yet admitted")
+204:            declined("P8c verified characteristic coverage plan is not yet admitted")
+207:            declined("P9 generic norm/trace tower projection plan is not yet admitted")
+210:            declined("P9 regular-chain projection plan is not yet admitted")
+213:            declined("P8b specialization-interpolation verification plan is not yet admitted")
+exit_code=0
+
+===== p6-remediation-tests =====
+> rg -n "p6_declared_ladder_rejects_execution_plan_field_tampering|rgq055_schedule_reproducibility_covers_three_local_shapes|rgq042_option_cap_is_not_silently_widened" geosolver-core/src/planner/planner.rs geosolver-core/src/kernels/target_relation_search.rs
+geosolver-core/src/kernels/target_relation_search.rs:346:    fn rgq042_option_cap_is_not_silently_widened() {
+geosolver-core/src/kernels/target_relation_search.rs:369:    fn rgq055_schedule_reproducibility_covers_three_local_shapes() {
+geosolver-core/src/planner/planner.rs:144:    fn p6_declared_ladder_rejects_execution_plan_field_tampering() {
+exit_code=0

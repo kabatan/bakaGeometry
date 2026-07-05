@@ -1,0 +1,60 @@
+P8d verification excerpts
+
+1. Test-first failure
+
+cargo test --manifest-path geosolver-core/Cargo.toml p8d_ -- --nocapture
+
+Result:
+FAILED before implementation. The one-large-block P8d test reached the Universal placeholder and returned CertificateDesignGap with message "UniversalTargetElimination execution is owned by a later phase".
+
+2. Focused P8d tests after implementation
+
+cargo test --manifest-path geosolver-core/Cargo.toml p8d_ -- --nocapture
+
+Result:
+running 6 tests
+test kernels::universal_elimination::tests::p8d_universal_child_message_hash_binding_is_operational ... ok
+test kernels::universal_elimination::tests::p8d_universal_requires_fixed_strategy_sequence_and_resource_caps ... ok
+test kernels::universal_elimination::tests::p8d_static_forbidden_fallback_apis_absent ... ok
+test kernels::universal_elimination::tests::p8d_universal_exhaustion_uses_only_allowed_failure_statuses ... ok
+test kernels::universal_elimination::tests::p8d_universal_one_large_block_exports_target_relation ... ok
+test kernels::universal_elimination::tests::p8d_universal_rejects_plan_auth_and_replay_tamper ... ok
+test result: ok. 6 passed; 0 failed; 141 filtered out.
+
+3. Regression checks
+
+cargo test --manifest-path geosolver-core/Cargo.toml p6_ -- --nocapture
+Result: 3 passed; 0 failed.
+
+cargo test --manifest-path geosolver-core/Cargo.toml p7_ -- --nocapture
+Result: 9 passed; 0 failed.
+
+cargo test --manifest-path geosolver-core/Cargo.toml p8a_ -- --nocapture
+Result: 6 passed; 0 failed.
+
+cargo test --manifest-path geosolver-core/Cargo.toml p8b_ -- --nocapture
+Result: 7 passed; 0 failed.
+
+cargo test --manifest-path geosolver-core/Cargo.toml p8c_ -- --nocapture
+Result: 5 passed; 0 failed.
+
+4. Formatting and full suite
+
+cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+Result: passed after rustfmt.
+
+cargo test --manifest-path geosolver-core/Cargo.toml
+Result: 147 passed; 0 failed; doc-tests 0 passed; 0 failed.
+
+5. Static scans
+
+Forbidden Universal fallback scan for local nonfinite, coordinate roots/solutions, RUR, QE/CAD, solve-all-coordinates, and non-production Groebner batch returned no matches in:
+- geosolver-core/src/kernels/universal_elimination.rs
+- geosolver-core/src/planner/admission.rs
+
+Fixed-sequence/resource scan found UniversalFixedLocalElimination, NoLocalCertifiedNonFinite, LocalGroebnerEliminationToKeepZ, and planner delegation through plan_universal_elimination.
+
+6. Git whitespace check
+
+git diff --check
+Result: exit 0. Only CRLF conversion warnings were printed.

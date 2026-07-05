@@ -1,0 +1,72 @@
+# P12 Static Scans
+
+Static scan 1: roots placeholder / floating-only scan
+
+Command:
+
+```text
+rg -n "implemented in P12|TODO|placeholder|floating-only|floating|f64|f32|approx|unimplemented!|todo!|unwrap_or_else\(\|\| root\.clone\(\)\)" geosolver-core/src/roots geosolver-core/src/algebra/real_root.rs geosolver-core/src/types/rational.rs
+```
+
+Result:
+
+No matches. The command returned rg exit code 1.
+
+Interpretation:
+
+The P12 root/decode files do not contain the scanned stubs, floating-only roots, approximate-root wording, or the previous silent refinement fallback.
+
+Static scan 2: implementation anchors
+
+Command:
+
+```text
+rg -n "squarefree_support|isolate_real_roots|isolate_real_roots_sturm_with_max_width|RootIsolationOptions|decode_candidates|hash_target_candidate|AlgebraicRootRecord|algebraic_roots_from_support|refine_algebraic_root_to_width|compare_algebraic_roots|candidate_hash|finalize_candidate_cover_result|verify_roots_and_candidates|p12_" geosolver-core/src/roots geosolver-core/src/algebra/real_root.rs geosolver-core/src/verify geosolver-core/src/compose/final_support.rs geosolver-core/src/types/rational.rs geosolver-core/tests
+```
+
+Required anchors observed:
+
+- `squarefree_support` in `geosolver-core/src/roots/squarefree.rs` rejects zero support and delegates exact squarefree normalization to univariate gcd/derivative logic.
+- `RootIsolationOptions` and `isolate_real_roots` in `geosolver-core/src/roots/isolate.rs` connect the public P12 roots API to exact Sturm/Descartes-selected isolation.
+- `isolate_real_roots_sturm_with_max_width` in `geosolver-core/src/algebra/real_root.rs` provides exact rational refinement with a positive rational width bound.
+- `TargetCandidate`, `decode_candidates`, and `hash_target_candidate` in `geosolver-core/src/roots/decode.rs` bind candidate target, support hash, root index, isolating interval, and candidate hash.
+- `finalize_candidate_cover_result` in `geosolver-core/src/compose/final_support.rs` calls `squarefree_support`, `isolate_real_roots`, and `decode_candidates` to construct a production candidate-cover result with exact roots and decoded candidates.
+- `AlgebraicRootRecord`, `algebraic_roots_from_support`, `refine_algebraic_root_to_width`, and `compare_algebraic_roots` in `geosolver-core/src/roots/algebraic_number.rs`.
+- `hash_decoded_candidates` and `verify_roots_and_candidates` include candidate interval/hash binding in replay.
+- `p12_replay_rejects_candidate_omission_and_duplicates_even_when_hashes_match` proves replay rejects omitted or duplicate candidates even when run hashes are recomputed.
+- `geosolver-core/tests/p12_roots_decode_integration.rs` proves candidate-cover finalization returns exact root isolation and non-placeholder decoded candidates.
+- P12 focused tests cover zero/repeated squarefree, no-real root, one rational root, multiple rational roots, irrational roots, repeated roots, high-coefficient roots, candidate decode binding, algebraic root hash binding, comparison, and refinement.
+
+Static scan 4: production decode wiring
+
+Command:
+
+```text
+rg -n "decode_candidates\(" geosolver-core/src geosolver-core/tests
+```
+
+Observed matches:
+
+- `geosolver-core/src/compose/final_support.rs` calls `decode_candidates` in `finalize_candidate_cover_result`.
+- `geosolver-core/src/roots/mod.rs` uses `decode_candidates` in P12 unit tests.
+- `geosolver-core/src/roots/decode.rs` defines `decode_candidates`.
+
+Interpretation:
+
+Candidate decode is now wired into a production support-producing candidate-cover result construction path, not only unit tests.
+
+Static scan 3: benign empty-root path
+
+Command:
+
+```text
+rg -n "return Ok\(Vec::new\(\)\)" geosolver-core/src/algebra/real_root.rs
+```
+
+Observed match:
+
+- `geosolver-core/src/algebra/real_root.rs` returns `Ok(Vec::new())` only for a nonzero constant squarefree polynomial, i.e. an exact no-real-root/no-finite-root case.
+
+Interpretation:
+
+The empty-root return is not a placeholder and does not mask real roots. P12 focused tests separately verify no-real-root and real-root cases.

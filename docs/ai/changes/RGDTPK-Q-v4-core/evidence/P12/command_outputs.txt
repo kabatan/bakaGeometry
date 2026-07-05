@@ -1,0 +1,68 @@
+# P12 Command Outputs
+
+Test-first failure:
+
+```text
+cargo test --manifest-path geosolver-core/Cargo.toml p12_ -- --nocapture
+error[E0432]: unresolved imports for algebraic_roots_from_support, compare_algebraic_roots, AlgebraicRootOrdering, squarefree_support, decode_candidates, hash_target_candidate, isolate_real_roots, RootIsolationOptions
+```
+
+Focused tests after implementation and remediation:
+
+```text
+cargo test --manifest-path geosolver-core/Cargo.toml p12_ -- --nocapture
+running 6 tests
+test roots::tests::p12_squarefree_rejects_zero_and_removes_repeated_factors ... ok
+test roots::tests::p12_decode_candidates_bind_target_support_index_interval_and_hash ... ok
+test roots::tests::p12_algebraic_records_bind_interval_hash_and_compare_disjoint_roots ... ok
+test roots::tests::p12_exact_isolation_handles_irrational_repeated_and_high_coefficient_roots ... ok
+test roots::tests::p12_exact_isolation_handles_no_real_one_rational_and_multiple_rational_roots ... ok
+test verify::replay::tests::p12_replay_rejects_candidate_omission_and_duplicates_even_when_hashes_match ... ok
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 171 filtered out
+
+running 1 test
+test p12_candidate_cover_finalizer_returns_exact_roots_and_nonplaceholder_candidates ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+```
+
+Full test suite:
+
+```text
+cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture
+running 177 tests
+test result: ok. 177 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+running 1 test
+test p12_candidate_cover_finalizer_returns_exact_roots_and_nonplaceholder_candidates ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+Doc-tests geosolver_core
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+```
+
+Formatting:
+
+```text
+cargo fmt --manifest-path geosolver-core/Cargo.toml
+cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+exit code 0
+```
+
+Whitespace:
+
+```text
+git diff --check
+exit code 0
+```
+
+`git diff --check` emitted only CRLF conversion warnings from Git for the working copy; it reported no whitespace errors.
+
+Implementation note:
+
+An intermediate P12 run failed because exact rational interval containment used the old derived `Ord` on `RationalQ`, which compared numerator/denominator lexicographically. P12 corrected `RationalQ` ordering to exact cross-product comparison, then the P12 focused tests and full suite passed.
+
+Spec-verifier remediation:
+
+```text
+P12 focused test now includes replay rejection of candidate omission and duplicate candidates even when run hashes are recomputed.
+The integration test geosolver-core/tests/p12_roots_decode_integration.rs exercises the production candidate-cover finalizer and verifies nonzero support produces exact roots and non-placeholder decoded candidates.
+The production candidate-cover finalizer in geosolver-core/src/compose/final_support.rs calls decode_candidates outside unit tests.
+```

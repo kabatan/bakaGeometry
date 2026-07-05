@@ -1,0 +1,13 @@
+cargo test --manifest-path geosolver-core/Cargo.toml p12_ -- --nocapture
+cargo fmt --manifest-path geosolver-core/Cargo.toml
+cargo test --manifest-path geosolver-core/Cargo.toml p12_ -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture
+cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+git diff --check
+rg -n "implemented in P12|TODO|placeholder|floating-only|floating|f64|f32|approx|unimplemented!|todo!|unwrap_or_else\(\|\| root\.clone\(\)\)" geosolver-core/src/roots geosolver-core/src/algebra/real_root.rs geosolver-core/src/types/rational.rs
+rg -n "decode_candidates\(" geosolver-core/src geosolver-core/tests
+rg -n "squarefree_support|isolate_real_roots|isolate_real_roots_sturm_with_max_width|RootIsolationOptions|decode_candidates|hash_target_candidate|AlgebraicRootRecord|algebraic_roots_from_support|refine_algebraic_root_to_width|compare_algebraic_roots|candidate_hash|finalize_candidate_cover_result|verify_roots_and_candidates|p12_" geosolver-core/src/roots geosolver-core/src/algebra/real_root.rs geosolver-core/src/verify geosolver-core/src/compose/final_support.rs geosolver-core/src/types/rational.rs geosolver-core/tests
+git status --short
+spec_verifier P12 read-only verification
+quality_reviewer P12 read-only verification
+guardian_boundary_reviewer P12 MECH completion verification

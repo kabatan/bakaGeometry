@@ -1,1 +1,33 @@
-// Declared ladder construction is implemented in P6.
+use crate::kernels::traits::KernelKind;
+use crate::planner::admission::KernelAdmission;
+use crate::planner::cost_model::{compare_cost, KernelCostEstimate};
+use crate::planner::kernel_plan::KernelExecutionPlan;
+
+pub fn build_declared_ladder(
+    admissions: &[KernelAdmission],
+    costs: &[KernelCostEstimate],
+) -> Vec<KernelExecutionPlan> {
+    let mut plans = admissions
+        .iter()
+        .filter_map(|admission| admission.execution_plan.clone())
+        .collect::<Vec<_>>();
+    plans.sort_by(|a, b| {
+        let a_cost = costs
+            .iter()
+            .find(|cost| cost.kernel_kind == a.kernel_kind)
+            .expect("cost estimate missing for admitted kernel");
+        let b_cost = costs
+            .iter()
+            .find(|cost| cost.kernel_kind == b.kernel_kind)
+            .expect("cost estimate missing for admitted kernel");
+        compare_cost(a_cost, b_cost)
+    });
+    if let Some(index) = plans
+        .iter()
+        .position(|plan| plan.kernel_kind == KernelKind::UniversalTargetElimination)
+    {
+        let universal = plans.remove(index);
+        plans.push(universal);
+    }
+    plans
+}

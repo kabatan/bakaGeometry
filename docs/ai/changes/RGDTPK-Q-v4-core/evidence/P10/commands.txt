@@ -1,0 +1,12 @@
+cargo test --manifest-path geosolver-core/Cargo.toml p10_ -- --nocapture
+cargo fmt --manifest-path geosolver-core/Cargo.toml
+cargo test --manifest-path geosolver-core/Cargo.toml p10_ -- --nocapture
+cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+cargo test --manifest-path geosolver-core/Cargo.toml
+rg -n "circle|triangle|fixture|expected answer|official solution|full coordinate|full_coordinate|coordinate_root|coordinate_solution|full_rur|RUR|QE|CAD|NotYetImplemented|Unsupported|unsupported|relation-search failure|local Universal" geosolver-core/src/compose geosolver-core/src/result/status.rs geosolver-core/src/kernels/universal_elimination.rs geosolver-core/src/kernels/target_relation_search.rs
+rg -n "CertifiedNonFiniteTargetImage" geosolver-core/src/compose geosolver-core/src/result/status.rs geosolver-core/src/kernels/universal_elimination.rs geosolver-core/src/kernels/target_relation_search.rs
+rg -n "AlgorithmicHardCase|FiniteResourceFailure|CertificateDesignGap|NoLocalCertifiedNonFinite|no target-only|non-finiteness not certified|no target/separator relation found" geosolver-core/src/compose geosolver-core/src/kernels/universal_elimination.rs geosolver-core/src/kernels/target_relation_search.rs
+rg -n "ComposedProjection|compose_projection_messages|eliminate_separators_from_message_relations|build_global_support_polynomial|build_final_support_or_nonfinite|certify_nonfinite_target_image|certify_zero_target_elimination_ideal|verify_nonfinite_certificate|certify_real_nonfinite_target_image|p10_" geosolver-core/src/compose geosolver-core/src/result/output.rs geosolver-core/src/result/status.rs
+git diff --check
+git status --short
+spec_verifier P10 read-only verification

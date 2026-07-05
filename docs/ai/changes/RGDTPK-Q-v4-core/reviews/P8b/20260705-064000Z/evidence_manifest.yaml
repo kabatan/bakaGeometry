@@ -1,0 +1,142 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: P8b
+commit: 45c33932033e308f004262b23130d59a30a93c36+p8b-worktree
+algorithm_spec_source_sha256: 2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed
+failure_source_sha256: df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: cd5c9147a5f48d50d12142c67e5160f95a1ccdbfe43eee925d5e0bb1a8fee779
+evidence_manifest_schema_sha256: 74e0fe22b6ba77e38edf96c8e6851eb5be8beb717599cbfb0c345abe4617a253
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/command_outputs.txt
+  sha256: cd8e1077d9612e8585781d94559ee8f0bb84a69655fbb575bcfc282bb368ff47
+  purpose: P8b command output capture after reviewer remediation.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/commands.txt
+  sha256: 3771f2a5afd8575f30f9109e7fd121800cd25b7914474d25c9314852a7d95567
+  purpose: P8b command list, first failure, remediation loop, and final regression summaries.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/function_implementation_table.yaml
+  sha256: 2d98aca7a5700d87fc39c8c58e511edb32607784018bb933513dcff359dad6a4
+  purpose: P8b requirement-to-function implementation table.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/notes.md
+  sha256: baa1b1474a8237b8a0877108594783dc8823342837876b57038430cdbec0e756
+  purpose: P8b evidence notes, status boundary notes, and claim limitations.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/reviewer_fail_fix.md
+  sha256: cd9ad953edbed1a3d878e09e4238714eb6da5d08c1690ba13df88dff2816eaa3
+  purpose: P8b reviewer FAIL_FIXABLE remediation record.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/static_scans.txt
+  sha256: 256303e163dc7f58b5541d24993e293620da3a9cb1d057cddbc20bff275d7a94
+  purpose: P8b required-function, exact-verification, child-binding, planner, and ledger-boundary static scans.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/test_first_failure.txt
+  sha256: 83ca808a0fd7bdd6eb627f405e50eda914f315969ea45f514af276cc64de8b82
+  purpose: P8b pre-completion failing test evidence.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P8b/20260705-064000Z/prompt.md
+  sha256: 730a88ce57b6e440d84b9409583441aa064ff0296b96bc7a9443eb37c91d9893
+  purpose: Archived P8b guardian reviewer remediation prompt.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P8b/20260705-064000Z/response.md
+  sha256: a1e187518b6f3f5971685b5714065c1ca79560f06b6d6ae298cc12eb18ee5e7c
+  purpose: Archived P8b guardian reviewer PASS response.
+command_outputs:
+- command: cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/commands.txt
+  output_sha256: 3771f2a5afd8575f30f9109e7fd121800cd25b7914474d25c9314852a7d95567
+  finished_at_utc: 20260705-064000Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p8b_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/command_outputs.txt
+  output_sha256: cd8e1077d9612e8585781d94559ee8f0bb84a69655fbb575bcfc282bb368ff47
+  finished_at_utc: 20260705-064000Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml interpolation -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/command_outputs.txt
+  output_sha256: cd8e1077d9612e8585781d94559ee8f0bb84a69655fbb575bcfc282bb368ff47
+  finished_at_utc: 20260705-064000Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml resultant -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/command_outputs.txt
+  output_sha256: cd8e1077d9612e8585781d94559ee8f0bb84a69655fbb575bcfc282bb368ff47
+  finished_at_utc: 20260705-064000Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p6_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/commands.txt
+  output_sha256: 3771f2a5afd8575f30f9109e7fd121800cd25b7914474d25c9314852a7d95567
+  finished_at_utc: 20260705-064000Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p7_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/commands.txt
+  output_sha256: 3771f2a5afd8575f30f9109e7fd121800cd25b7914474d25c9314852a7d95567
+  finished_at_utc: 20260705-064000Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p8a_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/commands.txt
+  output_sha256: 3771f2a5afd8575f30f9109e7fd121800cd25b7914474d25c9314852a7d95567
+  finished_at_utc: 20260705-064000Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/command_outputs.txt
+  output_sha256: cd8e1077d9612e8585781d94559ee8f0bb84a69655fbb575bcfc282bb368ff47
+  finished_at_utc: 20260705-064000Z
+- command: git diff --check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/commands.txt
+  output_sha256: 3771f2a5afd8575f30f9109e7fd121800cd25b7914474d25c9314852a7d95567
+  finished_at_utc: 20260705-064000Z
+- command: guardian_boundary_reviewer P8b remediation review
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P8b/20260705-064000Z/response.md
+  output_sha256: a1e187518b6f3f5971685b5714065c1ca79560f06b6d6ae298cc12eb18ee5e7c
+  finished_at_utc: 20260705-064000Z
+static_scans:
+- scan_id: p8b-sparse-resultant
+  command: rg kernel_not_ready_error, P8b owns, not yet admitted, p8b_, verify_resultant_certificate, execute_sparse_resultant, and plan_sparse_resultant in sparse_resultant.rs and planner/admission.rs
+  forbidden_pattern: P8b SparseResultant placeholder, missing exact verification, or unsupported-style decline
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/static_scans.txt
+- scan_id: p8b-specialization-inner-target
+  command: rg execute_inner_target_only_kernel, admit_target_relation_search, execute_target_relation_search, build_multiseparator_coefficient_support, interpolate_sparse_coefficients_with_support, verify_interpolated_relation_by_elimination, execute_specialization_interpolation, and p8b_ in interpolation.rs and specialization_interpolation.rs
+  forbidden_pattern: interpolation sample generation by precomputed exported Groebner generator or sample agreement as proof
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/static_scans.txt
+- scan_id: p8b-candidate-only-boundary
+  command: rg CandidateOnlyRequiresExactMembership, verify_resultant_certificate, verify_interpolated_relation_by_elimination, and validate_local_elimination_result in P8b files
+  forbidden_pattern: modular/resultant/interpolation candidate accepted as proof without exact Q verification
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/static_scans.txt
+- scan_id: p8b-child-message-binding
+  command: rg child_message_hashes, child message hash binding mismatch, collect_relation_inputs, and p8b child tests in sparse_resultant.rs and specialization_interpolation.rs
+  forbidden_pattern: child relation generators omitted from P8b execution or unbound to package hashes
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/static_scans.txt
+- scan_id: p8b-planner-admission
+  command: rg plan_sparse_resultant, plan_specialization_interpolation, SpecializationInterpolationExactVerification, and SparseResultantExactVerification in planner/admission.rs and kernels
+  forbidden_pattern: P8b planner admission remaining hook-only or unplanned at runtime
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/static_scans.txt
+- scan_id: p8b-primitive-ledger-boundary
+  command: inspect PRIMITIVE_SCOPE_LEDGER.md against P8b implementation
+  forbidden_pattern: overclaiming P3d binary resultant or one-variable interpolation helpers as generic kernels without P8b exact verification
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/static_scans.txt
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/function_implementation_table.yaml
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P8b/20260705-064000Z/response.md
+known_limitations:
+- P8b continues only the SparseResultant and SpecializationInterpolation parts of MECH-007; MECH-007 as a whole remains open.
+- P8c, P8d, P9, replay/certificate closure, final composition, exact-image semantics, public orchestration, performance readiness, and final acceptance remain open.
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-007
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-013
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

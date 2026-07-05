@@ -1,0 +1,140 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: P10
+commit: 45c33932033e308f004262b23130d59a30a93c36+p10-worktree
+algorithm_spec_source_sha256: 2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed
+failure_source_sha256: df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: cd5c9147a5f48d50d12142c67e5160f95a1ccdbfe43eee925d5e0bb1a8fee779
+evidence_manifest_schema_sha256: 74e0fe22b6ba77e38edf96c8e6851eb5be8beb717599cbfb0c345abe4617a253
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/commands.txt
+  sha256: 1589c317ccf61fe4d9a0f62440f853c4ecccee6d7e2109768a4dae37369efbca
+  purpose: P10 command list for test-first failure, implementation verification, static scans, spec verifier, and diff check.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/command_outputs.txt
+  sha256: 36f755d5ac83c3bd51a8abe8bef15d19de155c17a80b08e93e06e7bfe441560b
+  purpose: P10 command output summaries including focused tests, full suite, scans, diff check, and spec verifier PASS.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/function_implementation_table.yaml
+  sha256: f041540940bd3d60a346eff3e27ce885febb4139d09e89181f81d4b5a893ebee
+  purpose: P10 requirement-to-function implementation table.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/static_scans.txt
+  sha256: 8e59bbafcb5c4083be7ec51afe1008ab6d2f3ef56cdaaaa21b267a0a00f14ea8
+  purpose: P10 forbidden shortcut, nonfinite status location, hardcase polarity, and implementation anchor scans.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/notes.md
+  sha256: 3b61c1a3919dc5e10c760a7fe90d7f56ab73e7d727faffb815a9b0a903961b50
+  purpose: P10 scope notes and forbidden overclaims.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/test_first_failure.txt
+  sha256: 8a0a560bcfaa482ef537c4acd03b048e5e9a7b59309f003b1fe8e8299ce4147a
+  purpose: P10 test-first failure record and sign-representative follow-up.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/spec_verifier_pass.md
+  sha256: 355fb4bf3536bffe382a9a84c5ca06810749a90c3614c45d19cfddf6200ceedc
+  purpose: P10 spec verifier PASS summary.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P10/20260705-082020Z/prompt.md
+  sha256: 423026a906cc82b5df0b5f1d6c02cf34567244cc9c74ac97d1fbc50090c2388e
+  purpose: Archived P10 guardian reviewer prompt.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P10/20260705-082020Z/response.md
+  sha256: dd0c2992a7fcb9bb69f4ddabb898d0638ba139a3a71cd9b63b990d542a6deef1
+  purpose: Archived P10 guardian reviewer PASS response.
+command_outputs:
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p10_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 1
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/test_first_failure.txt
+  output_sha256: 8a0a560bcfaa482ef537c4acd03b048e5e9a7b59309f003b1fe8e8299ce4147a
+  finished_at_utc: 20260705-082020Z
+- command: cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/command_outputs.txt
+  output_sha256: 36f755d5ac83c3bd51a8abe8bef15d19de155c17a80b08e93e06e7bfe441560b
+  finished_at_utc: 20260705-082020Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p10_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/command_outputs.txt
+  output_sha256: 36f755d5ac83c3bd51a8abe8bef15d19de155c17a80b08e93e06e7bfe441560b
+  finished_at_utc: 20260705-082020Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/command_outputs.txt
+  output_sha256: 36f755d5ac83c3bd51a8abe8bef15d19de155c17a80b08e93e06e7bfe441560b
+  finished_at_utc: 20260705-082020Z
+- command: rg forbidden P10 shortcut names and fallback APIs in compose, status, Universal, and TargetRelationSearch files
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/static_scans.txt
+  output_sha256: 8e59bbafcb5c4083be7ec51afe1008ab6d2f3ef56cdaaaa21b267a0a00f14ea8
+  finished_at_utc: 20260705-082020Z
+- command: rg CertifiedNonFiniteTargetImage locations
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/static_scans.txt
+  output_sha256: 8e59bbafcb5c4083be7ec51afe1008ab6d2f3ef56cdaaaa21b267a0a00f14ea8
+  finished_at_utc: 20260705-082020Z
+- command: rg P10 hardcase and no-local-nonfinite polarity anchors
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/static_scans.txt
+  output_sha256: 8e59bbafcb5c4083be7ec51afe1008ab6d2f3ef56cdaaaa21b267a0a00f14ea8
+  finished_at_utc: 20260705-082020Z
+- command: rg P10 implementation anchors
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/static_scans.txt
+  output_sha256: 8e59bbafcb5c4083be7ec51afe1008ab6d2f3ef56cdaaaa21b267a0a00f14ea8
+  finished_at_utc: 20260705-082020Z
+- command: git diff --check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/command_outputs.txt
+  output_sha256: 36f755d5ac83c3bd51a8abe8bef15d19de155c17a80b08e93e06e7bfe441560b
+  finished_at_utc: 20260705-082020Z
+- command: spec_verifier P10 read-only verification
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/spec_verifier_pass.md
+  output_sha256: 355fb4bf3536bffe382a9a84c5ca06810749a90c3614c45d19cfddf6200ceedc
+  finished_at_utc: 20260705-082020Z
+- command: guardian_boundary_reviewer P10 review
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P10/20260705-082020Z/response.md
+  output_sha256: dd0c2992a7fcb9bb69f4ddabb898d0638ba139a3a71cd9b63b990d542a6deef1
+  finished_at_utc: 20260705-082020Z
+static_scans:
+- scan_id: p10-forbidden-shortcuts
+  command: rg geometry names, fixture/expected-answer strings, coordinate-root/full-coordinate/RUR paths, QE/CAD, Unsupported/NotYetImplemented, local Universal nonfinite wording, and relation-search-failure-to-nonfinite wording
+  forbidden_pattern: geometry dispatch, fixture/expected-answer dispatch, coordinate-root/full-coordinate/RUR solve paths, QE/CAD, ordinary unsupported, local Universal nonfinite, or relation-search failure mapped to nonfinite
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/static_scans.txt
+- scan_id: p10-certified-nonfinite-locations
+  command: rg CertifiedNonFiniteTargetImage in compose, status, Universal, and TargetRelationSearch files
+  forbidden_pattern: CertifiedNonFiniteTargetImage emitted by local TargetRelationSearch or Universal failure instead of final-support positive certificate
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/static_scans.txt
+- scan_id: p10-hardcase-polarity
+  command: rg AlgorithmicHardCase, FiniteResourceFailure, CertificateDesignGap, NoLocalCertifiedNonFinite, no target-only, non-finiteness not certified, and no target/separator relation found anchors
+  forbidden_pattern: no-support, relation-search exhaustion, or local Universal failure routed to nonfinite
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/static_scans.txt
+- scan_id: p10-implementation-anchors
+  command: rg ComposedProjection, compose_projection_messages, separator elimination, final support, nonfinite certificate functions, and p10 tests
+  forbidden_pattern: missing P10 required function or focused test anchor
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/static_scans.txt
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/function_implementation_table.yaml
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P10/20260705-082020Z/response.md
+known_limitations:
+- P10 closes MECH-009 and MECH-015 only; it does not close P11 replay/certificate closure, P12 roots/decode, public orchestration, performance readiness, final acceptance, or source-faithful/acceptance-complete claims.
+- "The nonfinite certificate route is intentionally narrow: target-free composed generators plus exact rational consistency witness. Cases outside that route remain hard/certificate-gap cases rather than broad nonfinite completeness."
+- No R-ID is marked VERIFIED by the P10 review.
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-009
+- PARTIAL_MECHANISM_READY:MECH-015
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-015
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

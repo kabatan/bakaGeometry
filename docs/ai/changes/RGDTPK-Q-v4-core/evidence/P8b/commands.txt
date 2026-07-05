@@ -1,0 +1,79 @@
+P8b evidence commands run from C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry
+
+1. cargo test --manifest-path geosolver-core/Cargo.toml p8b_ -- --nocapture
+   test-first result before implementation: fail, 0 passed / 4 failed.
+
+2. cargo fmt --manifest-path geosolver-core/Cargo.toml
+   result after implementation edits: pass.
+
+3. cargo test --manifest-path geosolver-core/Cargo.toml p8b_ -- --nocapture
+   result after SparseResultant and SpecializationInterpolation implementation: pass, 4 passed.
+
+4. cargo test --manifest-path geosolver-core/Cargo.toml interpolation -- --nocapture
+   first result after adding multiseparator interpolation tests: fail, bad-sample test expected reconstruction when the exact solver correctly rejected an inconsistent sample set.
+
+5. cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+   result after bad-sample test correction: pass.
+
+6. cargo test --manifest-path geosolver-core/Cargo.toml interpolation -- --nocapture
+   result after bad-sample test correction: pass, 7 passed.
+
+7. cargo test --manifest-path geosolver-core/Cargo.toml resultant -- --nocapture
+   result: pass, 9 passed.
+
+8. cargo test --manifest-path geosolver-core/Cargo.toml p8b_ -- --nocapture
+   result after planner admission regression was added: pass, 5 passed.
+
+9. cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+   result before broader regression: pass.
+
+10. cargo test --manifest-path geosolver-core/Cargo.toml p6_ -- --nocapture
+    result: pass, 3 passed.
+
+11. cargo test --manifest-path geosolver-core/Cargo.toml p7_ -- --nocapture
+    result: pass, 9 passed.
+
+12. cargo test --manifest-path geosolver-core/Cargo.toml p8a_ -- --nocapture
+    result: pass, 6 passed.
+
+13. cargo test --manifest-path geosolver-core/Cargo.toml p8b_ -- --nocapture
+    result: pass, 5 passed.
+
+14. cargo test --manifest-path geosolver-core/Cargo.toml
+    result: pass, 134 passed.
+
+15. git diff --check
+    result: exit code 0; Git reported CRLF conversion warnings only.
+
+16. guardian_boundary_reviewer P8b review
+    result: FAIL_FIXABLE
+    required fixes:
+    - SparseResultantProjectionKernel must bind and consume child message relations.
+    - SpecializationInterpolationKernel must generate samples by executing a declared inner target-only kernel, not by specializing a precomputed exported Groebner generator.
+
+17. cargo fmt --manifest-path geosolver-core/Cargo.toml; cargo test --manifest-path geosolver-core/Cargo.toml p8b_ -- --nocapture
+    result after reviewer remediation: pass, 7 passed.
+
+18. cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+    result after reviewer remediation: pass.
+
+19. cargo test --manifest-path geosolver-core/Cargo.toml interpolation -- --nocapture
+    result after reviewer remediation: pass, 9 passed.
+
+20. cargo test --manifest-path geosolver-core/Cargo.toml resultant -- --nocapture
+    result after reviewer remediation: pass, 11 passed.
+
+21. cargo test --manifest-path geosolver-core/Cargo.toml p6_ -- --nocapture
+    result after reviewer remediation: pass, 3 passed.
+
+22. cargo test --manifest-path geosolver-core/Cargo.toml p7_ -- --nocapture
+    result after reviewer remediation: pass, 9 passed.
+
+23. cargo test --manifest-path geosolver-core/Cargo.toml p8a_ -- --nocapture
+    result after reviewer remediation: pass, 6 passed.
+
+24. cargo test --manifest-path geosolver-core/Cargo.toml
+    result after reviewer remediation: pass, 136 passed.
+
+25. git diff --check
+    result after reviewer remediation: exit code 0; Git reported CRLF conversion warnings only.

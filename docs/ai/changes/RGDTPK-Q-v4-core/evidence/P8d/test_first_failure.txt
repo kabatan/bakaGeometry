@@ -1,0 +1,17 @@
+Initial test-first check:
+
+Command:
+cargo test --manifest-path geosolver-core/Cargo.toml p8d_ -- --nocapture
+
+Expected failure before implementation:
+test kernels::universal_elimination::tests::p8d_universal_one_large_block_exports_target_relation ... FAILED
+
+Observed failure summary:
+0 passed; 1 failed; 140 filtered out.
+
+Root cause:
+The P8d test exercised a one-large-block UniversalTargetElimination path, but the kernel still returned the placeholder CertificateDesignGap:
+"UniversalTargetElimination execution is owned by a later phase"
+
+Targeted fix:
+Implemented the required P8d UniversalTargetElimination functions, fixed strategy plan, bounded local Groebner route, exported-generator verification, hash binding, and planner admission connection.

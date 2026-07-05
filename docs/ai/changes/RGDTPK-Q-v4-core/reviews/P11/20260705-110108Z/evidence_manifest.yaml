@@ -1,0 +1,183 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: P11
+commit: 45c33932033e308f004262b23130d59a30a93c36+p11-worktree
+algorithm_spec_source_sha256: 2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed
+failure_source_sha256: df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: cd5c9147a5f48d50d12142c67e5160f95a1ccdbfe43eee925d5e0bb1a8fee779
+evidence_manifest_schema_sha256: 74e0fe22b6ba77e38edf96c8e6851eb5be8beb717599cbfb0c345abe4617a253
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/command_outputs.txt
+  sha256: e83ddfd64dbd6ee7aabaa6a3583d80c4009dc0eb244127bfd1e624325642a886
+  purpose: P11 command output summaries for focused tests, full suite, formatting, diff checks, and boundary remediation verification.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/commands.txt
+  sha256: 26c6befff7f21eb6153bcf95a11d185ca41f08054a3e69d1e28dda2d805cff5b
+  purpose: P11 command list for implementation verification, static scans, and reviewer checkpoints.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/function_implementation_table.yaml
+  sha256: 7fa271d2e5df00f446b3213c3a0412bf795a8f4804e24029fc6301248a31933f
+  purpose: P11 requirement-to-function and test coverage implementation table.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/guardian_boundary_fail_fixable.md
+  sha256: 498cf9c5d9287e18f1152ee46bb7aaf99f9eaca40050a959938203a1ce4c5779
+  purpose: P11 boundary reviewer FAIL_FIXABLE record and remediation summary.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/notes.md
+  sha256: 336cc0b5e4e0c2b5993a995e5f01539c12a754c15ee6a2c65418c095f9509776
+  purpose: P11 implementation notes, scope, remediation history, and forbidden overclaims.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/quality_reviewer_fail_fixable.md
+  sha256: 18372f29cfd4c23f6e1273414e6d8639cce2cbf9205633fc5526490f0d17ae60
+  purpose: P11 quality reviewer FAIL_FIXABLE history and remediations.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/quality_reviewer_pass_after_boundary_remediation.md
+  sha256: 79530a5fa99ab429b7c6e9d37b4bdcec2375bb4d9862beb93f51f67242e345d0
+  purpose: P11 quality reviewer PASS after boundary remediation.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/quality_reviewer_pass_after_normtrace_body_binding.md
+  sha256: f068ff78bcabaf05f03c774d1c955d18ef3232e9fe0fecad4ab507d5f533a10f
+  purpose: P11 quality reviewer PASS after SparseResultant and NormTrace remediation.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/spec_verifier_fail_fixable.md
+  sha256: 335e1f555b9f1b2469373aa2eba16132a136c2e8118ada8c2ee21deb2dbe3427
+  purpose: P11 spec verifier FAIL_FIXABLE history and remediations.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/spec_verifier_pass_after_base_authorized_dependency_remediation.md
+  sha256: b59a349f1a7ff5a3d51917db348fd3909e39ae742819a4991fc352a6f0a17d32
+  purpose: P11 spec verifier PASS after base-authorized dependency remediation.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/spec_verifier_pass_after_boundary_remediation.md
+  sha256: 91633650b61c0d898205e0eb8e8a4fa9614881e720a9dd2d46e6bd0f38821aef
+  purpose: P11 spec verifier PASS after boundary remediation.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/spec_verifier_pass_after_dependency_remediation.md
+  sha256: be55eba0d223505fd6987d771adf39a8c165b4b54448ba7ebcc7fee6b13cb515
+  purpose: P11 spec verifier PASS after projection-message dependency remediation.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/spec_verifier_pass_after_normtrace_body_binding.md
+  sha256: 0a83000ef7f10d28cc5ee3f1d3cdfb8a8402b494f89e8327b15de66e01e07691
+  purpose: P11 spec verifier PASS after SparseResultant and NormTrace source/body binding remediation.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/spec_verifier_pass.md
+  sha256: 144df2769a742d7f33110c927a7c69df5c41f0368733474b72081c8114a3f121
+  purpose: Initial P11 spec verifier PASS record before later reviewer challenges.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/static_scans.txt
+  sha256: 7d19515ca4b62b15405f8e4dc2e29fce548882e4d338b551875e6603e9d8e993
+  purpose: P11 forbidden pattern, sentinel, constructor, implementation anchor, and boundary-remediation scans.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/test_first_failure.txt
+  sha256: 0b91472b76991b903e0ef1f5d525c15f7e9ececc3da245a7b05f8c1084f27216
+  purpose: P11 test-first failure record.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P11/20260705-110108Z/prompt.md
+  sha256: 1bc37d998dff03da29e2c17bf1db38c1980833a4e29d1913c12a34d8f04ae158
+  purpose: Archived P11 guardian boundary reviewer prompt.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P11/20260705-110108Z/response.md
+  sha256: dbe092f2834ce167e2ae07ec574b730786efed3f3db51f544620c5c75e0656ae
+  purpose: Archived P11 guardian boundary reviewer PASS response.
+command_outputs:
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p11_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 1
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/test_first_failure.txt
+  output_sha256: 0b91472b76991b903e0ef1f5d525c15f7e9ececc3da245a7b05f8c1084f27216
+  finished_at_utc: 20260705-110108Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p11_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/command_outputs.txt
+  output_sha256: e83ddfd64dbd6ee7aabaa6a3583d80c4009dc0eb244127bfd1e624325642a886
+  finished_at_utc: 20260705-110108Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/command_outputs.txt
+  output_sha256: e83ddfd64dbd6ee7aabaa6a3583d80c4009dc0eb244127bfd1e624325642a886
+  finished_at_utc: 20260705-110108Z
+- command: cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/command_outputs.txt
+  output_sha256: e83ddfd64dbd6ee7aabaa6a3583d80c4009dc0eb244127bfd1e624325642a886
+  finished_at_utc: 20260705-110108Z
+- command: git diff --check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/command_outputs.txt
+  output_sha256: e83ddfd64dbd6ee7aabaa6a3583d80c4009dc0eb244127bfd1e624325642a886
+  finished_at_utc: 20260705-110108Z
+- command: rg P11 verifier placeholder and unconditional success sentinels
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 1
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/static_scans.txt
+  output_sha256: 7d19515ca4b62b15405f8e4dc2e29fce548882e4d338b551875e6603e9d8e993
+  finished_at_utc: 20260705-110108Z
+- command: rg BindingOnly and SyntheticForTests sentinel locations
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/static_scans.txt
+  output_sha256: 7d19515ca4b62b15405f8e4dc2e29fce548882e4d338b551875e6603e9d8e993
+  finished_at_utc: 20260705-110108Z
+- command: rg legacy from_execution_plan constructor use
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/static_scans.txt
+  output_sha256: 7d19515ca4b62b15405f8e4dc2e29fce548882e4d338b551875e6603e9d8e993
+  finished_at_utc: 20260705-110108Z
+- command: rg P11 implementation anchors
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/static_scans.txt
+  output_sha256: 7d19515ca4b62b15405f8e4dc2e29fce548882e4d338b551875e6603e9d8e993
+  finished_at_utc: 20260705-110108Z
+- command: rg boundary-remediation sentinels
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 1
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/static_scans.txt
+  output_sha256: 7d19515ca4b62b15405f8e4dc2e29fce548882e4d338b551875e6603e9d8e993
+  finished_at_utc: 20260705-110108Z
+- command: spec_verifier P11 read-only verification after boundary remediation
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/spec_verifier_pass_after_boundary_remediation.md
+  output_sha256: 91633650b61c0d898205e0eb8e8a4fa9614881e720a9dd2d46e6bd0f38821aef
+  finished_at_utc: 20260705-110108Z
+- command: quality_reviewer P11 read-only verification after boundary remediation
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/quality_reviewer_pass_after_boundary_remediation.md
+  output_sha256: 79530a5fa99ab429b7c6e9d37b4bdcec2375bb4d9862beb93f51f67242e345d0
+  finished_at_utc: 20260705-110108Z
+- command: guardian_boundary_reviewer P11 MECH completion verification after boundary remediation
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P11/20260705-110108Z/response.md
+  output_sha256: dbe092f2834ce167e2ae07ec574b730786efed3f3db51f544620c5c75e0656ae
+  finished_at_utc: 20260705-110108Z
+static_scans:
+- scan_id: p11-verifier-placeholder-sentinels
+  command: rg implemented-in-P11, unconditional, TODO, placeholder, return Ok, accepted true, and basic_replay_result in verify, compose, and kernels
+  forbidden_pattern: P11 placeholder or unconditional replay success sentinel
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/static_scans.txt
+- scan_id: p11-nonverifying-payload-sentinels
+  command: rg BindingOnly and SyntheticForTests in verify, compose, and kernels
+  forbidden_pattern: non-verifying sentinel accepted by production verifier
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/static_scans.txt
+- scan_id: p11-legacy-constructor-use
+  command: rg from_execution_plan in kernels, compose, and verify
+  forbidden_pattern: production kernel using binding-only compatibility constructor
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/static_scans.txt
+- scan_id: p11-implementation-anchors
+  command: rg TargetAction, RegularChain, SparseResultant, NormTrace, dependency DAG, invariant, exact replay, and P11 test anchors
+  forbidden_pattern: missing P11 exact replay implementation anchor
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/static_scans.txt
+- scan_id: p11-boundary-remediation-sentinels
+  command: rg CoreInvariantFlags::enforced, all_enforced, bare true final invariant flags, and P11 compression/hypergraph placeholder sentinels
+  forbidden_pattern: removed broad invariant helper or placeholder compression/hypergraph hash sentinel
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/static_scans.txt
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/function_implementation_table.yaml
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P11/20260705-110108Z/response.md
+known_limitations:
+- P11 closes MECH-010 only and advances MECH-016; it does not close P12 root isolation/decode, P13 exact image, P14 orchestration, P15 acceptance stress, or P16 final closure.
+- Final anti-dispatch/QE-CAD fields remain false at P11 because later static anti-drift and acceptance phases are responsible for those claims.
+- No R-ID is marked VERIFIED by the P11 review.
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-010
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-010
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

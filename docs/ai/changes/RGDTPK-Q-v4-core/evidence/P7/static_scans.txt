@@ -1,0 +1,29 @@
+Static checks for P7:
+
+1. Kernel trait and registry search
+   command: rg -n "TargetProjectionKernel|all_kernels|kernel_by_kind|TargetUnivariateKernel|LinearAffineKernel" geosolver-core/src/kernels -S
+   result: required trait, registry, and concrete P7 kernels are present.
+
+2. P7 test search
+   command: rg -n "p7_" geosolver-core/src -S
+   result after reviewer fixes: nine P7 tests present:
+     - p7_registry_lists_all_nine_kernels_in_appendix_order
+     - p7_target_univariate_support_is_primitive_lcm_squarefree
+     - p7_target_univariate_uses_child_message_target_relation
+     - p7_target_univariate_rejects_separator_only_planner_admission
+     - p7_target_univariate_rejects_auth_source_and_child_message_tamper
+     - p7_linear_affine_exports_only_allowed_variables_with_safe_constant_pivot
+     - p7_linear_affine_rejects_unsafe_nonconstant_pivot
+     - p7_linear_affine_reports_stale_incomplete_plan_as_hard_case
+     - p7_linear_affine_rejects_auth_and_source_hash_tamper
+
+3. Diff whitespace check
+   command: git diff --check
+   result: pass; only CRLF conversion warnings reported by git.
+
+4. Deferred kernel boundary check
+   result: non-P7 kernels are registered through the trait and decline admission with CertificateDesignGap execution errors. P7 does not claim execution for P8/P9-owned kernels.
+
+5. Reviewer blocker remediation scan
+   command: rg -n "admit_target_univariate_with_messages|validate_.*plan_binding|child_message_hashes|p7_target_univariate_rejects_separator_only_planner_admission" geosolver-core/src/kernels geosolver-core/src/planner/admission.rs -S
+   result: child-message TargetUnivariate admission/execution, auth/source binding checks, and separator-only planner regression test are present.

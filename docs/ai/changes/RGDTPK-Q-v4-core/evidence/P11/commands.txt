@@ -1,0 +1,14 @@
+cargo fmt --manifest-path geosolver-core/Cargo.toml
+cargo test --manifest-path geosolver-core/Cargo.toml p11_ -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture
+cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+git diff --check
+rg -n "implemented in P11|unconditional|TODO|placeholder|return Ok\(\(\)\);|accepted: true|basic_replay_result" geosolver-core/src/verify geosolver-core/src/compose geosolver-core/src/kernels
+rg -n "BindingOnly|SyntheticForTests" geosolver-core/src/verify geosolver-core/src/compose geosolver-core/src/kernels
+rg -n "from_execution_plan\(" geosolver-core/src/kernels geosolver-core/src/compose geosolver-core/src/verify
+rg -n "TargetActionProjectionCertificate|RegularChainProjectionCertificate|exact_replay_result|payload_source_hashes|hash_projection_message_dag_binding_with_authorized_sources|projection_message_dependency_indices|dependency_graph_is_acyclic|verify_sparse_resultant_payload|verify_tower_plan_hashes|verify_target_action_payload|verify_regular_chain_payload|derive_core_invariant_flags|messages_have_verifiable_payloads|p11_.*kernel_replay|p11_rejects_universal_inner_payload|p11_replay_rejects_mutual_projection_message_source_cycle|p11_replay_accepts_duplicate_hash_when_source_is_input_authorized|p11_rejects_forged_sparse_resultant|p11_rejects_forged_norm_trace" geosolver-core/src/algebra geosolver-core/src/kernels geosolver-core/src/verify
+rg -n "CoreInvariantFlags::enforced|all_enforced|no_geometry_dispatch: true|no_problem_id_dispatch: true|no_expected_answer_dispatch: true|no_qe_cad: true|p11-compression-not-supplied|p11-hypergraph-not-supplied" geosolver-core/src/verify
+git status --short
+spec_verifier P11 read-only verification
+quality_reviewer P11 read-only verification
+guardian_boundary_reviewer P11 MECH completion verification

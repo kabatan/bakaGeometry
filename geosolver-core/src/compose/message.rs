@@ -25,6 +25,19 @@ pub struct ProjectionMessage {
     pub package_hash: Hash,
 }
 
+pub fn hash_projection_message(message: &ProjectionMessage) -> Hash {
+    let mut chunks = vec![
+        message.package_id.0.to_be_bytes().to_vec(),
+        message.block_id.0.to_be_bytes().to_vec(),
+        format!("{:?}", message.kernel_kind).into_bytes(),
+        message.certificate.certificate_hash.0.to_vec(),
+    ];
+    for relation in &message.relation_generators {
+        chunks.push(relation.hash.0.to_vec());
+    }
+    crate::types::hash::hash_sequence("projection-message", &chunks)
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MessageRepresentation {
     GeneratorSet,

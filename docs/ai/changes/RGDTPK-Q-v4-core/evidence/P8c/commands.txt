@@ -1,0 +1,15 @@
+cargo test --manifest-path geosolver-core/Cargo.toml p8c_ -- --nocapture
+cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+cargo test --manifest-path geosolver-core/Cargo.toml krylov -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml p6_ -- --nocapture
+cargo fmt --manifest-path geosolver-core/Cargo.toml
+cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+cargo test --manifest-path geosolver-core/Cargo.toml p8c_ -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml krylov -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml p7_ -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml p8a_ -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml p8b_ -- --nocapture
+rg -n "TargetActionKrylov|VerifiedCharacteristicSupportCoverage|DebugExplicit|build_debug_explicit|block Wiedemann|trace power|coordinate roots|full coordinate RUR|kernel-not-ready|P8c verified" geosolver-core\src\kernels\action_krylov.rs geosolver-core\src\algebra\krylov.rs geosolver-core\src\algebra\quotient.rs geosolver-core\src\planner\admission.rs docs\ai\changes\RGDTPK-Q-v4-core\PRIMITIVE_SCOPE_LEDGER.md docs\ai\changes\RGDTPK-Q-v4-core\BASE_SPEC.md -S
+cargo test --manifest-path geosolver-core/Cargo.toml
+git diff --check
+git status --short

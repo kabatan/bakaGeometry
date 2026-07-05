@@ -1,0 +1,25 @@
+Static checks for P8b:
+
+1. SparseResultant placeholder removal scan
+   command: rg -n "kernel_not_ready_error|P8b owns|not yet admitted|p8b_|verify_resultant_certificate|execute_sparse_resultant|plan_sparse_resultant" geosolver-core/src/kernels/sparse_resultant.rs geosolver-core/src/planner/admission.rs -S
+   result: SparseResultantProjectionKernel admission, planning, execution, replay, exact resultant certificate verification, and P8b tests are present; the P8b placeholder is absent.
+
+2. SpecializationInterpolation exact verification scan
+   command: rg -n "execute_inner_target_only_kernel|admit_target_relation_search|execute_target_relation_search|build_multiseparator_coefficient_support|interpolate_sparse_coefficients_with_support|verify_interpolated_relation_by_elimination|execute_specialization_interpolation|p8b_" geosolver-core/src/algebra/interpolation.rs geosolver-core/src/kernels/specialization_interpolation.rs -S
+   result: declared inner target-only TargetRelationSearch execution, multiseparator support, deterministic specialization grid, modular candidate reconstruction with exact Q sample check, elimination-backed verification, execution, and P8b tests are present.
+
+3. Candidate-only proof boundary scan
+   command: rg -n "CandidateOnlyRequiresExactMembership|verify_resultant_certificate|verify_interpolated_relation_by_elimination|validate_local_elimination_result" geosolver-core/src/algebra/interpolation.rs geosolver-core/src/kernels/sparse_resultant.rs geosolver-core/src/kernels/specialization_interpolation.rs -S
+   result: interpolation/resultant candidates remain candidate-only until exact resultant recomputation or exact local elimination membership verification succeeds.
+
+4. Planner admission scan
+   command: rg -n "plan_sparse_resultant|plan_specialization_interpolation|SpecializationInterpolationExactVerification|SparseResultantExactVerification" geosolver-core/src/planner/admission.rs geosolver-core/src/kernels -S
+   result: planner admission now creates declared execution plans for applicable SparseResultantProjection and SpecializationInterpolation kernels.
+
+5. Child message binding scan
+   command: rg -n "child_message_hashes|child message hash binding mismatch|collect_relation_inputs|p8b_.*child" geosolver-core/src/kernels/sparse_resultant.rs geosolver-core/src/kernels/specialization_interpolation.rs -S
+   result: both P8b kernels bind child message hashes, consume child relation generators, and have tamper/required-child regression tests.
+
+6. Primitive ledger boundary scan
+   command: inspect PRIMITIVE_SCOPE_LEDGER.md against P8b implementation
+   result: P8b does not claim P3d binary resultant or one-variable interpolation helpers as completed by themselves; kernels wrap them in declared plans, consume local plus child message relations, expand multiseparator interpolation, execute declared inner target-only kernels per sample, and exact-verify before ProjectionMessage output.

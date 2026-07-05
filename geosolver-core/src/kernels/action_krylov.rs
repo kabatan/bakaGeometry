@@ -1,1 +1,1044 @@
-// TargetActionKrylovKernel is implemented in P8c.
+use std::collections::{BTreeMap, BTreeSet};
+
+use crate::algebra::krylov::{
+    block_krylov_sequence, certify_krylov_coverage, recover_recurrence, verify_annihilator,
+    AnnihilatorCertificate, CoverageCertificate, KrylovPlan,
+};
+use crate::algebra::normal_form::{MembershipCertificate, MembershipTerm};
+use crate::algebra::quotient::{
+    build_production_target_relevant_quotient_handle, hash_authorized_relations,
+    make_action_column_certificate, monomial_basis_polynomials, normal_form_basis_certificate,
+    unit_vector, BasisHandleId, BasisScope, ProductionQuotientHandleInput, TargetQuotientHandle,
+};
+use crate::compose::message::{MessageRepresentation, ProjectionMessage, ProjectionStrength};
+use crate::graph::projection_dag::ProjectionBlock;
+use crate::kernels::traits::{KernelContext, KernelKind, ReplayResult, TargetProjectionKernel};
+use crate::planner::admission::{KernelAdmission, KernelAdmissionStatus};
+use crate::planner::kernel_plan::{
+    hash_kernel_execution_plan, planned_failure_behavior, rank_plan, resource_bounds_hash,
+    support_plan_hash, template_plan, CertificateRoute, KernelExecutionPlan, KernelSupportPlan,
+    LocalNonfinitePolicy, ResourceBounds,
+};
+use crate::preprocess::compression::CompressedSystemQ;
+use crate::problem::canonicalize::CanonicalRelationQ;
+use crate::problem::context::SolverContext;
+use crate::result::cost_trace::ProjectionCostTrace;
+use crate::result::status::{FailureKind, SolverError, SolverErrorKind, SolverStatus};
+use crate::types::hash::{hash_sequence, Hash};
+use crate::types::ids::{KernelPlanId, PackageId, RelationId, VariableId};
+use crate::types::matrix::{SparseMatrixQ, VectorQ};
+use crate::types::monomial::normalize_monomial;
+use crate::types::polynomial::{
+    constant_poly, normalize_poly, poly_monomial_count, poly_variables, SparsePolynomialQ, TermQ,
+};
+use crate::types::rational::{add_q, div_q, is_zero_q, neg_q, one_q, zero_q};
+use crate::types::univariate::{normalize_univariate, UniPolynomialQ};
+use crate::verify::certificates::{
+    KernelCertificate, KernelCertificatePayload, TargetActionProjectionCertificate,
+};
+
+pub struct TargetActionKrylovKernel;
+
+impl TargetProjectionKernel for TargetActionKrylovKernel {
+    fn kind(&self) -> KernelKind {
+        KernelKind::TargetActionKrylov
+    }
+
+    fn admit(&self, block: &ProjectionBlock, ctx: &KernelContext) -> KernelAdmission {
+        admit_target_action_krylov(block, ctx)
+    }
+
+    fn plan(
+        &self,
+        admission: &KernelAdmission,
+        ctx: &KernelContext,
+        solver_ctx: &SolverContext,
+    ) -> Result<KernelExecutionPlan, SolverError> {
+        plan_target_action_krylov_from_admission(admission, ctx, solver_ctx)
+    }
+
+    fn execute(
+        &self,
+        plan: &KernelExecutionPlan,
+        ctx: &mut KernelContext,
+        solver_ctx: &mut SolverContext,
+    ) -> Result<ProjectionMessage, SolverError> {
+        execute_target_action_krylov(plan, ctx, solver_ctx)
+    }
+
+    fn replay(&self, message: &ProjectionMessage, ctx: &KernelContext) -> ReplayResult {
+        crate::kernels::traits::exact_replay_result(
+            self.kind(),
+            "target-action-krylov-replay",
+            message,
+            ctx,
+        )
+    }
+}
+
+#[derive(Debug, Clone)]
+struct TargetActionKrylovTrace {
+    relation: SparsePolynomialQ,
+    coverage: CoverageCertificate,
+    annihilator: AnnihilatorCertificate,
+    quotient_input: ProductionQuotientHandleInput,
+    quotient_authorization_hash: Hash,
+    matrix_rows: usize,
+    matrix_cols: usize,
+    degree_bound: usize,
+    trace_hash: Hash,
+}
+
+#[derive(Debug, Clone)]
+struct ActionRelationInput {
+    polynomial: SparsePolynomialQ,
+    source_relation_ids: Vec<RelationId>,
+    source_hash: Hash,
+    child_message_hash: Option<Hash>,
+}
+
+pub fn admit_target_action_krylov(block: &ProjectionBlock, ctx: &KernelContext) -> KernelAdmission {
+    let solver_ctx = SolverContext::new(Default::default());
+    match plan_target_action_krylov_with_messages(
+        block,
+        &ctx.system,
+        &ctx.child_messages,
+        &solver_ctx,
+        KernelPlanId(KernelKind::TargetActionKrylov as u32),
+    ) {
+        Ok(plan) => finish_admission(block, KernelAdmissionStatus::Admitted, Some(plan)),
+        Err(_) => finish_admission(
+            block,
+            KernelAdmissionStatus::Declined {
+                reason: "no certifiable finite target action quotient with characteristic coverage"
+                    .to_owned(),
+            },
+            None,
+        ),
+    }
+}
+
+pub fn plan_target_action_krylov(
+    block: &ProjectionBlock,
+    system: &CompressedSystemQ,
+    solver_ctx: &SolverContext,
+    plan_id: KernelPlanId,
+) -> Result<KernelExecutionPlan, SolverError> {
+    plan_target_action_krylov_with_messages(block, system, &[], solver_ctx, plan_id)
+}
+
+pub fn plan_target_action_krylov_with_messages(
+    block: &ProjectionBlock,
+    system: &CompressedSystemQ,
+    child_messages: &[ProjectionMessage],
+    solver_ctx: &SolverContext,
+    plan_id: KernelPlanId,
+) -> Result<KernelExecutionPlan, SolverError> {
+    let inputs = collect_relation_inputs(block, system, child_messages);
+    let selected = select_target_action_relation(&inputs, system.target)
+        .ok_or_else(|| certificate_design_gap("no target-only quotient relation"))?;
+    let trace = build_target_action_krylov_trace(
+        &selected,
+        system.target,
+        BasisHandleId(plan_id.0 as u64),
+    )?;
+    let template = template_plan(
+        trace.matrix_rows,
+        trace.matrix_cols,
+        trace.coverage.target_action_matrix_hash,
+        trace.coverage.characteristic_polynomial_hash,
+    );
+    let mut support_plan = KernelSupportPlan {
+        dense_relation_search_schedule: None,
+        affine_elimination_order: None,
+        template_plan: Some(template),
+        rank_plan: Some(rank_plan(trace.coverage.quotient_rank)),
+        universal_strategy_sequence: Vec::new(),
+        degree_bound: trace.degree_bound,
+        support_hash: hash_sequence("kernel-support-plan", &[]),
+    };
+    support_plan.support_hash = support_plan_hash(&support_plan);
+    let mut bounds = ResourceBounds {
+        max_matrix_rows: Some(trace.matrix_rows),
+        max_matrix_cols: Some(trace.matrix_cols),
+        max_export_degree: Some(trace.degree_bound),
+        max_multiplier_total_degree: None,
+        max_local_elimination_steps: Some(0),
+        max_memory_bytes: solver_ctx.options.max_memory_bytes,
+        bounds_hash: hash_sequence("planner-resource-bounds", &[]),
+    };
+    bounds.bounds_hash = resource_bounds_hash(&bounds);
+    Ok(KernelExecutionPlan::new(
+        plan_id,
+        block.block_id,
+        KernelKind::TargetActionKrylov,
+        block.authorization_hash,
+        selected.source_relation_ids.clone(),
+        vec![selected.source_hash],
+        block.child_block_ids.clone(),
+        selected.child_message_hash.into_iter().collect(),
+        vec![system.target],
+        block
+            .local_variables
+            .iter()
+            .copied()
+            .filter(|var| *var != system.target)
+            .collect(),
+        support_plan,
+        bounds,
+        CertificateRoute::VerifiedCharacteristicSupportCoverage,
+        planned_failure_behavior(
+            vec![
+                SolverStatus::FiniteResourceFailure,
+                SolverStatus::CertificateDesignGap,
+            ],
+            LocalNonfinitePolicy::NotApplicable,
+        ),
+    ))
+}
+
+pub fn plan_target_action_krylov_from_admission(
+    admission: &KernelAdmission,
+    ctx: &KernelContext,
+    solver_ctx: &SolverContext,
+) -> Result<KernelExecutionPlan, SolverError> {
+    if admission.kind != KernelKind::TargetActionKrylov
+        || !matches!(admission.status, KernelAdmissionStatus::Admitted)
+    {
+        return Err(implementation_bug(
+            "target-action-krylov plan requested for non-admitted kernel",
+        ));
+    }
+    if let Some(plan) = &admission.execution_plan {
+        return Ok(plan.clone());
+    }
+    plan_target_action_krylov_with_messages(
+        &ctx.block,
+        &ctx.system,
+        &ctx.child_messages,
+        solver_ctx,
+        KernelPlanId(KernelKind::TargetActionKrylov as u32),
+    )
+}
+
+pub fn execute_target_action_krylov(
+    plan: &KernelExecutionPlan,
+    ctx: &mut KernelContext,
+    _solver_ctx: &mut SolverContext,
+) -> Result<ProjectionMessage, SolverError> {
+    validate_target_action_plan_binding(plan, ctx)?;
+    let inputs = planned_relation_inputs(plan, ctx)?;
+    let selected = select_target_action_relation(&inputs, ctx.system.target)
+        .ok_or_else(|| implementation_bug("target-action-krylov planned source disappeared"))?;
+    validate_source_hash_coverage(plan, std::slice::from_ref(&selected))?;
+    let trace = build_target_action_krylov_trace(
+        &selected,
+        ctx.system.target,
+        BasisHandleId(plan.plan_id.0 as u64),
+    )?;
+    let Some(template) = &plan.support_plan.template_plan else {
+        return Err(implementation_bug(
+            "target-action-krylov plan lacks template plan",
+        ));
+    };
+    if template.matrix_rows != trace.matrix_rows
+        || template.matrix_cols != trace.matrix_cols
+        || template.row_monomial_hash != trace.coverage.target_action_matrix_hash
+        || template.column_support_hash != trace.coverage.characteristic_polynomial_hash
+        || support_plan_hash(&plan.support_plan) != plan.support_plan.support_hash
+    {
+        return Err(implementation_bug(
+            "target-action-krylov characteristic coverage plan is not reproducible",
+        ));
+    }
+    if !trace.coverage.no_coordinate_roots_exported
+        || !trace.coverage.no_full_coordinate_rur_exported
+    {
+        return Err(implementation_bug(
+            "target-action-krylov quotient exported coordinate roots or RUR",
+        ));
+    }
+    let exported = plan
+        .exported_variables
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    if !poly_variables(&trace.relation).is_subset(&exported) {
+        return Err(implementation_bug(
+            "target-action-krylov characteristic relation is outside exported variables",
+        ));
+    }
+    let certificate_hash = target_action_krylov_certificate_hash(plan, &trace);
+    let cost_trace = ProjectionCostTrace {
+        block_id: plan.block_id,
+        kernel_kind: KernelKind::TargetActionKrylov,
+        local_variable_count: ctx.block.local_variables.len(),
+        exported_variable_count: plan.exported_variables.len(),
+        local_relation_count: inputs.len(),
+        local_monomial_count: inputs
+            .iter()
+            .map(|input| poly_monomial_count(&input.polynomial))
+            .sum(),
+        estimated_quotient_rank: Some(trace.coverage.quotient_rank),
+        matrix_rows: Some(trace.matrix_rows),
+        matrix_cols: Some(trace.matrix_cols),
+        matrix_density: Some(crate::types::matrix::matrix_density(&SparseMatrixQ {
+            rows: trace.matrix_rows.max(1),
+            cols: trace.matrix_cols.max(1),
+            entries: Vec::new(),
+        })),
+        coefficient_height_before_bits: 0,
+        coefficient_height_after_bits: poly_monomial_count(&trace.relation),
+    };
+    let certificate = KernelCertificate::from_execution_plan_with_payload(
+        plan,
+        std::slice::from_ref(&trace.relation),
+        certificate_hash,
+        KernelCertificatePayload::TargetAction(TargetActionProjectionCertificate {
+            target: ctx.system.target,
+            quotient_input: trace.quotient_input.clone(),
+            output_relation: trace.relation.clone(),
+            coverage: trace.coverage.clone(),
+            annihilator: trace.annihilator.clone(),
+        }),
+    );
+    let mut message = ProjectionMessage {
+        package_id: PackageId(plan.plan_id.0),
+        block_id: plan.block_id,
+        kernel_kind: KernelKind::TargetActionKrylov,
+        source_relation_ids: plan.source_relation_ids.clone(),
+        eliminated_variables: plan.eliminated_variables.clone(),
+        exported_variables: plan.exported_variables.clone(),
+        relation_generators: vec![trace.relation],
+        representation: MessageRepresentation::QuotientAction,
+        projection_strength: ProjectionStrength::CandidateCoverStrong,
+        certificate,
+        compression_trace: ctx.system.compression_trace.clone(),
+        cost_trace,
+        package_hash: hash_sequence("projection-message-initial", &[]),
+    };
+    message.package_hash = projection_message_hash(&message);
+    Ok(message)
+}
+
+fn build_target_action_krylov_trace(
+    input: &ActionRelationInput,
+    target: VariableId,
+    basis_id: BasisHandleId,
+) -> Result<TargetActionKrylovTrace, SolverError> {
+    let quotient_input =
+        build_quotient_handle_input_from_target_relation(input, target, basis_id, true, true)?;
+    let handle = build_production_target_relevant_quotient_handle(quotient_input.clone())?;
+    let start_vectors = (0..handle.basis_size())
+        .map(|idx| unit_vector(handle.basis_size(), idx))
+        .collect::<Vec<_>>();
+    let seq = block_krylov_sequence(
+        &handle,
+        target,
+        KrylovPlan {
+            start_vectors,
+            max_steps: handle.basis_size().saturating_add(1),
+        },
+    )?;
+    let recurrence = recover_recurrence(&seq)?;
+    let coverage = certify_krylov_coverage(&seq, &recurrence, &handle)?;
+    let annihilator = verify_annihilator(&handle, &coverage.characteristic_polynomial)?;
+    let relation = univariate_to_polynomial(&coverage.characteristic_polynomial);
+    let trace_hash = hash_sequence(
+        "target-action-krylov-trace",
+        &[
+            coverage.quotient_handle_hash.0.to_vec(),
+            coverage.target_action_matrix_hash.0.to_vec(),
+            coverage.characteristic_polynomial_hash.0.to_vec(),
+            coverage.cayley_hamilton_verification_hash.0.to_vec(),
+            relation.hash.0.to_vec(),
+        ],
+    );
+    Ok(TargetActionKrylovTrace {
+        relation,
+        quotient_authorization_hash: handle.authorized_relation_hash(),
+        quotient_input,
+        matrix_rows: coverage.quotient_rank,
+        matrix_cols: coverage.quotient_rank,
+        degree_bound: coverage
+            .characteristic_polynomial
+            .coeffs_low_to_high
+            .len()
+            .saturating_sub(1),
+        coverage,
+        annihilator,
+        trace_hash,
+    })
+}
+
+#[cfg(test)]
+fn build_quotient_handle_from_target_relation(
+    input: &ActionRelationInput,
+    target: VariableId,
+    basis_id: BasisHandleId,
+    no_coordinate_roots_exported: bool,
+    no_full_coordinate_rur_exported: bool,
+) -> Result<crate::algebra::quotient::ProductionProvenancedTargetQuotientHandle, SolverError> {
+    let quotient_input = build_quotient_handle_input_from_target_relation(
+        input,
+        target,
+        basis_id,
+        no_coordinate_roots_exported,
+        no_full_coordinate_rur_exported,
+    )?;
+    build_production_target_relevant_quotient_handle(quotient_input)
+}
+
+fn build_quotient_handle_input_from_target_relation(
+    input: &ActionRelationInput,
+    target: VariableId,
+    basis_id: BasisHandleId,
+    no_coordinate_roots_exported: bool,
+    no_full_coordinate_rur_exported: bool,
+) -> Result<ProductionQuotientHandleInput, SolverError> {
+    let poly = polynomial_to_univariate(&input.polynomial, target)
+        .ok_or_else(|| certificate_design_gap("target action relation is not univariate"))?;
+    let degree = univariate_degree(&poly)
+        .ok_or_else(|| certificate_design_gap("target action quotient needs positive degree"))?;
+    if degree == 0 {
+        return Err(certificate_design_gap(
+            "target action quotient needs positive degree",
+        ));
+    }
+    let leading = poly.coeffs_low_to_high[degree].clone();
+    if is_zero_q(&leading) {
+        return Err(certificate_design_gap(
+            "target action quotient leading coefficient is zero",
+        ));
+    }
+    let basis = monomial_basis_polynomials(target, degree);
+    let authorized_relations = vec![input.polynomial.clone()];
+    let quotient_auth_hash = hash_authorized_relations(&authorized_relations);
+    let inv_lc = div_q(&one_q(), &leading).map_err(|_| {
+        certificate_design_gap("target action quotient leading coefficient is zero")
+    })?;
+    let mut columns = Vec::with_capacity(degree);
+    for basis_index in 0..degree {
+        let normal_form_vector = if basis_index + 1 < degree {
+            unit_vector(degree, basis_index + 1)
+        } else {
+            VectorQ {
+                entries: (0..degree)
+                    .map(|idx| {
+                        neg_q(
+                            &div_q(&poly.coeffs_low_to_high[idx], &leading)
+                                .expect("leading coefficient is nonzero"),
+                        )
+                    })
+                    .collect(),
+            }
+        };
+        let membership_certificate = if basis_index + 1 < degree {
+            MembershipCertificate {
+                combination_terms: Vec::new(),
+            }
+        } else {
+            MembershipCertificate {
+                combination_terms: vec![MembershipTerm {
+                    relation_id: 0,
+                    multiplier: constant_poly(inv_lc.clone()),
+                }],
+            }
+        };
+        columns.push(make_action_column_certificate(
+            target,
+            basis_index,
+            &basis,
+            &authorized_relations,
+            quotient_auth_hash,
+            normal_form_vector,
+            membership_certificate,
+        )?);
+    }
+    Ok(ProductionQuotientHandleInput {
+        basis_id,
+        basis_scope: BasisScope::TargetRelevant {
+            variables: vec![target],
+        },
+        authorized_relation_hash: quotient_auth_hash,
+        authorized_relations,
+        basis_polynomials: basis.clone(),
+        normal_form_basis_certificate: normal_form_basis_certificate(&basis, quotient_auth_hash),
+        action_columns: BTreeMap::from([(target, columns)]),
+        no_coordinate_roots_exported,
+        no_full_coordinate_rur_exported,
+    })
+}
+
+fn polynomial_to_univariate(
+    poly: &SparsePolynomialQ,
+    target: VariableId,
+) -> Option<UniPolynomialQ> {
+    let target_set = [target].into_iter().collect::<BTreeSet<_>>();
+    if !poly_variables(poly).is_subset(&target_set) {
+        return None;
+    }
+    let degree = poly
+        .terms
+        .iter()
+        .map(|term| target_exponent(term, target))
+        .max()
+        .unwrap_or(0);
+    let mut coeffs = vec![zero_q(); degree as usize + 1];
+    for term in &poly.terms {
+        let exp = target_exponent(term, target) as usize;
+        coeffs[exp] = add_q(&coeffs[exp], &term.coeff);
+    }
+    Some(normalize_univariate(UniPolynomialQ {
+        variable: target,
+        coeffs_low_to_high: coeffs,
+        hash: hash_sequence("univariate", &[]),
+    }))
+}
+
+fn target_exponent(term: &TermQ, target: VariableId) -> u32 {
+    term.monomial
+        .exponents
+        .iter()
+        .find(|(var, _)| *var == target)
+        .map_or(0, |(_, exp)| *exp)
+}
+
+fn univariate_degree(poly: &UniPolynomialQ) -> Option<usize> {
+    poly.coeffs_low_to_high
+        .iter()
+        .rposition(|coeff| !is_zero_q(coeff))
+}
+
+fn univariate_to_polynomial(poly: &UniPolynomialQ) -> SparsePolynomialQ {
+    normalize_poly(SparsePolynomialQ {
+        terms: poly
+            .coeffs_low_to_high
+            .iter()
+            .enumerate()
+            .filter_map(|(exp, coeff)| {
+                (!is_zero_q(coeff)).then(|| TermQ {
+                    coeff: coeff.clone(),
+                    monomial: normalize_monomial(if exp == 0 {
+                        Vec::new()
+                    } else {
+                        vec![(poly.variable, exp as u32)]
+                    }),
+                })
+            })
+            .collect(),
+        hash: hash_sequence("poly", &[]),
+    })
+}
+
+fn select_target_action_relation(
+    inputs: &[ActionRelationInput],
+    target: VariableId,
+) -> Option<ActionRelationInput> {
+    let mut candidates = inputs
+        .iter()
+        .filter_map(|input| {
+            let poly = polynomial_to_univariate(&input.polynomial, target)?;
+            let degree = univariate_degree(&poly)?;
+            (degree > 0).then(|| {
+                (
+                    degree,
+                    poly_monomial_count(&input.polynomial),
+                    input.source_hash,
+                    input.clone(),
+                )
+            })
+        })
+        .collect::<Vec<_>>();
+    candidates.sort_by_key(|(degree, terms, hash, _)| (*degree, *terms, *hash));
+    candidates.into_iter().next().map(|(_, _, _, input)| input)
+}
+
+fn collect_relation_inputs(
+    block: &ProjectionBlock,
+    system: &CompressedSystemQ,
+    child_messages: &[ProjectionMessage],
+) -> Vec<ActionRelationInput> {
+    let mut inputs = block_relations(block, system)
+        .into_iter()
+        .map(|relation| ActionRelationInput {
+            polynomial: relation.polynomial.clone(),
+            source_relation_ids: vec![relation.id],
+            source_hash: relation.hash,
+            child_message_hash: None,
+        })
+        .collect::<Vec<_>>();
+    for message in child_messages {
+        for relation in &message.relation_generators {
+            inputs.push(ActionRelationInput {
+                polynomial: relation.clone(),
+                source_relation_ids: message.source_relation_ids.clone(),
+                source_hash: relation.hash,
+                child_message_hash: Some(message.package_hash),
+            });
+        }
+    }
+    inputs
+}
+
+fn planned_relation_inputs(
+    plan: &KernelExecutionPlan,
+    ctx: &KernelContext,
+) -> Result<Vec<ActionRelationInput>, SolverError> {
+    let source_hashes = plan
+        .source_relation_hashes
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    let relation_ids = plan
+        .source_relation_ids
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    let child_hashes = plan
+        .child_message_hashes
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    let mut inputs = ctx
+        .system
+        .relations
+        .iter()
+        .filter(|relation| {
+            relation_ids.contains(&relation.id) && source_hashes.contains(&relation.hash)
+        })
+        .map(|relation| ActionRelationInput {
+            polynomial: relation.polynomial.clone(),
+            source_relation_ids: vec![relation.id],
+            source_hash: relation.hash,
+            child_message_hash: None,
+        })
+        .collect::<Vec<_>>();
+    for message in &ctx.child_messages {
+        if !child_hashes.contains(&message.package_hash) {
+            continue;
+        }
+        for relation in &message.relation_generators {
+            if source_hashes.contains(&relation.hash) {
+                inputs.push(ActionRelationInput {
+                    polynomial: relation.clone(),
+                    source_relation_ids: message.source_relation_ids.clone(),
+                    source_hash: relation.hash,
+                    child_message_hash: Some(message.package_hash),
+                });
+            }
+        }
+    }
+    validate_source_hash_coverage(plan, &inputs)?;
+    Ok(inputs)
+}
+
+fn block_relations(block: &ProjectionBlock, system: &CompressedSystemQ) -> Vec<CanonicalRelationQ> {
+    let ids = block.relation_ids.iter().copied().collect::<BTreeSet<_>>();
+    system
+        .relations
+        .iter()
+        .filter(|relation| ids.contains(&relation.id))
+        .cloned()
+        .collect()
+}
+
+fn validate_target_action_plan_binding(
+    plan: &KernelExecutionPlan,
+    ctx: &KernelContext,
+) -> Result<(), SolverError> {
+    if plan.kernel_kind != KernelKind::TargetActionKrylov {
+        return Err(implementation_bug("target-action-krylov kind mismatch"));
+    }
+    if hash_kernel_execution_plan(plan) != plan.plan_hash {
+        return Err(implementation_bug(
+            "target-action-krylov execution plan hash mismatch",
+        ));
+    }
+    if plan.block_id != ctx.block.block_id {
+        return Err(implementation_bug("target-action-krylov block id mismatch"));
+    }
+    if plan.input_block_authorization_hash != ctx.block.authorization_hash {
+        return Err(implementation_bug(
+            "target-action-krylov block authorization hash mismatch",
+        ));
+    }
+    if plan.certificate_route != CertificateRoute::VerifiedCharacteristicSupportCoverage {
+        return Err(implementation_bug(
+            "target-action-krylov certificate route mismatch",
+        ));
+    }
+    let available_child_hashes = ctx
+        .child_messages
+        .iter()
+        .filter(|message| plan.child_block_ids.contains(&message.block_id))
+        .map(|message| message.package_hash)
+        .collect::<BTreeSet<_>>();
+    let planned_child_hashes = plan
+        .child_message_hashes
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    if available_child_hashes != planned_child_hashes {
+        return Err(implementation_bug(
+            "target-action-krylov child message hash binding mismatch",
+        ));
+    }
+    Ok(())
+}
+
+fn validate_source_hash_coverage(
+    plan: &KernelExecutionPlan,
+    inputs: &[ActionRelationInput],
+) -> Result<(), SolverError> {
+    let mut expected = plan.source_relation_hashes.clone();
+    let mut actual = inputs
+        .iter()
+        .map(|input| input.source_hash)
+        .collect::<Vec<_>>();
+    expected.sort();
+    actual.sort();
+    if expected != actual {
+        return Err(implementation_bug(
+            "target-action-krylov source relation hash coverage mismatch",
+        ));
+    }
+    Ok(())
+}
+
+fn target_action_krylov_certificate_hash(
+    plan: &KernelExecutionPlan,
+    trace: &TargetActionKrylovTrace,
+) -> Hash {
+    let mut chunks = vec![
+        plan.plan_hash.0.to_vec(),
+        trace.quotient_authorization_hash.0.to_vec(),
+        trace.coverage.quotient_handle_hash.0.to_vec(),
+        trace.coverage.basis_hash.0.to_vec(),
+        trace.coverage.quotient_rank.to_be_bytes().to_vec(),
+        trace.coverage.target_action_matrix_hash.0.to_vec(),
+    ];
+    chunks.extend(
+        trace
+            .coverage
+            .column_normal_form_certificate_hashes
+            .iter()
+            .map(|hash| hash.0.to_vec()),
+    );
+    chunks.extend([
+        trace.coverage.characteristic_polynomial_hash.0.to_vec(),
+        trace.coverage.cayley_hamilton_verification_hash.0.to_vec(),
+        vec![trace.coverage.no_coordinate_roots_exported as u8],
+        vec![trace.coverage.no_full_coordinate_rur_exported as u8],
+        trace.annihilator.polynomial_hash.0.to_vec(),
+        trace
+            .annihilator
+            .cayley_hamilton_verification_hash
+            .0
+            .to_vec(),
+        trace.relation.hash.0.to_vec(),
+        trace.trace_hash.0.to_vec(),
+    ]);
+    hash_sequence("target-action-krylov-certificate", &chunks)
+}
+
+fn finish_admission(
+    block: &ProjectionBlock,
+    status: KernelAdmissionStatus,
+    execution_plan: Option<KernelExecutionPlan>,
+) -> KernelAdmission {
+    let mut chunks = vec![
+        format!("{:?}", KernelKind::TargetActionKrylov).into_bytes(),
+        block.block_id.0.to_be_bytes().to_vec(),
+        format!("{status:?}").into_bytes(),
+    ];
+    if let Some(plan) = &execution_plan {
+        chunks.push(plan.plan_hash.0.to_vec());
+    }
+    KernelAdmission {
+        kind: KernelKind::TargetActionKrylov,
+        block_id: block.block_id,
+        status,
+        exported_variables: block.exported_variables.iter().copied().collect(),
+        eliminated_variables: block
+            .local_variables
+            .difference(&block.exported_variables)
+            .copied()
+            .collect(),
+        execution_plan,
+        admission_hash: hash_sequence("kernel-admission", &chunks),
+    }
+}
+
+fn projection_message_hash(message: &ProjectionMessage) -> Hash {
+    let mut chunks = vec![
+        message.package_id.0.to_be_bytes().to_vec(),
+        message.block_id.0.to_be_bytes().to_vec(),
+        format!("{:?}", message.kernel_kind).into_bytes(),
+        message.certificate.certificate_hash.0.to_vec(),
+    ];
+    for relation in &message.relation_generators {
+        chunks.push(relation.hash.0.to_vec());
+    }
+    hash_sequence("projection-message", &chunks)
+}
+
+fn certificate_design_gap(message: &str) -> SolverError {
+    SolverError {
+        target: None,
+        kind: SolverErrorKind::Failure(FailureKind::CertificateDesignGap {
+            constructed_object_hash: hash_sequence(
+                "certificate-gap",
+                &[message.as_bytes().to_vec()],
+            ),
+            missing_certificate_kind: message.to_owned(),
+        }),
+    }
+}
+
+fn implementation_bug(message: &str) -> SolverError {
+    SolverError {
+        target: None,
+        kind: SolverErrorKind::Failure(FailureKind::ImplementationBug {
+            invariant_violated: message.to_owned(),
+        }),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::compose::message::{MessageRepresentation, ProjectionStrength};
+    use crate::kernels::traits::{KernelKind, TargetProjectionKernel};
+    use crate::planner::admission::{collect_kernel_admissions, KernelAdmissionStatus};
+    use crate::planner::kernel_plan::hash_kernel_execution_plan;
+    use crate::planner::probes::run_cost_probes;
+    use crate::preprocess::compression::CompressionState;
+    use crate::problem::canonicalize::canonicalize_system;
+    use crate::problem::context::new_context;
+    use crate::problem::input::make_problem;
+    use crate::problem::validate::validate_input;
+    use crate::solver::options::SolverOptions;
+    use crate::types::hash::hash_sequence;
+    use crate::types::ids::{BlockId, VariableId};
+    use crate::types::polynomial::{constant_poly, poly_mul, poly_sub, variable_poly};
+    use crate::types::rational::int_q;
+
+    use super::*;
+
+    #[test]
+    fn p8c_action_krylov_kernel_produces_verified_characteristic_support() {
+        let t = VariableId(0);
+        let relation = poly_mul(
+            &poly_sub(&variable_poly(t), &constant_poly(int_q(1))),
+            &poly_sub(&variable_poly(t), &constant_poly(int_q(2))),
+        );
+        let compressed = compressed_system(t, vec![relation]);
+        let block = test_block(&compressed, [t], [t]);
+        let mut solver_ctx = new_context(SolverOptions::default());
+        let mut kctx = KernelContext {
+            block,
+            system: compressed,
+            child_messages: Vec::new(),
+        };
+        let kernel = TargetActionKrylovKernel;
+        let admission = kernel.admit(&kctx.block, &kctx);
+        assert!(matches!(admission.status, KernelAdmissionStatus::Admitted));
+        let plan = kernel.plan(&admission, &kctx, &solver_ctx).unwrap();
+        let message = kernel.execute(&plan, &mut kctx, &mut solver_ctx).unwrap();
+
+        assert_eq!(message.kernel_kind, KernelKind::TargetActionKrylov);
+        assert_eq!(
+            message.representation,
+            MessageRepresentation::QuotientAction
+        );
+        assert_eq!(
+            message.projection_strength,
+            ProjectionStrength::CandidateCoverStrong
+        );
+        assert_eq!(message.relation_generators.len(), 1);
+        assert_eq!(
+            message.relation_generators[0],
+            poly_mul(
+                &poly_sub(&variable_poly(t), &constant_poly(int_q(1))),
+                &poly_sub(&variable_poly(t), &constant_poly(int_q(2))),
+            )
+        );
+        assert!(kernel.replay(&message, &kctx).accepted);
+    }
+
+    #[test]
+    fn p8c_planner_admits_target_action_krylov_for_verified_characteristic_path() {
+        let t = VariableId(0);
+        let relation = poly_mul(
+            &poly_sub(&variable_poly(t), &constant_poly(int_q(1))),
+            &poly_sub(&variable_poly(t), &constant_poly(int_q(2))),
+        );
+        let compressed = compressed_system(t, vec![relation]);
+        let block = test_block(&compressed, [t], [t]);
+        let mut solver_ctx = new_context(SolverOptions::default());
+        let probes = run_cost_probes(&block, &compressed, &mut solver_ctx);
+        let admissions = collect_kernel_admissions(&block, &compressed, &probes, &solver_ctx);
+        let admission = admissions
+            .iter()
+            .find(|admission| admission.kind == KernelKind::TargetActionKrylov)
+            .unwrap();
+        assert!(matches!(admission.status, KernelAdmissionStatus::Admitted));
+    }
+
+    #[test]
+    fn p8c_undercovered_single_vector_recurrence_cannot_escape_as_support() {
+        let t = VariableId(0);
+        let relation = poly_mul(
+            &poly_sub(&variable_poly(t), &constant_poly(int_q(1))),
+            &poly_sub(&variable_poly(t), &constant_poly(int_q(2))),
+        );
+        let compressed = compressed_system(t, vec![relation]);
+        let input = action_input_from_compressed(&compressed);
+        let handle =
+            build_quotient_handle_from_target_relation(&input, t, BasisHandleId(88), true, true)
+                .unwrap();
+        let missed_eigenvalue_start = VectorQ {
+            entries: vec![int_q(-2), int_q(1)],
+        };
+        let undercovered = block_krylov_sequence(
+            &handle,
+            t,
+            KrylovPlan {
+                start_vectors: vec![missed_eigenvalue_start],
+                max_steps: 3,
+            },
+        )
+        .unwrap();
+        let recurrence = recover_recurrence(&undercovered).unwrap();
+        assert_eq!(
+            recurrence.polynomial.coeffs_low_to_high,
+            vec![int_q(-1), int_q(1)]
+        );
+        let err = certify_krylov_coverage(&undercovered, &recurrence, &handle).unwrap_err();
+        assert_eq!(err.public_status(), SolverStatus::CertificateDesignGap);
+
+        let block = test_block(&compressed, [t], [t]);
+        let mut solver_ctx = new_context(SolverOptions::default());
+        let mut kctx = KernelContext {
+            block,
+            system: compressed,
+            child_messages: Vec::new(),
+        };
+        let kernel = TargetActionKrylovKernel;
+        let admission = kernel.admit(&kctx.block, &kctx);
+        let plan = kernel.plan(&admission, &kctx, &solver_ctx).unwrap();
+        let message = kernel.execute(&plan, &mut kctx, &mut solver_ctx).unwrap();
+        assert_eq!(
+            crate::types::polynomial::poly_total_degree(&message.relation_generators[0]),
+            2
+        );
+    }
+
+    #[test]
+    fn p8c_quotient_handle_rejects_coordinate_root_or_rur_export() {
+        let t = VariableId(0);
+        let relation = poly_sub(
+            &poly_mul(&variable_poly(t), &variable_poly(t)),
+            &constant_poly(int_q(2)),
+        );
+        let compressed = compressed_system(t, vec![relation]);
+        let input = action_input_from_compressed(&compressed);
+
+        let err =
+            build_quotient_handle_from_target_relation(&input, t, BasisHandleId(90), false, true)
+                .unwrap_err();
+        assert_eq!(err.public_status(), SolverStatus::InvalidInput);
+
+        let err =
+            build_quotient_handle_from_target_relation(&input, t, BasisHandleId(91), true, false)
+                .unwrap_err();
+        assert_eq!(err.public_status(), SolverStatus::InvalidInput);
+    }
+
+    #[test]
+    fn p8c_action_krylov_rejects_auth_and_source_hash_tamper() {
+        let t = VariableId(0);
+        let relation = poly_mul(
+            &poly_sub(&variable_poly(t), &constant_poly(int_q(1))),
+            &poly_sub(&variable_poly(t), &constant_poly(int_q(2))),
+        );
+        let compressed = compressed_system(t, vec![relation]);
+        let block = test_block(&compressed, [t], [t]);
+        let mut solver_ctx = new_context(SolverOptions::default());
+        let mut kctx = KernelContext {
+            block: block.clone(),
+            system: compressed,
+            child_messages: Vec::new(),
+        };
+        let kernel = TargetActionKrylovKernel;
+        let admission = kernel.admit(&kctx.block, &kctx);
+        let mut plan = kernel.plan(&admission, &kctx, &solver_ctx).unwrap();
+
+        let mut bad_auth_ctx = kctx.clone();
+        bad_auth_ctx.block.authorization_hash = hash_sequence("tampered-auth", &[]);
+        let err = kernel
+            .execute(&plan, &mut bad_auth_ctx, &mut solver_ctx)
+            .unwrap_err();
+        assert_eq!(err.public_status(), SolverStatus::ImplementationBug);
+
+        plan.source_relation_hashes[0] = hash_sequence("tampered-source", &[]);
+        plan.plan_hash = hash_kernel_execution_plan(&plan);
+        let err = kernel
+            .execute(&plan, &mut kctx, &mut solver_ctx)
+            .unwrap_err();
+        assert_eq!(err.public_status(), SolverStatus::ImplementationBug);
+    }
+
+    fn compressed_system(
+        target: VariableId,
+        relations: Vec<crate::types::polynomial::SparsePolynomialQ>,
+    ) -> crate::preprocess::compression::CompressedSystemQ {
+        let mut variables = vec![target];
+        variables.extend(
+            relations
+                .iter()
+                .flat_map(crate::types::polynomial::poly_variables)
+                .filter(|var| *var != target),
+        );
+        variables.sort();
+        variables.dedup();
+        let canonical = canonicalize_system(
+            validate_input(make_problem(variables, target, relations, Vec::new())).unwrap(),
+        )
+        .unwrap();
+        CompressionState::from_system(canonical).to_compressed_system()
+    }
+
+    fn test_block<const N: usize, const M: usize>(
+        compressed: &crate::preprocess::compression::CompressedSystemQ,
+        local_variables: [VariableId; N],
+        exported_variables: [VariableId; M],
+    ) -> crate::graph::projection_dag::ProjectionBlock {
+        let mut block = crate::graph::projection_dag::ProjectionBlock {
+            block_id: BlockId(0),
+            local_variables: local_variables.into_iter().collect(),
+            relation_ids: compressed.relation_order.clone(),
+            exported_variables: exported_variables.into_iter().collect(),
+            child_block_ids: Vec::new(),
+            parent_block_id: None,
+            authorization_hash: hash_sequence("tmp", &[]),
+            duplication_certificates: Vec::new(),
+            block_hash: hash_sequence("test-block", &[]),
+        };
+        block.authorization_hash =
+            crate::graph::projection_dag::authorize_block_relations(&block, compressed);
+        block
+    }
+
+    fn action_input_from_compressed(
+        compressed: &crate::preprocess::compression::CompressedSystemQ,
+    ) -> ActionRelationInput {
+        let relation = compressed.relations[0].clone();
+        ActionRelationInput {
+            polynomial: relation.polynomial,
+            source_relation_ids: vec![relation.id],
+            source_hash: relation.hash,
+            child_message_hash: None,
+        }
+    }
+}

@@ -1,0 +1,104 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: P7
+commit: 45c33932033e308f004262b23130d59a30a93c36+p7-worktree
+algorithm_spec_source_sha256: 2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed
+failure_source_sha256: df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: cd5c9147a5f48d50d12142c67e5160f95a1ccdbfe43eee925d5e0bb1a8fee779
+evidence_manifest_schema_sha256: 74e0fe22b6ba77e38edf96c8e6851eb5be8beb717599cbfb0c345abe4617a253
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P7/command_outputs.txt
+  sha256: 9334bd4865a2028ff160b763c0904132bfbef5d6b4fa70bb4bc54922933d917d
+  purpose: P7 command output capture before and after reviewer remediation.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P7/commands.txt
+  sha256: 32ee2e0728e42076d5263a12097ec8008cdbb085ca06bdd9b5ff781a1db38fc6
+  purpose: P7 command list and remediation loop.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P7/function_implementation_table.yaml
+  sha256: 383c191c86563e55d29d5a923e11f5068e8b7f0c8b84697893befda224e87186
+  purpose: P7 function implementation table.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P7/notes.md
+  sha256: 2a5fbfd217a883525acf50742fabe942ffa0fc5cb041dac52516ed252673a71e
+  purpose: P7 evidence notes, remediation notes, and claim boundary.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P7/static_scans.txt
+  sha256: 0ab8cde46eced8c3ae1a05269cccc291bf45e638f40348853744555b3e0a3732
+  purpose: P7 required-function and regression static scans.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P7/test_first_failure.txt
+  sha256: 013bb8931c1f498a285154cf1528a428a5d46f462f2c69668dd5511db9224411
+  purpose: P7 pre-completion failing test evidence.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P7/reviewer_fail_fix.md
+  sha256: cc31137a28688d05f83802e70aea89b0b51bb036f1058eaf25f46bb32ab3f349
+  purpose: P7 reviewer FAIL_FIXABLE remediation record.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P7/20260705-054557Z/prompt.md
+  sha256: b22d1f036b6d03a16e5718beb5d15488e6d6d47c5d112fc2388b01e999781604
+  purpose: Archived P7 guardian reviewer remediation prompt.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P7/20260705-054557Z/response.md
+  sha256: d76a9e7a8d901c31c00ba7a6bb06305f5f5cfecd866ea1bf3ecca6fcb7ddb511
+  purpose: Archived P7 guardian reviewer PASS response.
+command_outputs:
+- command: cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P7/command_outputs.txt
+  output_sha256: 9334bd4865a2028ff160b763c0904132bfbef5d6b4fa70bb4bc54922933d917d
+  finished_at_utc: 20260705-054557Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p6_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P7/command_outputs.txt
+  output_sha256: 9334bd4865a2028ff160b763c0904132bfbef5d6b4fa70bb4bc54922933d917d
+  finished_at_utc: 20260705-054557Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p7_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P7/command_outputs.txt
+  output_sha256: 9334bd4865a2028ff160b763c0904132bfbef5d6b4fa70bb4bc54922933d917d
+  finished_at_utc: 20260705-054557Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P7/command_outputs.txt
+  output_sha256: 9334bd4865a2028ff160b763c0904132bfbef5d6b4fa70bb4bc54922933d917d
+  finished_at_utc: 20260705-054557Z
+- command: git diff --check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P7/command_outputs.txt
+  output_sha256: 9334bd4865a2028ff160b763c0904132bfbef5d6b4fa70bb4bc54922933d917d
+  finished_at_utc: 20260705-054557Z
+- command: guardian_boundary_reviewer P7 remediation review
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P7/20260705-054557Z/response.md
+  output_sha256: d76a9e7a8d901c31c00ba7a6bb06305f5f5cfecd866ea1bf3ecca6fcb7ddb511
+  finished_at_utc: 20260705-054557Z
+static_scans:
+- scan_id: p7-required-functions
+  command: rg TargetProjectionKernel, all_kernels, TargetUnivariate, LinearAffine, child_message_hashes, and plan binding checks
+  forbidden_pattern: absence of required P7 functions or reviewer-remediation hooks
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P7/static_scans.txt
+- scan_id: p7-regression-tests
+  command: rg p7_ geosolver-core/src -S
+  forbidden_pattern: absence of P7 registry, TargetUnivariate, LinearAffine, child-message, separator-only, or tamper tests
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P7/static_scans.txt
+- scan_id: p7-deferred-kernel-boundary
+  command: inspect non-P7 registered kernel decline behavior
+  forbidden_pattern: overclaim of P8/P9 registered placeholders as implemented kernels
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P7/static_scans.txt
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P7/function_implementation_table.yaml
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P7/20260705-054557Z/response.md
+known_limitations:
+- P7 starts MECH-007 but does not close final run replay or full certificate replay closure.
+- P8/P9 generic kernels remain registered placeholders until their owning phases implement execution.
+- Candidate-cover, exact-image, public orchestration, performance readiness, and final acceptance remain open.
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-007
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-007
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

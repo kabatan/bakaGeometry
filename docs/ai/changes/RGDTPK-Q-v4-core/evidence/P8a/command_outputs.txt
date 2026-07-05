@@ -1,0 +1,64 @@
+P8a test-first failure before implementation:
+
+error[E0432]: unresolved import `crate::kernels::target_relation_search::execute_target_relation_search`
+no `execute_target_relation_search` in `kernels::target_relation_search`
+
+Focused P8a tests after implementation:
+
+running 5 tests
+test kernels::target_relation_search::tests::p8a_exact_membership_verification_rejects_tampered_multiplier ... ok
+test kernels::target_relation_search::tests::p8a_target_relation_search_exhaustion_is_hardcase_not_nonfinite ... ok
+test kernels::target_relation_search::tests::p8a_target_relation_search_produces_multi_separator_relation ... ok
+test kernels::target_relation_search::tests::p8a_target_relation_search_produces_bilinear_quadratic_relation ... ok
+test kernels::target_relation_search::tests::p8a_target_relation_search_produces_one_large_block_relation ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 121 filtered out.
+
+P6 regression:
+
+running 3 tests
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 123 filtered out.
+
+P7 regression:
+
+running 9 tests
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 117 filtered out.
+
+Full suite after P8a:
+
+running 126 tests
+test result: ok. 126 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out.
+
+Doc-tests:
+
+running 0 tests
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out.
+
+git diff --check:
+
+exit code 0. Git reported CRLF conversion warnings only.
+
+Guardian review before remediation:
+
+RESULT: FAIL_FIXABLE
+
+Blocking finding:
+
+- Missing required RGQ-042 public functions/types: `build_membership_matrix_builder`, `MembershipMatrixBuilder`, `reconstruct_and_verify_relation`, and `VerifiedRelationSearchCandidate`.
+
+Focused P8a tests after public API fix:
+
+running 6 tests
+test kernels::target_relation_search::tests::p8a_exact_membership_verification_rejects_tampered_multiplier ... ok
+test kernels::target_relation_search::tests::p8a_target_relation_search_exhaustion_is_hardcase_not_nonfinite ... ok
+test kernels::target_relation_search::tests::p8a_required_rgq042_public_api_reconstructs_only_verified_candidates ... ok
+test kernels::target_relation_search::tests::p8a_target_relation_search_produces_multi_separator_relation ... ok
+test kernels::target_relation_search::tests::p8a_target_relation_search_produces_bilinear_quadratic_relation ... ok
+test kernels::target_relation_search::tests::p8a_target_relation_search_produces_one_large_block_relation ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 121 filtered out.
+
+Full suite after public API fix:
+
+running 127 tests
+test result: ok. 127 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out.

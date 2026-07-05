@@ -1,0 +1,77 @@
+phase_id: P8b
+claim_ceiling_before_review: PARTIAL_MECHANISM_READY:MECH-013
+base_spec_requirements:
+  RGQ-020:
+    summary: SparseResultantProjectionKernel uses support/resultant templates, exact reconstruction, exact resultant verification, exported-variable-only output, and non-unsupported decline semantics.
+    files:
+      - geosolver-core/src/kernels/sparse_resultant.rs
+      - geosolver-core/src/algebra/resultant.rs
+      - geosolver-core/src/planner/admission.rs
+    implemented_functions_or_types:
+      - SparseResultantProjectionKernel::admit
+      - SparseResultantProjectionKernel::plan
+      - SparseResultantProjectionKernel::execute
+      - SparseResultantProjectionKernel::replay
+      - admit_sparse_resultant
+      - plan_sparse_resultant
+      - plan_sparse_resultant_with_messages
+      - execute_sparse_resultant
+      - build_sparse_resultant_trace
+      - verify_resultant_certificate
+      - collect_relation_inputs
+    test_evidence:
+      - p8b_sparse_resultant_kernel_produces_exact_exported_relation
+      - p8b_sparse_resultant_rejects_source_hash_tamper
+      - p8b_sparse_resultant_consumes_child_message_relations_and_rejects_tamper
+      - p8b_planner_admits_sparse_resultant_and_specialization_plans
+  RGQ-025:
+    summary: SpecializationInterpolationKernel specializes non-target separators, reconstructs sparse coefficients, and accepts only exact Q elimination-verified interpolated relations.
+    files:
+      - geosolver-core/src/kernels/specialization_interpolation.rs
+      - geosolver-core/src/algebra/interpolation.rs
+      - geosolver-core/src/algebra/elimination.rs
+      - geosolver-core/src/planner/admission.rs
+    implemented_functions_or_types:
+      - SpecializationInterpolationKernel::admit
+      - SpecializationInterpolationKernel::plan
+      - SpecializationInterpolationKernel::execute
+      - SpecializationInterpolationKernel::replay
+      - admit_specialization_interpolation
+      - plan_specialization_interpolation
+      - plan_specialization_interpolation_with_messages
+      - execute_specialization_interpolation
+      - execute_inner_target_only_kernel
+      - build_multiseparator_coefficient_support
+      - choose_multiseparator_specialization_points
+      - interpolate_sparse_coefficients_with_support
+      - verify_interpolated_relation_by_elimination
+      - collect_relation_inputs
+    test_evidence:
+      - p8b_specialization_interpolation_kernel_verifies_multiseparator_relation
+      - p8b_specialization_interpolation_rejects_authorization_tamper
+      - p8b_specialization_interpolation_consumes_child_messages_and_rejects_tamper
+      - multiseparator_sparse_interpolation_reconstructs_candidate_then_exact_checks_samples
+      - bad_multiseparator_sample_fails_exact_interpolation_verification
+  RGQ-043:
+    summary: Modular/resultant/interpolation candidate generation is not proof; exact Q verification is required before returning a ProjectionMessage.
+    files:
+      - geosolver-core/src/algebra/interpolation.rs
+      - geosolver-core/src/kernels/sparse_resultant.rs
+      - geosolver-core/src/kernels/specialization_interpolation.rs
+    implemented_functions_or_types:
+      - solve_inhomogeneous_modular
+      - verify_interpolation_solution
+      - verify_resultant_certificate
+      - verify_interpolated_relation_by_elimination
+      - validate_local_elimination_result
+    test_evidence:
+      - bad_multiseparator_sample_fails_exact_interpolation_verification
+      - p8b_sparse_resultant_rejects_source_hash_tamper
+      - p8b_specialization_interpolation_rejects_authorization_tamper
+status_boundaries:
+  not_sparse_enough: KernelAdmissionStatus::Declined
+  no_exported_relation: AlgorithmicHardCase
+  plan_or_source_tamper: ImplementationBug
+  child_message_tamper: ImplementationBug
+  missing_exact_certificate: CertificateDesignGap or ImplementationBug before message output
+  forbidden: Unsupported, NotYetImplemented, CertifiedNonFiniteTargetImage

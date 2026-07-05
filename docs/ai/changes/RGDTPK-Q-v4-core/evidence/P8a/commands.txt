@@ -1,0 +1,48 @@
+P8a evidence commands run from C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry
+
+1. cargo fmt --manifest-path geosolver-core/Cargo.toml; cargo test --manifest-path geosolver-core/Cargo.toml p8a_ -- --nocapture
+   test-first result before implementation: fail
+   failure: unresolved import `execute_target_relation_search`.
+
+2. cargo fmt --manifest-path geosolver-core/Cargo.toml; cargo test --manifest-path geosolver-core/Cargo.toml p8a_ -- --nocapture
+   result after implementation and sign-normalization test update: pass, 4 passed.
+
+3. cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+   result after exact-membership tamper test: pass
+
+4. cargo test --manifest-path geosolver-core/Cargo.toml p8a_ -- --nocapture
+   result after exact-membership tamper test: pass, 5 passed.
+
+5. cargo test --manifest-path geosolver-core/Cargo.toml p6_ -- --nocapture
+   result: pass, 3 passed.
+
+6. cargo test --manifest-path geosolver-core/Cargo.toml p7_ -- --nocapture
+   result: pass, 9 passed.
+
+7. cargo test --manifest-path geosolver-core/Cargo.toml
+   result: pass, 126 passed.
+
+8. git diff --check
+   result: pass; only line-ending conversion warnings were reported.
+
+9. guardian_boundary_reviewer P8a review
+   result: FAIL_FIXABLE
+   required fix: add RGQ-042 required public API surface `MembershipMatrixBuilder`, `VerifiedRelationSearchCandidate`, `build_membership_matrix_builder`, and `reconstruct_and_verify_relation`.
+
+10. cargo fmt --manifest-path geosolver-core/Cargo.toml; cargo test --manifest-path geosolver-core/Cargo.toml p8a_ -- --nocapture
+    result after public API fix: pass, 6 passed.
+
+11. cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+    result after public API fix: pass
+
+12. cargo test --manifest-path geosolver-core/Cargo.toml p6_ -- --nocapture
+    result after public API fix: pass, 3 passed.
+
+13. cargo test --manifest-path geosolver-core/Cargo.toml p7_ -- --nocapture
+    result after public API fix: pass, 9 passed.
+
+14. cargo test --manifest-path geosolver-core/Cargo.toml
+    result after public API fix: pass, 127 passed.
+
+15. git diff --check
+    result after public API fix: pass; only line-ending conversion warnings were reported.

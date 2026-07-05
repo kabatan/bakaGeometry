@@ -1,0 +1,22 @@
+P8a test-first evidence:
+
+Before implementing execution, P8a support-producing tests were added for:
+
+- multi-separator relation production;
+- bilinear/quadratic relation production;
+- one-large-block algebraic relation production;
+- exhaustion hardcase status;
+- exact membership tamper rejection.
+
+First focused run:
+
+`cargo test --manifest-path geosolver-core/Cargo.toml p8a_ -- --nocapture`
+
+Failure:
+
+```text
+error[E0432]: unresolved import `crate::kernels::target_relation_search::execute_target_relation_search`
+no `execute_target_relation_search` in `kernels::target_relation_search`
+```
+
+After implementation and sign-normalization alignment, the focused P8a suite passed with 5 tests.

@@ -1,0 +1,75 @@
+P9 verification excerpts
+
+1. Initial focused P9 implementation failures before remediation
+
+cargo test --manifest-path geosolver-core/Cargo.toml p9_ -- --nocapture
+
+Result:
+Compilation first failed because both new P9 kernels passed Vec<SparsePolynomialQ> to max_coefficient_height_bits, which expects &[CanonicalRelationQ].
+
+After that type fix, 4 focused tests ran and 2 failed because generated support polynomials were -1 scalar associates of the expected representatives. Tests were corrected to compare support polynomials up to the rational unit +/-1.
+
+2. Initial Guardian reviewer result before remediation
+
+Result:
+FAIL_FIXABLE. The review did not close P9 or MECH-007.
+
+Reviewer blockers:
+- RegularChainProjection overclaimed the ledger because the kernel dropped compressed-system guards and wrapped a single-chain DAG.
+- NormTraceProjection overclaimed the ledger because tower detection rejected all but exactly one non-exported algebraic variable.
+
+3. Remediation implemented
+
+RegularChain:
+- algebra/regular_chain.rs now creates multiple component chains when relations have duplicate main variables and hashes all component chains into the DAG hash.
+- component chains carry the input guards.
+- kernels/regular_chain_projection.rs passes CompressedSystemQ guards into the regular-chain input during planning and execution.
+- p9_regular_chain_guard_binding_is_operational verifies guard binding, execution mismatch after guard deletion, and certificate-hash change after guard mutation.
+
+NormTrace:
+- algebra/norm_trace.rs now has TowerPlanDescription with ordered TowerStep entries.
+- detect_explicit_tower_plan detects multi-step algebraic towers by polynomial form, not geometry names.
+- norm_relation_for_tower_plan eliminates each tower variable by sparse resultants.
+- verify_norm_tower_plan_relation recomputes the relation exactly.
+- p9_norm_trace_multistep_tower_exports_verified_support verifies a two-step tower alpha^2-2, beta^2-alpha, T-beta produces T^4-2 up to sign.
+
+4. Final focused P9 tests after remediation
+
+cargo test --manifest-path geosolver-core/Cargo.toml p9_ -- --nocapture
+
+Result:
+running 6 tests
+test kernels::regular_chain_projection::tests::p9_regular_chain_rejects_auth_source_and_plan_tamper ... ok
+test kernels::regular_chain_projection::tests::p9_regular_chain_kernel_projects_triangular_component ... ok
+test kernels::norm_trace_projection::tests::p9_norm_trace_detection_uses_algebraic_form_and_rejects_tamper ... ok
+test kernels::norm_trace_projection::tests::p9_norm_trace_kernel_exports_verified_tower_support ... ok
+test kernels::regular_chain_projection::tests::p9_regular_chain_guard_binding_is_operational ... ok
+test kernels::norm_trace_projection::tests::p9_norm_trace_multistep_tower_exports_verified_support ... ok
+test result: ok. 6 passed; 0 failed; 148 filtered out.
+
+5. Formatting and regressions after remediation
+
+cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+Result: pass.
+
+cargo test --manifest-path geosolver-core/Cargo.toml
+Result: 154 passed; 0 failed; doc-tests 0 passed; 0 failed.
+
+6. Static scans after remediation
+
+Forbidden scan for geometry names, expected-answer/fixture strings, coordinate-root/full-coordinate/RUR solve paths, kernel-not-ready, and P9 placeholder wording returned no matches in:
+- geosolver-core/src/kernels/regular_chain_projection.rs
+- geosolver-core/src/kernels/norm_trace_projection.rs
+- geosolver-core/src/planner/admission.rs
+
+Anchor scan found the remediation anchors:
+- build_component_chains in algebra/regular_chain.rs
+- GuardRecord and guard propagation in kernels/regular_chain_projection.rs
+- TowerPlanDescription, detect_explicit_tower_plan, norm_relation_for_tower_plan, and verify_norm_tower_plan_relation in algebra/norm_trace.rs and kernels/norm_trace_projection.rs
+- p9_regular_chain_guard_binding_is_operational
+- p9_norm_trace_multistep_tower_exports_verified_support
+
+7. Git whitespace check
+
+git diff --check
+Result: exit 0. Only CRLF conversion warnings were printed.

@@ -1,13 +1,27 @@
+use std::cmp::Ordering;
+
 use num_bigint::{BigInt, Sign};
 use num_integer::Integer;
 use num_traits::{One, Signed, ToPrimitive, Zero};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RationalQ {
     pub num: BigInt,
     pub den: BigInt,
+}
+
+impl Ord for RationalQ {
+    fn cmp(&self, other: &Self) -> Ordering {
+        (&self.num * &other.den).cmp(&(&other.num * &self.den))
+    }
+}
+
+impl PartialOrd for RationalQ {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Error)]

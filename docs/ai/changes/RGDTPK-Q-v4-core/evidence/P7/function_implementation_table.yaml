@@ -1,0 +1,69 @@
+phase_id: P7
+claim_ceiling_before_review: PARTIAL_MECHANISM_READY:MECH-005
+base_spec_requirements:
+  RGQ-016:
+    summary: Kernel trait and registry with all nine Appendix A kernels.
+    files:
+      - geosolver-core/src/kernels/traits.rs
+      - geosolver-core/src/kernels/mod.rs
+    implemented_functions_or_types:
+      - TargetProjectionKernel
+      - KernelContext
+      - ReplayResult
+      - all_kernels
+      - kernel_by_kind
+    test_evidence:
+      - p7_registry_lists_all_nine_kernels_in_appendix_order
+  RGQ-017:
+    summary: TargetUnivariate kernel emits primitive squarefree LCM support from target-only relations.
+    files:
+      - geosolver-core/src/kernels/target_univariate.rs
+    implemented_functions_or_types:
+      - TargetUnivariateKernel
+      - admit_target_univariate
+      - admit_target_univariate_with_messages
+      - execute_target_univariate
+      - target_only_support_from_relations
+      - target_only_support_from_polynomials
+      - polynomial_to_univariate
+      - univariate_to_polynomial
+      - univariate_mul
+      - validate_target_plan_binding
+      - validate_planned_target_sources
+    test_evidence:
+      - p7_target_univariate_support_is_primitive_lcm_squarefree
+      - p7_target_univariate_uses_child_message_target_relation
+      - p7_target_univariate_rejects_separator_only_planner_admission
+      - p7_target_univariate_rejects_auth_source_and_child_message_tamper
+  RGQ-018:
+    summary: LinearAffine kernel uses safe pivots, guard hashes, denominator clearing, and exported-variable-only output.
+    files:
+      - geosolver-core/src/kernels/linear_affine.rs
+      - geosolver-core/src/planner/kernel_plan.rs
+      - geosolver-core/src/planner/admission.rs
+    implemented_functions_or_types:
+      - LinearAffineKernel
+      - admit_linear_affine
+      - find_triangular_affine_order
+      - plan_linear_affine
+      - execute_linear_affine
+      - validate_linear_affine_plan_binding
+      - AffineEliminationPlan
+      - AffineEliminationStep
+      - affine_elimination_plan
+      - affine_elimination_step
+    test_evidence:
+      - p7_linear_affine_exports_only_allowed_variables_with_safe_constant_pivot
+      - p7_linear_affine_rejects_unsafe_nonconstant_pivot
+      - p7_linear_affine_reports_stale_incomplete_plan_as_hard_case
+      - p7_linear_affine_rejects_auth_and_source_hash_tamper
+  RGQ-038:
+    summary: P7 starts the kernel framework needed for later message replay and kernel execution phases.
+    files:
+      - geosolver-core/src/kernels/traits.rs
+      - geosolver-core/src/kernels/mod.rs
+    implemented_functions_or_types:
+      - TargetProjectionKernel::replay
+      - basic_replay_result
+    limits:
+      - Later kernels are registered but decline admission until their owning phases implement execution.

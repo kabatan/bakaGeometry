@@ -1,0 +1,99 @@
+# P11 Static Scans
+
+Static scan 1: verifier placeholder / unconditional success scan
+
+Command:
+
+```text
+rg -n "implemented in P11|unconditional|TODO|placeholder|return Ok\(\(\)\);|accepted: true|basic_replay_result" geosolver-core/src/verify geosolver-core/src/compose geosolver-core/src/kernels
+```
+
+Result:
+
+No matches. The command returned rg exit code 1.
+
+Interpretation:
+
+The P11 verifier and kernel files do not retain the previous "implemented in P11" placeholders, do not contain the scanned unconditional success patterns, and no longer contain the old structural `basic_replay_result` helper.
+
+Static scan 2: non-verifying payload sentinels
+
+Command:
+
+```text
+rg -n "BindingOnly|SyntheticForTests" geosolver-core/src/verify geosolver-core/src/compose geosolver-core/src/kernels
+```
+
+Observed matches:
+
+- `KernelCertificatePayload::BindingOnly` exists only as the backward-compatible constructor payload.
+- `KernelCertificatePayload::SyntheticForTests` exists only as the synthetic test constructor payload.
+- `verify_projection_message` rejects both variants through `verify_payload_for_outputs`.
+- `derive_core_invariant_flags` treats both variants as non-verifiable payloads, so run certificates using them cannot derive fully enforced invariants.
+- `route_for_payload` maps both variants to `None`, preventing recursive Universal proof replay from accepting them.
+
+Interpretation:
+
+P11 keeps non-verifying sentinel variants for compatibility and negative tests, but the production verifier rejects them.
+
+Static scan 3: legacy constructor use
+
+Command:
+
+```text
+rg -n "from_execution_plan\(" geosolver-core/src/kernels geosolver-core/src/compose geosolver-core/src/verify
+```
+
+Result:
+
+The only match is the compatibility constructor definition in `geosolver-core/src/verify/certificates.rs`.
+
+Interpretation:
+
+P7-P10 production kernels use `from_execution_plan_with_payload`, so generated production projection messages carry route-specific proof payloads rather than binding-only certificates.
+
+Static scan 4: P11 implementation anchors
+
+Command:
+
+```text
+rg -n "TargetActionProjectionCertificate|RegularChainProjectionCertificate|exact_replay_result|payload_source_hashes|hash_projection_message_dag_binding_with_authorized_sources|projection_message_dependency_indices|dependency_graph_is_acyclic|verify_sparse_resultant_payload|verify_tower_plan_hashes|verify_target_action_payload|verify_regular_chain_payload|derive_core_invariant_flags|messages_have_verifiable_payloads|p11_.*kernel_replay|p11_rejects_universal_inner_payload|p11_replay_rejects_mutual_projection_message_source_cycle|p11_replay_accepts_duplicate_hash_when_source_is_input_authorized|p11_rejects_forged_sparse_resultant|p11_rejects_forged_norm_trace" geosolver-core/src/algebra geosolver-core/src/kernels geosolver-core/src/verify
+```
+
+Required anchors observed:
+
+- `TargetActionProjectionCertificate` now carries `target` and `ProductionQuotientHandleInput` so replay reconstructs the quotient handle and characteristic coverage.
+- `RegularChainProjectionCertificate` now carries source relations, variable order, exported variables, guards, DAG, and projections so replay rebuilds the DAG and projection generators.
+- `verify_target_action_payload` and `verify_regular_chain_payload` in `geosolver-core/src/verify/verify_message.rs`.
+- `verify_sparse_resultant_payload` binds resultant certificates to authorized generated closures and message outputs.
+- `verify_tower_plan_hashes` makes NormTrace tower replay reject tampered step/tower hashes and requires the target expression plus every minimal polynomial body hash to appear in the tower source hash set.
+- `payload_source_hashes` recursively includes Universal `inner_payload` source hashes before payload replay.
+- `hash_projection_message_dag_binding_with_authorized_sources` binds derived dependency edges while receiving base-authorized input source hashes.
+- `projection_message_dependency_indices` derives message-to-message dependencies from certificate and payload source hashes, skips source hashes already authorized by replay input, and `dependency_graph_is_acyclic` rejects cyclic dependency graphs before run replay.
+- `derive_core_invariant_flags` and `messages_have_verifiable_payloads` in `geosolver-core/src/verify/run_certificate.rs`.
+- `exact_replay_result` in `geosolver-core/src/kernels/traits.rs`, and every public kernel `replay` method delegates to it.
+- Forged TargetAction and forged RegularChain negative tests in `geosolver-core/src/verify/replay.rs` assert rejection through both `verify_projection_message` and public `kernel.replay`.
+- Forged SparseResultant and NormTrace negative tests assert rejection through both `verify_projection_message` and public `kernel.replay`.
+- The forged Universal inner-payload negative test asserts rejection through `verify_projection_message`, public `UniversalTargetEliminationKernel::replay`, and run-certificate replay with hashes recomputed.
+- The mutual projection-message source-cycle test asserts run-certificate replay rejects two individually replayable messages whose source hashes authorize each other.
+- The duplicate input-authorized source positive test asserts run-certificate replay does not manufacture a cycle when duplicate message outputs share a source hash already authorized by canonical input.
+
+Interpretation:
+
+P11 verifier entry points are connected to payload-level proof replay, support proof replay, run-certificate invariant derivation, projection-message DAG binding, and public kernel replay APIs.
+
+Static scan 5: boundary remediation sentinels
+
+Command:
+
+```text
+rg -n "CoreInvariantFlags::enforced|all_enforced|no_geometry_dispatch: true|no_problem_id_dispatch: true|no_expected_answer_dispatch: true|no_qe_cad: true|p11-compression-not-supplied|p11-hypergraph-not-supplied" geosolver-core/src/verify
+```
+
+Result:
+
+No matches. The command returned rg exit code 1.
+
+Interpretation:
+
+P11 no longer carries the prior bare-true invariant helpers or placeholder compression/hypergraph hash sentinels in `verify/`. Replay recomputes the compressed-system hash and relation-variable hypergraph hash, and unsupported final-claim invariants are not set true by `derive_core_invariant_flags`.

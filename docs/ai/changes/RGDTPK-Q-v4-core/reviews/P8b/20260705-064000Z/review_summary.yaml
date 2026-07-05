@@ -1,0 +1,160 @@
+schema_version: rgdtpk-review-v2.2
+phase_id: P8b
+phase_kind: algorithmic
+review_status: PASS
+phase_closable: true
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-013
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: cd5c9147a5f48d50d12142c67e5160f95a1ccdbfe43eee925d5e0bb1a8fee779
+evidence_manifest_schema_sha256: 74e0fe22b6ba77e38edf96c8e6851eb5be8beb717599cbfb0c345abe4617a253
+schema_mirror_sha256: cd5c9147a5f48d50d12142c67e5160f95a1ccdbfe43eee925d5e0bb1a8fee779
+commit: 45c33932033e308f004262b23130d59a30a93c36+p8b-worktree
+prompt_sha256: 730a88ce57b6e440d84b9409583441aa064ff0296b96bc7a9443eb37c91d9893
+response_sha256: a1e187518b6f3f5971685b5714065c1ca79560f06b6d6ae298cc12eb18ee5e7c
+evidence_manifest_sha256: 557f1df76f7a888a52334bb249c136214e32134b942a61d308dcce5022c53855
+prompt_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P8b/20260705-064000Z/prompt.md
+response_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P8b/20260705-064000Z/response.md
+evidence_manifest_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P8b/20260705-064000Z/evidence_manifest.yaml
+reviewer_identity: guardian_boundary_reviewer
+reviewed_rids:
+- RGQ-020
+- RGQ-025
+- RGQ-043
+reviewed_mechs:
+- MECH-007
+source_sections_checked:
+- PLAN.md P8b
+- BASE_SPEC.md RGQ-020, RGQ-025, RGQ-043
+- BASE_SPEC.md Appendix A sections 18 and 23
+- REVIEWER_PROMPTS.md P8b
+- PRIMITIVE_SCOPE_LEDGER.md
+files_inspected:
+- geosolver-core/src/kernels/sparse_resultant.rs
+- geosolver-core/src/kernels/specialization_interpolation.rs
+- geosolver-core/src/algebra/interpolation.rs
+- geosolver-core/src/algebra/resultant.rs
+- geosolver-core/src/algebra/elimination.rs
+- geosolver-core/src/planner/admission.rs
+- docs/ai/changes/RGDTPK-Q-v4-core/PRIMITIVE_SCOPE_LEDGER.md
+evidence_inspected:
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/command_outputs.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/commands.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/function_implementation_table.yaml
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/notes.md
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/reviewer_fail_fix.md
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/static_scans.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/test_first_failure.txt
+commands_inspected:
+- cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+- cargo test --manifest-path geosolver-core/Cargo.toml p8b_ -- --nocapture
+- cargo test --manifest-path geosolver-core/Cargo.toml interpolation -- --nocapture
+- cargo test --manifest-path geosolver-core/Cargo.toml resultant -- --nocapture
+- cargo test --manifest-path geosolver-core/Cargo.toml p6_ -- --nocapture
+- cargo test --manifest-path geosolver-core/Cargo.toml p7_ -- --nocapture
+- cargo test --manifest-path geosolver-core/Cargo.toml p8a_ -- --nocapture
+- cargo test --manifest-path geosolver-core/Cargo.toml
+- git diff --check
+- guardian_boundary_reviewer P8b remediation review
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8b/function_implementation_table.yaml
+algorithmic_sufficiency:
+  verdict: sufficient
+  rationale: Reviewer inspected the remediated P8b kernels, child-message binding, declared inner TargetRelationSearch specialization route, exact resultant verification, exact interpolation verification, evidence bundle, and fresh tests; PASS is bounded to P8b and MECH-007 remains open.
+forbidden_pattern_scan:
+  heavy_fallback: pass
+  narrow_slice_escape: pass
+  hidden_fallback: pass
+  decorative_certificate: pass
+  placeholder_candidate: pass
+  geometry_dispatch: pass
+  unsupported_for_well_formed_input: pass
+  exact_image_overclaim: pass
+  target_relation_schedule_discretion: pass
+  weak_action_krylov_coverage: not_applicable
+  nonfinite_without_positive_proof: pass
+  non_spec_status: pass
+  required_function_deferred: pass
+  appendix_override_bypass: pass
+  stress_fixture_dispatch: pass
+not_applicable_justifications:
+  forbidden_pattern_scan.weak_action_krylov_coverage: P8c owns ActionKrylov and RGQ-044/RGQ-054; P8b makes no ActionKrylov claim.
+  appendix_override_checks[0]: P8b does not implement Universal/final-support local elimination; RGQ-041 and nonfinite final-support overrides remain owned by later phases.
+  suite_partition_checks[0]: P15-only acceptance suite partition is not active in P8b; no acceptance, candidate-cover completion, or exact-image claim is made.
+raw_response_consistency:
+  raw_response_contains_blocker: false
+  raw_response_contains_required_fix: false
+  summary_overrides_raw_response: false
+  reviewer_declared_files_inspected: true
+phase_specific_checks:
+- check_id: p8b-sparse-resultant-child-exact
+  required_by: RGQ-020
+  verdict: pass
+  evidence: SparseResultantProjectionKernel consumes local plus child message relation generators, binds child package hashes, verifies resultant certificates, and exports only planned variables; P8b child/tamper tests pass.
+  reviewer_rationale: Reviewer accepted remediation for child-message binding and exact verification before ProjectionMessage output.
+- check_id: p8b-specialization-inner-target
+  required_by: RGQ-025
+  verdict: pass
+  evidence: SpecializationInterpolationKernel uses execute_inner_target_only_kernel, which admits and executes TargetRelationSearch per sample, then exact-verifies the interpolated relation by local elimination.
+  reviewer_rationale: Reviewer accepted that sample generation now follows the declared inner target-only kernel route and Groebner is final verification only.
+- check_id: p8b-candidate-only-exact-verification
+  required_by: RGQ-043
+  verdict: pass
+  evidence: Resultant and interpolation candidate-generation statuses remain candidate-only and are not returned until verify_resultant_certificate or verify_interpolated_relation_by_elimination succeeds.
+  reviewer_rationale: Reviewer explicitly noted exact verification before projection-message output.
+appendix_override_checks:
+- appendix_section: Appendix A sections 20.3, 20.4, 24.4, and 31
+  controlling_requirement: RGQ-041
+  verdict: not_applicable
+  evidence: P8b implements SparseResultant and SpecializationInterpolation only; it does not execute Universal or final nonfinite certification.
+  reviewer_rationale: P8b PASS scope excludes P8d, P9, final composition, exact-image semantics, and acceptance readiness.
+status_mapping_checks:
+- error_or_internal_condition: P8b not sparse enough, no exported relation, plan/source/child tamper, and missing exact certificate before success
+  mapped_solver_status: KernelAdmissionStatus::Declined for not sparse enough; AlgorithmicHardCase for no exported relation; ImplementationBug for plan/source/child tamper; CertificateDesignGap or ImplementationBug before success for missing exact certificate; not Unsupported or CertifiedNonFiniteTargetImage
+  verdict: pass
+  evidence: P8b notes, static scans, and tests cover child/source tamper and non-unsupported sparse decline.
+  reviewer_rationale: Reviewer confirmed not sparse enough is not unsupported and exact verification gates success.
+suite_partition_checks:
+- suite_name: not_applicable
+  verdict: not_applicable
+  evidence: P15 acceptance suite partition is not active in P8b.
+  reviewer_rationale: No support-producing candidate-cover completion, exact-image, or failure-suite completion claim is made.
+semantic_deletion_challenges: []
+tamper_challenges:
+- challenge_id: p8b-sparse-source-child-tamper
+  target: SparseResultantProjectionKernel source and child message binding
+  verdict: pass
+  evidence: p8b_sparse_resultant_rejects_source_hash_tamper and p8b_sparse_resultant_consumes_child_message_relations_and_rejects_tamper pass.
+  reviewer_rationale: Source hash and child package hash tampering are rejected before success.
+- challenge_id: p8b-specialization-auth-child-tamper
+  target: SpecializationInterpolationKernel authorization and child message binding
+  verdict: pass
+  evidence: p8b_specialization_interpolation_rejects_authorization_tamper and p8b_specialization_interpolation_consumes_child_messages_and_rejects_tamper pass.
+  reviewer_rationale: Authorization and child package hash tampering are rejected before success.
+unresolved_risks:
+- P8b continues MECH-007 but does not close MECH-007 as a whole.
+- P8c, P8d, P9, replay/certificate closure, final composition, exact-image semantics, public orchestration, performance readiness, and final acceptance remain open.
+blocking_findings: []
+required_fixes: []
+pass_conditions:
+  schema_valid: true
+  schema_mirror_byte_identical: true
+  no_blocking_findings: true
+  no_required_fixes: true
+  raw_response_consistent: true
+  algorithmic_sufficiency_satisfied: true
+  all_forbidden_scans_pass: true
+  phase_specific_checks_pass: true
+  appendix_overrides_respected: true
+  status_mapping_respected: true
+  suite_partition_respected: true
+  reviewer_read_code_not_only_summary: true
+  no_controlling_stub_or_placeholder: true
+  exact_verification_present_where_required: true
+  no_failures_overridden_by_summary: true
+  fresh_evidence_after_last_code_change: true
+  pass_matches_raw_response: true
+  schema_hashes_match_current_files: true
+  prompt_and_response_archived: true
+  evidence_manifest_archived_and_valid: true

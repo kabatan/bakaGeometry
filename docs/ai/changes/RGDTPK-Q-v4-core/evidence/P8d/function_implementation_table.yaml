@@ -1,0 +1,60 @@
+phase: P8d
+scope: UniversalTargetElimination kernel as bounded local target/separator projection
+supports:
+  - RGQ-022
+  - RGQ-036
+  - RGQ-041
+  - RGQ-051
+  - RGQ-056
+mechanisms:
+  closes_after_review:
+    - MECH-008
+entries:
+  - function: geosolver-core/src/kernels/universal_elimination.rs::admit_universal_elimination
+    required_by: "BASE_SPEC.md RGQ-041 required functions; PLAN.md P8d task 1"
+    notes:
+      - "Admits only when a hash-bound Universal plan can be built from authorized local relations and/or supplied child messages."
+      - "Declines instead of treating missing local projection evidence as nonfinite."
+  - function: geosolver-core/src/kernels/universal_elimination.rs::plan_universal_elimination_with_messages
+    required_by: "BASE_SPEC.md RGQ-041 plan fields; PLAN.md P8d tasks 2-3"
+    notes:
+      - "Builds the exact fixed sequence TargetRelationSearchEscalated, SparseResultantIfSquareOrOverdetermined, SpecializeProjectInterpolateVerify, LocalGroebnerEliminationToKeepZ."
+      - "Binds block authorization hash, source relation hashes, child message hashes, exported variables, eliminated variables, template/rank support, resource bounds, UniversalFixedLocalElimination route, and NoLocalCertifiedNonFinite policy into the plan hash."
+      - "Uses an honestly named LocalGroebner route because PRIMITIVE_SCOPE_LEDGER forbids claiming production F4 readiness from the non-production helper."
+  - function: geosolver-core/src/kernels/universal_elimination.rs::build_universal_elimination_plan
+    required_by: "BASE_SPEC.md RGQ-041 required functions"
+    notes:
+      - "Returns the already admitted execution plan or rebuilds it from the current KernelContext child messages."
+  - function: geosolver-core/src/kernels/universal_elimination.rs::execute_universal_elimination
+    required_by: "BASE_SPEC.md RGQ-041 execution policy; PLAN.md P8d tasks 4-6"
+    notes:
+      - "Validates plan hash, block id, authorization hash, support hash, certificate route, local nonfinite policy, fixed sequence, child message hashes, and source hash coverage before executing stages."
+      - "Exhaustion returns AlgorithmicHardCase with stage trace; FiniteResourceFailure and CertificateDesignGap remain allowed planned failures."
+      - "Does not return CertifiedNonFiniteTargetImage from a local block."
+  - function: geosolver-core/src/kernels/universal_elimination.rs::execute_universal_stage
+    required_by: "BASE_SPEC.md RGQ-041 required functions; PLAN.md P8d task 2"
+    notes:
+      - "Executes only the predeclared strategy represented by the UniversalStagePlan."
+      - "Delegates earlier stages to P8a/P8b kernels and wraps verified exported-only generators as Universal messages."
+      - "Runs LocalGroebner only with exported variables as keep variables and explicit caps."
+  - function: geosolver-core/src/kernels/universal_elimination.rs::verify_universal_no_coordinate_fallback
+    required_by: "BASE_SPEC.md RGQ-041 forbidden behavior; PLAN.md P8d task 7"
+    notes:
+      - "Rejects wrong kernel kind, wrong certificate route, enabled local nonfinite policy, and missing local elimination caps."
+      - "Checks trace kind and matrix dimensions against resource bounds."
+  - function: geosolver-core/src/kernels/universal_elimination.rs::extract_verified_export_generators
+    required_by: "BASE_SPEC.md RGQ-041 required functions"
+    notes:
+      - "Returns only nonzero clear-denominator primitive generators whose variables are a subset of exported variables."
+      - "Rejects any local elimination result that exports non-keep variables."
+  - function: geosolver-core/src/planner/admission.rs::build_kernel_admission
+    required_by: "PLAN.md P8d planner connection; BASE_SPEC.md RGQ-041 hash-bound plan requirement"
+    notes:
+      - "Routes KernelKind::UniversalTargetElimination to plan_universal_elimination, removing the previous duplicate P6-era Universal plan construction."
+tests:
+  - p8d_universal_one_large_block_exports_target_relation
+  - p8d_universal_rejects_plan_auth_and_replay_tamper
+  - p8d_universal_child_message_hash_binding_is_operational
+  - p8d_universal_requires_fixed_strategy_sequence_and_resource_caps
+  - p8d_universal_exhaustion_uses_only_allowed_failure_statuses
+  - p8d_static_forbidden_fallback_apis_absent

@@ -1,0 +1,160 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: P12
+commit: 45c33932033e308f004262b23130d59a30a93c36+p12-worktree
+algorithm_spec_source_sha256: 2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed
+failure_source_sha256: df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: cd5c9147a5f48d50d12142c67e5160f95a1ccdbfe43eee925d5e0bb1a8fee779
+evidence_manifest_schema_sha256: 74e0fe22b6ba77e38edf96c8e6851eb5be8beb717599cbfb0c345abe4617a253
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/command_outputs.txt
+  sha256: 933352380c89a84883b5a48f22a4925b1dc16a16adf8cc7013d73aa8a07e4b67
+  purpose: P12 command output summaries for test-first failure, focused tests, full suite, formatting, diff checks, static scans, and remediation verification.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/commands.txt
+  sha256: 00934f8226c0f3f9f1f08ec3fb023d3fef7f64d80900150ea1c84df59a18f309
+  purpose: P12 command list for tests, static scans, and reviewer checkpoints.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/function_implementation_table.yaml
+  sha256: 5194769d5fbdb883940179900c8168de759b7822d845c8c9f5e4d8e91e985d5b
+  purpose: P12 requirement-to-function and test coverage implementation table.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/notes.md
+  sha256: 7cd410a2dc592241d545d9eea1aa8f08f28954d8c5da0f799bd964fd93f46d13
+  purpose: P12 implementation notes, remediation history, scope, and forbidden overclaims.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/quality_reviewer_pass_after_integration_remediation.md
+  sha256: 0d73f5f1494eba2898df0fec8f9bd51d6d21291c5f6b4612cc73a0b89d4b6650
+  purpose: P12 quality reviewer PASS after integration remediation.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/spec_verifier_fail_fixable.md
+  sha256: 5c183eb945c236509d6f120b647c53eb33c67d894d47975739c5c8afde3ac2c1
+  purpose: P12 initial spec verifier FAIL_FIXABLE record and remediation summary.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/spec_verifier_pass_after_integration_remediation.md
+  sha256: 6b865ce2ea9f669b08bbfeb0e8b5a7dc699728a2b8854fab9f9db7d70d911dcf
+  purpose: P12 spec verifier PASS after support-producing integration, replay completeness, and production decode wiring remediation.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/static_scans.txt
+  sha256: a43144a89bd2030b37c6c91b0dce728fc9507b5edd93964c9f2b88ffbbfb0739
+  purpose: P12 placeholder/floating-only, implementation anchor, production decode wiring, and benign empty-root static scans.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/test_first_failure.txt
+  sha256: 3c8959d1303355c2fc1204f23d68e753eab6ec3e00f970fa4e8faff10bdcf694
+  purpose: P12 test-first failure record.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P12/20260705-113835Z/prompt.md
+  sha256: 35bae47e76484405b4a322af8ccb75dce936d538e69d855c03aaad1278e8afd8
+  purpose: Archived P12 guardian boundary reviewer prompt.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P12/20260705-113835Z/response.md
+  sha256: ebda246d54c32e2e06f023ff00571e4cd04bdf6aa331b21fbf8494ff4fda6080
+  purpose: Archived P12 guardian boundary reviewer PASS response.
+command_outputs:
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p12_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 1
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/test_first_failure.txt
+  output_sha256: 3c8959d1303355c2fc1204f23d68e753eab6ec3e00f970fa4e8faff10bdcf694
+  finished_at_utc: 20260705-113835Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p12_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/command_outputs.txt
+  output_sha256: 933352380c89a84883b5a48f22a4925b1dc16a16adf8cc7013d73aa8a07e4b67
+  finished_at_utc: 20260705-113835Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/command_outputs.txt
+  output_sha256: 933352380c89a84883b5a48f22a4925b1dc16a16adf8cc7013d73aa8a07e4b67
+  finished_at_utc: 20260705-113835Z
+- command: cargo fmt --manifest-path geosolver-core/Cargo.toml
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/command_outputs.txt
+  output_sha256: 933352380c89a84883b5a48f22a4925b1dc16a16adf8cc7013d73aa8a07e4b67
+  finished_at_utc: 20260705-113835Z
+- command: cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/command_outputs.txt
+  output_sha256: 933352380c89a84883b5a48f22a4925b1dc16a16adf8cc7013d73aa8a07e4b67
+  finished_at_utc: 20260705-113835Z
+- command: git diff --check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/command_outputs.txt
+  output_sha256: 933352380c89a84883b5a48f22a4925b1dc16a16adf8cc7013d73aa8a07e4b67
+  finished_at_utc: 20260705-113835Z
+- command: rg P12 roots placeholder and floating-only sentinels
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 1
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/static_scans.txt
+  output_sha256: a43144a89bd2030b37c6c91b0dce728fc9507b5edd93964c9f2b88ffbbfb0739
+  finished_at_utc: 20260705-113835Z
+- command: rg P12 production decode wiring
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/static_scans.txt
+  output_sha256: a43144a89bd2030b37c6c91b0dce728fc9507b5edd93964c9f2b88ffbbfb0739
+  finished_at_utc: 20260705-113835Z
+- command: rg P12 implementation anchors
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/static_scans.txt
+  output_sha256: a43144a89bd2030b37c6c91b0dce728fc9507b5edd93964c9f2b88ffbbfb0739
+  finished_at_utc: 20260705-113835Z
+- command: rg P12 benign empty-root return
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/static_scans.txt
+  output_sha256: a43144a89bd2030b37c6c91b0dce728fc9507b5edd93964c9f2b88ffbbfb0739
+  finished_at_utc: 20260705-113835Z
+- command: spec_verifier P12 read-only verification after integration remediation
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/spec_verifier_pass_after_integration_remediation.md
+  output_sha256: 6b865ce2ea9f669b08bbfeb0e8b5a7dc699728a2b8854fab9f9db7d70d911dcf
+  finished_at_utc: 20260705-113835Z
+- command: quality_reviewer P12 read-only verification after integration remediation
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/quality_reviewer_pass_after_integration_remediation.md
+  output_sha256: 0d73f5f1494eba2898df0fec8f9bd51d6d21291c5f6b4612cc73a0b89d4b6650
+  finished_at_utc: 20260705-113835Z
+- command: guardian_boundary_reviewer P12 MECH completion verification
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P12/20260705-113835Z/response.md
+  output_sha256: ebda246d54c32e2e06f023ff00571e4cd04bdf6aa331b21fbf8494ff4fda6080
+  finished_at_utc: 20260705-113835Z
+static_scans:
+- scan_id: p12-roots-placeholder-floating-scan
+  command: rg implemented-in-P12, TODO, placeholder, floating-only, floating, f64/f32, approx, unimplemented, todo, and silent refinement fallback sentinels in roots, real_root, and rational files
+  forbidden_pattern: P12 placeholder, floating-only root isolation, approximate-root, or silent fallback sentinel
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/static_scans.txt
+- scan_id: p12-implementation-anchors
+  command: rg squarefree, isolation, decode, algebraic-root, finalizer, replay, candidate-hash, and P12 test anchors
+  forbidden_pattern: missing P12 exact root/decode implementation anchor
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/static_scans.txt
+- scan_id: p12-production-decode-wiring
+  command: rg decode_candidates call sites in geosolver-core/src and geosolver-core/tests
+  forbidden_pattern: decode_candidates only present as definition or unit-test-only call
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/static_scans.txt
+- scan_id: p12-benign-empty-root-path
+  command: rg return Ok(Vec::new()) in geosolver-core/src/algebra/real_root.rs
+  forbidden_pattern: placeholder empty root isolation masking real roots
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/static_scans.txt
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/function_implementation_table.yaml
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/spec_verifier_pass_after_integration_remediation.md
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/quality_reviewer_pass_after_integration_remediation.md
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P12/20260705-113835Z/response.md
+known_limitations:
+- P12 closes MECH-011 only; it does not close P13 exact-image semantics, P14 public orchestration, P15 acceptance stress, or P16 final closure.
+- Candidate-cover finalization is P12 mechanism construction and is not a full public solve_with_context pipeline claim.
+- Descartes-selected isolation currently routes to the exact Sturm path; this is acceptable for P12 but not a distinct Descartes implementation claim.
+- No R-ID is marked VERIFIED by the P12 review.
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-011
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-011
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

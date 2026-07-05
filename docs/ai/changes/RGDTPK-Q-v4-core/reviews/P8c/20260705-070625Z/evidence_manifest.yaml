@@ -1,0 +1,130 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: P8c
+commit: 45c33932033e308f004262b23130d59a30a93c36+p8c-worktree
+algorithm_spec_source_sha256: 2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed
+failure_source_sha256: df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: cd5c9147a5f48d50d12142c67e5160f95a1ccdbfe43eee925d5e0bb1a8fee779
+evidence_manifest_schema_sha256: 74e0fe22b6ba77e38edf96c8e6851eb5be8beb717599cbfb0c345abe4617a253
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8c/command_outputs.txt
+  sha256: 03dfd568a15301b49bbed1e6743149177398570ce1022620abe854a06fd9bbe4
+  purpose: P8c command output summaries including test-first failure, final tests, formatting, full crate test, and diff check.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8c/commands.txt
+  sha256: 93e03d67c9150c77b057b1180828721cf77544a08d9248869a2065496168d075
+  purpose: P8c command list for failure, implementation verification, related phase regressions, and static scans.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8c/function_implementation_table.yaml
+  sha256: 385b09967d4955745e641fc4c64bc245362a9acb6f405a3d57c422dcccd6b3fc
+  purpose: P8c requirement-to-function implementation table.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8c/notes.md
+  sha256: e20531884a2998ff0fa0b4efab1f673d123673979445353b51d0fec371643c0e
+  purpose: P8c scope notes, quotient/action claim limits, and forbidden overclaims.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8c/static_scans.txt
+  sha256: ef3270f76846966283386e3b68749a93ab99ea5ac96db87709e43dcbdbbbbd11
+  purpose: P8c static scan summary for coverage kind, debug-handle exclusion, planner connection, and no-coordinate export boundaries.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8c/test_first_failure.txt
+  sha256: 7b35153de8f0150539480252d1de2c081f110961f1a57441b4795dc85bedb289
+  purpose: P8c pre-implementation failing test evidence.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P8c/20260705-070625Z/prompt.md
+  sha256: b4ce2f89453fccefdaed5e621636d26540a36337e6ed70d0a2d8bb3646260749
+  purpose: Archived P8c guardian reviewer prompt.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P8c/20260705-070625Z/response.md
+  sha256: c1cc1338edb633f46a7f70a66e10e040c3a2c1e6fde24e07cf684ef94dcb3b9d
+  purpose: Archived P8c guardian reviewer PASS response.
+command_outputs:
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p8c_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 1
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8c/test_first_failure.txt
+  output_sha256: 7b35153de8f0150539480252d1de2c081f110961f1a57441b4795dc85bedb289
+  finished_at_utc: 20260705-070625Z
+- command: cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8c/command_outputs.txt
+  output_sha256: 03dfd568a15301b49bbed1e6743149177398570ce1022620abe854a06fd9bbe4
+  finished_at_utc: 20260705-070625Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p8c_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8c/command_outputs.txt
+  output_sha256: 03dfd568a15301b49bbed1e6743149177398570ce1022620abe854a06fd9bbe4
+  finished_at_utc: 20260705-070625Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml krylov -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8c/command_outputs.txt
+  output_sha256: 03dfd568a15301b49bbed1e6743149177398570ce1022620abe854a06fd9bbe4
+  finished_at_utc: 20260705-070625Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p6_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8c/command_outputs.txt
+  output_sha256: 03dfd568a15301b49bbed1e6743149177398570ce1022620abe854a06fd9bbe4
+  finished_at_utc: 20260705-070625Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p7_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8c/command_outputs.txt
+  output_sha256: 03dfd568a15301b49bbed1e6743149177398570ce1022620abe854a06fd9bbe4
+  finished_at_utc: 20260705-070625Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p8a_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8c/command_outputs.txt
+  output_sha256: 03dfd568a15301b49bbed1e6743149177398570ce1022620abe854a06fd9bbe4
+  finished_at_utc: 20260705-070625Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p8b_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8c/command_outputs.txt
+  output_sha256: 03dfd568a15301b49bbed1e6743149177398570ce1022620abe854a06fd9bbe4
+  finished_at_utc: 20260705-070625Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8c/command_outputs.txt
+  output_sha256: 03dfd568a15301b49bbed1e6743149177398570ce1022620abe854a06fd9bbe4
+  finished_at_utc: 20260705-070625Z
+- command: git diff --check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8c/command_outputs.txt
+  output_sha256: 03dfd568a15301b49bbed1e6743149177398570ce1022620abe854a06fd9bbe4
+  finished_at_utc: 20260705-070625Z
+- command: guardian_boundary_reviewer P8c review
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P8c/20260705-070625Z/response.md
+  output_sha256: c1cc1338edb633f46a7f70a66e10e040c3a2c1e6fde24e07cf684ef94dcb3b9d
+  finished_at_utc: 20260705-070625Z
+static_scans:
+- scan_id: p8c-coverage-kind
+  command: rg TargetActionKrylov, VerifiedCharacteristicSupportCoverage, DebugExplicit, build_debug_explicit, coordinate roots, full coordinate RUR, kernel-not-ready, and P8c placeholder text in P8c files and source docs
+  forbidden_pattern: weak ActionKrylov coverage, debug explicit production handle, coordinate roots/RUR export, or remaining P8c placeholder
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8c/static_scans.txt
+- scan_id: p8c-planner-route
+  command: inspect geosolver-core/src/planner/admission.rs TargetActionKrylov arm
+  forbidden_pattern: P8c planner still declining as not yet admitted
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8c/static_scans.txt
+- scan_id: p8c-ledger-boundary
+  command: inspect PRIMITIVE_SCOPE_LEDGER.md and P8c implementation for debug-handle and injected-column boundaries
+  forbidden_pattern: production TargetActionKrylov readiness from debug explicit handles or externally injected self-certifying columns
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8c/static_scans.txt
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8c/function_implementation_table.yaml
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P8c/20260705-070625Z/response.md
+known_limitations:
+- P8c closes only MECH-014 for the narrow certifiable target-only finite quotient/action path; it does not provide a generic quotient-basis constructor for arbitrary local ideals.
+- P8 as an umbrella, P8d, P9, final composition, root isolation, exact-image semantics, nonfinite certification, public orchestration, and final acceptance remain open.
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-014
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-014
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

@@ -1,0 +1,20 @@
+# P11 Test-First Failure
+
+Command:
+
+```text
+cargo test --manifest-path geosolver-core/Cargo.toml p11_ -- --nocapture
+```
+
+Observed failure before implementation:
+
+```text
+error[E0432]: unresolved import `crate::verify::verify_support::verify_global_support`
+error[E0432]: unresolved imports `crate::verify::run_certificate::build_core_run_certificate`, `crate::verify::run_certificate::CoreRunCertificateInput`
+error[E0425]: cannot find value `plan` in this scope
+error[E0425]: cannot find function `replay_run_certificate` in module `super`
+```
+
+Interpretation:
+
+The P11 tests were introduced before the verifier implementation. The expected failure proved the new tests were exercising missing P11 APIs rather than passing through pre-existing placeholder code. The unrelated compile issue in `universal_elimination.rs` was the P11 certificate binding refactor missing a parent plan argument; it was fixed by passing the parent plan into Universal message construction.

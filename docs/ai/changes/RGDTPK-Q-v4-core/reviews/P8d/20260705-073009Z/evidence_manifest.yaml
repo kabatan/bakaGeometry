@@ -1,0 +1,137 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: P8d
+commit: 45c33932033e308f004262b23130d59a30a93c36+p8d-worktree
+algorithm_spec_source_sha256: 2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed
+failure_source_sha256: df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: cd5c9147a5f48d50d12142c67e5160f95a1ccdbfe43eee925d5e0bb1a8fee779
+evidence_manifest_schema_sha256: 74e0fe22b6ba77e38edf96c8e6851eb5be8beb717599cbfb0c345abe4617a253
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8d/command_outputs.txt
+  sha256: 78969fd8cc0e92de9d66ce77c9d721d58ee78484928bd1ad87869318fa69b204
+  purpose: P8d command output summaries including test-first failure, final tests, formatting, full crate test, static scans, and diff check.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8d/commands.txt
+  sha256: cd4f3b0ae91e17ad65a3203bb10486c5986a972d25f9275d8728d0cee7e9984d
+  purpose: P8d command list for failure, implementation verification, related phase regressions, full suite, and static scans.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8d/function_implementation_table.yaml
+  sha256: 23d31be534aae2b21c4f9cc1ca8b0b7292c3ccb9177736284ee8d165d41b324c
+  purpose: P8d requirement-to-function implementation table.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8d/notes.md
+  sha256: 6bc9080a7f020734ea264622f47a944e58f758d2c45e2722e34b6e544fe18117
+  purpose: P8d scope notes, local Groebner/F4 claim boundary, nonfinite polarity, and forbidden overclaims.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8d/static_scans.txt
+  sha256: 838c72d0b2cbdcc16a02533870dc0cf29aa7771aa64d4bdd968677c2d07dc700
+  purpose: P8d static scan summary for forbidden fallback APIs and fixed-sequence/policy anchors.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8d/test_first_failure.txt
+  sha256: 87ea960ef7a65a6591555867f03c6f3e882b75bc9a1cae407e8f32bc157701af
+  purpose: P8d pre-implementation failing test evidence.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P8d/20260705-073009Z/prompt.md
+  sha256: 3dd826fb9ff7f7780620f35faebf0de300357c061c426e31c2bc22f373d7b0c4
+  purpose: Archived P8d guardian reviewer prompt.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P8d/20260705-073009Z/response.md
+  sha256: c22e91d124a552bd3b6dc6b04c4149cfc11005430bd73e55da6dd5493d6256ad
+  purpose: Archived P8d guardian reviewer PASS response.
+command_outputs:
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p8d_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 1
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8d/test_first_failure.txt
+  output_sha256: 87ea960ef7a65a6591555867f03c6f3e882b75bc9a1cae407e8f32bc157701af
+  finished_at_utc: 20260705-073009Z
+- command: cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8d/command_outputs.txt
+  output_sha256: 78969fd8cc0e92de9d66ce77c9d721d58ee78484928bd1ad87869318fa69b204
+  finished_at_utc: 20260705-073009Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p8d_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8d/command_outputs.txt
+  output_sha256: 78969fd8cc0e92de9d66ce77c9d721d58ee78484928bd1ad87869318fa69b204
+  finished_at_utc: 20260705-073009Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p6_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8d/command_outputs.txt
+  output_sha256: 78969fd8cc0e92de9d66ce77c9d721d58ee78484928bd1ad87869318fa69b204
+  finished_at_utc: 20260705-073009Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p7_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8d/command_outputs.txt
+  output_sha256: 78969fd8cc0e92de9d66ce77c9d721d58ee78484928bd1ad87869318fa69b204
+  finished_at_utc: 20260705-073009Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p8a_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8d/command_outputs.txt
+  output_sha256: 78969fd8cc0e92de9d66ce77c9d721d58ee78484928bd1ad87869318fa69b204
+  finished_at_utc: 20260705-073009Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p8b_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8d/command_outputs.txt
+  output_sha256: 78969fd8cc0e92de9d66ce77c9d721d58ee78484928bd1ad87869318fa69b204
+  finished_at_utc: 20260705-073009Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p8c_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8d/command_outputs.txt
+  output_sha256: 78969fd8cc0e92de9d66ce77c9d721d58ee78484928bd1ad87869318fa69b204
+  finished_at_utc: 20260705-073009Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8d/command_outputs.txt
+  output_sha256: 78969fd8cc0e92de9d66ce77c9d721d58ee78484928bd1ad87869318fa69b204
+  finished_at_utc: 20260705-073009Z
+- command: rg forbidden Universal fallback APIs in universal_elimination.rs and planner/admission.rs
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8d/static_scans.txt
+  output_sha256: 838c72d0b2cbdcc16a02533870dc0cf29aa7771aa64d4bdd968677c2d07dc700
+  finished_at_utc: 20260705-073009Z
+- command: git diff --check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8d/command_outputs.txt
+  output_sha256: 78969fd8cc0e92de9d66ce77c9d721d58ee78484928bd1ad87869318fa69b204
+  finished_at_utc: 20260705-073009Z
+- command: guardian_boundary_reviewer P8d review
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P8d/20260705-073009Z/response.md
+  output_sha256: c22e91d124a552bd3b6dc6b04c4149cfc11005430bd73e55da6dd5493d6256ad
+  finished_at_utc: 20260705-073009Z
+static_scans:
+- scan_id: p8d-forbidden-fallback-apis
+  command: rg CertifiedNonFiniteTargetImage, coordinate roots/solutions, full coordinate/RUR, QE/CAD, solve-all-coordinates, and non-production Groebner batch markers in Universal files
+  forbidden_pattern: local nonfinite, coordinate-first heavy fallback, full coordinate RUR/roots, generic QE/CAD, solve-all-coordinates, or non-production Groebner batch route
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8d/static_scans.txt
+- scan_id: p8d-fixed-sequence-policy
+  command: rg UniversalStrategy, LocalGroebnerEliminationToKeepZ, NoLocalCertifiedNonFinite, UniversalFixedLocalElimination, and plan_universal_elimination anchors
+  forbidden_pattern: missing fixed sequence, missing local nonfinite disablement, missing Universal certificate route, or planner still using duplicate placeholder plan
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8d/static_scans.txt
+- scan_id: p8d-ledger-boundary
+  command: inspect PRIMITIVE_SCOPE_LEDGER.md plus algebra/elimination.rs and algebra/f4.rs non-production F4 boundaries
+  forbidden_pattern: closing Universal local route by non-production F4 naming, narrow helper primitives alone, or debug quotient/action handles
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8d/static_scans.txt
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8d/function_implementation_table.yaml
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P8d/20260705-073009Z/response.md
+known_limitations:
+- P8d closes only MECH-008 for Universal target/separator elimination; it does not close P8 as an umbrella.
+- P9 optimized kernels, P10 final support composition, root isolation/decode, exact-image semantics, public orchestration, performance readiness, and final acceptance remain open.
+- Reviewer noted that source hash deletion/tamper is enforced in code, but P8d focused tests do not include a dedicated source-deletion test.
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-008
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-008
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

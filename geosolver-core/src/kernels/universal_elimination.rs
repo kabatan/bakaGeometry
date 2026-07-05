@@ -1,1 +1,1506 @@
-// UniversalTargetEliminationKernel is implemented in P8d.
+use std::collections::BTreeSet;
+
+use serde::{Deserialize, Serialize};
+
+use crate::algebra::elimination::{
+    eliminate_to_keep_variables, validate_local_elimination_result, EliminationStrategy,
+    LocalEliminationResult,
+};
+use crate::algebra::groebner::GroebnerOptions;
+use crate::compose::message::{MessageRepresentation, ProjectionMessage, ProjectionStrength};
+use crate::graph::projection_dag::ProjectionBlock;
+use crate::kernels::sparse_resultant::{
+    execute_sparse_resultant, plan_sparse_resultant_with_messages,
+};
+use crate::kernels::specialization_interpolation::{
+    execute_specialization_interpolation, plan_specialization_interpolation_with_messages,
+};
+use crate::kernels::target_relation_search::{
+    admit_target_relation_search, execute_target_relation_search,
+};
+use crate::kernels::traits::{KernelContext, KernelKind, ReplayResult, TargetProjectionKernel};
+use crate::planner::admission::{KernelAdmission, KernelAdmissionStatus};
+use crate::planner::kernel_plan::{
+    hash_kernel_execution_plan, planned_failure_behavior, rank_plan, resource_bounds_hash,
+    support_plan_hash, template_plan, universal_strategy_step, CertificateRoute,
+    KernelExecutionPlan, KernelSupportPlan, LocalNonfinitePolicy, ResourceBounds,
+    UniversalStrategy, UniversalStrategyPlanStep,
+};
+use crate::preprocess::compression::CompressedSystemQ;
+use crate::problem::canonicalize::CanonicalRelationQ;
+use crate::problem::context::SolverContext;
+use crate::result::cost_trace::ProjectionCostTrace;
+use crate::result::status::{
+    AlgebraicReason, FailureKind, SolverError, SolverErrorKind, SolverStatus, StageId,
+};
+use crate::types::hash::{hash_sequence, Hash};
+use crate::types::ids::{BlockId, KernelPlanId, PackageId, RelationId, VariableId};
+use crate::types::matrix::{matrix_density, SparseMatrixQ};
+use crate::types::polynomial::{
+    clear_denominators_primitive, poly_monomial_count, poly_variables, SparsePolynomialQ,
+};
+use crate::verify::certificates::{
+    KernelCertificate, KernelCertificatePayload, UniversalProjectionCertificate,
+};
+
+pub struct UniversalTargetEliminationKernel;
+
+impl TargetProjectionKernel for UniversalTargetEliminationKernel {
+    fn kind(&self) -> KernelKind {
+        KernelKind::UniversalTargetElimination
+    }
+
+    fn admit(&self, block: &ProjectionBlock, ctx: &KernelContext) -> KernelAdmission {
+        admit_universal_elimination(block, ctx)
+    }
+
+    fn plan(
+        &self,
+        admission: &KernelAdmission,
+        ctx: &KernelContext,
+        _solver_ctx: &SolverContext,
+    ) -> Result<KernelExecutionPlan, SolverError> {
+        build_universal_elimination_plan(admission, ctx)
+    }
+
+    fn execute(
+        &self,
+        plan: &KernelExecutionPlan,
+        ctx: &mut KernelContext,
+        solver_ctx: &mut SolverContext,
+    ) -> Result<ProjectionMessage, SolverError> {
+        execute_universal_elimination_with_solver_ctx(plan, ctx, solver_ctx)
+    }
+
+    fn replay(&self, message: &ProjectionMessage, ctx: &KernelContext) -> ReplayResult {
+        crate::kernels::traits::exact_replay_result(
+            self.kind(),
+            "universal-elimination-replay",
+            message,
+            ctx,
+        )
+    }
+}
+
+#[derive(Debug, Clone)]
+struct UniversalRelationInput {
+    polynomial: SparsePolynomialQ,
+    source_relation_ids: Vec<RelationId>,
+    source_hash: Hash,
+    child_message_hash: Option<Hash>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UniversalStagePlan {
+    pub parent_plan_id: KernelPlanId,
+    pub parent_plan_hash: Hash,
+    pub block_id: BlockId,
+    pub strategy: UniversalStrategy,
+    pub stage_index: usize,
+    pub exported_variables: Vec<VariableId>,
+    pub eliminated_variables: Vec<VariableId>,
+    pub source_relation_hashes: Vec<Hash>,
+    pub child_message_hashes: Vec<Hash>,
+    pub resource_bounds: ResourceBounds,
+    pub enabled: bool,
+    pub skip_reason: Option<String>,
+    pub stage_hash: Hash,
+}
+
+pub fn admit_universal_elimination(
+    block: &ProjectionBlock,
+    ctx: &KernelContext,
+) -> KernelAdmission {
+    let solver_ctx = SolverContext::new(Default::default());
+    match plan_universal_elimination_with_messages(
+        block,
+        &ctx.system,
+        &ctx.child_messages,
+        &solver_ctx,
+        KernelPlanId(KernelKind::UniversalTargetElimination as u32),
+    ) {
+        Ok(plan) => finish_admission(block, KernelAdmissionStatus::Admitted, Some(plan)),
+        Err(_) => finish_admission(
+            block,
+            KernelAdmissionStatus::Declined {
+                reason: "no authorized local relations or child messages for universal projection"
+                    .to_owned(),
+            },
+            None,
+        ),
+    }
+}
+
+pub fn plan_universal_elimination(
+    block: &ProjectionBlock,
+    system: &CompressedSystemQ,
+    solver_ctx: &SolverContext,
+    plan_id: KernelPlanId,
+) -> Result<KernelExecutionPlan, SolverError> {
+    plan_universal_elimination_with_messages(block, system, &[], solver_ctx, plan_id)
+}
+
+pub fn plan_universal_elimination_with_messages(
+    block: &ProjectionBlock,
+    system: &CompressedSystemQ,
+    child_messages: &[ProjectionMessage],
+    solver_ctx: &SolverContext,
+    plan_id: KernelPlanId,
+) -> Result<KernelExecutionPlan, SolverError> {
+    let inputs = collect_relation_inputs(block, system, child_messages);
+    if inputs.is_empty() {
+        return Err(algorithmic_hard_case_for_block(
+            system.target,
+            block,
+            "universal projection has no authorized local relations or child messages",
+        ));
+    }
+    let relation_polys = inputs
+        .iter()
+        .map(|input| input.polynomial.clone())
+        .collect::<Vec<_>>();
+    let exported_variables = sorted_set(&block.exported_variables);
+    let eliminated_variables = block
+        .local_variables
+        .difference(&block.exported_variables)
+        .copied()
+        .collect::<Vec<_>>();
+    let strategy_sequence =
+        fixed_universal_strategy_sequence(&relation_polys, &exported_variables, system.target);
+    let matrix_rows = relation_polys.len().max(1);
+    let matrix_cols = relation_polys
+        .iter()
+        .map(poly_monomial_count)
+        .sum::<usize>()
+        .max(1);
+    let mut support_plan = KernelSupportPlan {
+        dense_relation_search_schedule: None,
+        affine_elimination_order: None,
+        template_plan: Some(template_plan(
+            matrix_rows,
+            matrix_cols,
+            hash_sequence(
+                "universal-local-relation-rows",
+                &relation_polys
+                    .iter()
+                    .map(|poly| poly.hash.0.to_vec())
+                    .collect::<Vec<_>>(),
+            ),
+            hash_sequence(
+                "universal-exported-variables",
+                &exported_variables
+                    .iter()
+                    .map(|var| var.0.to_be_bytes().to_vec())
+                    .collect::<Vec<_>>(),
+            ),
+        )),
+        rank_plan: Some(rank_plan(matrix_rows.min(matrix_cols))),
+        universal_strategy_sequence: strategy_sequence,
+        degree_bound: relation_polys
+            .iter()
+            .map(crate::types::polynomial::poly_total_degree)
+            .max()
+            .unwrap_or(1) as usize,
+        support_hash: hash_sequence("kernel-support-plan", &[]),
+    };
+    support_plan.support_hash = support_plan_hash(&support_plan);
+    let mut bounds = ResourceBounds {
+        max_matrix_rows: solver_ctx
+            .options
+            .max_matrix_rows
+            .or(Some(matrix_rows.max(32))),
+        max_matrix_cols: solver_ctx
+            .options
+            .max_matrix_cols
+            .or(Some(matrix_cols.max(32))),
+        max_export_degree: solver_ctx
+            .options
+            .max_relation_search_export_degree
+            .or(Some(support_plan.degree_bound.max(2))),
+        max_multiplier_total_degree: Some(
+            support_plan
+                .degree_bound
+                .saturating_add(eliminated_variables.len())
+                .max(2),
+        ),
+        max_local_elimination_steps: Some(matrix_rows.saturating_mul(matrix_cols).max(32)),
+        max_memory_bytes: solver_ctx.options.max_memory_bytes,
+        bounds_hash: hash_sequence("planner-resource-bounds", &[]),
+    };
+    bounds.bounds_hash = resource_bounds_hash(&bounds);
+    Ok(KernelExecutionPlan::new(
+        plan_id,
+        block.block_id,
+        KernelKind::UniversalTargetElimination,
+        block.authorization_hash,
+        inputs
+            .iter()
+            .flat_map(|input| input.source_relation_ids.iter().copied())
+            .collect(),
+        dedup_hashes_in_order(inputs.iter().map(|input| input.source_hash).collect()),
+        block.child_block_ids.clone(),
+        dedup_hashes_in_order(
+            inputs
+                .iter()
+                .filter_map(|input| input.child_message_hash)
+                .collect(),
+        ),
+        exported_variables,
+        eliminated_variables,
+        support_plan,
+        bounds,
+        CertificateRoute::UniversalFixedLocalElimination,
+        planned_failure_behavior(
+            vec![
+                SolverStatus::AlgorithmicHardCase,
+                SolverStatus::FiniteResourceFailure,
+                SolverStatus::CertificateDesignGap,
+            ],
+            LocalNonfinitePolicy::NoLocalCertifiedNonFinite,
+        ),
+    ))
+}
+
+pub fn build_universal_elimination_plan(
+    admission: &KernelAdmission,
+    ctx: &KernelContext,
+) -> Result<KernelExecutionPlan, SolverError> {
+    if admission.kind != KernelKind::UniversalTargetElimination
+        || !matches!(admission.status, KernelAdmissionStatus::Admitted)
+    {
+        return Err(implementation_bug(
+            "universal plan requested for non-admitted kernel",
+        ));
+    }
+    if let Some(plan) = &admission.execution_plan {
+        return Ok(plan.clone());
+    }
+    plan_universal_elimination_with_messages(
+        &ctx.block,
+        &ctx.system,
+        &ctx.child_messages,
+        &SolverContext::new(Default::default()),
+        KernelPlanId(KernelKind::UniversalTargetElimination as u32),
+    )
+}
+
+pub fn execute_universal_elimination(
+    plan: &KernelExecutionPlan,
+    ctx: &mut KernelContext,
+) -> Result<ProjectionMessage, SolverError> {
+    execute_universal_elimination_with_solver_ctx(
+        plan,
+        ctx,
+        &mut SolverContext::new(Default::default()),
+    )
+}
+
+fn execute_universal_elimination_with_solver_ctx(
+    plan: &KernelExecutionPlan,
+    ctx: &mut KernelContext,
+    solver_ctx: &mut SolverContext,
+) -> Result<ProjectionMessage, SolverError> {
+    validate_universal_plan_binding(plan, ctx)?;
+    let inputs = planned_relation_inputs(plan, ctx)?;
+    if inputs.is_empty() {
+        return Err(algorithmic_hard_case(
+            ctx,
+            "universal projection has no planned authorized relations",
+            &[],
+        ));
+    }
+    let stages = build_stage_plans(plan)?;
+    let mut stage_trace_hashes = Vec::new();
+    for stage in stages {
+        if !stage.enabled {
+            stage_trace_hashes.push(stage.stage_hash);
+            continue;
+        }
+        match execute_universal_stage_with_solver_ctx(&stage, ctx, solver_ctx, plan) {
+            Ok(message) => return Ok(message),
+            Err(err) if is_continuable_stage_failure(&err) => {
+                stage_trace_hashes.push(stage_error_hash(&stage, &err));
+            }
+            Err(err) => return Err(err),
+        }
+    }
+    Err(algorithmic_hard_case(
+        ctx,
+        "universal fixed local sequence produced no certified exported relation",
+        &stage_trace_hashes,
+    ))
+}
+
+pub fn execute_universal_stage(
+    stage: &UniversalStagePlan,
+    ctx: &mut KernelContext,
+) -> Result<ProjectionMessage, SolverError> {
+    let shadow = stage_execution_plan_shadow(stage);
+    execute_universal_stage_with_solver_ctx(
+        stage,
+        ctx,
+        &mut SolverContext::new(Default::default()),
+        &shadow,
+    )
+}
+
+fn execute_universal_stage_with_solver_ctx(
+    stage: &UniversalStagePlan,
+    ctx: &mut KernelContext,
+    solver_ctx: &mut SolverContext,
+    parent_plan: &KernelExecutionPlan,
+) -> Result<ProjectionMessage, SolverError> {
+    if !stage.enabled {
+        return Err(algorithmic_hard_case(
+            ctx,
+            stage
+                .skip_reason
+                .as_deref()
+                .unwrap_or("universal stage disabled"),
+            &[stage.stage_hash],
+        ));
+    }
+    match stage.strategy {
+        UniversalStrategy::TargetRelationSearchEscalated => {
+            let admission = admit_target_relation_search(&ctx.block, ctx, solver_ctx);
+            if !admission.is_admitted() {
+                return Err(algorithmic_hard_case(
+                    ctx,
+                    "target relation search stage not admitted",
+                    &[stage.stage_hash],
+                ));
+            }
+            let Some(plan) = admission.execution_plan else {
+                return Err(implementation_bug(
+                    "target relation search stage lacks plan",
+                ));
+            };
+            let message = execute_target_relation_search(&plan, ctx, solver_ctx)?;
+            wrap_stage_message(
+                stage,
+                ctx,
+                message,
+                ProjectionStrength::CandidateCoverStrong,
+                parent_plan,
+            )
+        }
+        UniversalStrategy::SparseResultantIfSquareOrOverdetermined => {
+            let subplan = plan_sparse_resultant_with_messages(
+                &ctx.block,
+                &ctx.system,
+                &ctx.child_messages,
+                solver_ctx,
+                KernelPlanId(stage.parent_plan_id.0.saturating_add(100)),
+            )
+            .map_err(|_| {
+                algorithmic_hard_case(
+                    ctx,
+                    "sparse resultant stage not applicable",
+                    &[stage.stage_hash],
+                )
+            })?;
+            let message = execute_sparse_resultant(&subplan, ctx, solver_ctx)?;
+            wrap_stage_message(
+                stage,
+                ctx,
+                message,
+                ProjectionStrength::CandidateCoverStrong,
+                parent_plan,
+            )
+        }
+        UniversalStrategy::SpecializeProjectInterpolateVerify => {
+            let subplan = plan_specialization_interpolation_with_messages(
+                &ctx.block,
+                &ctx.system,
+                &ctx.child_messages,
+                solver_ctx,
+                KernelPlanId(stage.parent_plan_id.0.saturating_add(200)),
+            )
+            .map_err(|_| {
+                algorithmic_hard_case(
+                    ctx,
+                    "specialization-interpolation stage not applicable",
+                    &[stage.stage_hash],
+                )
+            })?;
+            let message = execute_specialization_interpolation(&subplan, ctx, solver_ctx)?;
+            wrap_stage_message(
+                stage,
+                ctx,
+                message,
+                ProjectionStrength::CandidateCoverStrong,
+                parent_plan,
+            )
+        }
+        UniversalStrategy::LocalGroebnerEliminationToKeepZ => {
+            let inputs = planned_stage_relation_inputs(stage, ctx)?;
+            let relations = inputs
+                .iter()
+                .map(|input| input.polynomial.clone())
+                .collect::<Vec<_>>();
+            let options = GroebnerOptions {
+                max_pairs: stage
+                    .resource_bounds
+                    .max_local_elimination_steps
+                    .unwrap_or(0)
+                    .max(1),
+                max_basis_size: stage.resource_bounds.max_matrix_cols.unwrap_or(0).max(1),
+            };
+            let result = eliminate_to_keep_variables(
+                &relations,
+                &stage.eliminated_variables,
+                &stage.exported_variables,
+                EliminationStrategy::LocalGroebner(options),
+                solver_ctx,
+            )?;
+            enforce_stage_resource_bounds(stage, &result)?;
+            validate_local_elimination_result(&result, &stage.exported_variables, &relations)?;
+            let output_memberships = result
+                .generators
+                .iter()
+                .filter(|generator| !generator.generator.terms.is_empty())
+                .map(|generator| generator.certificate.clone())
+                .collect::<Vec<_>>();
+            let generators =
+                extract_verified_export_generators(&result, &stage.exported_variables)?;
+            if generators.is_empty() {
+                return Err(algorithmic_hard_case(
+                    ctx,
+                    "local Groebner stage found no exported generator",
+                    &[stage.stage_hash],
+                ));
+            }
+            let trace = ProjectionCostTrace {
+                block_id: stage.block_id,
+                kernel_kind: KernelKind::UniversalTargetElimination,
+                local_variable_count: ctx.block.local_variables.len(),
+                exported_variable_count: stage.exported_variables.len(),
+                local_relation_count: relations.len(),
+                local_monomial_count: relations.iter().map(poly_monomial_count).sum(),
+                estimated_quotient_rank: None,
+                matrix_rows: Some(result.matrix_rows),
+                matrix_cols: Some(result.matrix_cols),
+                matrix_density: Some(matrix_density(&SparseMatrixQ {
+                    rows: result.matrix_rows.max(1),
+                    cols: result.matrix_cols.max(1),
+                    entries: Vec::new(),
+                })),
+                coefficient_height_before_bits: 0,
+                coefficient_height_after_bits: generators.iter().map(poly_monomial_count).sum(),
+            };
+            verify_universal_no_coordinate_fallback(&stage_execution_plan_shadow(stage), &trace)?;
+            Ok(build_universal_message(
+                stage,
+                ctx,
+                parent_plan,
+                generators,
+                trace,
+                ProjectionStrength::CandidateCoverStrong,
+                hash_sequence(
+                    "universal-local-groebner-certificate",
+                    &[stage.stage_hash.0.to_vec()],
+                ),
+                KernelCertificatePayload::Universal(UniversalProjectionCertificate {
+                    stage_hash: stage.stage_hash,
+                    stage_certificate_hash: hash_sequence(
+                        "universal-local-groebner-certificate",
+                        &[stage.stage_hash.0.to_vec()],
+                    ),
+                    output_relations: result
+                        .generators
+                        .iter()
+                        .filter(|generator| !generator.generator.terms.is_empty())
+                        .map(|generator| clear_denominators_primitive(&generator.generator))
+                        .collect(),
+                    inner_payload: None,
+                    output_memberships,
+                    source_relations: relations.clone(),
+                }),
+            ))
+        }
+    }
+}
+
+pub fn verify_universal_no_coordinate_fallback(
+    plan: &KernelExecutionPlan,
+    trace: &ProjectionCostTrace,
+) -> Result<(), SolverError> {
+    if plan.kernel_kind != KernelKind::UniversalTargetElimination {
+        return Err(implementation_bug(
+            "universal fallback check received wrong kernel",
+        ));
+    }
+    if plan.certificate_route != CertificateRoute::UniversalFixedLocalElimination {
+        return Err(implementation_bug(
+            "universal certificate route is not fixed local elimination",
+        ));
+    }
+    if plan.failure_behavior.local_nonfinite_policy
+        != LocalNonfinitePolicy::NoLocalCertifiedNonFinite
+    {
+        return Err(implementation_bug(
+            "universal local nonfinite policy is not disabled",
+        ));
+    }
+    if plan.resource_bounds.max_matrix_rows.is_none()
+        || plan.resource_bounds.max_matrix_cols.is_none()
+        || plan.resource_bounds.max_local_elimination_steps.is_none()
+    {
+        return Err(implementation_bug(
+            "universal local elimination lacks explicit resource caps",
+        ));
+    }
+    if trace.kernel_kind != KernelKind::UniversalTargetElimination {
+        return Err(implementation_bug("universal trace kernel kind mismatch"));
+    }
+    if let (Some(rows), Some(max_rows)) = (trace.matrix_rows, plan.resource_bounds.max_matrix_rows)
+    {
+        if rows > max_rows {
+            return Err(finite_resource_failure(
+                plan,
+                rows,
+                trace.matrix_cols.unwrap_or(0),
+            ));
+        }
+    }
+    if let (Some(cols), Some(max_cols)) = (trace.matrix_cols, plan.resource_bounds.max_matrix_cols)
+    {
+        if cols > max_cols {
+            return Err(finite_resource_failure(
+                plan,
+                trace.matrix_rows.unwrap_or(0),
+                cols,
+            ));
+        }
+    }
+    Ok(())
+}
+
+pub fn extract_verified_export_generators(
+    result: &LocalEliminationResult,
+    exported: &[VariableId],
+) -> Result<Vec<SparsePolynomialQ>, SolverError> {
+    let exported = exported.iter().copied().collect::<BTreeSet<_>>();
+    let mut out = Vec::new();
+    for generator in &result.generators {
+        if generator.generator.terms.is_empty() {
+            continue;
+        }
+        if !poly_variables(&generator.generator).is_subset(&exported) {
+            return Err(implementation_bug(
+                "universal local elimination exported a non-keep variable",
+            ));
+        }
+        out.push(clear_denominators_primitive(&generator.generator));
+    }
+    Ok(out)
+}
+
+fn wrap_stage_message(
+    stage: &UniversalStagePlan,
+    ctx: &KernelContext,
+    message: ProjectionMessage,
+    strength: ProjectionStrength,
+    parent_plan: &KernelExecutionPlan,
+) -> Result<ProjectionMessage, SolverError> {
+    let exported = stage
+        .exported_variables
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    if message
+        .relation_generators
+        .iter()
+        .any(|relation| !poly_variables(relation).is_subset(&exported))
+    {
+        return Err(implementation_bug(
+            "universal stage returned a relation outside exported variables",
+        ));
+    }
+    let trace = ProjectionCostTrace {
+        block_id: stage.block_id,
+        kernel_kind: KernelKind::UniversalTargetElimination,
+        local_variable_count: ctx.block.local_variables.len(),
+        exported_variable_count: stage.exported_variables.len(),
+        local_relation_count: message.cost_trace.local_relation_count,
+        local_monomial_count: message.cost_trace.local_monomial_count,
+        estimated_quotient_rank: message.cost_trace.estimated_quotient_rank,
+        matrix_rows: message.cost_trace.matrix_rows,
+        matrix_cols: message.cost_trace.matrix_cols,
+        matrix_density: message.cost_trace.matrix_density.clone(),
+        coefficient_height_before_bits: message.cost_trace.coefficient_height_before_bits,
+        coefficient_height_after_bits: message.cost_trace.coefficient_height_after_bits,
+    };
+    verify_universal_no_coordinate_fallback(&stage_execution_plan_shadow(stage), &trace)?;
+    let relation_generators = message.relation_generators.clone();
+    let stage_certificate_hash = message.certificate.certificate_hash;
+    let inner_payload = message.certificate.payload.clone();
+    let source_relations = planned_stage_relation_inputs(stage, ctx)?
+        .into_iter()
+        .map(|input| input.polynomial)
+        .collect();
+    Ok(build_universal_message(
+        stage,
+        ctx,
+        parent_plan,
+        relation_generators.clone(),
+        trace,
+        strength,
+        stage_certificate_hash,
+        KernelCertificatePayload::Universal(UniversalProjectionCertificate {
+            stage_hash: stage.stage_hash,
+            stage_certificate_hash,
+            output_relations: relation_generators,
+            inner_payload: Some(Box::new(inner_payload)),
+            output_memberships: Vec::new(),
+            source_relations,
+        }),
+    ))
+}
+
+fn build_universal_message(
+    stage: &UniversalStagePlan,
+    ctx: &KernelContext,
+    parent_plan: &KernelExecutionPlan,
+    relation_generators: Vec<SparsePolynomialQ>,
+    cost_trace: ProjectionCostTrace,
+    projection_strength: ProjectionStrength,
+    stage_certificate_hash: Hash,
+    payload: KernelCertificatePayload,
+) -> ProjectionMessage {
+    let certificate_hash = hash_sequence(
+        "universal-elimination-certificate",
+        &std::iter::once(stage.parent_plan_hash.0.to_vec())
+            .chain(std::iter::once(stage.stage_hash.0.to_vec()))
+            .chain(std::iter::once(stage_certificate_hash.0.to_vec()))
+            .chain(
+                relation_generators
+                    .iter()
+                    .map(|relation| relation.hash.0.to_vec()),
+            )
+            .collect::<Vec<_>>(),
+    );
+    let certificate = KernelCertificate::from_execution_plan_with_payload(
+        parent_plan,
+        &relation_generators,
+        certificate_hash,
+        payload,
+    );
+    let mut message = ProjectionMessage {
+        package_id: PackageId(stage.parent_plan_id.0),
+        block_id: stage.block_id,
+        kernel_kind: KernelKind::UniversalTargetElimination,
+        source_relation_ids: ctx.block.relation_ids.clone(),
+        eliminated_variables: stage.eliminated_variables.clone(),
+        exported_variables: stage.exported_variables.clone(),
+        relation_generators,
+        representation: MessageRepresentation::GeneratorSet,
+        projection_strength,
+        certificate,
+        compression_trace: ctx.system.compression_trace.clone(),
+        cost_trace,
+        package_hash: hash_sequence("projection-message-initial", &[]),
+    };
+    message.package_hash = projection_message_hash(&message);
+    message
+}
+
+fn validate_universal_plan_binding(
+    plan: &KernelExecutionPlan,
+    ctx: &KernelContext,
+) -> Result<(), SolverError> {
+    if plan.kernel_kind != KernelKind::UniversalTargetElimination {
+        return Err(implementation_bug(
+            "universal execution received wrong plan kind",
+        ));
+    }
+    if hash_kernel_execution_plan(plan) != plan.plan_hash {
+        return Err(implementation_bug("universal execution plan hash mismatch"));
+    }
+    if plan.block_id != ctx.block.block_id {
+        return Err(implementation_bug("universal block id mismatch"));
+    }
+    if plan.input_block_authorization_hash != ctx.block.authorization_hash {
+        return Err(implementation_bug(
+            "universal block authorization hash mismatch",
+        ));
+    }
+    if plan.certificate_route != CertificateRoute::UniversalFixedLocalElimination {
+        return Err(implementation_bug("universal certificate route mismatch"));
+    }
+    if support_plan_hash(&plan.support_plan) != plan.support_plan.support_hash {
+        return Err(implementation_bug("universal support plan hash mismatch"));
+    }
+    if plan.failure_behavior.local_nonfinite_policy
+        != LocalNonfinitePolicy::NoLocalCertifiedNonFinite
+    {
+        return Err(implementation_bug(
+            "universal local nonfinite policy mismatch",
+        ));
+    }
+    validate_fixed_strategy_sequence(&plan.support_plan.universal_strategy_sequence)?;
+    let available_child_hashes = ctx
+        .child_messages
+        .iter()
+        .filter(|message| plan.child_block_ids.contains(&message.block_id))
+        .map(|message| message.package_hash)
+        .collect::<BTreeSet<_>>();
+    let planned_child_hashes = plan
+        .child_message_hashes
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    if available_child_hashes != planned_child_hashes {
+        return Err(implementation_bug(
+            "universal child message hash binding mismatch",
+        ));
+    }
+    Ok(())
+}
+
+fn build_stage_plans(plan: &KernelExecutionPlan) -> Result<Vec<UniversalStagePlan>, SolverError> {
+    validate_fixed_strategy_sequence(&plan.support_plan.universal_strategy_sequence)?;
+    Ok(plan
+        .support_plan
+        .universal_strategy_sequence
+        .iter()
+        .enumerate()
+        .map(|(idx, step)| {
+            let mut stage = UniversalStagePlan {
+                parent_plan_id: plan.plan_id,
+                parent_plan_hash: plan.plan_hash,
+                block_id: plan.block_id,
+                strategy: step.strategy,
+                stage_index: idx,
+                exported_variables: plan.exported_variables.clone(),
+                eliminated_variables: plan.eliminated_variables.clone(),
+                source_relation_hashes: plan.source_relation_hashes.clone(),
+                child_message_hashes: plan.child_message_hashes.clone(),
+                resource_bounds: plan.resource_bounds.clone(),
+                enabled: step.enabled,
+                skip_reason: step.skip_reason.clone(),
+                stage_hash: hash_sequence("universal-stage-plan", &[]),
+            };
+            stage.stage_hash = universal_stage_hash(&stage);
+            stage
+        })
+        .collect())
+}
+
+fn validate_fixed_strategy_sequence(
+    steps: &[UniversalStrategyPlanStep],
+) -> Result<(), SolverError> {
+    let expected = [
+        UniversalStrategy::TargetRelationSearchEscalated,
+        UniversalStrategy::SparseResultantIfSquareOrOverdetermined,
+        UniversalStrategy::SpecializeProjectInterpolateVerify,
+        UniversalStrategy::LocalGroebnerEliminationToKeepZ,
+    ];
+    if steps.len() != expected.len()
+        || steps
+            .iter()
+            .zip(expected)
+            .any(|(step, expected)| step.strategy != expected)
+    {
+        return Err(implementation_bug(
+            "universal fixed strategy sequence mismatch",
+        ));
+    }
+    Ok(())
+}
+
+fn collect_relation_inputs(
+    block: &ProjectionBlock,
+    system: &CompressedSystemQ,
+    child_messages: &[ProjectionMessage],
+) -> Vec<UniversalRelationInput> {
+    let mut inputs = block_relations(block, system)
+        .into_iter()
+        .map(|relation| UniversalRelationInput {
+            polynomial: relation.polynomial.clone(),
+            source_relation_ids: vec![relation.id],
+            source_hash: relation.hash,
+            child_message_hash: None,
+        })
+        .collect::<Vec<_>>();
+    for message in child_messages {
+        if !block.child_block_ids.contains(&message.block_id) {
+            continue;
+        }
+        for relation in &message.relation_generators {
+            inputs.push(UniversalRelationInput {
+                polynomial: relation.clone(),
+                source_relation_ids: message.source_relation_ids.clone(),
+                source_hash: relation.hash,
+                child_message_hash: Some(message.package_hash),
+            });
+        }
+    }
+    inputs
+}
+
+fn planned_relation_inputs(
+    plan: &KernelExecutionPlan,
+    ctx: &KernelContext,
+) -> Result<Vec<UniversalRelationInput>, SolverError> {
+    let inputs = planned_stage_relation_inputs(
+        &UniversalStagePlan {
+            parent_plan_id: plan.plan_id,
+            parent_plan_hash: plan.plan_hash,
+            block_id: plan.block_id,
+            strategy: UniversalStrategy::LocalGroebnerEliminationToKeepZ,
+            stage_index: 0,
+            exported_variables: plan.exported_variables.clone(),
+            eliminated_variables: plan.eliminated_variables.clone(),
+            source_relation_hashes: plan.source_relation_hashes.clone(),
+            child_message_hashes: plan.child_message_hashes.clone(),
+            resource_bounds: plan.resource_bounds.clone(),
+            enabled: true,
+            skip_reason: None,
+            stage_hash: hash_sequence("universal-stage-plan-synthetic", &[]),
+        },
+        ctx,
+    )?;
+    Ok(inputs)
+}
+
+fn planned_stage_relation_inputs(
+    stage: &UniversalStagePlan,
+    ctx: &KernelContext,
+) -> Result<Vec<UniversalRelationInput>, SolverError> {
+    let source_hashes = stage
+        .source_relation_hashes
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    let child_hashes = stage
+        .child_message_hashes
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    let mut inputs = ctx
+        .system
+        .relations
+        .iter()
+        .filter(|relation| source_hashes.contains(&relation.hash))
+        .map(|relation| UniversalRelationInput {
+            polynomial: relation.polynomial.clone(),
+            source_relation_ids: vec![relation.id],
+            source_hash: relation.hash,
+            child_message_hash: None,
+        })
+        .collect::<Vec<_>>();
+    for message in &ctx.child_messages {
+        if !child_hashes.contains(&message.package_hash) {
+            continue;
+        }
+        for relation in &message.relation_generators {
+            if source_hashes.contains(&relation.hash) {
+                inputs.push(UniversalRelationInput {
+                    polynomial: relation.clone(),
+                    source_relation_ids: message.source_relation_ids.clone(),
+                    source_hash: relation.hash,
+                    child_message_hash: Some(message.package_hash),
+                });
+            }
+        }
+    }
+    validate_source_hash_coverage(&stage.source_relation_hashes, &inputs)?;
+    Ok(inputs)
+}
+
+fn validate_source_hash_coverage(
+    expected: &[Hash],
+    inputs: &[UniversalRelationInput],
+) -> Result<(), SolverError> {
+    let mut expected = expected.to_vec();
+    let mut actual = inputs
+        .iter()
+        .map(|input| input.source_hash)
+        .collect::<Vec<_>>();
+    expected.sort();
+    actual.sort();
+    if expected != actual {
+        return Err(implementation_bug(
+            "universal source relation hash coverage mismatch",
+        ));
+    }
+    Ok(())
+}
+
+fn fixed_universal_strategy_sequence(
+    relations: &[SparsePolynomialQ],
+    exported_variables: &[VariableId],
+    target: VariableId,
+) -> Vec<UniversalStrategyPlanStep> {
+    let square_or_overdetermined =
+        !relations.is_empty() && relations.len() >= exported_variables.len().max(1);
+    let has_non_target_separator = exported_variables.iter().any(|var| *var != target);
+    vec![
+        universal_strategy_step(
+            UniversalStrategy::TargetRelationSearchEscalated,
+            !relations.is_empty(),
+            empty_skip(!relations.is_empty(), "no local relations"),
+        ),
+        universal_strategy_step(
+            UniversalStrategy::SparseResultantIfSquareOrOverdetermined,
+            square_or_overdetermined,
+            empty_skip(square_or_overdetermined, "not square or overdetermined"),
+        ),
+        universal_strategy_step(
+            UniversalStrategy::SpecializeProjectInterpolateVerify,
+            has_non_target_separator,
+            empty_skip(has_non_target_separator, "no non-target exported separator"),
+        ),
+        universal_strategy_step(
+            UniversalStrategy::LocalGroebnerEliminationToKeepZ,
+            !relations.is_empty(),
+            empty_skip(
+                !relations.is_empty(),
+                "no relations available for local elimination",
+            ),
+        ),
+    ]
+}
+
+fn block_relations(block: &ProjectionBlock, system: &CompressedSystemQ) -> Vec<CanonicalRelationQ> {
+    let ids = block.relation_ids.iter().copied().collect::<BTreeSet<_>>();
+    system
+        .relations
+        .iter()
+        .filter(|relation| ids.contains(&relation.id))
+        .cloned()
+        .collect()
+}
+
+fn enforce_stage_resource_bounds(
+    stage: &UniversalStagePlan,
+    result: &LocalEliminationResult,
+) -> Result<(), SolverError> {
+    if stage
+        .resource_bounds
+        .max_matrix_rows
+        .is_some_and(|limit| result.matrix_rows > limit)
+        || stage
+            .resource_bounds
+            .max_matrix_cols
+            .is_some_and(|limit| result.matrix_cols > limit)
+    {
+        return Err(finite_resource_failure(
+            &stage_execution_plan_shadow(stage),
+            result.matrix_rows,
+            result.matrix_cols,
+        ));
+    }
+    Ok(())
+}
+
+fn stage_execution_plan_shadow(stage: &UniversalStagePlan) -> KernelExecutionPlan {
+    KernelExecutionPlan::new(
+        stage.parent_plan_id,
+        stage.block_id,
+        KernelKind::UniversalTargetElimination,
+        hash_sequence(
+            "universal-stage-shadow-auth",
+            &[stage.parent_plan_hash.0.to_vec()],
+        ),
+        Vec::new(),
+        stage.source_relation_hashes.clone(),
+        Vec::new(),
+        stage.child_message_hashes.clone(),
+        stage.exported_variables.clone(),
+        stage.eliminated_variables.clone(),
+        KernelSupportPlan {
+            dense_relation_search_schedule: None,
+            affine_elimination_order: None,
+            template_plan: None,
+            rank_plan: None,
+            universal_strategy_sequence: Vec::new(),
+            degree_bound: 0,
+            support_hash: hash_sequence("universal-stage-shadow-support", &[]),
+        },
+        stage.resource_bounds.clone(),
+        CertificateRoute::UniversalFixedLocalElimination,
+        planned_failure_behavior(
+            vec![
+                SolverStatus::AlgorithmicHardCase,
+                SolverStatus::FiniteResourceFailure,
+                SolverStatus::CertificateDesignGap,
+            ],
+            LocalNonfinitePolicy::NoLocalCertifiedNonFinite,
+        ),
+    )
+}
+
+fn universal_stage_hash(stage: &UniversalStagePlan) -> Hash {
+    hash_sequence(
+        "universal-stage-plan",
+        &[
+            stage.parent_plan_hash.0.to_vec(),
+            format!("{:?}", stage.strategy).into_bytes(),
+            stage.stage_index.to_be_bytes().to_vec(),
+            vec![stage.enabled as u8],
+            stage
+                .skip_reason
+                .as_deref()
+                .unwrap_or("")
+                .as_bytes()
+                .to_vec(),
+        ],
+    )
+}
+
+fn stage_error_hash(stage: &UniversalStagePlan, err: &SolverError) -> Hash {
+    hash_sequence(
+        "universal-stage-error",
+        &[
+            stage.stage_hash.0.to_vec(),
+            format!("{:?}", err.public_status()).into_bytes(),
+            format!("{:?}", err.kind).into_bytes(),
+        ],
+    )
+}
+
+fn projection_message_hash(message: &ProjectionMessage) -> Hash {
+    let mut chunks = vec![
+        message.package_id.0.to_be_bytes().to_vec(),
+        message.block_id.0.to_be_bytes().to_vec(),
+        format!("{:?}", message.kernel_kind).into_bytes(),
+        message.certificate.certificate_hash.0.to_vec(),
+    ];
+    for relation in &message.relation_generators {
+        chunks.push(relation.hash.0.to_vec());
+    }
+    hash_sequence("projection-message", &chunks)
+}
+
+fn finish_admission(
+    block: &ProjectionBlock,
+    status: KernelAdmissionStatus,
+    execution_plan: Option<KernelExecutionPlan>,
+) -> KernelAdmission {
+    let mut chunks = vec![
+        format!("{:?}", KernelKind::UniversalTargetElimination).into_bytes(),
+        block.block_id.0.to_be_bytes().to_vec(),
+        format!("{status:?}").into_bytes(),
+    ];
+    if let Some(plan) = &execution_plan {
+        chunks.push(plan.plan_hash.0.to_vec());
+    }
+    KernelAdmission {
+        kind: KernelKind::UniversalTargetElimination,
+        block_id: block.block_id,
+        status,
+        exported_variables: block.exported_variables.iter().copied().collect(),
+        eliminated_variables: block
+            .local_variables
+            .difference(&block.exported_variables)
+            .copied()
+            .collect(),
+        execution_plan,
+        admission_hash: hash_sequence("kernel-admission", &chunks),
+    }
+}
+
+fn dedup_hashes_in_order(values: Vec<Hash>) -> Vec<Hash> {
+    let mut seen = BTreeSet::new();
+    let mut out = Vec::new();
+    for value in values {
+        if seen.insert(value) {
+            out.push(value);
+        }
+    }
+    out
+}
+
+fn sorted_set(vars: &BTreeSet<VariableId>) -> Vec<VariableId> {
+    vars.iter().copied().collect()
+}
+
+fn empty_skip(enabled: bool, reason: &str) -> Option<String> {
+    if enabled {
+        None
+    } else {
+        Some(reason.to_owned())
+    }
+}
+
+fn is_continuable_stage_failure(err: &SolverError) -> bool {
+    matches!(
+        err.kind,
+        SolverErrorKind::Failure(FailureKind::AlgorithmicHardCase { .. })
+            | SolverErrorKind::Failure(FailureKind::CertificateDesignGap { .. })
+    )
+}
+
+fn algorithmic_hard_case(ctx: &KernelContext, reason: &str, trace_hashes: &[Hash]) -> SolverError {
+    let trace_hash = hash_sequence(
+        "universal-elimination-stage-trace",
+        &trace_hashes
+            .iter()
+            .map(|hash| hash.0.to_vec())
+            .chain(std::iter::once(reason.as_bytes().to_vec()))
+            .collect::<Vec<_>>(),
+    );
+    SolverError {
+        target: Some(ctx.system.target),
+        kind: SolverErrorKind::Failure(FailureKind::AlgorithmicHardCase {
+            stage: StageId("UniversalTargetEliminationKernel".to_owned()),
+            reason: AlgebraicReason(format!("{reason}; trace={trace_hash:?}")),
+            minimal_block_hash: ctx.block.block_hash,
+        }),
+    }
+}
+
+fn algorithmic_hard_case_for_block(
+    target: VariableId,
+    block: &ProjectionBlock,
+    reason: &str,
+) -> SolverError {
+    SolverError {
+        target: Some(target),
+        kind: SolverErrorKind::Failure(FailureKind::AlgorithmicHardCase {
+            stage: StageId("UniversalTargetEliminationKernel".to_owned()),
+            reason: AlgebraicReason(reason.to_owned()),
+            minimal_block_hash: block.block_hash,
+        }),
+    }
+}
+
+fn finite_resource_failure(plan: &KernelExecutionPlan, rows: usize, cols: usize) -> SolverError {
+    SolverError {
+        target: None,
+        kind: SolverErrorKind::Failure(FailureKind::FiniteResourceFailure {
+            stage: StageId("UniversalTargetEliminationKernel".to_owned()),
+            block_id: Some(plan.block_id),
+            matrix_rows: Some(rows),
+            matrix_cols: Some(cols),
+            matrix_density: Some(matrix_density(&SparseMatrixQ {
+                rows: rows.max(1),
+                cols: cols.max(1),
+                entries: Vec::new(),
+            })),
+            quotient_rank_estimate: None,
+            coefficient_height_bits: None,
+            memory_bytes: plan.resource_bounds.max_memory_bytes,
+        }),
+    }
+}
+
+fn implementation_bug(message: &str) -> SolverError {
+    SolverError {
+        target: None,
+        kind: SolverErrorKind::Failure(FailureKind::ImplementationBug {
+            invariant_violated: message.to_owned(),
+        }),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::compose::message::{MessageRepresentation, ProjectionStrength};
+    use crate::kernels::traits::{KernelKind, TargetProjectionKernel};
+    use crate::preprocess::compression::CompressionState;
+    use crate::problem::canonicalize::canonicalize_system;
+    use crate::problem::context::new_context;
+    use crate::problem::input::make_problem;
+    use crate::problem::validate::validate_input;
+    use crate::result::cost_trace::ProjectionCostTrace;
+    use crate::result::status::SolverStatus;
+    use crate::solver::options::SolverOptions;
+    use crate::types::hash::hash_sequence;
+    use crate::types::ids::{BlockId, PackageId, VariableId};
+    use crate::types::polynomial::{constant_poly, poly_mul, poly_sub, variable_poly};
+    use crate::types::rational::int_q;
+
+    use super::*;
+
+    #[test]
+    fn p8d_universal_one_large_block_exports_target_relation() {
+        let t = VariableId(0);
+        let x = VariableId(1);
+        let compressed = compressed_system(
+            vec![t, x],
+            t,
+            vec![
+                poly_sub(&variable_poly(x), &variable_poly(t)),
+                poly_sub(
+                    &poly_mul(&variable_poly(x), &variable_poly(x)),
+                    &constant_poly(int_q(2)),
+                ),
+            ],
+        );
+        let block = test_block(&compressed, [t, x], [t]);
+        let mut solver_ctx = new_context(SolverOptions::default());
+        let mut kctx = KernelContext {
+            block,
+            system: compressed,
+            child_messages: Vec::new(),
+        };
+        let kernel = UniversalTargetEliminationKernel;
+        let admission = kernel.admit(&kctx.block, &kctx);
+        let plan = kernel.plan(&admission, &kctx, &solver_ctx).unwrap();
+        let message = kernel.execute(&plan, &mut kctx, &mut solver_ctx).unwrap();
+
+        assert_eq!(message.kernel_kind, KernelKind::UniversalTargetElimination);
+        assert_eq!(message.representation, MessageRepresentation::GeneratorSet);
+        assert_eq!(
+            message.projection_strength,
+            ProjectionStrength::CandidateCoverStrong
+        );
+        let exported = [t].into_iter().collect();
+        assert!(message
+            .relation_generators
+            .iter()
+            .all(|poly| crate::types::polynomial::poly_variables(poly).is_subset(&exported)));
+        assert!(kernel.replay(&message, &kctx).accepted);
+    }
+
+    #[test]
+    fn p8d_universal_rejects_plan_auth_and_replay_tamper() {
+        let t = VariableId(0);
+        let x = VariableId(1);
+        let compressed = compressed_system(
+            vec![t, x],
+            t,
+            vec![
+                poly_sub(&variable_poly(x), &variable_poly(t)),
+                poly_sub(
+                    &poly_mul(&variable_poly(x), &variable_poly(x)),
+                    &constant_poly(int_q(2)),
+                ),
+            ],
+        );
+        let block = test_block(&compressed, [t, x], [t]);
+        let mut solver_ctx = new_context(SolverOptions::default());
+        let mut kctx = KernelContext {
+            block,
+            system: compressed,
+            child_messages: Vec::new(),
+        };
+        let kernel = UniversalTargetEliminationKernel;
+        let admission = kernel.admit(&kctx.block, &kctx);
+        let plan = kernel.plan(&admission, &kctx, &solver_ctx).unwrap();
+        let mut bad_plan = plan.clone();
+        bad_plan.plan_hash = hash_sequence("tampered-plan", &[]);
+        let err = kernel
+            .execute(&bad_plan, &mut kctx.clone(), &mut solver_ctx)
+            .unwrap_err();
+        assert_eq!(err.public_status(), SolverStatus::ImplementationBug);
+
+        let mut bad_auth_ctx = kctx.clone();
+        bad_auth_ctx.block.authorization_hash = hash_sequence("tampered-auth", &[]);
+        let err = kernel
+            .execute(&plan, &mut bad_auth_ctx, &mut solver_ctx)
+            .unwrap_err();
+        assert_eq!(err.public_status(), SolverStatus::ImplementationBug);
+
+        let mut message = kernel.execute(&plan, &mut kctx, &mut solver_ctx).unwrap();
+        message.package_hash = hash_sequence("tampered-message", &[]);
+        assert!(!kernel.replay(&message, &kctx).accepted);
+    }
+
+    #[test]
+    fn p8d_universal_child_message_hash_binding_is_operational() {
+        let t = VariableId(0);
+        let x = VariableId(1);
+        let compressed = compressed_system(
+            vec![t, x],
+            t,
+            vec![poly_sub(&variable_poly(x), &variable_poly(t))],
+        );
+        let mut block = test_block(&compressed, [t, x], [t]);
+        block.child_block_ids = vec![BlockId(7)];
+        block.authorization_hash =
+            crate::graph::projection_dag::authorize_block_relations(&block, &compressed);
+        let child_relation = poly_sub(
+            &poly_mul(&variable_poly(x), &variable_poly(x)),
+            &constant_poly(int_q(2)),
+        );
+        let child_message = child_projection_message(&compressed, child_relation);
+        let mut solver_ctx = new_context(SolverOptions::default());
+        let kctx = KernelContext {
+            block,
+            system: compressed,
+            child_messages: vec![child_message],
+        };
+        let kernel = UniversalTargetEliminationKernel;
+        let admission = kernel.admit(&kctx.block, &kctx);
+        let plan = kernel.plan(&admission, &kctx, &solver_ctx).unwrap();
+        let mut tampered = kctx.clone();
+        tampered.child_messages[0].package_hash = hash_sequence("tampered-child", &[]);
+        let err = kernel
+            .execute(&plan, &mut tampered, &mut solver_ctx)
+            .unwrap_err();
+        assert_eq!(err.public_status(), SolverStatus::ImplementationBug);
+    }
+
+    #[test]
+    fn p8d_universal_requires_fixed_strategy_sequence_and_resource_caps() {
+        let t = VariableId(0);
+        let x = VariableId(1);
+        let compressed = compressed_system(
+            vec![t, x],
+            t,
+            vec![
+                poly_sub(&variable_poly(x), &variable_poly(t)),
+                poly_sub(
+                    &poly_mul(&variable_poly(x), &variable_poly(x)),
+                    &constant_poly(int_q(2)),
+                ),
+            ],
+        );
+        let block = test_block(&compressed, [t, x], [t]);
+        let solver_ctx = new_context(SolverOptions::default());
+        let kctx = KernelContext {
+            block,
+            system: compressed,
+            child_messages: Vec::new(),
+        };
+        let kernel = UniversalTargetEliminationKernel;
+        let admission = kernel.admit(&kctx.block, &kctx);
+        let mut plan = kernel.plan(&admission, &kctx, &solver_ctx).unwrap();
+        let strategies = plan
+            .support_plan
+            .universal_strategy_sequence
+            .iter()
+            .map(|step| step.strategy)
+            .collect::<Vec<_>>();
+        assert_eq!(
+            strategies,
+            vec![
+                UniversalStrategy::TargetRelationSearchEscalated,
+                UniversalStrategy::SparseResultantIfSquareOrOverdetermined,
+                UniversalStrategy::SpecializeProjectInterpolateVerify,
+                UniversalStrategy::LocalGroebnerEliminationToKeepZ,
+            ]
+        );
+        plan.support_plan.universal_strategy_sequence.swap(0, 1);
+        plan.support_plan.support_hash = support_plan_hash(&plan.support_plan);
+        plan.plan_hash = hash_kernel_execution_plan(&plan);
+        let err = validate_universal_plan_binding(&plan, &kctx).unwrap_err();
+        assert_eq!(err.public_status(), SolverStatus::ImplementationBug);
+
+        let trace = ProjectionCostTrace {
+            kernel_kind: KernelKind::UniversalTargetElimination,
+            ..ProjectionCostTrace::default()
+        };
+        let mut missing_caps = plan.clone();
+        missing_caps
+            .support_plan
+            .universal_strategy_sequence
+            .swap(0, 1);
+        missing_caps.resource_bounds.max_local_elimination_steps = None;
+        let err = verify_universal_no_coordinate_fallback(&missing_caps, &trace).unwrap_err();
+        assert_eq!(err.public_status(), SolverStatus::ImplementationBug);
+    }
+
+    #[test]
+    fn p8d_universal_exhaustion_uses_only_allowed_failure_statuses() {
+        let t = VariableId(0);
+        let x = VariableId(1);
+        let compressed = compressed_system(vec![t, x], t, vec![variable_poly(x)]);
+        let block = test_block(&compressed, [t, x], [t]);
+        let mut solver_ctx = new_context(SolverOptions::default());
+        let mut kctx = KernelContext {
+            block,
+            system: compressed,
+            child_messages: Vec::new(),
+        };
+        let kernel = UniversalTargetEliminationKernel;
+        let admission = kernel.admit(&kctx.block, &kctx);
+        let plan = kernel.plan(&admission, &kctx, &solver_ctx).unwrap();
+        let err = kernel
+            .execute(&plan, &mut kctx, &mut solver_ctx)
+            .unwrap_err();
+
+        assert!(matches!(
+            err.public_status(),
+            SolverStatus::AlgorithmicHardCase
+                | SolverStatus::FiniteResourceFailure
+                | SolverStatus::CertificateDesignGap
+        ));
+    }
+
+    #[test]
+    fn p8d_static_forbidden_fallback_apis_absent() {
+        let source = include_str!("universal_elimination.rs");
+        for fragment in [
+            concat!("Certified", "NonFinite", "TargetImage"),
+            concat!("coordinate", "_root"),
+            concat!("coordinate", "_solution"),
+            concat!("full", "_coordinate"),
+            concat!("full", "_rur"),
+            concat!("R", "UR"),
+            concat!("quantifier", "_elimination"),
+            concat!("C", "AD"),
+            concat!("solve", "_all_coordinates"),
+            concat!("NonProduction", "GroebnerBatch"),
+        ] {
+            assert!(
+                !source.contains(fragment),
+                "forbidden Universal fallback path found: {fragment}"
+            );
+        }
+    }
+
+    fn compressed_system(
+        variables: Vec<VariableId>,
+        target: VariableId,
+        relations: Vec<crate::types::polynomial::SparsePolynomialQ>,
+    ) -> crate::preprocess::compression::CompressedSystemQ {
+        let canonical = canonicalize_system(
+            validate_input(make_problem(variables, target, relations, Vec::new())).unwrap(),
+        )
+        .unwrap();
+        CompressionState::from_system(canonical).to_compressed_system()
+    }
+
+    fn test_block<const N: usize, const M: usize>(
+        compressed: &crate::preprocess::compression::CompressedSystemQ,
+        local_variables: [VariableId; N],
+        exported_variables: [VariableId; M],
+    ) -> crate::graph::projection_dag::ProjectionBlock {
+        let mut block = crate::graph::projection_dag::ProjectionBlock {
+            block_id: BlockId(0),
+            local_variables: local_variables.into_iter().collect(),
+            relation_ids: compressed.relation_order.clone(),
+            exported_variables: exported_variables.into_iter().collect(),
+            child_block_ids: Vec::new(),
+            parent_block_id: None,
+            authorization_hash: hash_sequence("tmp", &[]),
+            duplication_certificates: Vec::new(),
+            block_hash: hash_sequence("test-block", &[]),
+        };
+        block.authorization_hash =
+            crate::graph::projection_dag::authorize_block_relations(&block, compressed);
+        block
+    }
+
+    fn child_projection_message(
+        compressed: &crate::preprocess::compression::CompressedSystemQ,
+        relation: crate::types::polynomial::SparsePolynomialQ,
+    ) -> ProjectionMessage {
+        let certificate_hash = hash_sequence("test-child-certificate", &[relation.hash.0.to_vec()]);
+        let mut message = ProjectionMessage {
+            package_id: PackageId(700),
+            block_id: BlockId(7),
+            kernel_kind: KernelKind::TargetRelationSearch,
+            source_relation_ids: Vec::new(),
+            eliminated_variables: Vec::new(),
+            exported_variables: vec![compressed.target],
+            relation_generators: vec![relation],
+            representation: MessageRepresentation::GeneratorSet,
+            projection_strength: ProjectionStrength::CandidateCoverStrong,
+            certificate: KernelCertificate::synthetic_for_tests(certificate_hash),
+            compression_trace: compressed.compression_trace.clone(),
+            cost_trace: ProjectionCostTrace::default(),
+            package_hash: hash_sequence("projection-message-initial", &[]),
+        };
+        message.package_hash = hash_sequence(
+            "test-child-message",
+            &[message.relation_generators[0].hash.0.to_vec()],
+        );
+        message
+    }
+}

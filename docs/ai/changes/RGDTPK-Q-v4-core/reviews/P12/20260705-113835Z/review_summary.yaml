@@ -1,0 +1,191 @@
+schema_version: rgdtpk-review-v2.2
+phase_id: P12
+phase_kind: algorithmic
+review_status: PASS
+phase_closable: true
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-011
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: cd5c9147a5f48d50d12142c67e5160f95a1ccdbfe43eee925d5e0bb1a8fee779
+evidence_manifest_schema_sha256: 74e0fe22b6ba77e38edf96c8e6851eb5be8beb717599cbfb0c345abe4617a253
+schema_mirror_sha256: cd5c9147a5f48d50d12142c67e5160f95a1ccdbfe43eee925d5e0bb1a8fee779
+commit: 45c33932033e308f004262b23130d59a30a93c36+p12-worktree
+prompt_sha256: 35bae47e76484405b4a322af8ccb75dce936d538e69d855c03aaad1278e8afd8
+response_sha256: ebda246d54c32e2e06f023ff00571e4cd04bdf6aa331b21fbf8494ff4fda6080
+evidence_manifest_sha256: 278a4ff62618063a31182df98543cd2da3fbc02239c4eef1f727e2794883ce24
+prompt_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P12/20260705-113835Z/prompt.md
+response_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P12/20260705-113835Z/response.md
+evidence_manifest_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P12/20260705-113835Z/evidence_manifest.yaml
+reviewer_identity: guardian_boundary_reviewer
+reviewed_rids:
+- RGQ-028
+- RGQ-034
+- RGQ-037
+- RGQ-048
+reviewed_mechs:
+- MECH-011
+source_sections_checked:
+- PLAN.md P12
+- BASE_SPEC.md RGQ-028
+- BASE_SPEC.md RGQ-034
+- BASE_SPEC.md RGQ-037
+- BASE_SPEC.md RGQ-048
+- BASE_SPEC.md MECH-011
+- BASE_SPEC.md Appendix A section 26
+- REVIEWER_PROMPTS.md P12
+files_inspected:
+- geosolver-core/src/roots/squarefree.rs
+- geosolver-core/src/roots/isolate.rs
+- geosolver-core/src/roots/decode.rs
+- geosolver-core/src/roots/algebraic_number.rs
+- geosolver-core/src/roots/mod.rs
+- geosolver-core/src/algebra/real_root.rs
+- geosolver-core/src/types/rational.rs
+- geosolver-core/src/compose/final_support.rs
+- geosolver-core/src/verify/replay.rs
+- geosolver-core/src/verify/run_certificate.rs
+- geosolver-core/tests/p12_roots_decode_integration.rs
+evidence_inspected:
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/test_first_failure.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/commands.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/command_outputs.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/static_scans.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/function_implementation_table.yaml
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/notes.md
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/spec_verifier_fail_fixable.md
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/spec_verifier_pass_after_integration_remediation.md
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/quality_reviewer_pass_after_integration_remediation.md
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P12/20260705-113835Z/prompt.md
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P12/20260705-113835Z/response.md
+commands_inspected:
+- cargo test --manifest-path geosolver-core/Cargo.toml p12_ -- --nocapture
+- cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture
+- cargo fmt --manifest-path geosolver-core/Cargo.toml
+- cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+- git diff --check
+- rg P12 roots placeholder and floating-only sentinels
+- rg P12 production decode wiring
+- rg P12 implementation anchors
+- rg P12 benign empty-root return
+- spec_verifier P12 read-only verification after integration remediation
+- quality_reviewer P12 read-only verification after integration remediation
+- guardian_boundary_reviewer P12 MECH completion verification
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/function_implementation_table.yaml
+algorithmic_sufficiency:
+  verdict: sufficient
+  rationale: Reviewer verified exact squarefree support, exact rational real-root isolation, decoded candidate target/support/root-index/interval/hash binding, mandatory algebraic-root records, production candidate-cover finalizer wiring, replay candidate completeness checks, and support-producing integration evidence for P12 scope.
+forbidden_pattern_scan:
+  heavy_fallback: pass
+  narrow_slice_escape: pass
+  hidden_fallback: pass
+  decorative_certificate: pass
+  placeholder_candidate: pass
+  geometry_dispatch: pass
+  unsupported_for_well_formed_input: pass
+  exact_image_overclaim: pass
+  target_relation_schedule_discretion: pass
+  weak_action_krylov_coverage: pass
+  nonfinite_without_positive_proof: pass
+  non_spec_status: pass
+  required_function_deferred: pass
+  appendix_override_bypass: pass
+  stress_fixture_dispatch: pass
+not_applicable_justifications:
+  status_mapping_checks[0]: P12 adds roots/decode/finalizer/replay binding behavior but does not add public SolverStatus mapping; public pipeline status mapping remains P14/P15 scope.
+  suite_partition_checks[0]: P15 acceptance suite partition is not active in P12; P12 closes exact root isolation and decode only.
+  semantic_deletion_challenges: P12 is not one of the schema-mandated semantic deletion phases; replay tamper challenges are recorded for candidate omission and duplication.
+raw_response_consistency:
+  raw_response_contains_blocker: false
+  raw_response_contains_required_fix: false
+  summary_overrides_raw_response: false
+  reviewer_declared_files_inspected: true
+phase_specific_checks:
+- check_id: p12-squarefree-support
+  required_by: RGQ-028
+  verdict: pass
+  evidence: squarefree_support rejects zero support and delegates exact squarefree normalization to derivative/gcd-backed univariate arithmetic.
+  reviewer_rationale: P12 implements exact squarefree support without floating factorization or placeholder roots.
+- check_id: p12-exact-real-root-isolation
+  required_by: RGQ-028
+  verdict: pass
+  evidence: isolate_real_roots uses exact squarefree support and exact Sturm-backed isolation with rational intervals; tests cover no-real, rational, multiple, irrational, repeated, and high-coefficient cases.
+  reviewer_rationale: Required exact rational isolating intervals are present and tested.
+- check_id: p12-decoded-candidate-binding
+  required_by: RGQ-028
+  verdict: pass
+  evidence: decode_candidates binds target, support hash, root index, isolating interval, and candidate hash.
+  reviewer_rationale: Candidate objects are deterministic and not placeholders.
+- check_id: p12-algebraic-root-records
+  required_by: RGQ-034
+  verdict: pass
+  evidence: AlgebraicRootRecord, algebraic_roots_from_support, exact refinement, and comparison helpers are implemented and covered by focused tests.
+  reviewer_rationale: Mandatory algebraic-number implementation is present rather than deferred.
+- check_id: p12-production-candidate-cover-finalizer
+  required_by: RGQ-037
+  verdict: pass
+  evidence: finalize_candidate_cover_result computes squarefree support, exact roots, and decoded candidates before returning CertifiedCandidateCover.
+  reviewer_rationale: Prior unit-test-only decode wiring gap is remediated through a production support-producing result construction path.
+- check_id: p12-replay-candidate-completeness
+  required_by: RGQ-048
+  verdict: pass
+  evidence: verify_roots_and_candidates rejects omitted or duplicate decoded candidates and recomputes target/support/index/interval/hash binding.
+  reviewer_rationale: Self-consistently rehashed omission/duplicate tampering is rejected.
+- check_id: p12-support-producing-integration
+  required_by: RGQ-037
+  verdict: pass
+  evidence: p12_candidate_cover_finalizer_returns_exact_roots_and_nonplaceholder_candidates exercises nonzero support through the finalizer and observes exact roots and non-placeholder candidates.
+  reviewer_rationale: P12 has integration evidence for support-producing candidate-cover construction within its scope.
+appendix_override_checks:
+- appendix_section: Appendix A section 26
+  controlling_requirement: RGQ-028
+  verdict: pass
+  evidence: squarefree_support, isolate_real_roots, decode_candidates, and algebraic root helpers implement exact support/root/decode behavior with rational intervals and deterministic hashes.
+  reviewer_rationale: P12 follows the controlling roots/decode section and does not substitute floating roots or placeholder candidates.
+status_mapping_checks:
+- error_or_internal_condition: P12 root/decode finalizer and replay candidate verification failures
+  mapped_solver_status: not_applicable
+  verdict: not_applicable
+  evidence: P12 does not introduce or alter public SolverStatus mapping; failure semantics for full public orchestration remain later phase scope.
+  reviewer_rationale: The P12 closure claim is MECH-011 only and does not close P14 public pipeline status mapping.
+suite_partition_checks:
+- suite_name: not_applicable
+  verdict: not_applicable
+  evidence: P12 is not P15 acceptance suite closure and does not claim CANDIDATE_COVER_CORE_READY.
+  reviewer_rationale: Acceptance suite partition remains out of scope until P15.
+semantic_deletion_challenges: []
+tamper_challenges:
+- challenge_id: p12-candidate-omission-duplicate-tamper
+  target: Run replay with omitted or duplicate decoded candidates while recomputing run-certificate hashes
+  verdict: pass
+  evidence: p12_replay_rejects_candidate_omission_and_duplicates_even_when_hashes_match passes.
+  reviewer_rationale: Replay enforces one decoded candidate per isolated real root and rejects structural candidate tampering.
+unresolved_risks:
+- P12 does not close P13 exact-image semantics, P14 public orchestration, P15 acceptance suites, P16 final closure, source-faithful status, or acceptance-complete status.
+- Candidate-cover finalization is P12 mechanism construction and not a full solve_with_context pipeline claim.
+- Descartes-selected isolation currently routes to exact Sturm; no distinct Descartes implementation is claimed.
+- No R-ID is marked VERIFIED by this review.
+blocking_findings: []
+required_fixes: []
+pass_conditions:
+  schema_valid: true
+  schema_mirror_byte_identical: true
+  no_blocking_findings: true
+  no_required_fixes: true
+  raw_response_consistent: true
+  algorithmic_sufficiency_satisfied: true
+  all_forbidden_scans_pass: true
+  phase_specific_checks_pass: true
+  appendix_overrides_respected: true
+  status_mapping_respected: true
+  suite_partition_respected: true
+  reviewer_read_code_not_only_summary: true
+  no_controlling_stub_or_placeholder: true
+  exact_verification_present_where_required: true
+  no_failures_overridden_by_summary: true
+  fresh_evidence_after_last_code_change: true
+  pass_matches_raw_response: true
+  schema_hashes_match_current_files: true
+  prompt_and_response_archived: true
+  evidence_manifest_archived_and_valid: true

@@ -1,0 +1,58 @@
+P7 evidence commands run from C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry
+
+1. cargo fmt --manifest-path geosolver-core/Cargo.toml
+   result: pass
+
+2. cargo test --manifest-path geosolver-core/Cargo.toml p7_ -- --nocapture
+   initial result after P7 implementation: fail
+   failure: p7_target_univariate_support_is_primitive_lcm_squarefree expected highest-degree-positive TargetUnivariate support orientation.
+
+3. cargo fmt --manifest-path geosolver-core/Cargo.toml
+   result: pass
+
+4. cargo test --manifest-path geosolver-core/Cargo.toml p7_ -- --nocapture
+   result after TargetUnivariate support primitive orientation fix: pass
+
+5. cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+   result: pass
+
+6. cargo test --manifest-path geosolver-core/Cargo.toml p6_ -- --nocapture
+   result: pass
+
+7. cargo test --manifest-path geosolver-core/Cargo.toml p7_ -- --nocapture
+   result: pass
+
+8. cargo test --manifest-path geosolver-core/Cargo.toml
+   result: pass
+
+9. git diff --check
+   result: pass; only line-ending conversion warnings were reported.
+
+10. guardian_boundary_reviewer P7 review
+    result: FAIL_FIXABLE
+    required fixes:
+      - include child-message target-only relations in TargetUnivariate admission/execution
+      - make planner TargetUnivariate admission target-only rather than exported-variable-only
+      - add auth/source/message tamper checks and replay package identity checks
+      - add tests for the above
+
+11. cargo fmt --manifest-path geosolver-core/Cargo.toml
+    result after reviewer fixes: pass
+
+12. cargo test --manifest-path geosolver-core/Cargo.toml p7_ -- --nocapture
+    result after reviewer fixes: pass
+
+13. cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+    result after reviewer fixes: pass
+
+14. cargo test --manifest-path geosolver-core/Cargo.toml p6_ -- --nocapture
+    result after reviewer fixes: pass
+
+15. cargo test --manifest-path geosolver-core/Cargo.toml p7_ -- --nocapture
+    result after reviewer fixes: pass
+
+16. cargo test --manifest-path geosolver-core/Cargo.toml
+    result after reviewer fixes: pass
+
+17. git diff --check
+    result after reviewer fixes: pass; only line-ending conversion warnings were reported.

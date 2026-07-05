@@ -1,0 +1,70 @@
+P10 verification excerpts
+
+1. Test-first failure
+
+cargo test --manifest-path geosolver-core/Cargo.toml p10_ -- --nocapture
+
+Result:
+Compilation failed because P10 tests referenced the not-yet-implemented composition, final-support, separator-elimination, message-hash, and nonfinite-certificate APIs. See test_first_failure.txt.
+
+2. First implementation focused test
+
+cargo test --manifest-path geosolver-core/Cargo.toml p10_ -- --nocapture
+
+Result:
+running 4 tests
+test compose::compose::tests::p10_tampered_message_relation_is_rejected_before_composition ... ok
+test compose::compose::tests::p10_certified_nonfinite_system_uses_positive_certificate_only ... ok
+test compose::compose::tests::p10_relation_search_exhaustion_is_hardcase_not_nonfinite ... ok
+test compose::compose::tests::p10_multiblock_composition_eliminates_separator_from_message_relations_only ... FAILED
+
+Root cause:
+The generated support was the -1 scalar associate of the expected polynomial. The exact target roots are identical, so the test was adjusted to compare up to +/-1.
+
+3. Final focused P10 tests
+
+cargo test --manifest-path geosolver-core/Cargo.toml p10_ -- --nocapture
+
+Result:
+running 4 tests
+test compose::compose::tests::p10_tampered_message_relation_is_rejected_before_composition ... ok
+test compose::compose::tests::p10_certified_nonfinite_system_uses_positive_certificate_only ... ok
+test compose::compose::tests::p10_relation_search_exhaustion_is_hardcase_not_nonfinite ... ok
+test compose::compose::tests::p10_multiblock_composition_eliminates_separator_from_message_relations_only ... ok
+test result: ok. 4 passed; 0 failed; 154 filtered out.
+
+4. Formatting and full regression
+
+cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+Result: pass.
+
+cargo test --manifest-path geosolver-core/Cargo.toml
+Result: 158 passed; 0 failed; doc-tests 0 passed; 0 failed.
+
+5. Static scans
+
+Forbidden scan for geometry names, fixture/expected-answer strings, coordinate-root/full-coordinate/RUR solve paths, QE/CAD, Unsupported/NotYetImplemented, local Universal nonfinite wording, and relation-search-failure-to-nonfinite wording returned no matches.
+
+CertifiedNonFiniteTargetImage scan found only:
+- result/status.rs public status variant.
+- compose/final_support.rs finalize_nonfinite_result positive-certificate finalization.
+- compose/final_support.rs diagnostic string for the same positive-certificate result.
+- P10 focused test assertion.
+
+Failure-polarity scan found TargetRelationSearch and Universal exhaustion/hardcase paths and P10 no-target-only / non-finiteness-not-certified hardcase strings.
+
+6. Git whitespace check
+
+git diff --check
+Result: exit 0. Only CRLF conversion warnings were printed.
+
+7. Spec verifier
+
+Result: PASS.
+
+Summary:
+- Composition validates message package hash and relation exported-variable boundary before consuming `ProjectionMessage.relation_generators`.
+- Separator elimination builds a synthetic message-only system and runs the target-direct relation-search kernel without reintroducing original local coordinate relations.
+- Final support is target-only; no-support is `AlgorithmicHardCase`.
+- Nonfinite status requires the positive certificate route and re-verification before public finalization.
+- P10 focused tests cover multi-block composition, tampered message rejection, relation-search exhaustion hardcase, and separate certified nonfinite system.

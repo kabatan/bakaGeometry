@@ -1,0 +1,34 @@
+Initial P9 focused verification before final fix:
+
+Command:
+cargo test --manifest-path geosolver-core/Cargo.toml p9_ -- --nocapture
+
+First observed failure:
+Compilation failed in the first P9 implementation/test pass because both new P9 kernels passed Vec<SparsePolynomialQ> to max_coefficient_height_bits, which expects &[CanonicalRelationQ].
+
+Follow-up focused failure after the type fix:
+running 4 tests
+2 passed; 2 failed.
+
+Failing tests:
+- p9_norm_trace_kernel_exports_verified_tower_support
+- p9_regular_chain_kernel_projects_triangular_component
+
+Root cause:
+Both kernels produced an exported support relation that was the -1 scalar associate of the expected polynomial. The exact verification path recomputed the same representative, and the zero set is identical, but the tests were too strict about sign.
+
+Targeted fixes before final verification:
+- Cost trace coefficient-height input was changed to a local 0 placeholder consistent with existing projection kernels that do not have canonical relation inputs at that point.
+- The P9 tests now compare support polynomials up to the rational unit ±1.
+
+Reviewer-triggered remediation after the initial focused tests:
+
+The first Guardian P9 review returned FAIL_FIXABLE. It did not close P9 or MECH-007. The reviewer found that:
+- RegularChainProjection dropped compressed-system guards and was still effectively a single-chain/component helper.
+- NormTraceProjection accepted only exactly one non-exported algebraic variable and therefore still overclaimed the single-variable tower helper.
+
+Targeted fixes after that review:
+- Regular-chain decomposition now creates a component DAG for duplicate main-variable components and preserves guards in component chains.
+- RegularChainProjection planning/execution now passes CompressedSystemQ guards into the trace and support hash.
+- Norm/trace planning now supports ordered multi-step tower plans and exact recomputation verification.
+- Added focused guard-binding and multi-step tower tests before re-review.

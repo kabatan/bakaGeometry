@@ -1,0 +1,122 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: P9
+commit: 45c33932033e308f004262b23130d59a30a93c36+p9-worktree
+algorithm_spec_source_sha256: 2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed
+failure_source_sha256: df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: cd5c9147a5f48d50d12142c67e5160f95a1ccdbfe43eee925d5e0bb1a8fee779
+evidence_manifest_schema_sha256: 74e0fe22b6ba77e38edf96c8e6851eb5be8beb717599cbfb0c345abe4617a253
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P9/commands.txt
+  sha256: fab44937277654a2387edf664aae090e6b50a76c13494dfb96336f935fcc1acb
+  purpose: P9 command list for initial failures, remediation verification, full suite, static scans, and diff check.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P9/command_outputs.txt
+  sha256: daf733959d0a402abc74c9390fe6ee5b59d9505fdbced76584ab6ab0e6964d6c
+  purpose: P9 command output summaries including prior FAIL_FIXABLE remediation, final focused tests, full suite, static scans, and diff check.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P9/function_implementation_table.yaml
+  sha256: cedc318a8db54d2aac06267cad2d1f038de2476b54fe209d6a1b22ac8a39e97c
+  purpose: P9 requirement-to-function implementation table including regular-chain guard/component and multi-step tower remediation.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P9/static_scans.txt
+  sha256: 1a43e7193a21d7ea246dc9a64654411357f16684e7396ebf11e8095279fc1893
+  purpose: P9 forbidden shortcut scan and remediation anchor scan.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P9/notes.md
+  sha256: 9da15ff59c39f7641f716bcfc74d82604e4bcd1ea078e806de4816ad238a07bc
+  purpose: P9 scope notes, prior FAIL_FIXABLE boundary, remediation summary, and forbidden overclaims.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P9/test_first_failure.txt
+  sha256: b47329b00616a82396895a37141b5f8e8e9f378a729de5acd629087635bb0e39
+  purpose: P9 test-first failure and reviewer-triggered remediation record.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P9/reviewer_fail_fix.md
+  sha256: dc00c552be1a803e8a6f3b0d4b7a796c2f5a99faaceec1e091ee7cf72e2721da
+  purpose: P9 Guardian FAIL_FIXABLE remediation record.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P9/20260705-080028Z/prompt.md
+  sha256: b6de9442b2ddbba928bdf2df1cdd1898b2da39ed534f08477a9f257c86873052
+  purpose: Archived P9 guardian reviewer prompt.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P9/20260705-080028Z/response.md
+  sha256: 28cf4460a528cf5460f0426938d494c426f55ffa51f91f678a32ab60b7701ff6
+  purpose: Archived P9 guardian reviewer PASS response.
+command_outputs:
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p9_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 1
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P9/test_first_failure.txt
+  output_sha256: b47329b00616a82396895a37141b5f8e8e9f378a729de5acd629087635bb0e39
+  finished_at_utc: 20260705-080028Z
+- command: guardian_boundary_reviewer P9 review before remediation
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 1
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P9/reviewer_fail_fix.md
+  output_sha256: dc00c552be1a803e8a6f3b0d4b7a796c2f5a99faaceec1e091ee7cf72e2721da
+  finished_at_utc: 20260705-080028Z
+- command: cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P9/command_outputs.txt
+  output_sha256: daf733959d0a402abc74c9390fe6ee5b59d9505fdbced76584ab6ab0e6964d6c
+  finished_at_utc: 20260705-080028Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml p9_ -- --nocapture
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P9/command_outputs.txt
+  output_sha256: daf733959d0a402abc74c9390fe6ee5b59d9505fdbced76584ab6ab0e6964d6c
+  finished_at_utc: 20260705-080028Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P9/command_outputs.txt
+  output_sha256: daf733959d0a402abc74c9390fe6ee5b59d9505fdbced76584ab6ab0e6964d6c
+  finished_at_utc: 20260705-080028Z
+- command: rg forbidden P9 shortcut names and fallback APIs in regular_chain_projection.rs, norm_trace_projection.rs, and planner/admission.rs
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P9/static_scans.txt
+  output_sha256: 1a43e7193a21d7ea246dc9a64654411357f16684e7396ebf11e8095279fc1893
+  finished_at_utc: 20260705-080028Z
+- command: rg P9 remediation anchors in regular_chain.rs, regular_chain_projection.rs, norm_trace.rs, and norm_trace_projection.rs
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P9/static_scans.txt
+  output_sha256: 1a43e7193a21d7ea246dc9a64654411357f16684e7396ebf11e8095279fc1893
+  finished_at_utc: 20260705-080028Z
+- command: git diff --check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P9/command_outputs.txt
+  output_sha256: daf733959d0a402abc74c9390fe6ee5b59d9505fdbced76584ab6ab0e6964d6c
+  finished_at_utc: 20260705-080028Z
+- command: guardian_boundary_reviewer P9 review after remediation
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P9/20260705-080028Z/response.md
+  output_sha256: 28cf4460a528cf5460f0426938d494c426f55ffa51f91f678a32ab60b7701ff6
+  finished_at_utc: 20260705-080028Z
+static_scans:
+- scan_id: p9-forbidden-shortcuts
+  command: rg forbidden geometry names, fixture/expected-answer strings, coordinate-root/full-coordinate/RUR solve paths, kernel-not-ready, and P9 placeholder wording
+  forbidden_pattern: geometry dispatch, expected-answer/fixture dispatch, coordinate-root/full-coordinate/RUR solve paths, or remaining P9 placeholder text
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P9/static_scans.txt
+- scan_id: p9-remediation-anchors
+  command: rg build_component_chains, guard propagation, TowerPlanDescription, detect_explicit_tower_plan, norm_relation_for_tower_plan, verify_norm_tower_plan_relation, and focused P9 remediation tests
+  forbidden_pattern: missing regular-chain guard/component remediation or missing multi-step norm/trace remediation anchors
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P9/static_scans.txt
+- scan_id: p9-ledger-boundary
+  command: inspect PRIMITIVE_SCOPE_LEDGER.md plus regular_chain.rs and norm_trace.rs remediation boundaries
+  forbidden_pattern: single-chain regular-chain helper or single-variable tower norm/trace helper overclaimed as generic P9 completion
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P9/static_scans.txt
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P9/function_implementation_table.yaml
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P9/20260705-080028Z/response.md
+known_limitations:
+- P9 closes remaining MECH-007 only for RegularChainProjectionKernel and NormTraceProjectionKernel within admitted algebraically detected structures.
+- P9 does not close P10 final support composition, replay/certificate closure beyond P9, root isolation/decode, exact-image semantics, public orchestration, performance readiness, final acceptance, or source-faithful/acceptance-complete claims.
+- No R-ID is marked VERIFIED by the P9 review.
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-007
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-007
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

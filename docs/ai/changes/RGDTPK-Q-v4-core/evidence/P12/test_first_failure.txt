@@ -1,0 +1,22 @@
+# P12 Test-First Failure
+
+Command:
+
+```text
+cargo test --manifest-path geosolver-core/Cargo.toml p12_ -- --nocapture
+```
+
+Result: failed before implementation, as expected.
+
+Key compiler errors:
+
+```text
+error[E0432]: unresolved imports `super::algebraic_number::algebraic_roots_from_support`, `super::algebraic_number::compare_algebraic_roots`, `super::algebraic_number::AlgebraicRootOrdering`
+error[E0432]: unresolved import `super::squarefree::squarefree_support`
+error[E0432]: unresolved imports `super::decode::decode_candidates`, `super::decode::hash_target_candidate`
+error[E0432]: unresolved imports `super::isolate::isolate_real_roots`, `super::isolate::RootIsolationOptions`
+```
+
+Interpretation:
+
+The P12 focused tests require the Base Spec APIs for squarefree support, exact root isolation, candidate decode, and algebraic root records. The current files are stubs or data-only placeholders, so implementation is required before P12 can pass.

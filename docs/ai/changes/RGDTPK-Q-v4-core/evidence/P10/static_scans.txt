@@ -1,0 +1,46 @@
+Static scan 1: P10 forbidden shortcut scan
+
+Command:
+rg -n "circle|triangle|fixture|expected answer|official solution|full coordinate|full_coordinate|coordinate_root|coordinate_solution|full_rur|RUR|QE|CAD|NotYetImplemented|Unsupported|unsupported|relation-search failure|local Universal" geosolver-core/src/compose geosolver-core/src/result/status.rs geosolver-core/src/kernels/universal_elimination.rs geosolver-core/src/kernels/target_relation_search.rs
+
+Result:
+No matches. The command returned rg exit code 1, which means no matches.
+
+Interpretation:
+P10 composition/final-support paths do not use geometry-name dispatch, fixture/expected-answer dispatch, coordinate-root/full-coordinate/RUR solve paths, QE/CAD fallback, ordinary unsupported wording, or relation-search-failure-to-nonfinite wording.
+
+Static scan 2: CertifiedNonFiniteTargetImage locations
+
+Command:
+rg -n "CertifiedNonFiniteTargetImage" geosolver-core/src/compose geosolver-core/src/result/status.rs geosolver-core/src/kernels/universal_elimination.rs geosolver-core/src/kernels/target_relation_search.rs
+
+Observed locations:
+- geosolver-core/src/result/status.rs: public SolverStatus variant.
+- geosolver-core/src/compose/final_support.rs: finalize_nonfinite_result emits CertifiedNonFiniteTargetImage only from a NonFiniteCertificate.
+- geosolver-core/src/compose/final_support.rs: diagnostic label for the same finalization route.
+- geosolver-core/src/compose/compose.rs: P10 focused test assertion.
+
+Interpretation:
+No local Universal or TargetRelationSearch path emits CertifiedNonFiniteTargetImage.
+
+Static scan 3: hardcase / no-local-nonfinite polarity anchors
+
+Command:
+rg -n "AlgorithmicHardCase|FiniteResourceFailure|CertificateDesignGap|NoLocalCertifiedNonFinite|no target-only|non-finiteness not certified|no target/separator relation found" geosolver-core/src/compose geosolver-core/src/kernels/universal_elimination.rs geosolver-core/src/kernels/target_relation_search.rs
+
+Required anchors observed:
+- TargetRelationSearch exhaustion text remains "no target/separator relation found within declared dense schedule" and returns AlgorithmicHardCase.
+- Universal still uses LocalNonfinitePolicy::NoLocalCertifiedNonFinite and allowed statuses AlgorithmicHardCase, FiniteResourceFailure, and CertificateDesignGap.
+- P10 final support returns AlgorithmicHardCase when no target-only relation exists and non-finiteness is not certified.
+
+Static scan 4: P10 implementation anchors
+
+Command:
+rg -n "ComposedProjection|compose_projection_messages|eliminate_separators_from_message_relations|build_global_support_polynomial|build_final_support_or_nonfinite|certify_nonfinite_target_image|certify_zero_target_elimination_ideal|verify_nonfinite_certificate|certify_real_nonfinite_target_image|p10_" geosolver-core/src/compose geosolver-core/src/result/output.rs geosolver-core/src/result/status.rs
+
+Required anchors observed:
+- ComposedProjection and compose_projection_messages.
+- eliminate_separators_from_message_relations.
+- build_global_support_polynomial and build_final_support_or_nonfinite.
+- certify_nonfinite_target_image, certify_zero_target_elimination_ideal, verify_nonfinite_certificate, and certify_real_nonfinite_target_image.
+- P10 focused tests for multi-block composition, tampered message rejection, relation-search exhaustion polarity, and positive nonfinite certification.

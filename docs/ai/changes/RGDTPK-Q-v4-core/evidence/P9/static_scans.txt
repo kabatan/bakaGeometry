@@ -1,0 +1,25 @@
+Static scan 1: P9 forbidden shortcut scan
+
+Command:
+rg -n "circle|triangle|tangent|distance|area|incircle|circumcircle|orthic|mixtilinear|fixture|official solution|expected answer|coordinate_root|coordinate_solution|full_coordinate|full_rur|RUR|solve_all_coordinates|kernel-not-ready|P9 .*not yet" geosolver-core/src/kernels/regular_chain_projection.rs geosolver-core/src/kernels/norm_trace_projection.rs geosolver-core/src/planner/admission.rs
+
+Result:
+No matches. The command returned rg exit code 1, which means no matches.
+
+Interpretation:
+The P9 kernel and planner paths do not use geometry-name dispatch, expected-answer/fixture dispatch, coordinate-root/full-coordinate/RUR solve paths, or remaining P9 placeholder text.
+
+Static scan 2: P9 remediation anchors
+
+Command:
+rg -n "build_component_chains|guards: guards|GuardRecord|detect_explicit_tower_plan|TowerPlanDescription|norm_relation_for_tower_plan|verify_norm_tower_plan_relation|p9_regular_chain_guard_binding|p9_norm_trace_multistep" geosolver-core/src/algebra/regular_chain.rs geosolver-core/src/kernels/regular_chain_projection.rs geosolver-core/src/algebra/norm_trace.rs geosolver-core/src/kernels/norm_trace_projection.rs
+
+Required anchors observed:
+- algebra/regular_chain.rs defines and calls build_component_chains.
+- algebra/regular_chain.rs stores guards: guards.to_vec() on component chains.
+- kernels/regular_chain_projection.rs imports GuardRecord and passes compressed-system guards into RegularChainInput.
+- algebra/norm_trace.rs defines TowerPlanDescription and detect_explicit_tower_plan.
+- algebra/norm_trace.rs defines norm_relation_for_tower_plan and verify_norm_tower_plan_relation.
+- kernels/norm_trace_projection.rs uses the multi-step tower-plan APIs.
+- p9_regular_chain_guard_binding_is_operational exists.
+- p9_norm_trace_multistep_tower_exports_verified_support exists.

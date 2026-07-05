@@ -1,0 +1,39 @@
+P10 test-first failure before implementation:
+
+Command:
+cargo test --manifest-path geosolver-core/Cargo.toml p10_ -- --nocapture
+
+Initial result:
+Compilation failed because the P10 tests referenced functions and types that did not yet exist:
+
+- compose::final_support::build_final_support_or_nonfinite
+- compose::final_support::build_global_support_polynomial
+- compose::final_support::finalize_nonfinite_result
+- compose::final_support::FinalSupportComputation
+- compose::message::hash_projection_message
+- compose::separator_elimination::eliminate_separators_from_message_relations
+- compose::compose_projection_messages
+- ComposedProjection
+- verify_nonfinite_certificate
+
+Targeted implementation followed in:
+
+- geosolver-core/src/compose/message.rs
+- geosolver-core/src/compose/compose.rs
+- geosolver-core/src/compose/separator_elimination.rs
+- geosolver-core/src/compose/final_support.rs
+- geosolver-core/src/compose/mod.rs
+
+Follow-up focused failure after the first implementation:
+
+Command:
+cargo test --manifest-path geosolver-core/Cargo.toml p10_ -- --nocapture
+
+Result:
+3 passed; 1 failed.
+
+Failing test:
+- p10_multiblock_composition_eliminates_separator_from_message_relations_only
+
+Root cause:
+The computed support relation was a scalar associate by -1 of the expected representative. The test was corrected to compare support polynomial representatives up to the rational unit +/-1.

@@ -1,0 +1,21 @@
+P8c test-first failure
+
+Command:
+cargo test --manifest-path geosolver-core/Cargo.toml p8c_ -- --nocapture
+
+Expected failure before implementation:
+- The newly added P8c tests required TargetActionKrylov admission and planner admission.
+- The pre-implementation kernel still declined admission with the P8c placeholder.
+
+Observed output excerpt:
+running 2 tests
+test kernels::action_krylov::tests::p8c_action_krylov_kernel_produces_verified_characteristic_support ... FAILED
+test kernels::action_krylov::tests::p8c_planner_admits_target_action_krylov_for_verified_characteristic_path ... FAILED
+
+thread 'kernels::action_krylov::tests::p8c_action_krylov_kernel_produces_verified_characteristic_support' panicked at src\kernels\action_krylov.rs:86:9:
+assertion failed: matches!(admission.status, KernelAdmissionStatus::Admitted)
+
+thread 'kernels::action_krylov::tests::p8c_planner_admits_target_action_krylov_for_verified_characteristic_path' panicked at src\kernels\action_krylov.rs:123:9:
+assertion failed: matches!(admission.status, KernelAdmissionStatus::Admitted)
+
+Result: FAIL as expected before implementation.

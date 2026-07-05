@@ -1,0 +1,47 @@
+phase: P8c
+scope: TargetActionKrylov kernel with VerifiedCharacteristicSupportCoverage only
+supports:
+  - RGQ-021
+  - RGQ-044
+  - RGQ-054
+mechanisms:
+  closes:
+    - MECH-014
+entries:
+  - function: geosolver-core/src/kernels/action_krylov.rs::admit_target_action_krylov
+    required_by: "PLAN.md P8c task 1; Appendix A section 19.2"
+    notes:
+      - "Admits only when a certifiable finite target-action quotient plan can be built from authorized relation inputs."
+      - "Declines instead of returning unsupported when no certifiable P8c path applies."
+  - function: geosolver-core/src/kernels/action_krylov.rs::plan_target_action_krylov_with_messages
+    required_by: "PLAN.md P8c tasks 1-4; RGQ-044"
+    notes:
+      - "Builds support plan from exact action-matrix hash, characteristic-polynomial hash, quotient rank, and VerifiedCharacteristicSupportCoverage route."
+      - "Binds plan to block authorization hash, source relation hash, and optional child message hash."
+  - function: geosolver-core/src/kernels/action_krylov.rs::execute_target_action_krylov
+    required_by: "Appendix A section 19.3; RGQ-021; RGQ-044"
+    notes:
+      - "Revalidates plan hash, block authorization hash, certificate route, child message hashes, and source hash coverage before execution."
+      - "Returns only the exact characteristic support polynomial as a QuotientAction projection message."
+      - "Rejects any coordinate-root or full-coordinate-RUR export flag."
+  - function: geosolver-core/src/kernels/action_krylov.rs::build_quotient_handle_from_target_relation
+    required_by: "P5R-RGQ-069; PLAN.md P8c prerequisite ledger check"
+    notes:
+      - "Builds a ProductionProvenancedTargetQuotientHandle from authorized target relation input."
+      - "Creates per-column normal-form membership certificates; the final companion column is certified by the authorized source relation."
+      - "Does not accept DebugExplicitTargetQuotientHandle."
+  - function: geosolver-core/src/kernels/action_krylov.rs::build_target_action_krylov_trace
+    required_by: "RGQ-044 mandatory method"
+    notes:
+      - "Runs block Krylov with all basis probes, recovers a recurrence only as candidate generation, then requires certify_krylov_coverage."
+      - "Uses verify_annihilator after exact characteristic coverage is constructed."
+  - function: geosolver-core/src/planner/admission.rs::build_kernel_admission
+    required_by: "PLAN.md P8c planner admission"
+    notes:
+      - "Routes KernelKind::TargetActionKrylov to plan_target_action_krylov instead of the previous P8c placeholder decline."
+tests:
+  - p8c_action_krylov_kernel_produces_verified_characteristic_support
+  - p8c_planner_admits_target_action_krylov_for_verified_characteristic_path
+  - p8c_undercovered_single_vector_recurrence_cannot_escape_as_support
+  - p8c_quotient_handle_rejects_coordinate_root_or_rur_export
+  - p8c_action_krylov_rejects_auth_and_source_hash_tamper

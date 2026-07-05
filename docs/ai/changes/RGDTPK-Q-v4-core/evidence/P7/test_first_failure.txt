@@ -1,0 +1,26 @@
+P7 practical oracle:
+
+Tests were added for the P7 acceptance obligations before the final implementation was considered complete:
+
+- all nine kernel registry order
+- TargetUnivariate primitive squarefree target support
+- LinearAffine safe constant pivot output restriction
+- LinearAffine unsafe nonconstant pivot rejection
+- LinearAffine stale/incomplete plan hardcase
+
+Observed failure before final fix:
+
+test kernels::target_univariate::tests::p7_target_univariate_support_is_primitive_lcm_squarefree ... FAILED
+
+Root cause:
+
+TargetUnivariate used clear_denominators_primitive after building a monic univariate squarefree support, which flipped t - 1 to 1 - t under the multivariate first-term-positive convention. This did not match the TargetUnivariate LCM convention.
+
+Targeted fix:
+
+TargetUnivariate now converts the univariate LCM to a primitive integer polynomial while preserving positive highest-degree coefficient.
+
+Verification:
+
+cargo test --manifest-path geosolver-core/Cargo.toml p7_ -- --nocapture
+result: 5 passed.
