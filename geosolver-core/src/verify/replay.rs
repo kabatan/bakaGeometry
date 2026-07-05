@@ -1924,6 +1924,7 @@ mod tests {
             decoded_candidates: Vec::new(),
             projection_messages: messages,
             certificate: Some(certificate),
+            exact_image_certificate: None,
             diagnostics: Vec::new(),
             cost_trace: GlobalCostTrace::default(),
         }

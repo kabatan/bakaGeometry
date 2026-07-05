@@ -4,7 +4,9 @@ use crate::algebra::real_root::{cmp_q, sturm_sequence};
 use crate::roots::isolate::RealRootRecord;
 use crate::types::hash::Hash;
 use crate::types::rational::{is_zero_q, sign_q};
-use crate::types::univariate::{degree_uni, derivative_uni, eval_uni_q, UniPolynomialQ};
+use crate::types::univariate::{
+    degree_uni, derivative_uni, eval_uni_q, squarefree_part_uni, UniPolynomialQ,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SignDetermination {
@@ -23,7 +25,7 @@ pub struct ThomEncoding {
 }
 
 pub fn sign_at_algebraic_root(poly: &UniPolynomialQ, root: &RealRootRecord) -> SignDetermination {
-    if poly.hash == root.support_hash {
+    if poly.hash == root.support_hash || squarefree_part_uni(poly).hash == root.support_hash {
         return SignDetermination::Zero;
     }
     if degree_uni(poly).is_none() {

@@ -1,7 +1,8 @@
 # Closure Packet - RGDTPK-Q-v4-core
 
 Status: FCR-P12 final closure passed spec, boundary, and quality review. FCR-P0A/FCR-P1A and
-FCR-P0 through FCR-P12 are complete for the candidate-cover layer.
+FCR-P0 through FCR-P12 are complete for the candidate-cover layer. P13 exact-image implementation
+passed spec, boundary, and quality review for MECH-012 only.
 
 Approved FCR claim:
 
@@ -50,7 +51,8 @@ the red-team suite with 10 fresh non-fixture algebraic inputs through the public
 pipeline.
 
 Required final FCR claim target is `CANDIDATE_COVER_CORE_READY`, not another partial mechanism
-label. FCR-P12 spec, boundary, and quality reviews passed for that candidate-cover-only claim.
+label. FCR-P12 spec, boundary, and quality reviews passed for that candidate-cover-only claim. P13
+spec, boundary, and quality reviews passed for MECH-012 exact-image semantics only.
 
 Final closure binds `CoreInvariantFlags` to fresh static scans and replay/tamper evidence in
 `FULL_CORE_INVARIANT_SCAN_BINDING.md`. Static scans are necessary but not sufficient; the claim also
@@ -61,7 +63,6 @@ gate tests.
 
 The following are still not complete:
 
-- P13 exact-image semantics
 - P14/P15/P16 historical exact-image/final-acceptance phases
 - final nonfinite readiness with public replay-bound certificate
 - performance claim
@@ -87,6 +88,25 @@ The following claim is approved by FCR-P12 reviewers for the candidate-cover lay
 | `evidence/FCR-P12/command_outputs.txt` | prepared |
 | `evidence/FCR-P12/scan_outputs.txt` | prepared |
 | `evidence/FCR-P12/reviewer_results.md` | PASS |
+
+## P13 Evidence Pending Review
+
+| Artifact | Status |
+| --- | --- |
+| `geosolver-core/src/fiber/exact_image.rs` | implemented |
+| `geosolver-core/src/fiber/hermite.rs` | implemented |
+| `geosolver-core/src/fiber/thom.rs` | implemented |
+| `geosolver-core/src/fiber/slack_semantics.rs` | implemented |
+| `geosolver-core/tests/p13_exact_image_semantics.rs` | 7/7 PASS |
+| `evidence/P13/command_outputs.txt` | prepared |
+| `evidence/P13/reviewer_results.md` | PASS |
+
+P13 evidence covers finite exact-image classification, candidate-cover/exact-image status
+separation, slack/guard/branch filtering, exact-empty classification, and exact-image-mode
+nonfinite requiring the real nonfinite certificate path. Semantic nonfinite cases without a real
+semantic/guard/saturation proof return `CertificateDesignGap`. It does not close P14/P15/P16,
+final public replay-bound nonfinite readiness, source fidelity, benchmark readiness, or full
+acceptance.
 
 Fresh FCR-P12 commands:
 

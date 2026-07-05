@@ -1,0 +1,52 @@
+phase: P13
+status: evidence_prepared_review_pending
+claim_boundary: >
+  P13 implements exact-image finite classification and exact-image nonfinite gate evidence.
+  Exact-image readiness is not claimed until P13 reviewers pass.
+functions:
+  - spec: "fiber/exact_image.rs::classify_real_target_image"
+    implementation: "geosolver-core/src/fiber/exact_image.rs::classify_real_target_image"
+    status: implemented
+    evidence:
+      - "public exact-image mode filters semantic spurious roots"
+      - "public exact-image mode returns CertifiedEmptyRealTargetImage for empty real image"
+      - "candidate-cover mode does not claim exact image"
+      - "classification result contains record hashes and exact/rejected candidate lists"
+  - spec: "fiber/hermite.rs::hermite_real_root_count_for_fiber"
+    implementation: "geosolver-core/src/fiber/hermite.rs::hermite_real_root_count_for_fiber"
+    status: implemented
+    evidence:
+      - "realizable exact-image records carry RealFiberCountCertificate"
+      - "certificate binds target/support/root/candidate/equality hashes/semantic hashes"
+      - "positive square-slack semantic factor counts two real slack roots"
+      - "target interval count is computed from exact support root isolation/root index, not hard-coded"
+  - spec: "fiber/thom.rs::thom_sign_classify"
+    implementation: "geosolver-core/src/fiber/thom.rs::thom_sign_classify"
+    status: implemented
+    evidence:
+      - "semantic guard decisions carry SignClassificationCertificate"
+      - "common support-root zero detection handles algebraic target roots"
+  - spec: "fiber/slack_semantics.rs::apply_real_constraint_semantics"
+    implementation: "geosolver-core/src/fiber/slack_semantics.rs::apply_real_constraint_semantics"
+    status: implemented
+    evidence:
+      - "FiberProblemWithSemantics binds applied semantic hashes"
+      - "square-slack encodings produce guard polynomial sign decisions"
+  - spec: "fiber/slack_semantics.rs::verify_slack_encoding_consistency"
+    implementation: "geosolver-core/src/fiber/slack_semantics.rs::verify_slack_encoding_consistency"
+    status: implemented
+    evidence:
+      - "classification rejects inconsistent fiber/semantic/record hashes"
+integration:
+  - file: "geosolver-core/src/solver/orchestrator.rs"
+    status: implemented
+    note: "exact-image statuses are emitted only after classify_real_target_image runs"
+  - file: "geosolver-core/src/solver/pipeline.rs"
+    status: implemented
+    note: "step_support passes CompressedSystemQ into final support so exact-image nonfinite can see semantic, guard, and saturation obligations"
+  - file: "geosolver-core/src/result/output.rs"
+    status: implemented
+    note: "TargetSolveResult carries exact_image_certificate when finite exact-image classification runs"
+  - file: "geosolver-core/src/compose/final_support.rs"
+    status: implemented
+    note: "exact-image nonfinite diagnostics expose real-certificate proof kind/hash evidence; semantic/guard/saturation nonfinite without real proof returns CertificateDesignGap"

@@ -90,16 +90,34 @@ pub fn build_final_support_or_nonfinite(
     target: VariableId,
     ctx: &mut crate::problem::context::SolverContext,
 ) -> Result<FinalSupportComputation, SolverError> {
+    build_final_support_or_nonfinite_with_system(composed, target, None, ctx)
+}
+
+pub fn build_final_support_or_nonfinite_with_system(
+    composed: ComposedProjection,
+    target: VariableId,
+    system: Option<&crate::preprocess::compression::CompressedSystemQ>,
+    ctx: &mut crate::problem::context::SolverContext,
+) -> Result<FinalSupportComputation, SolverError> {
     if let Some(support) = support_from_target_only_relations(&composed, target) {
         return Ok(FinalSupportComputation::Support(support));
     }
-    match certify_nonfinite_target_image(&composed, ctx) {
+    match certify_nonfinite_target_image_with_system(&composed, system, ctx) {
         Ok(cert) => Ok(FinalSupportComputation::CertifiedNonFinite(cert)),
-        Err(_) => Err(algorithmic_hard_case(
-            target,
-            composed.composed_hash,
-            "no target-only relation and non-finiteness not certified",
-        )),
+        Err(err) => {
+            if matches!(
+                err.kind,
+                SolverErrorKind::Failure(FailureKind::CertificateDesignGap { .. })
+            ) {
+                Err(err)
+            } else {
+                Err(algorithmic_hard_case(
+                    target,
+                    composed.composed_hash,
+                    "no target-only relation and non-finiteness not certified",
+                ))
+            }
+        }
     }
 }
 
@@ -107,8 +125,30 @@ pub fn certify_nonfinite_target_image(
     composed: &ComposedProjection,
     ctx: &mut crate::problem::context::SolverContext,
 ) -> Result<NonFiniteCertificate, SolverError> {
+    certify_nonfinite_target_image_with_system(composed, None, ctx)
+}
+
+pub fn certify_nonfinite_target_image_with_system(
+    composed: &ComposedProjection,
+    system: Option<&crate::preprocess::compression::CompressedSystemQ>,
+    ctx: &mut crate::problem::context::SolverContext,
+) -> Result<NonFiniteCertificate, SolverError> {
     let zero_target_elimination = certify_zero_target_elimination_ideal(composed, ctx)?;
     let real_certificate = if ctx.options.exact_image_mode {
+        if system
+            .map(|system| {
+                !system.semantic_encodings.is_empty()
+                    || !system.guards.is_empty()
+                    || !system.saturations.is_empty()
+            })
+            .unwrap_or(false)
+        {
+            return Err(certificate_gap(
+                composed.target,
+                composed.composed_hash,
+                "RealNonFiniteSemanticGuardSaturationCertificate",
+            ));
+        }
         Some(certify_real_nonfinite_target_image(
             RealNonFiniteInput {
                 composed: composed.clone(),
@@ -250,9 +290,17 @@ pub fn finalize_nonfinite_result(
         decoded_candidates: Vec::<TargetCandidate>::new(),
         projection_messages,
         certificate: None::<CoreRunCertificate>,
+        exact_image_certificate: None,
         diagnostics: vec![DiagnosticRecord::new(
             "CertifiedNonFiniteTargetImage",
-            format!("nonfinite certificate hash {:?}", cert.certificate_hash),
+            format!(
+                "nonfinite certificate hash {:?}; proof_kind {:?}; real_certificate_hash {:?}",
+                cert.certificate_hash,
+                cert.proof_kind,
+                cert.real_certificate
+                    .as_ref()
+                    .map(|real| real.certificate_hash)
+            ),
             Some(StageId("P10FinalSupport".to_owned())),
         )],
         cost_trace,
@@ -298,6 +346,7 @@ pub fn finalize_candidate_cover_result(
         decoded_candidates,
         projection_messages,
         certificate: None::<CoreRunCertificate>,
+        exact_image_certificate: None,
         diagnostics,
         cost_trace,
     })

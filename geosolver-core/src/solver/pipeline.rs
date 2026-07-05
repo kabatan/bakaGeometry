@@ -2,7 +2,8 @@ use std::collections::BTreeMap;
 
 use crate::compose::compose::{compose_projection_messages, ComposedProjection};
 use crate::compose::final_support::{
-    build_final_support_or_nonfinite, finalize_nonfinite_result, FinalSupportComputation,
+    build_final_support_or_nonfinite_with_system, finalize_nonfinite_result,
+    FinalSupportComputation,
 };
 use crate::compose::message::ProjectionMessage;
 use crate::graph::hypergraph::{build_relation_variable_hypergraph, RelationVariableHypergraph};
@@ -211,10 +212,11 @@ pub fn step_compose(
 
 pub fn step_support(
     composed: &ComposedProjection,
+    compressed: &CompressedSystemQ,
     target: VariableId,
     ctx: &mut SolverContext,
 ) -> Result<FinalSupportComputation, SolverError> {
-    build_final_support_or_nonfinite(composed.clone(), target, ctx)
+    build_final_support_or_nonfinite_with_system(composed.clone(), target, Some(compressed), ctx)
 }
 
 pub fn step_roots(

@@ -13,9 +13,11 @@ CANDIDATE_COVER_CORE_READY
 ```
 
 Full Core Repair is active and supersedes the prior P13 readiness statement. FCR-P0A/FCR-P1A and
-FCR-P0 through FCR-P12 are complete for the candidate-cover layer. This does not imply exact-image
-readiness, source fidelity, full acceptance, benchmark readiness, or final nonfinite readiness with a
-public replay-bound nonfinite certificate. Next work is P13 exact-image semantics.
+FCR-P0 through FCR-P12 are complete for the candidate-cover layer. P13 exact-image implementation
+passed spec, boundary, and quality review for MECH-012 only. This does not imply source fidelity,
+full acceptance, benchmark readiness, exact-image replay-bound final readiness, or final nonfinite
+readiness with a public replay-bound nonfinite certificate. Next work is P14/P15/P16 as admitted by
+reviewer results.
 
 Read first:
 

@@ -1,0 +1,7 @@
+P13 exact-image semantics commands
+
+1. cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+2. cargo clippy --manifest-path geosolver-core/Cargo.toml --all-targets --all-features -- -D warnings
+3. cargo test --manifest-path geosolver-core/Cargo.toml --test p13_exact_image_semantics -- --nocapture
+4. cargo test --manifest-path geosolver-core/Cargo.toml --all-targets --all-features -- --nocapture
+5. git diff --check

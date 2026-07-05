@@ -33,7 +33,7 @@ pub fn solve_with_context(
             composed_hash: crate::types::hash::hash_sequence("composed-projection", &[]),
         };
         composed.composed_hash = hash_composed_projection(&composed);
-        let support_outcome = step_support(&composed, target, &mut ctx)?;
+        let support_outcome = step_support(&composed, &compressed, target, &mut ctx)?;
         let cost_trace = step_cost_trace(&compressed, &dag, &[], Some(&composed));
         if let crate::compose::final_support::FinalSupportComputation::CertifiedNonFinite(cert) =
             support_outcome
@@ -51,14 +51,27 @@ pub fn solve_with_context(
     let messages = step_execute(&dag, &plans, &compressed, &mut ctx)?;
     step_verify_messages(&dag, &messages, &compressed)?;
     let composed = step_compose(&dag, messages.clone(), target, &mut ctx)?;
-    let support_outcome = step_support(&composed, target, &mut ctx)?;
+    let support_outcome = step_support(&composed, &compressed, target, &mut ctx)?;
     let cost_trace = step_cost_trace(&compressed, &dag, &messages, Some(&composed));
 
     match support_outcome {
         crate::compose::final_support::FinalSupportComputation::Support(support) => {
             let support_certificate =
                 crate::verify::verify_support::verify_global_support(&support, &composed)?;
-            let roots = step_roots(&support, target, &mut ctx)?;
+            let mut roots = step_roots(&support, target, &mut ctx)?;
+            let exact_image_certificate = if ctx.options.exact_image_mode {
+                let classification = crate::fiber::exact_image::classify_real_target_image(
+                    &compressed,
+                    &roots.squarefree_support,
+                    &roots.decoded_candidates,
+                    &mut ctx,
+                )?;
+                roots.root_isolation = classification.exact_root_isolation.clone();
+                roots.decoded_candidates = classification.exact_candidates.clone();
+                Some(classification)
+            } else {
+                None
+            };
             let certificate = step_core_certificate(
                 &problem,
                 &canonical,
@@ -75,13 +88,33 @@ pub fn solve_with_context(
             diagnostics.extend(ctx.diagnostics.clone());
             if roots.root_isolation.is_empty() {
                 diagnostics.push(DiagnosticRecord::new(
-                    "EmptyRealCandidateCover",
-                    "support has no real roots; certified candidate cover is empty".to_owned(),
-                    Some(StageId("P12RootDecode".to_owned())),
+                    if ctx.options.exact_image_mode {
+                        "CertifiedEmptyRealTargetImage"
+                    } else {
+                        "EmptyRealCandidateCover"
+                    },
+                    if ctx.options.exact_image_mode {
+                        "exact-image classification rejected every real target candidate".to_owned()
+                    } else {
+                        "support has no real roots; certified candidate cover is empty".to_owned()
+                    },
+                    Some(StageId(if ctx.options.exact_image_mode {
+                        "P13ExactImage".to_owned()
+                    } else {
+                        "P12RootDecode".to_owned()
+                    })),
                 ));
             }
             let result = TargetSolveResult {
-                status: SolverStatus::CertifiedCandidateCover,
+                status: if ctx.options.exact_image_mode {
+                    if roots.decoded_candidates.is_empty() {
+                        SolverStatus::CertifiedEmptyRealTargetImage
+                    } else {
+                        SolverStatus::CertifiedExactTargetImage
+                    }
+                } else {
+                    SolverStatus::CertifiedCandidateCover
+                },
                 target,
                 support_polynomial: Some(support),
                 squarefree_support_polynomial: Some(roots.squarefree_support),
@@ -89,6 +122,7 @@ pub fn solve_with_context(
                 decoded_candidates: roots.decoded_candidates,
                 projection_messages: messages,
                 certificate: Some(certificate),
+                exact_image_certificate,
                 diagnostics,
                 cost_trace,
             };
