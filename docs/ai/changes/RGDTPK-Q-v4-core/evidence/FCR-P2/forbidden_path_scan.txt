@@ -1,0 +1,53 @@
+FCR-P2 forbidden path scan
+
+Target checks:
+
+1. Non-production F4 code must not be reachable from production Universal or elimination strategies.
+   Result: PASS
+   Evidence:
+   - `kernels::target_relation_search` and `kernels::universal_elimination` are `#[cfg(test)]`.
+   - `algebra::f4` is `#[cfg(test)]`.
+   - `EliminationStrategy::NonProductionGroebnerBatchForTests` is `#[cfg(test)]`.
+   - Static production helper scan found no production calls to `groebner_backed_batch_reduce_for_tests` or `non_production_groebner_batch_elimination_for_tests`.
+
+2. TargetActionKrylov alias-univariate path may remain only as a subcase, not as the whole production kernel.
+   Result: PASS BY QUARANTINE
+   Evidence:
+   - `kernels::action_krylov` is `#[cfg(test)]`.
+   - `TargetActionKrylovKernel` is absent from production `all_kernels()`.
+   - `KernelKind::TargetActionKrylov` is not returned by production `all_planner_kernel_kinds()`.
+   - Production admission for `TargetActionKrylov` is explicitly declined if reached.
+
+3. Binary SparseResultantProjection must not be claimed as generic production SparseResultantProjection.
+   Result: PASS BY QUARANTINE
+   Evidence:
+   - `kernels::sparse_resultant` is `#[cfg(test)]`.
+   - `SparseResultantProjectionKernel` is absent from production `all_kernels()`.
+   - `KernelKind::SparseResultantProjection` is not returned by production `all_planner_kernel_kinds()`.
+   - Production admission for `SparseResultantProjection` is explicitly declined if reached.
+
+4. Explicit tower detection must not be the full production NormTraceProjection claim.
+   Result: PASS BY QUARANTINE
+   Evidence:
+   - `kernels::norm_trace_projection` is `#[cfg(test)]`.
+   - `NormTraceProjectionKernel` is absent from production `all_kernels()`.
+   - `KernelKind::NormTraceProjection` is not returned by production `all_planner_kernel_kinds()`.
+   - Production admission for `NormTraceProjection` is explicitly declined if reached.
+
+5. Synthetic all-relations replay must not be the final replay path.
+   Result: PASS BY QUARANTINE
+   Evidence:
+   - `verify::replay` and its re-export are `#[cfg(test)]`.
+   - Static production helper scan found no production calls to `replay_run_certificate`.
+   - FCR-P5 remains responsible for adding real production DAG/block replay.
+
+6. Helper-only support construction must not be used for acceptance.
+   Result: PASS FOR FCR-P2 SCOPE
+   Evidence:
+   - `compose::separator_elimination` is `#[cfg(test)]`.
+   - The production compose path no longer calls the TargetRelationSearch separator helper fallback.
+   - The public solver pipeline is still disconnected and cannot reach acceptance success.
+   - FCR-P3 is responsible for replacing the temporary public pipeline with the actual candidate-cover pipeline; helper-only acceptance remains forbidden there.
+
+Known next-phase blocker:
+- `solver/orchestrator.rs::solve_with_context` still returns `temporary_pipeline_not_connected`; this is the FCR-P3 replacement target, not an FCR-P2 quarantine target.

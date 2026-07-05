@@ -61,10 +61,10 @@ mod tests {
     use crate::graph::separators::CostModel;
     use crate::graph::tree_decomposition::build_target_rooted_decomposition;
     use crate::graph::weighted_primal::build_weighted_primal_graph;
-    use crate::kernels::target_relation_search::build_dense_relation_search_schedule;
     use crate::kernels::traits::KernelKind;
     use crate::planner::admission::all_planner_kernel_kinds;
     use crate::planner::kernel_plan::require_declared_kernel_plan;
+    use crate::planner::relation_schedule::build_dense_relation_search_schedule;
     use crate::preprocess::compression::CompressionState;
     use crate::problem::canonicalize::canonicalize_system;
     use crate::problem::context::new_context;

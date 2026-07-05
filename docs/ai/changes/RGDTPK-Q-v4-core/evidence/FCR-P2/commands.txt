@@ -1,0 +1,7 @@
+cargo check
+cargo test
+cargo fmt
+python static cfg/reachability scan for F4, registry, planner admission, synthetic certificates, and synthetic replay
+rg/static forbidden path checks for FCR-P2 non-negotiable cleanup targets
+guardian_boundary_reviewer FCR-P2 initial review
+git diff --check

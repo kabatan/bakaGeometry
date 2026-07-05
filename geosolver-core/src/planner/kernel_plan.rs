@@ -1,10 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use crate::kernels::target_relation_search::hash_dense_relation_search_schedule;
-use crate::kernels::target_relation_search::DenseRelationSearchSchedule;
 use crate::kernels::traits::KernelKind;
 use crate::planner::admission::KernelAdmission;
 use crate::planner::cost_model::KernelCostEstimate;
+use crate::planner::relation_schedule::{
+    hash_dense_relation_search_schedule, DenseRelationSearchSchedule,
+};
 use crate::result::status::{FailureKind, SolverError, SolverErrorKind, SolverStatus};
 use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::{BlockId, KernelPlanId, RelationId, VariableId};

@@ -2,7 +2,6 @@ use std::collections::BTreeSet;
 
 use serde::{Deserialize, Serialize};
 
-use crate::algebra::f4::GroebnerBackedBatchOptions;
 use crate::algebra::groebner::{
     extract_certified_elimination_generators, groebner_elimination_basis, implementation_bug,
     polynomial_in_keep_variables, CertifiedPolynomialQ, GroebnerBasisResult, GroebnerOptions,
@@ -10,7 +9,10 @@ use crate::algebra::groebner::{
 use crate::algebra::monomial_order::elimination_order;
 use crate::algebra::normal_form::{verify_membership_by_certificate, MembershipCertificate};
 use crate::problem::context::SolverContext;
-use crate::result::status::{FailureKind, SolverError, SolverErrorKind};
+use crate::result::status::SolverError;
+#[cfg(test)]
+use crate::result::status::{FailureKind, SolverErrorKind};
+#[cfg(test)]
 use crate::types::hash::hash_sequence;
 use crate::types::ids::VariableId;
 use crate::types::polynomial::{poly_variables, SparsePolynomialQ};
@@ -18,7 +20,8 @@ use crate::types::polynomial::{poly_variables, SparsePolynomialQ};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum EliminationStrategy {
     LocalGroebner(GroebnerOptions),
-    NonProductionGroebnerBatchForTests(GroebnerBackedBatchOptions),
+    #[cfg(test)]
+    NonProductionGroebnerBatchForTests(crate::algebra::f4::GroebnerBackedBatchOptions),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -62,6 +65,7 @@ pub fn eliminate_to_keep_variables(
                 LocalEliminationStrategyName::LocalGroebner,
             )?
         }
+        #[cfg(test)]
         EliminationStrategy::NonProductionGroebnerBatchForTests(_) => {
             return Err(non_production_batch_not_admitted());
         }
@@ -141,6 +145,7 @@ fn ensure_disjoint(eliminate: &[VariableId], keep: &[VariableId]) -> Result<(), 
     Ok(())
 }
 
+#[cfg(test)]
 fn non_production_batch_not_admitted() -> SolverError {
     SolverError {
         target: None,
@@ -166,6 +171,7 @@ fn generator_variables(result: &LocalEliminationResult) -> BTreeSet<VariableId> 
 
 #[cfg(test)]
 mod tests {
+    use crate::algebra::f4::GroebnerBackedBatchOptions;
     use crate::algebra::normal_form::MembershipTerm;
     use crate::problem::context::new_context;
     use crate::solver::options::SolverOptions;

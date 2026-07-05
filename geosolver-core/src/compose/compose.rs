@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Serialize};
 
 use crate::compose::message::{hash_projection_message, ProjectionMessage};
+#[cfg(test)]
 use crate::compose::separator_elimination::eliminate_separators_from_message_relations;
 use crate::graph::projection_dag::TargetProjectionDAG;
 use crate::problem::context::SolverContext;
@@ -28,7 +29,7 @@ pub fn compose_projection_messages(
     dag: &TargetProjectionDAG,
     messages: Vec<ProjectionMessage>,
     target: VariableId,
-    ctx: &mut SolverContext,
+    _ctx: &mut SolverContext,
 ) -> Result<ComposedProjection, SolverError> {
     let blocks = dag
         .blocks
@@ -58,8 +59,14 @@ pub fn compose_projection_messages(
         relations.extend(message.relation_generators);
     }
     let relation_count_before = relations.len();
-    let mut root_relations = target_only_relations(&relations, target);
+    let root_relations = target_only_relations(&relations, target);
+    #[cfg(test)]
+    let mut root_relations = root_relations;
+    #[cfg(test)]
     let mut separator_hashes = Vec::new();
+    #[cfg(not(test))]
+    let separator_hashes = Vec::new();
+    #[cfg(test)]
     if root_relations.is_empty() {
         let all_variables = relations
             .iter()
@@ -75,7 +82,7 @@ pub fn compose_projection_messages(
             keep,
             separators,
             target,
-            ctx,
+            _ctx,
         )?;
         separator_hashes.push(message.package_hash);
         root_relations.extend(target_only_relations(&message.relation_generators, target));

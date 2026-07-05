@@ -63,6 +63,7 @@ impl KernelCertificate {
         cert
     }
 
+    #[cfg(test)]
     pub fn synthetic_for_tests(certificate_hash: Hash) -> Self {
         let mut cert = Self {
             certificate_hash,

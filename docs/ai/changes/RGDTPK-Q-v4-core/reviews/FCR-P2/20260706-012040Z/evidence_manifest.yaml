@@ -1,0 +1,173 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: FCR-P2
+commit: 5b1dd0278c8b7e4ff5e22e40e894b2a6a763d4bc+fcr-p2-worktree
+algorithm_spec_source_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+failure_source_sha256: a97b50bf597ed590889a7609a2cb25d9ec40f7be27d47adf332e52d3fa8abe36
+base_spec_sha256: 1f73bd7a26b2566b08f53d31b14785110466e8ae6170b6769d1af17d50a36047
+plan_sha256: b836599108c1db4a4e828e672780e5074049045fe5fa590e94252cdc91850bb9
+source_map_sha256: 892b75221a3f724ab864e0214e3a0559e99331cda0b8fba4976f5a21372f08ec
+review_archive_schema_sha256: d3db02e4abc8cc3065e2be8e82614b3703266ad0c0ce6cf3c0ce85ad662d364c
+review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
+evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_BASE_SPEC.md
+  sha256: 1f73bd7a26b2566b08f53d31b14785110466e8ae6170b6769d1af17d50a36047
+  purpose: 'FCR-P2 source: full core repair base spec'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_PLAN.md
+  sha256: b836599108c1db4a4e828e672780e5074049045fe5fa590e94252cdc91850bb9
+  purpose: 'FCR-P2 source: full core repair plan'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_SOURCE_SPEC_COMPLIANCE_MAP.md
+  sha256: 892b75221a3f724ab864e0214e3a0559e99331cda0b8fba4976f5a21372f08ec
+  purpose: 'FCR-P2 source: compliance map and current claim limits'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_REVIEWER_PROMPTS.md
+  sha256: 28075ea55b02213c4b38f5304735f87b163ab7eddb15121eefe072878a1f387b
+  purpose: 'FCR-P2 source: reviewer prompt requirements'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/BASE_SPEC.md
+  sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+  purpose: 'FCR-P2 source: approved base spec'
+- path: geosolver-core/src/algebra/mod.rs
+  sha256: c1a2beef6b6192db4efce9b3d7a73ecdeed282d4222ff9523c39179b58fd5178
+  purpose: 'FCR-P2 code: f4 quarantine in module tree'
+- path: geosolver-core/src/algebra/elimination.rs
+  sha256: a6c837d9ab398b504e9246ab5222095cbf47ae7e1801117620fc2e792801a6b4
+  purpose: 'FCR-P2 code: non-production Groebner strategy quarantine'
+- path: geosolver-core/src/kernels/mod.rs
+  sha256: 3bdb5d01fd2e10e60acff1cc53c8052121018ce931b75942718d76771a334cea
+  purpose: 'FCR-P2 code: public kernel module and registry quarantine'
+- path: geosolver-core/src/kernels/target_relation_search.rs
+  sha256: 6ba576f43778b53a36c4fc25f9fb61dbccee520267fe71219315eaab28c54219
+  purpose: 'FCR-P2 code: test-only target relation search implementation after schedule split'
+- path: geosolver-core/src/planner/relation_schedule.rs
+  sha256: 115bdc6724424b09a55915b25a9d8c43536732629e1786f392f86e343ab3cbe3
+  purpose: 'FCR-P2 code: production-safe relation search schedule metadata'
+- path: geosolver-core/src/planner/mod.rs
+  sha256: 8a53efb705e252edcc1c14c6431c354f9f59af4507d133ea3850a584a5756580
+  purpose: 'FCR-P2 code: planner relation_schedule module export'
+- path: geosolver-core/src/planner/kernel_plan.rs
+  sha256: 0a584475e3918693fffba24d14e0ada600db689b1df67d934ba1dab97f145cb6
+  purpose: 'FCR-P2 code: plan schedule import relocation'
+- path: geosolver-core/src/planner/admission.rs
+  sha256: b45428e8fb6ac8052e17fbc1960d4bdcf62018426a94df4886cd778334bac629
+  purpose: 'FCR-P2 code: production advanced-kernel decline policy'
+- path: geosolver-core/src/planner/planner.rs
+  sha256: 78b96b46614e987a1e8032062e4a87f2cd2da7a8b4250699b9b51f84724d07c0
+  purpose: 'FCR-P2 code: planner tests import relocated schedule builder'
+- path: geosolver-core/src/compose/mod.rs
+  sha256: 212e60f5471710e34937a57a6728ffa4a840f68ac6835fb6be128e819528e605
+  purpose: 'FCR-P2 code: separator elimination quarantine'
+- path: geosolver-core/src/compose/compose.rs
+  sha256: 0e5d24f29aa1a2bb0bf8006a8d4145627a7ad9a3ada2ae63763a5cd7ec31665e
+  purpose: 'FCR-P2 code: compose fallback quarantine'
+- path: geosolver-core/src/verify/certificates.rs
+  sha256: 697a45a86b35e1c2eee29295568c1bb62f9e87908f2d7a63819bcd6332f56439
+  purpose: 'FCR-P2 code: synthetic certificate constructor test-only'
+- path: geosolver-core/src/verify/mod.rs
+  sha256: 0aa56de1462cb87b2bbe6d5c436317c60711ac82211b16b27dbbd335292fec6b
+  purpose: 'FCR-P2 code: replay module quarantine'
+- path: geosolver-core/src/verify/replay.rs
+  sha256: 4663b8c6c0adba154eaa128eaea2154c38f77f846ffe7e22b0ae7a863b334205
+  purpose: 'FCR-P2 code: quarantined synthetic replay implementation'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P2/commands.txt
+  sha256: 6a9950d3b45d74652950cd37122dec8296558c99dd533bf63c0588aa7a6092b0
+  purpose: 'FCR-P2 evidence: commands run'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P2/command_outputs.txt
+  sha256: 58b228358030147107633752daa002ceb6df435fab1765bd6d6701ea2ff43834
+  purpose: 'FCR-P2 evidence: command outputs and scan results'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P2/deletion_and_quarantine_log.yaml
+  sha256: 3d557f310d6ec7b689c363bf8c71b72b2d1a9ab6a2026956745ef60966d04a33
+  purpose: 'FCR-P2 evidence: semantic deletion and quarantine log'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P2/production_reachability_scan.txt
+  sha256: faebe558d99de48345fb6281ad15ab9397fdfb4376ae88de677eff97f0ded779
+  purpose: 'FCR-P2 evidence: production reachability scan'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P2/forbidden_path_scan.txt
+  sha256: b3444d7bf583719ebcac3dadb8ae8d419e8802b27d59b32844d53398cff1a5aa
+  purpose: 'FCR-P2 evidence: forbidden path checks'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P2/guardian_boundary_reviewer_fail.md
+  sha256: ebff0e2bfb8bbf864abfc82606c44cb0f31b4dadd87eee727d56af2a10b4b2b9
+  purpose: 'FCR-P2 evidence: initial guardian FAIL_FIXABLE response'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P2/guardian_boundary_reviewer_pass.md
+  sha256: a4632417b264a15caed2e35e255ce89c98af334644a4a016461fc55c7f92a9ef
+  purpose: 'FCR-P2 evidence: remediated guardian PASS response'
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P2/20260706-012040Z/prompt.md
+  sha256: 47de50cdbf32add15c52eb762d23ef631a53da49a48f46a510c6e998fc2ab823
+  purpose: FCR-P2 archived reviewer prompt
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P2/20260706-012040Z/response.md
+  sha256: a4632417b264a15caed2e35e255ce89c98af334644a4a016461fc55c7f92a9ef
+  purpose: FCR-P2 archived reviewer response
+command_outputs:
+- command: cargo check
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P2/command_outputs.txt
+  output_sha256: 58b228358030147107633752daa002ceb6df435fab1765bd6d6701ea2ff43834
+  finished_at_utc: 20260706-012040Z
+- command: cargo test
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P2/command_outputs.txt
+  output_sha256: 58b228358030147107633752daa002ceb6df435fab1765bd6d6701ea2ff43834
+  finished_at_utc: 20260706-012040Z
+- command: static cfg/reachability scan
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P2/production_reachability_scan.txt
+  output_sha256: faebe558d99de48345fb6281ad15ab9397fdfb4376ae88de677eff97f0ded779
+  finished_at_utc: 20260706-012040Z
+- command: forbidden path checks
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P2/forbidden_path_scan.txt
+  output_sha256: b3444d7bf583719ebcac3dadb8ae8d419e8802b27d59b32844d53398cff1a5aa
+  finished_at_utc: 20260706-012040Z
+- command: git diff --check
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P2/command_outputs.txt
+  output_sha256: 58b228358030147107633752daa002ceb6df435fab1765bd6d6701ea2ff43834
+  finished_at_utc: 20260706-012040Z
+- command: guardian_boundary_reviewer FCR-P2 after remediation
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P2/guardian_boundary_reviewer_pass.md
+  output_sha256: a4632417b264a15caed2e35e255ce89c98af334644a4a016461fc55c7f92a9ef
+  finished_at_utc: 20260706-012040Z
+static_scans:
+- scan_id: fcr-p2-partial-kernel-modules-test-only
+  command: static cfg/reachability scan
+  forbidden_pattern: partial kernel modules exported from production kernels::mod
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P2/production_reachability_scan.txt
+- scan_id: fcr-p2-production-registry-base-only
+  command: static cfg/reachability scan
+  forbidden_pattern: production all_kernels or all_planner_kernel_kinds includes advanced quarantined kernels
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P2/production_reachability_scan.txt
+- scan_id: fcr-p2-nonproduction-f4-test-only
+  command: static cfg/reachability scan
+  forbidden_pattern: production f4 or NonProductionGroebnerBatchForTests dispatch path
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P2/production_reachability_scan.txt
+- scan_id: fcr-p2-synthetic-replay-test-only
+  command: static cfg/reachability scan
+  forbidden_pattern: production synthetic replay or synthetic_for_tests constructor
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P2/production_reachability_scan.txt
+- scan_id: fcr-p2-helper-only-support-path-quarantined
+  command: forbidden path checks
+  forbidden_pattern: production compose separator helper fallback or helper-only support acceptance path
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P2/forbidden_path_scan.txt
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_PRODUCTION_AUDIT.md
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P2/guardian_boundary_reviewer_fail.md
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P2/guardian_boundary_reviewer_pass.md
+known_limitations:
+- FCR-P2 quarantines or removes invalid production exposure; it does not complete the generic candidate-cover pipeline.
+- Advanced kernels and real DAG/block replay remain unavailable to production until later FCR phases generalize them.
+- CANDIDATE_COVER_CORE_READY, exact-image readiness, source-fidelity, and acceptance completion remain forbidden.
+- No R-ID is marked VERIFIED.
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-011
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-011
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

@@ -1,0 +1,84 @@
+phase_id: FCR-P2
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-011
+scope:
+- geosolver-core/src/algebra/mod.rs
+- geosolver-core/src/algebra/elimination.rs
+- geosolver-core/src/kernels/mod.rs
+- geosolver-core/src/planner/relation_schedule.rs
+- geosolver-core/src/planner/admission.rs
+- geosolver-core/src/planner/kernel_plan.rs
+- geosolver-core/src/planner/mod.rs
+- geosolver-core/src/compose/mod.rs
+- geosolver-core/src/compose/compose.rs
+- geosolver-core/src/verify/certificates.rs
+- geosolver-core/src/verify/mod.rs
+actions:
+- target: geosolver-core/src/algebra/f4.rs
+  prior_risk: Non-production F4 helpers were exposed through the production algebra module.
+  action: move_to_test
+  implementation: "`algebra::f4` is now behind `#[cfg(test)]`; production `EliminationStrategy` no longer exposes `NonProductionGroebnerBatchForTests`."
+  verification:
+  - production_reachability_scan.txt: f4_module_cfg_test PASS
+  - production_reachability_scan.txt: non_production_strategy_cfg_test PASS
+  - production_reachability_scan.txt: non_production_arm_cfg_test PASS
+- target: geosolver-core/src/kernels/mod.rs
+  prior_risk: Partial high-risk kernels were listed in the production kernel registry.
+  action: quarantine
+  implementation: "Advanced partial kernel modules are `#[cfg(test)]`; `all_kernels()` now returns only `TargetUnivariateKernel` and `LinearAffineKernel`; direct `kernel_by_kind` lookup is `#[cfg(test)]`."
+  quarantined_kinds:
+  - TargetRelationSearch
+  - SparseResultantProjection
+  - TargetActionKrylov
+  - NormTraceProjection
+  - RegularChainProjection
+  - SpecializationInterpolation
+  - UniversalTargetElimination
+  verification:
+  - production_reachability_scan.txt: kernel_module_*_cfg_test PASS
+  - production_reachability_scan.txt: production_all_kernels_only_base PASS
+  - production_reachability_scan.txt: kernel_by_kind_cfg_test PASS
+- target: geosolver-core/src/planner/relation_schedule.rs
+  prior_risk: TargetRelationSearch schedule data was coupled to the partial public kernel module.
+  action: quarantine_support_refactor
+  implementation: "Production-safe DenseRelationSearchSchedule data and hash/build helpers were split into planner::relation_schedule so the partial TargetRelationSearch module can be test-only."
+  verification:
+  - cargo check: PASS
+  - cargo test: PASS
+- target: geosolver-core/src/planner/admission.rs
+  prior_risk: Planner admission could construct production execution plans for partial kernels without going through the registry.
+  action: quarantine
+  implementation: "Under `cfg(not(test))`, `all_planner_kernel_kinds()` returns only TargetUnivariate and LinearAffine; advanced kinds are explicitly declined if reached."
+  quarantined_paths:
+  - TargetRelationSearch admission
+  - SparseResultantProjection admission
+  - TargetActionKrylov admission
+  - NormTraceProjection admission
+  - RegularChainProjection admission
+  - SpecializationInterpolation admission
+  - UniversalTargetElimination admission
+  verification:
+  - production_reachability_scan.txt: production_planner_kind_list_only_base PASS
+  - production_reachability_scan.txt: advanced_admission_declines_in_production PASS
+- target: geosolver-core/src/verify/certificates.rs
+  prior_risk: Synthetic certificate constructor was public in production code.
+  action: move_to_test
+  implementation: "`KernelCertificate::synthetic_for_tests` is now behind `#[cfg(test)]`."
+  verification:
+  - production_reachability_scan.txt: synthetic_certificate_constructor_cfg_test PASS
+- target: geosolver-core/src/verify/replay.rs
+  prior_risk: Synthetic all-relations replay was exposed as the public replay module.
+  action: move_to_test
+  implementation: "`verify::replay` and its re-export are now behind `#[cfg(test)]`; FCR-P5 must introduce real production DAG/block replay."
+  verification:
+  - production_reachability_scan.txt: synthetic_replay_module_cfg_test PASS
+- target: geosolver-core/src/compose/separator_elimination.rs
+  prior_risk: Composition could invoke TargetRelationSearch as a helper-only separator elimination path.
+  action: move_to_test
+  implementation: "`compose::separator_elimination` is `#[cfg(test)]`; the production compose path no longer calls the helper fallback when target-only root relations are absent."
+  verification:
+  - production_reachability_scan.txt: separator_elimination_module_cfg_test PASS
+  - production_reachability_scan.txt: separator_elimination_call_cfg_test PASS
+known_deferred_repairs:
+- FCR-P3 must replace `temporary_pipeline_not_connected` with the public candidate-cover pipeline.
+- FCR-P4 through FCR-P11 must generalize quarantined kernels and replay before they can re-enter production reachability.
+- No R-ID is marked VERIFIED by this phase.

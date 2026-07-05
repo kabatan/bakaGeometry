@@ -1,40 +1,49 @@
+#[cfg(test)]
 pub mod action_krylov;
 pub mod linear_affine;
+#[cfg(test)]
 pub mod norm_trace_projection;
+#[cfg(test)]
 pub mod regular_chain_projection;
+#[cfg(test)]
 pub mod sparse_resultant;
+#[cfg(test)]
 pub mod specialization_interpolation;
+#[cfg(test)]
 pub mod target_relation_search;
 pub mod target_univariate;
 pub mod traits;
+#[cfg(test)]
 pub mod universal_elimination;
 
 pub use traits::*;
 
-use crate::kernels::action_krylov::TargetActionKrylovKernel;
 use crate::kernels::linear_affine::LinearAffineKernel;
-use crate::kernels::norm_trace_projection::NormTraceProjectionKernel;
-use crate::kernels::regular_chain_projection::RegularChainProjectionKernel;
-use crate::kernels::sparse_resultant::SparseResultantProjectionKernel;
-use crate::kernels::specialization_interpolation::SpecializationInterpolationKernel;
-use crate::kernels::target_relation_search::TargetRelationSearchKernel;
 use crate::kernels::target_univariate::TargetUnivariateKernel;
+
+#[cfg(test)]
+use crate::kernels::action_krylov::TargetActionKrylovKernel;
+#[cfg(test)]
+use crate::kernels::norm_trace_projection::NormTraceProjectionKernel;
+#[cfg(test)]
+use crate::kernels::regular_chain_projection::RegularChainProjectionKernel;
+#[cfg(test)]
+use crate::kernels::sparse_resultant::SparseResultantProjectionKernel;
+#[cfg(test)]
+use crate::kernels::specialization_interpolation::SpecializationInterpolationKernel;
+#[cfg(test)]
+use crate::kernels::target_relation_search::TargetRelationSearchKernel;
+#[cfg(test)]
 use crate::kernels::universal_elimination::UniversalTargetEliminationKernel;
 
 pub fn all_kernels() -> Vec<Box<dyn TargetProjectionKernel>> {
     vec![
         Box::new(TargetUnivariateKernel),
         Box::new(LinearAffineKernel),
-        Box::new(TargetRelationSearchKernel),
-        Box::new(SparseResultantProjectionKernel),
-        Box::new(TargetActionKrylovKernel),
-        Box::new(NormTraceProjectionKernel),
-        Box::new(RegularChainProjectionKernel),
-        Box::new(SpecializationInterpolationKernel),
-        Box::new(UniversalTargetEliminationKernel),
     ]
 }
 
+#[cfg(test)]
 pub fn kernel_by_kind(kind: KernelKind) -> Box<dyn TargetProjectionKernel> {
     match kind {
         KernelKind::TargetUnivariate => Box::new(TargetUnivariateKernel),
@@ -55,26 +64,30 @@ mod tests {
     use crate::kernels::traits::KernelKind;
 
     #[test]
-    fn p7_registry_lists_all_nine_kernels_in_appendix_order() {
+    fn fcr_p2_production_registry_excludes_partial_kernels() {
         let kinds = all_kernels()
             .into_iter()
             .map(|kernel| kernel.kind())
             .collect::<Vec<_>>();
         assert_eq!(
             kinds,
-            vec![
-                KernelKind::TargetUnivariate,
-                KernelKind::LinearAffine,
-                KernelKind::TargetRelationSearch,
-                KernelKind::SparseResultantProjection,
-                KernelKind::TargetActionKrylov,
-                KernelKind::NormTraceProjection,
-                KernelKind::RegularChainProjection,
-                KernelKind::SpecializationInterpolation,
-                KernelKind::UniversalTargetElimination,
-            ]
+            vec![KernelKind::TargetUnivariate, KernelKind::LinearAffine]
         );
-        for kind in kinds {
+    }
+
+    #[test]
+    fn test_lookup_still_constructs_quarantined_kernel_kinds() {
+        for kind in [
+            KernelKind::TargetUnivariate,
+            KernelKind::LinearAffine,
+            KernelKind::TargetRelationSearch,
+            KernelKind::SparseResultantProjection,
+            KernelKind::TargetActionKrylov,
+            KernelKind::NormTraceProjection,
+            KernelKind::RegularChainProjection,
+            KernelKind::SpecializationInterpolation,
+            KernelKind::UniversalTargetElimination,
+        ] {
             assert_eq!(kernel_by_kind(kind).kind(), kind);
         }
     }

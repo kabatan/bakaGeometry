@@ -1,10 +1,12 @@
 pub mod certificates;
+#[cfg(test)]
 pub mod replay;
 pub mod run_certificate;
 pub mod verify_message;
 pub mod verify_support;
 
 pub use certificates::*;
+#[cfg(test)]
 pub use replay::*;
 pub use run_certificate::*;
 pub use verify_message::*;

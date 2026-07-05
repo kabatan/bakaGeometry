@@ -1,0 +1,44 @@
+FCR-P2 production reachability scan
+
+Commands:
+- cargo check
+- cargo test
+- python static cfg/reachability scan for F4, registry, planner admission, synthetic certificates, and synthetic replay
+
+Results:
+
+cargo check
+exit_code: 0
+summary:
+    Checking geosolver-core v0.1.0
+    Finished `dev` profile [unoptimized + debuginfo]
+
+cargo test
+exit_code: 0
+summary:
+    lib tests: 198 passed; 0 failed
+    integration tests: 2 passed; 0 failed
+    doc tests: 0 passed; 0 failed
+
+static cfg/reachability scan
+exit_code: 0
+output:
+kernel_module_action_krylov_cfg_test: PASS - kernels::action_krylov is test-only
+kernel_module_sparse_resultant_cfg_test: PASS - kernels::sparse_resultant is test-only
+kernel_module_norm_trace_projection_cfg_test: PASS - kernels::norm_trace_projection is test-only
+kernel_module_regular_chain_projection_cfg_test: PASS - kernels::regular_chain_projection is test-only
+kernel_module_specialization_interpolation_cfg_test: PASS - kernels::specialization_interpolation is test-only
+kernel_module_target_relation_search_cfg_test: PASS - kernels::target_relation_search is test-only
+kernel_module_universal_elimination_cfg_test: PASS - kernels::universal_elimination is test-only
+production_all_kernels_only_base: PASS - all_kernels contains only TargetUnivariateKernel and LinearAffineKernel
+kernel_by_kind_cfg_test: PASS - direct kind lookup is test-only
+separator_elimination_module_cfg_test: PASS - separator elimination helper is test-only
+separator_elimination_call_cfg_test: PASS - compose helper fallback is test-only
+synthetic_replay_module_cfg_test: PASS - verify::replay is test-only until FCR-P5 real DAG replay
+f4_module_cfg_test: PASS - algebra::f4 is test-only in module tree
+non_production_strategy_cfg_test: PASS - NonProductionGroebnerBatchForTests variant is test-only
+non_production_arm_cfg_test: PASS - NonProductionGroebnerBatchForTests dispatch arm is test-only
+synthetic_certificate_constructor_cfg_test: PASS - synthetic_for_tests constructor is test-only
+production_planner_kind_list_only_base: PASS - all_planner_kernel_kinds returns only base kinds under cfg(not(test))
+advanced_admission_declines_in_production: PASS - advanced kinds decline under cfg(not(test))
+no_production_helper_calls: PASS - production helper call hits=[]

@@ -4,3 +4,4 @@ pub mod kernel_plan;
 pub mod ladder;
 pub mod planner;
 pub mod probes;
+pub mod relation_schedule;

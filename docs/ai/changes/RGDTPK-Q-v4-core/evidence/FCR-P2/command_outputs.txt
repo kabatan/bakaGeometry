@@ -1,0 +1,71 @@
+--- cargo check ---
+exit_code: 0
+summary:
+    Checking geosolver-core v0.1.0
+    Finished `dev` profile [unoptimized + debuginfo]
+
+--- cargo test ---
+exit_code: 0
+summary:
+    lib tests: 198 passed; 0 failed
+    integration tests: 2 passed; 0 failed
+    doc tests: 0 passed; 0 failed
+
+--- static cfg/reachability scan ---
+exit_code: 0
+kernel_module_action_krylov_cfg_test: PASS - kernels::action_krylov is test-only
+kernel_module_sparse_resultant_cfg_test: PASS - kernels::sparse_resultant is test-only
+kernel_module_norm_trace_projection_cfg_test: PASS - kernels::norm_trace_projection is test-only
+kernel_module_regular_chain_projection_cfg_test: PASS - kernels::regular_chain_projection is test-only
+kernel_module_specialization_interpolation_cfg_test: PASS - kernels::specialization_interpolation is test-only
+kernel_module_target_relation_search_cfg_test: PASS - kernels::target_relation_search is test-only
+kernel_module_universal_elimination_cfg_test: PASS - kernels::universal_elimination is test-only
+production_all_kernels_only_base: PASS - all_kernels contains only TargetUnivariateKernel and LinearAffineKernel
+kernel_by_kind_cfg_test: PASS - direct kind lookup is test-only
+separator_elimination_module_cfg_test: PASS - separator elimination helper is test-only
+separator_elimination_call_cfg_test: PASS - compose helper fallback is test-only
+synthetic_replay_module_cfg_test: PASS - verify::replay is test-only until FCR-P5 real DAG replay
+f4_module_cfg_test: PASS - algebra::f4 is test-only in module tree
+non_production_strategy_cfg_test: PASS - NonProductionGroebnerBatchForTests variant is test-only
+non_production_arm_cfg_test: PASS - NonProductionGroebnerBatchForTests dispatch arm is test-only
+synthetic_certificate_constructor_cfg_test: PASS - synthetic_for_tests constructor is test-only
+production_planner_kind_list_only_base: PASS - all_planner_kernel_kinds returns only base kinds under cfg(not(test))
+advanced_admission_declines_in_production: PASS - advanced kinds decline under cfg(not(test))
+no_production_helper_calls: PASS - production helper call hits=[]
+
+--- first guardian boundary review ---
+exit_code: 1
+summary: FAIL_FIXABLE. Partial high-risk kernel modules were still public production modules; registry/admission quarantine alone was too narrow. Full response archived at guardian_boundary_reviewer_fail.md.
+
+--- FCR-P2 forbidden path checks ---
+exit_code: 0
+non_production_f4_reachable_from_production: PASS
+target_action_krylov_full_production_kernel: PASS_BY_QUARANTINE
+binary_sparse_resultant_claimed_generic_production: PASS_BY_QUARANTINE
+explicit_tower_norm_trace_claimed_generic_production: PASS_BY_QUARANTINE
+synthetic_all_relations_replay_final_path: PASS_BY_QUARANTINE
+helper_only_support_acceptance_path: PASS_FOR_FCR_P2_SCOPE
+
+--- git diff --check ---
+exit_code: 0
+warning: in the working copy of 'geosolver-core/src/algebra/elimination.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'geosolver-core/src/algebra/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'geosolver-core/src/kernels/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'geosolver-core/src/planner/admission.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'geosolver-core/src/verify/certificates.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'geosolver-core/src/verify/mod.rs', LF will be replaced by CRLF the next time Git touches it
+
+--- git diff --check after public-module quarantine ---
+exit_code: 0
+warning: in the working copy of 'geosolver-core/src/algebra/elimination.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'geosolver-core/src/algebra/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'geosolver-core/src/compose/compose.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'geosolver-core/src/compose/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'geosolver-core/src/kernels/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'geosolver-core/src/kernels/target_relation_search.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'geosolver-core/src/planner/admission.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'geosolver-core/src/planner/kernel_plan.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'geosolver-core/src/planner/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'geosolver-core/src/planner/planner.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'geosolver-core/src/verify/certificates.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'geosolver-core/src/verify/mod.rs', LF will be replaced by CRLF the next time Git touches it

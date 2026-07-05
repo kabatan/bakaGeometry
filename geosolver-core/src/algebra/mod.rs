@@ -1,6 +1,7 @@
 pub mod crt;
 pub mod dense_matrix;
 pub mod elimination;
+#[cfg(test)]
 pub mod f4;
 pub mod groebner;
 pub mod interpolation;

@@ -16,6 +16,9 @@ use crate::planner::kernel_plan::{
     planned_failure_behavior, rank_plan, resource_bounds_hash, support_plan_hash, template_plan,
     CertificateRoute, KernelExecutionPlan, KernelSupportPlan, LocalNonfinitePolicy, ResourceBounds,
 };
+use crate::planner::relation_schedule::{
+    DenseRelationSearchSchedule, RelationSearchBound, RelationSearchStage,
+};
 use crate::problem::canonicalize::CanonicalRelationQ;
 use crate::problem::context::SolverContext;
 use crate::result::cost_trace::ProjectionCostTrace;
@@ -76,36 +79,6 @@ impl TargetProjectionKernel for TargetRelationSearchKernel {
             ctx,
         )
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RelationSearchBound {
-    pub export_degree: usize,
-    pub multiplier_total_degree: usize,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RelationSearchStage {
-    pub export_degree: usize,
-    pub multiplier_total_degree: usize,
-    pub export_support_hash: Hash,
-    pub multiplier_support_hashes: Vec<Hash>,
-    pub row_monomial_hash: Hash,
-    pub row_monomial_count: usize,
-    pub matrix_rows: usize,
-    pub matrix_cols: usize,
-    pub stage_hash: Hash,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct DenseRelationSearchSchedule {
-    pub eliminated_variables: Vec<VariableId>,
-    pub exported_variables: Vec<VariableId>,
-    pub z_seed: usize,
-    pub e_cap: usize,
-    pub d_max: usize,
-    pub stages: Vec<RelationSearchStage>,
-    pub schedule_hash: Hash,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
