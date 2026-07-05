@@ -1,0 +1,63 @@
+P15 acceptance stress command output summary
+
+Timestamp: 20260706 P15 remediation pass after spec and quality reviewer feedback.
+
+1. cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+   Result: PASS.
+
+2. cargo test --manifest-path geosolver-core/Cargo.toml --test p15_acceptance_stress -- --nocapture
+   Result: PASS.
+   Cases:
+   - p15_support_producing_candidate_cover_suite
+     Includes semantic guard/slack and branch/slack candidate-cover cases,
+     determinant/oriented-bilinear support, and dot/Gram-like bilinear support.
+   - p15_renamed_permuted_structure_keeps_mechanism
+   - p15_exact_image_semantics_suite
+   - p15_failure_and_nonfinite_semantics_suite
+   - p15_relation_search_schedule_reproducibility_suite
+     Includes three local schedule shapes with support hash, row monomial hash,
+     matrix dimension, and stage-order assertions.
+   - p15_anti_decoration_replay_rejects_tamper_and_deletion
+     Includes direct replay rejection for projection-message deletion.
+
+3. cargo clippy --manifest-path geosolver-core/Cargo.toml --all-targets --all-features -- -D warnings
+   Result: PASS.
+
+4. cargo test --manifest-path geosolver-core/Cargo.toml --all-targets --all-features -- --nocapture
+   Result: PASS.
+   Summary:
+   - lib tests: 212 passed.
+   - fcr_final_nonfinite_semantics: 2 passed.
+   - fcr_p10_acceptance_suite: 12 passed.
+   - fcr_p11_red_team_suite: 10 passed.
+   - fcr_p4_pure_planning: 7 passed.
+   - p12_roots_decode_integration: 1 passed.
+   - p12g_generality_stress: 1 passed.
+   - p13_exact_image_semantics: 7 passed.
+   - p14_full_pipeline_integration: 10 passed.
+   - p15_acceptance_stress: 6 passed.
+   - p3_public_pipeline_integration: 2 passed.
+
+5. rg -n --sort path --path-separator / "Unsupported|unsupported" geosolver-core/src
+   Result: PASS, no matches.
+
+6. geometry/problem/fixture/expected-answer dispatch scan
+   Result: PASS after classification.
+   Hit count: 139.
+   Classification: terminology, invariant field names, expected-hash variables, and tests; no
+   production dispatch table or problem-id/expected-answer branch was added by P15.
+
+7. placeholder/test-only marker scan
+   Result: PASS after classification.
+   Hit count: 19.
+   Classification: known quarantined `f4.rs` non-production/test helpers and synthetic test
+   certificate constructors or tests; no new production placeholder/scaffold was added by P15.
+
+8. QE/CAD/full-coordinate fallback scan
+   Result: PASS after classification.
+   Hit count: 3.
+   Classification: rejection/error text for coordinate-root/RUR export; no QE/CAD/RCF or full
+   coordinate fallback path.
+
+9. git diff --check
+   Result: PASS.

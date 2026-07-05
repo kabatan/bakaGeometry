@@ -1,0 +1,56 @@
+phase: P15
+status: evidence_prepared_review_pending
+claim_boundary: >
+  P15 supplies generalized acceptance stress, anti-fallback, anti-decoration, exact-image
+  semantics, and failure/nonfinite semantics evidence. P15 does not close P16 final closure,
+  source fidelity, benchmark readiness, final public replay-bound nonfinite readiness, full
+  acceptance, or any R-ID as VERIFIED.
+functions:
+  - spec: "support_producing_candidate_cover_suite"
+    implementation: "geosolver-core/tests/p15_acceptance_stress.rs::p15_support_producing_candidate_cover_suite"
+    status: implemented
+    evidence:
+      - "uses public solve_target with renamed variables, permuted relation order, and rationally scaled relations"
+      - "covers one-block/no-initial-target-only, multivariate action, multi-separator composition, sparse resultant, specialization interpolation, guarded rational affine, semantic guard/slack and branch/slack provenance in candidate-cover mode, determinant/oriented-bilinear support, dot/Gram-like bilinear support, target-independent component, Universal one-large-block, regular-chain, norm-trace, and no-real-root candidate-cover cases"
+      - "asserts CertifiedCandidateCover, nonzero support, squarefree support, projection messages, core certificate, delta/kappa cost trace, replay acceptance, and non-placeholder decoded candidates when real roots exist"
+  - spec: "exact_image_semantics_suite"
+    implementation: "geosolver-core/tests/p15_acceptance_stress.rs::p15_exact_image_semantics_suite"
+    status: implemented
+    evidence:
+      - "uses exact_image_mode=true"
+      - "covers nonempty exact image after slack semantics, exact empty real image, and branch-choice semantics"
+      - "does not count exact-empty as support-producing candidate-cover acceptance"
+  - spec: "stress-renaming and relation permutation"
+    implementation: "geosolver-core/tests/p15_acceptance_stress.rs::p15_renamed_permuted_structure_keeps_mechanism"
+    status: implemented
+    evidence:
+      - "runs the same nonlinear action quotient structure under different variable ids"
+      - "permutes relation order and uses nonzero rational relation scaling"
+      - "asserts the same TargetActionKrylov mechanism and final support degree across both variants"
+  - spec: "failure_and_nonfinite_semantics_suite"
+    implementation: "geosolver-core/tests/p15_acceptance_stress.rs::p15_failure_and_nonfinite_semantics_suite"
+    status: implemented
+    evidence:
+      - "invalid input maps to InvalidInput without support"
+      - "resource-bounded TargetRelationSearch returns hard/resource/certificate status, not nonfinite"
+      - "positive nonfinite finalizes as CertifiedNonFiniteTargetImage but without core replay certificate"
+      - "exact-image nonfinite with unproved semantic obligations returns CertificateDesignGap"
+  - spec: "relation-search schedule reproducibility"
+    implementation: "geosolver-core/tests/p15_acceptance_stress.rs::p15_relation_search_schedule_reproducibility_suite"
+    status: implemented
+    evidence:
+      - "three local ideals cover different eliminated variable counts, exported variable counts, and degrees"
+      - "permuted eliminated/exported inputs produce the same dense schedule hash"
+      - "asserts canonical sorted exported/eliminated variables, stage order, support hashes, row monomial hashes, matrix dimensions, row counts, nonempty multiplier supports, and replayable stage hashes"
+  - spec: "anti-decoration replay tamper/deletion"
+    implementation: "geosolver-core/tests/p15_acceptance_stress.rs::p15_anti_decoration_replay_rejects_tamper_and_deletion"
+    status: implemented
+    evidence:
+      - "baseline public candidate-cover result replays"
+      - "target projection DAG hash tamper is rejected by replay"
+      - "kernel plan hash tamper is rejected by replay"
+      - "final DAG block authorization evidence tamper is rejected by replay"
+      - "kernel certificate binding tamper is rejected by replay"
+      - "projection message deletion is rejected by replay"
+      - "projection message package hash tamper is rejected by replay"
+      - "removing a child projection message from a multiseparator case fails or changes composed support"

@@ -1,0 +1,11 @@
+P15 acceptance stress commands
+
+1. cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+2. cargo test --manifest-path geosolver-core/Cargo.toml --test p15_acceptance_stress -- --nocapture
+3. cargo clippy --manifest-path geosolver-core/Cargo.toml --all-targets --all-features -- -D warnings
+4. cargo test --manifest-path geosolver-core/Cargo.toml --all-targets --all-features -- --nocapture
+5. rg -n --sort path --path-separator / "Unsupported|unsupported" geosolver-core/src
+6. rg -n --sort path --path-separator / "circle|triangle|tangent|distance|area|incircle|circumcircle|orthic|mixtilinear|fixture|expected|answer|problem_id|official" geosolver-core/src
+7. rg -n --sort path --path-separator / "todo!|unimplemented!|placeholder|dummy|fake|stub|temporary_pipeline_not_connected|NotProductionF4|for_tests" geosolver-core/src
+8. rg -n --sort path --path-separator / "CAD|QE|RCF|coordinate solution|coordinate roots|full coordinate RUR|RUR|solve_all_coordinates" geosolver-core/src
+9. git diff --check

@@ -1,0 +1,31 @@
+P15 static scan classifications
+
+Command:
+rg -n --sort path --path-separator / "Unsupported|unsupported" geosolver-core/src
+
+Result:
+0 matches. No ordinary Unsupported production status/path was added.
+
+Command:
+rg -n --sort path --path-separator / "circle|triangle|tangent|distance|area|incircle|circumcircle|orthic|mixtilinear|fixture|expected|answer|problem_id|official" geosolver-core/src
+
+Result:
+139 matches. Reviewed classification: existing terminology, `target_distance` graph metric names,
+expected hash/value variable names in verification code and unit tests, and invariant flag names.
+No production dispatch on geometry names, problem ids, fixtures, expected answers, or official
+solutions was added by P15.
+
+Command:
+rg -n --sort path --path-separator / "todo!|unimplemented!|placeholder|dummy|fake|stub|temporary_pipeline_not_connected|NotProductionF4|for_tests" geosolver-core/src
+
+Result:
+19 matches. Reviewed classification: known quarantined `algebra/f4.rs` non-production/test helpers,
+static anti-reachability test strings, and synthetic certificate constructors used in tests. No P15
+production placeholder/scaffold or temporary pipeline path was added.
+
+Command:
+rg -n --sort path --path-separator / "CAD|QE|RCF|coordinate solution|coordinate roots|full coordinate RUR|RUR|solve_all_coordinates" geosolver-core/src
+
+Result:
+3 matches. Reviewed classification: rejection/error text requiring quotient/action paths not to
+expose coordinate roots or full coordinate RUR. No QE/CAD/RCF or full coordinate fallback path.
