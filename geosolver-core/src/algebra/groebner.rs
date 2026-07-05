@@ -44,6 +44,12 @@ pub struct GroebnerBasisResult {
     pub order: MonomialOrder,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CertifiedReduction {
+    pub remainder: SparsePolynomialQ,
+    pub membership_certificate: MembershipCertificate,
+}
+
 pub fn groebner_elimination_basis(
     relations: &[SparsePolynomialQ],
     order: &MonomialOrder,
@@ -122,6 +128,41 @@ pub fn groebner_elimination_basis(
         basis,
         pairs_processed,
         order: order.clone(),
+    })
+}
+
+pub fn reduce_with_certified_basis(
+    polynomial: &SparsePolynomialQ,
+    basis_result: &GroebnerBasisResult,
+    authorized_relations: &[SparsePolynomialQ],
+) -> Result<CertifiedReduction, SolverError> {
+    let basis_polynomials = basis_polys(&basis_result.basis);
+    let reduction = reduce_by_set(polynomial, &basis_polynomials, &basis_result.order);
+    let mut certificate = MembershipCertificate {
+        combination_terms: Vec::new(),
+    };
+    for (quotient, basis_entry) in reduction.quotients.iter().zip(&basis_result.basis) {
+        if quotient.terms.is_empty() {
+            continue;
+        }
+        certificate = add_cert(
+            &certificate,
+            &scale_cert(&basis_entry.certificate, quotient),
+        );
+    }
+    let represented_difference = poly_sub(polynomial, &reduction.remainder);
+    if !verify_membership_by_certificate(
+        &represented_difference,
+        &certificate,
+        authorized_relations,
+    ) {
+        return Err(implementation_bug(
+            "certified Groebner reduction failed exact membership reconstruction",
+        ));
+    }
+    Ok(CertifiedReduction {
+        remainder: reduction.remainder,
+        membership_certificate: certificate,
     })
 }
 
@@ -205,6 +246,14 @@ fn subtract_cert(a: &MembershipCertificate, b: &MembershipCertificate) -> Member
         relation_id: term.relation_id,
         multiplier: poly_sub(&zero_poly(), &term.multiplier),
     }));
+    MembershipCertificate {
+        combination_terms: terms,
+    }
+}
+
+fn add_cert(a: &MembershipCertificate, b: &MembershipCertificate) -> MembershipCertificate {
+    let mut terms = a.combination_terms.clone();
+    terms.extend(b.combination_terms.iter().cloned());
     MembershipCertificate {
         combination_terms: terms,
     }

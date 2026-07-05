@@ -1,0 +1,7 @@
+cargo fmt
+cargo test --lib kernels::action_krylov::tests
+cargo test
+cargo check
+git diff --check
+static GenericQuotient/Groebner quotient scan
+guardian_boundary_reviewer FCR-P5

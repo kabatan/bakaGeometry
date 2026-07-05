@@ -1,0 +1,34 @@
+FCR-P5 static scan summary.
+
+PASS generic production selection is no longer limited to TargetOnly and AliasUnivariate:
+- geosolver-core/src/kernels/action_krylov.rs:121 defines TargetActionSelection::GenericQuotient.
+- geosolver-core/src/kernels/action_krylov.rs:978 defines generic_target_action_selection.
+- geosolver-core/src/kernels/action_krylov.rs:931 adds the generic selection candidate.
+- geosolver-core/src/kernels/action_krylov.rs:606 executes GenericQuotient through build_production_target_relevant_quotient_input_from_relations.
+
+PASS quotient/action construction uses verified Groebner standard monomial basis:
+- geosolver-core/src/algebra/quotient.rs:419 defines build_production_target_relevant_quotient_input_from_relations.
+- geosolver-core/src/algebra/quotient.rs:434 computes standard_monomial_basis_from_groebner.
+- geosolver-core/src/algebra/quotient.rs:440 reduces T*b with reduce_with_certified_basis.
+- geosolver-core/src/algebra/quotient.rs:578 recomputes the standard basis during production input validation.
+- geosolver-core/src/algebra/quotient.rs:871 defines standard_monomial_basis_from_groebner.
+
+PASS action columns are exact membership-certified:
+- geosolver-core/src/algebra/groebner.rs:134 defines reduce_with_certified_basis.
+- geosolver-core/src/algebra/groebner.rs:151 verifies p - remainder against authorized relations.
+- geosolver-core/src/algebra/quotient.rs:441 converts the remainder to a basis vector.
+- geosolver-core/src/algebra/quotient.rs:442 calls make_action_column_certificate.
+
+PASS required FCR-P5 tests exist and run through planner/admission/execute/verify/replay:
+- fcr_action_multivariate_quotient_no_target_relation
+- fcr_action_target_is_nonlinear_expression
+- fcr_action_rejects_injected_basis_or_column
+
+Negative scan notes:
+- No coordinate roots or full coordinate RUR constructors were added.
+- Production GenericQuotient uses authorized relations and Groebner membership certificates, not expected support literals.
+- Undercoverage remains rejected by the existing p8c_undercovered_single_vector_recurrence_cannot_escape_as_support test.
+
+Claim limit:
+- This scan supports FCR-P5 TargetActionKrylov generalization only.
+- It does not claim full candidate-cover readiness, exact-image readiness, source fidelity, or acceptance completion.

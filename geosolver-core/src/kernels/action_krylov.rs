@@ -6,7 +6,8 @@ use crate::algebra::krylov::{
 };
 use crate::algebra::normal_form::{MembershipCertificate, MembershipTerm};
 use crate::algebra::quotient::{
-    build_production_target_relevant_quotient_handle, hash_authorized_relations,
+    build_production_target_relevant_quotient_handle,
+    build_production_target_relevant_quotient_input_from_relations, hash_authorized_relations,
     make_action_column_certificate, monomial_basis_polynomials, normal_form_basis_certificate,
     unit_vector, BasisHandleId, BasisScope, ProductionQuotientHandleInput, TargetQuotientHandle,
 };
@@ -117,6 +118,10 @@ enum TargetActionSelection {
         target_coeff: RationalQ,
         local_coeff: RationalQ,
     },
+    GenericQuotient {
+        inputs: Vec<ActionRelationInput>,
+        variables: Vec<VariableId>,
+    },
 }
 
 impl TargetActionSelection {
@@ -134,6 +139,11 @@ impl TargetActionSelection {
                 ids.extend(local_relation.source_relation_ids.iter().copied());
                 ids.extend(alias_relation.source_relation_ids.iter().copied());
             }
+            TargetActionSelection::GenericQuotient { inputs, .. } => {
+                for input in inputs {
+                    ids.extend(input.source_relation_ids.iter().copied());
+                }
+            }
         }
         ids.sort();
         ids.dedup();
@@ -148,6 +158,9 @@ impl TargetActionSelection {
                 alias_relation,
                 ..
             } => vec![local_relation.source_hash, alias_relation.source_hash],
+            TargetActionSelection::GenericQuotient { inputs, .. } => {
+                inputs.iter().map(|input| input.source_hash).collect()
+            }
         };
         hashes.sort();
         hashes.dedup();
@@ -168,6 +181,11 @@ impl TargetActionSelection {
                 hashes.extend(local_relation.child_message_hash);
                 hashes.extend(alias_relation.child_message_hash);
             }
+            TargetActionSelection::GenericQuotient { inputs, .. } => {
+                for input in inputs {
+                    hashes.extend(input.child_message_hash);
+                }
+            }
         }
         hashes.sort();
         hashes.dedup();
@@ -182,6 +200,43 @@ impl TargetActionSelection {
                 alias_relation,
                 ..
             } => vec![&local_relation.polynomial, &alias_relation.polynomial],
+            TargetActionSelection::GenericQuotient { inputs, .. } => {
+                inputs.iter().map(|input| &input.polynomial).collect()
+            }
+        }
+    }
+
+    fn planned_rank_estimate(&self, block: &ProjectionBlock) -> usize {
+        match self {
+            TargetActionSelection::GenericQuotient { variables, .. } => {
+                let degree_factor = self
+                    .source_polynomials()
+                    .iter()
+                    .map(|poly| poly_total_degree(poly) as usize + 1)
+                    .max()
+                    .unwrap_or(2)
+                    .max(2);
+                variables
+                    .len()
+                    .max(block.local_variables.len())
+                    .max(1)
+                    .min(8)
+                    .checked_pow(degree_factor.min(4) as u32)
+                    .unwrap_or(256)
+                    .clamp(1, 256)
+            }
+            _ => block
+                .local_variables
+                .len()
+                .max(self.source_hashes().len())
+                .max(
+                    self.source_polynomials()
+                        .iter()
+                        .map(|poly| poly_total_degree(poly) as usize)
+                        .max()
+                        .unwrap_or(1),
+                )
+                .max(1),
         }
     }
 }
@@ -420,18 +475,7 @@ fn probe_target_action_krylov_plan(
     target: VariableId,
     block: &ProjectionBlock,
 ) -> TargetActionKrylovPlanProbe {
-    let source_degree_bound = selection
-        .source_polynomials()
-        .iter()
-        .map(|poly| poly_total_degree(poly) as usize)
-        .max()
-        .unwrap_or(1);
-    let rank_estimate = block
-        .local_variables
-        .len()
-        .max(selection.source_hashes().len())
-        .max(source_degree_bound)
-        .max(1);
+    let rank_estimate = selection.planned_rank_estimate(block);
     let degree_bound = rank_estimate.max(1);
     let mut chunks = vec![target.0.to_be_bytes().to_vec()];
     for hash in selection.source_hashes() {
@@ -559,6 +603,21 @@ fn build_quotient_handle_input_from_selection(
             no_coordinate_roots_exported,
             no_full_coordinate_rur_exported,
         ),
+        TargetActionSelection::GenericQuotient { inputs, variables } => {
+            let authorized_relations = inputs
+                .iter()
+                .map(|input| input.polynomial.clone())
+                .collect::<Vec<_>>();
+            let mut input = build_production_target_relevant_quotient_input_from_relations(
+                target,
+                variables,
+                authorized_relations,
+                basis_id,
+            )?;
+            input.no_coordinate_roots_exported = no_coordinate_roots_exported;
+            input.no_full_coordinate_rur_exported = no_full_coordinate_rur_exported;
+            Ok(input)
+        }
     }
 }
 
@@ -869,8 +928,73 @@ fn select_target_action_selection(
             ));
         }
     }
+    if let Some(generic) = generic_target_action_selection(inputs, target) {
+        let source_hash = hash_sequence(
+            "target-action-generic-selection",
+            &generic
+                .source_hashes()
+                .iter()
+                .map(|hash| hash.0.to_vec())
+                .collect::<Vec<_>>(),
+        );
+        candidates.push((
+            generic.planned_rank_estimate_for_selection_only(),
+            generic
+                .source_polynomials()
+                .iter()
+                .map(|p| poly_monomial_count(p))
+                .sum(),
+            source_hash,
+            generic,
+        ));
+    }
     candidates.sort_by_key(|(degree, terms, hash, _)| (*degree, *terms, *hash));
     candidates.into_iter().next().map(|(_, _, _, input)| input)
+}
+
+impl TargetActionSelection {
+    fn planned_rank_estimate_for_selection_only(&self) -> usize {
+        match self {
+            TargetActionSelection::GenericQuotient { variables, .. } => {
+                variables.len().max(1).saturating_mul(
+                    self.source_polynomials()
+                        .iter()
+                        .map(|poly| poly_total_degree(poly) as usize + 1)
+                        .max()
+                        .unwrap_or(2)
+                        .max(2),
+                )
+            }
+            _ => self
+                .source_polynomials()
+                .iter()
+                .map(|poly| poly_total_degree(poly) as usize)
+                .max()
+                .unwrap_or(1),
+        }
+    }
+}
+
+fn generic_target_action_selection(
+    inputs: &[ActionRelationInput],
+    target: VariableId,
+) -> Option<TargetActionSelection> {
+    if inputs.len() < 2 {
+        return None;
+    }
+    let mut variables = inputs
+        .iter()
+        .flat_map(|input| poly_variables(&input.polynomial))
+        .collect::<Vec<_>>();
+    variables.sort();
+    variables.dedup();
+    if !variables.contains(&target) {
+        return None;
+    }
+    Some(TargetActionSelection::GenericQuotient {
+        inputs: inputs.to_vec(),
+        variables,
+    })
 }
 
 fn parse_target_alias_relation(
@@ -1189,8 +1313,9 @@ mod tests {
     use crate::solver::options::SolverOptions;
     use crate::types::hash::hash_sequence;
     use crate::types::ids::{BlockId, VariableId};
-    use crate::types::polynomial::{constant_poly, poly_mul, poly_sub, variable_poly};
+    use crate::types::polynomial::{constant_poly, poly_add, poly_mul, poly_sub, variable_poly};
     use crate::types::rational::int_q;
+    use crate::verify::certificates::KernelCertificatePayload;
 
     use super::*;
 
@@ -1399,6 +1524,182 @@ mod tests {
     }
 
     #[test]
+    fn fcr_action_multivariate_quotient_no_target_relation() {
+        let t = VariableId(0);
+        let x = VariableId(1);
+        let y = VariableId(2);
+        let x2_plus_y = poly_add(
+            &poly_mul(&variable_poly(x), &variable_poly(x)),
+            &variable_poly(y),
+        );
+        let y2 = poly_mul(&variable_poly(y), &variable_poly(y));
+        let compressed = compressed_system(
+            t,
+            vec![
+                poly_sub(&x2_plus_y, &constant_poly(int_q(1))),
+                poly_sub(&y2, &variable_poly(x)),
+                poly_sub(
+                    &poly_sub(&variable_poly(t), &variable_poly(x)),
+                    &variable_poly(y),
+                ),
+            ],
+        );
+        let block = test_block(&compressed, [t, x, y], [t]);
+        let mut solver_ctx = new_context(SolverOptions::default());
+        let mut kctx = KernelContext {
+            block,
+            system: compressed,
+            child_messages: Vec::new(),
+        };
+        let kernel = TargetActionKrylovKernel;
+        let admission = kernel.admit(&kctx.block, &kctx);
+        assert!(matches!(admission.status, KernelAdmissionStatus::Admitted));
+        let plan = kernel.plan(&admission, &kctx, &solver_ctx).unwrap();
+        let message = kernel.execute(&plan, &mut kctx, &mut solver_ctx).unwrap();
+
+        assert_eq!(message.kernel_kind, KernelKind::TargetActionKrylov);
+        assert_eq!(message.source_relation_ids.len(), 3);
+        assert_verified_action_message(&kernel, &message, &kctx);
+        let proof = target_action_payload(&message);
+        assert_eq!(proof.quotient_input.authorized_relations.len(), 3);
+        assert!(proof.quotient_input.basis_polynomials.len() >= 4);
+        assert!(message.relation_generators[0].terms.iter().all(|term| term
+            .monomial
+            .exponents
+            .iter()
+            .all(|(var, _)| *var == t)));
+    }
+
+    #[test]
+    fn fcr_action_target_is_nonlinear_expression() {
+        let t = VariableId(0);
+        let x = VariableId(1);
+        let y = VariableId(2);
+        let xy = poly_mul(&variable_poly(x), &variable_poly(y));
+        let compressed = compressed_system(
+            t,
+            vec![
+                poly_sub(
+                    &poly_mul(&variable_poly(x), &variable_poly(x)),
+                    &constant_poly(int_q(2)),
+                ),
+                poly_sub(
+                    &poly_mul(&variable_poly(y), &variable_poly(y)),
+                    &constant_poly(int_q(3)),
+                ),
+                poly_sub(&poly_sub(&variable_poly(t), &xy), &variable_poly(x)),
+            ],
+        );
+        let block = test_block(&compressed, [t, x, y], [t]);
+        let mut solver_ctx = new_context(SolverOptions::default());
+        let mut kctx = KernelContext {
+            block,
+            system: compressed,
+            child_messages: Vec::new(),
+        };
+        let kernel = TargetActionKrylovKernel;
+        let admission = kernel.admit(&kctx.block, &kctx);
+        assert!(matches!(admission.status, KernelAdmissionStatus::Admitted));
+        let plan = kernel.plan(&admission, &kctx, &solver_ctx).unwrap();
+        let message = kernel.execute(&plan, &mut kctx, &mut solver_ctx).unwrap();
+
+        assert_verified_action_message(&kernel, &message, &kctx);
+        let proof = target_action_payload(&message);
+        assert_eq!(proof.quotient_input.authorized_relations.len(), 3);
+        assert_eq!(proof.quotient_input.basis_polynomials.len(), 4);
+        assert!(proof
+            .quotient_input
+            .basis_polynomials
+            .iter()
+            .any(|basis| *basis == variable_poly(x)));
+        assert!(proof
+            .quotient_input
+            .basis_polynomials
+            .iter()
+            .any(|basis| *basis == variable_poly(y)));
+        assert!(proof
+            .quotient_input
+            .basis_polynomials
+            .iter()
+            .any(|basis| *basis == xy));
+        assert_eq!(
+            proof.quotient_input.action_columns.get(&t).unwrap().len(),
+            proof.quotient_input.basis_polynomials.len()
+        );
+    }
+
+    #[test]
+    fn fcr_action_rejects_injected_basis_or_column() {
+        let t = VariableId(0);
+        let x = VariableId(1);
+        let y = VariableId(2);
+        let xy = poly_mul(&variable_poly(x), &variable_poly(y));
+        let compressed = compressed_system(
+            t,
+            vec![
+                poly_sub(
+                    &poly_mul(&variable_poly(x), &variable_poly(x)),
+                    &constant_poly(int_q(2)),
+                ),
+                poly_sub(
+                    &poly_mul(&variable_poly(y), &variable_poly(y)),
+                    &constant_poly(int_q(3)),
+                ),
+                poly_sub(&poly_sub(&variable_poly(t), &xy), &variable_poly(x)),
+            ],
+        );
+        let block = test_block(&compressed, [t, x, y], [t]);
+        let mut solver_ctx = new_context(SolverOptions::default());
+        let mut kctx = KernelContext {
+            block,
+            system: compressed,
+            child_messages: Vec::new(),
+        };
+        let kernel = TargetActionKrylovKernel;
+        let admission = kernel.admit(&kctx.block, &kctx);
+        let plan = kernel.plan(&admission, &kctx, &solver_ctx).unwrap();
+        let message = kernel.execute(&plan, &mut kctx, &mut solver_ctx).unwrap();
+        assert_verified_action_message(&kernel, &message, &kctx);
+
+        let mut bad_basis = message.clone();
+        target_action_payload_mut(&mut bad_basis)
+            .quotient_input
+            .basis_polynomials[0] = variable_poly(x);
+        assert_rejected_action_message(&kernel, &bad_basis, &kctx);
+
+        let mut bad_column = message.clone();
+        let column = &mut target_action_payload_mut(&mut bad_column)
+            .quotient_input
+            .action_columns
+            .get_mut(&t)
+            .unwrap()[0];
+        column.normal_form_vector.entries[0] = int_q(99);
+        assert_rejected_action_message(&kernel, &bad_column, &kctx);
+
+        let mut bad_membership = message.clone();
+        target_action_payload_mut(&mut bad_membership)
+            .quotient_input
+            .action_columns
+            .get_mut(&t)
+            .unwrap()[0]
+            .normal_form_certificate
+            .membership_certificate
+            .combination_terms
+            .clear();
+        assert_rejected_action_message(&kernel, &bad_membership, &kctx);
+
+        let mut bad_auth = message.clone();
+        target_action_payload_mut(&mut bad_auth)
+            .quotient_input
+            .authorized_relation_hash = hash_sequence("tampered-action-auth", &[]);
+        assert_rejected_action_message(&kernel, &bad_auth, &kctx);
+
+        let mut bad_output = message.clone();
+        bad_output.relation_generators[0] = poly_sub(&variable_poly(t), &constant_poly(int_q(7)));
+        assert_rejected_action_message(&kernel, &bad_output, &kctx);
+    }
+
+    #[test]
     fn p12g_action_krylov_pure_plan_template_is_replayed_in_execute() {
         let t = VariableId(0);
         let x = VariableId(1);
@@ -1561,6 +1862,43 @@ mod tests {
             source_relation_ids: vec![relation.id],
             source_hash: relation.hash,
             child_message_hash: None,
+        }
+    }
+
+    fn assert_verified_action_message(
+        kernel: &TargetActionKrylovKernel,
+        message: &ProjectionMessage,
+        kctx: &KernelContext,
+    ) {
+        let verification = crate::verify::verify_message::verify_projection_message(message, kctx);
+        assert!(verification.is_ok(), "{verification:?}");
+        assert!(kernel.replay(message, kctx).accepted);
+    }
+
+    fn assert_rejected_action_message(
+        kernel: &TargetActionKrylovKernel,
+        message: &ProjectionMessage,
+        kctx: &KernelContext,
+    ) {
+        assert!(crate::verify::verify_message::verify_projection_message(message, kctx).is_err());
+        assert!(!kernel.replay(message, kctx).accepted);
+    }
+
+    fn target_action_payload(
+        message: &ProjectionMessage,
+    ) -> &crate::verify::certificates::TargetActionProjectionCertificate {
+        match &message.certificate.payload {
+            KernelCertificatePayload::TargetAction(proof) => proof,
+            other => panic!("unexpected payload: {other:?}"),
+        }
+    }
+
+    fn target_action_payload_mut(
+        message: &mut ProjectionMessage,
+    ) -> &mut crate::verify::certificates::TargetActionProjectionCertificate {
+        match &mut message.certificate.payload {
+            KernelCertificatePayload::TargetAction(proof) => proof,
+            other => panic!("unexpected payload: {other:?}"),
         }
     }
 }

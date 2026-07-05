@@ -2,16 +2,22 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
+use crate::algebra::groebner::{
+    groebner_elimination_basis, reduce_with_certified_basis, GroebnerBasisResult, GroebnerOptions,
+};
+use crate::algebra::monomial_order::{block_order, MonomialOrder};
 use crate::algebra::normal_form::{verify_membership_by_certificate, MembershipCertificate};
+use crate::algebra::polynomial_ops::leading_term;
 use crate::result::status::{FailureKind, SolverError, SolverErrorKind};
 use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::VariableId;
 use crate::types::matrix::VectorQ;
+use crate::types::monomial::{monomial_div, normalize_monomial, Monomial};
 use crate::types::polynomial::{
-    constant_poly, poly_add, poly_mul, poly_sub, poly_variables, substitute_poly, variable_poly,
-    SparsePolynomialQ, SubstitutionMap,
+    constant_poly, normalize_poly, poly_add, poly_mul, poly_sub, poly_variables, substitute_poly,
+    variable_poly, SparsePolynomialQ, SubstitutionMap, TermQ,
 };
-use crate::types::rational::{add_q, int_q, is_zero_q, mul_q, rational_to_bytes, zero_q};
+use crate::types::rational::{add_q, int_q, is_zero_q, mul_q, one_q, rational_to_bytes, zero_q};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct BasisHandleId(pub u64);
@@ -410,6 +416,54 @@ pub fn monomial_basis_polynomials(var: VariableId, size: usize) -> Vec<SparsePol
     basis
 }
 
+pub fn build_production_target_relevant_quotient_input_from_relations(
+    target: VariableId,
+    variables: &[VariableId],
+    authorized_relations: Vec<SparsePolynomialQ>,
+    basis_id: BasisHandleId,
+) -> Result<ProductionQuotientHandleInput, SolverError> {
+    if authorized_relations.is_empty() {
+        return Err(certificate_design_gap(
+            "generic target-action quotient requires authorized relations",
+        ));
+    }
+    let scope_variables = quotient_scope_variables(target, variables, &authorized_relations);
+    let order = target_relevant_quotient_order(target, &scope_variables);
+    let basis_result =
+        groebner_elimination_basis(&authorized_relations, &order, GroebnerOptions::default())?;
+    let basis = standard_monomial_basis_from_groebner(&basis_result, &scope_variables, &order)?;
+    let quotient_auth_hash = hash_authorized_relations(&authorized_relations);
+    let mut columns = Vec::with_capacity(basis.len());
+    for basis_index in 0..basis.len() {
+        let input_polynomial = action_input_polynomial(target, basis_index, &basis)?;
+        let reduction =
+            reduce_with_certified_basis(&input_polynomial, &basis_result, &authorized_relations)?;
+        let normal_form_vector = polynomial_to_basis_vector(&reduction.remainder, &basis)?;
+        columns.push(make_action_column_certificate(
+            target,
+            basis_index,
+            &basis,
+            &authorized_relations,
+            quotient_auth_hash,
+            normal_form_vector,
+            reduction.membership_certificate,
+        )?);
+    }
+    Ok(ProductionQuotientHandleInput {
+        basis_id,
+        basis_scope: BasisScope::TargetRelevant {
+            variables: scope_variables,
+        },
+        authorized_relation_hash: quotient_auth_hash,
+        authorized_relations,
+        basis_polynomials: basis.clone(),
+        normal_form_basis_certificate: normal_form_basis_certificate(&basis, quotient_auth_hash),
+        action_columns: BTreeMap::from([(target, columns)]),
+        no_coordinate_roots_exported: true,
+        no_full_coordinate_rur_exported: true,
+    })
+}
+
 fn normal_form_certificate(
     input_polynomial_hash: Hash,
     represented_polynomial_hash: Hash,
@@ -484,6 +538,7 @@ fn validate_production_input(input: &ProductionQuotientHandleInput) -> Result<()
             "quotient basis must be nonempty",
         ));
     }
+    verify_standard_basis_matches_authorized_relations(input)?;
     for (var, columns) in &input.action_columns {
         if columns.len() != n {
             return Err(SolverError::invalid_input(
@@ -501,6 +556,30 @@ fn validate_production_input(input: &ProductionQuotientHandleInput) -> Result<()
                 input.authorized_relation_hash,
             )?;
         }
+    }
+    Ok(())
+}
+
+fn verify_standard_basis_matches_authorized_relations(
+    input: &ProductionQuotientHandleInput,
+) -> Result<(), SolverError> {
+    let Some(target) = input.action_columns.keys().next().copied() else {
+        return Err(certificate_design_gap(
+            "production quotient handle lacks target action columns",
+        ));
+    };
+    let BasisScope::TargetRelevant { variables } = &input.basis_scope;
+    let order = target_relevant_quotient_order(target, variables);
+    let basis_result = groebner_elimination_basis(
+        &input.authorized_relations,
+        &order,
+        GroebnerOptions::default(),
+    )?;
+    let expected = standard_monomial_basis_from_groebner(&basis_result, variables, &order)?;
+    if expected != input.basis_polynomials {
+        return Err(certificate_design_gap(
+            "quotient basis is not the standard monomial basis for authorized relations",
+        ));
     }
     Ok(())
 }
@@ -675,6 +754,31 @@ fn vector_to_polynomial(
     Ok(acc)
 }
 
+fn polynomial_to_basis_vector(
+    polynomial: &SparsePolynomialQ,
+    basis_polynomials: &[SparsePolynomialQ],
+) -> Result<VectorQ, SolverError> {
+    let mut monomial_to_index = BTreeMap::<Monomial, usize>::new();
+    for (idx, basis) in basis_polynomials.iter().enumerate() {
+        if basis.terms.len() != 1 || basis.terms[0].coeff != one_q() {
+            return Err(certificate_design_gap(
+                "quotient basis contains a non-monomial basis polynomial",
+            ));
+        }
+        monomial_to_index.insert(basis.terms[0].monomial.clone(), idx);
+    }
+    let mut vector = zero_vector(basis_polynomials.len());
+    for term in &polynomial.terms {
+        let Some(idx) = monomial_to_index.get(&term.monomial).copied() else {
+            return Err(certificate_design_gap(
+                "Groebner normal form contains a monomial outside the quotient basis",
+            ));
+        };
+        vector.entries[idx] = add_q(&vector.entries[idx], &term.coeff);
+    }
+    Ok(vector)
+}
+
 fn normal_form_via_action_columns(
     p: &SparsePolynomialQ,
     basis_polynomials: &[SparsePolynomialQ],
@@ -738,6 +842,140 @@ fn basis_variables(basis_polynomials: &[SparsePolynomialQ]) -> Vec<VariableId> {
     .collect::<Vec<_>>();
     vars.sort();
     vars
+}
+
+fn quotient_scope_variables(
+    target: VariableId,
+    variables: &[VariableId],
+    authorized_relations: &[SparsePolynomialQ],
+) -> Vec<VariableId> {
+    let mut scope = vec![target];
+    scope.extend_from_slice(variables);
+    scope.extend(authorized_relations.iter().flat_map(poly_variables));
+    scope.sort();
+    scope.dedup();
+    scope
+}
+
+fn target_relevant_quotient_order(target: VariableId, variables: &[VariableId]) -> MonomialOrder {
+    let mut remaining = variables
+        .iter()
+        .copied()
+        .filter(|var| *var != target)
+        .collect::<Vec<_>>();
+    remaining.sort();
+    remaining.dedup();
+    block_order(vec![vec![target], remaining])
+}
+
+fn standard_monomial_basis_from_groebner(
+    basis_result: &GroebnerBasisResult,
+    variables: &[VariableId],
+    order: &MonomialOrder,
+) -> Result<Vec<SparsePolynomialQ>, SolverError> {
+    let leading_monomials = basis_result
+        .basis
+        .iter()
+        .filter_map(|entry| leading_term(&entry.polynomial, order).map(|term| term.monomial))
+        .collect::<Vec<_>>();
+    if leading_monomials
+        .iter()
+        .any(|monomial| monomial.exponents.is_empty())
+    {
+        return Err(certificate_design_gap(
+            "quotient ideal contains a unit leading monomial",
+        ));
+    }
+    let mut bounds = BTreeMap::<VariableId, usize>::new();
+    for monomial in &leading_monomials {
+        if monomial.exponents.len() == 1 {
+            let (var, exp) = monomial.exponents[0];
+            let exp = exp as usize;
+            if exp > 0 {
+                bounds
+                    .entry(var)
+                    .and_modify(|old| *old = (*old).min(exp))
+                    .or_insert(exp);
+            }
+        }
+    }
+    let mut sorted_variables = variables.to_vec();
+    sorted_variables.sort();
+    sorted_variables.dedup();
+    for var in &sorted_variables {
+        if !bounds.contains_key(var) {
+            return Err(certificate_design_gap(
+                "authorized relations do not prove a finite quotient basis",
+            ));
+        }
+    }
+    let mut monomials = Vec::new();
+    enumerate_standard_monomials(
+        &sorted_variables,
+        &bounds,
+        &leading_monomials,
+        0,
+        Vec::new(),
+        &mut monomials,
+    )?;
+    if monomials.is_empty() {
+        return Err(certificate_design_gap(
+            "standard monomial quotient basis is empty",
+        ));
+    }
+    Ok(monomials.into_iter().map(monomial_poly).collect())
+}
+
+fn enumerate_standard_monomials(
+    variables: &[VariableId],
+    bounds: &BTreeMap<VariableId, usize>,
+    leading_monomials: &[Monomial],
+    index: usize,
+    current: Vec<(VariableId, u32)>,
+    output: &mut Vec<Monomial>,
+) -> Result<(), SolverError> {
+    if output.len() > 256 {
+        return Err(certificate_design_gap(
+            "standard monomial quotient basis exceeds production cap",
+        ));
+    }
+    if index == variables.len() {
+        let monomial = normalize_monomial(current);
+        if leading_monomials
+            .iter()
+            .all(|leading| monomial_div(&monomial, leading).is_none())
+        {
+            output.push(monomial);
+        }
+        return Ok(());
+    }
+    let var = variables[index];
+    let bound = bounds.get(&var).copied().unwrap_or(0);
+    for exp in 0..bound {
+        let mut next = current.clone();
+        if exp > 0 {
+            next.push((var, exp as u32));
+        }
+        enumerate_standard_monomials(
+            variables,
+            bounds,
+            leading_monomials,
+            index + 1,
+            next,
+            output,
+        )?;
+    }
+    Ok(())
+}
+
+fn monomial_poly(monomial: Monomial) -> SparsePolynomialQ {
+    normalize_poly(SparsePolynomialQ {
+        terms: vec![TermQ {
+            coeff: one_q(),
+            monomial,
+        }],
+        hash: hash_sequence("poly", &[]),
+    })
 }
 
 fn hash_basis(basis: &[SparsePolynomialQ]) -> Hash {

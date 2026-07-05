@@ -1,0 +1,31 @@
+FCR-P5 command evidence summary, refreshed after the last code change.
+
+1. cargo fmt
+   cwd: geosolver-core
+   exit_code: 0
+
+2. cargo test --lib kernels::action_krylov::tests
+   cwd: geosolver-core
+   exit_code: 0
+   summary: 12 passed, 0 failed.
+
+3. cargo test
+   cwd: geosolver-core
+   exit_code: 0
+   summary:
+   - lib tests: 201 passed, 0 failed
+   - tests/fcr_p4_pure_planning.rs: 7 passed, 0 failed
+   - tests/p12_roots_decode_integration.rs: 1 passed, 0 failed
+   - tests/p12g_generality_stress.rs: 1 passed, 0 failed
+   - tests/p3_public_pipeline_integration.rs: 1 passed, 0 failed
+   - doc tests: 0 passed, 0 failed
+
+4. cargo check
+   cwd: geosolver-core
+   exit_code: 0
+   summary: Finished dev profile successfully.
+
+5. git diff --check
+   cwd: repository root
+   exit_code: 0
+   summary: no whitespace errors; Git emitted line-ending warnings only for tracked Rust files.
