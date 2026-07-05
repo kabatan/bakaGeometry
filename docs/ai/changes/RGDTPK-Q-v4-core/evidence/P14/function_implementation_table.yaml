@@ -1,0 +1,116 @@
+phase: P14
+status: reviewer_passed
+claim_boundary: >
+  P14 verifies full public pipeline integration, result-field population, cost-trace binding,
+  status separation, expected-error finalization, and removal of the temporary pipeline scaffold.
+  It does not claim P15/P16 acceptance closure, source fidelity, benchmark readiness, final
+  replay-bound exact-image readiness, or final nonfinite readiness.
+functions:
+  - spec: "api.rs::solve_target"
+    implementation: "geosolver-core/src/api.rs::solve_target"
+    status: implemented
+    evidence:
+      - "public candidate-cover, exact-image, exact-empty, nonfinite, bounded hard-case, and invalid-input cases execute without panic"
+      - "expected solver errors are finalized as TargetSolveResult statuses"
+      - "temporary pipeline scaffold identifiers are absent from geosolver-core/src and tests"
+  - spec: "solver/options.rs::SolverOptions"
+    implementation: "geosolver-core/src/solver/options.rs::SolverOptions"
+    status: implemented
+    evidence:
+      - "exact_image_mode switches candidate-cover status to exact-image classification only after P13 classifier execution"
+      - "kernel_priority and resource bounds drive hard/resource case without status confusion"
+  - spec: "solver/orchestrator.rs::solve_with_context"
+    implementation: "geosolver-core/src/solver/orchestrator.rs::solve_with_context"
+    status: implemented
+    evidence:
+      - "Appendix 29 ordered stages are exercised through public API"
+      - "empty compressed-relation nonfinite branch no longer bypasses plan/execute/verify/compose"
+      - "finite support, exact-image, nonfinite, and failure branches populate TargetSolveResult explicitly"
+      - "candidate-cover mode does not emit exact-image certificate or exact-image statuses"
+      - "post-compression pipeline failures are finalized with known global cost context instead of default error-only traces"
+  - spec: "solver/pipeline.rs::step_validate"
+    implementation: "geosolver-core/src/solver/pipeline.rs::step_validate"
+    status: implemented
+    evidence:
+      - "invalid input maps to TargetSolveResult::InvalidInput without panic"
+  - spec: "solver/pipeline.rs::step_canonicalize"
+    implementation: "geosolver-core/src/solver/pipeline.rs::step_canonicalize"
+    status: implemented
+    evidence:
+      - "manual P14 stage trace reaches the same support and result fields as public API"
+  - spec: "solver/pipeline.rs::step_compress"
+    implementation: "geosolver-core/src/solver/pipeline.rs::step_compress"
+    status: implemented
+    evidence:
+      - "manual P14 stage trace executes compression before graph/DAG/planning"
+  - spec: "solver/pipeline.rs::step_build_graphs"
+    implementation: "geosolver-core/src/solver/pipeline.rs::step_build_graphs"
+    status: implemented
+    evidence:
+      - "manual P14 stage trace builds hypergraph, influence graph, weighted primal graph, and decomposition"
+  - spec: "solver/pipeline.rs::step_build_dag"
+    implementation: "geosolver-core/src/solver/pipeline.rs::step_build_dag"
+    status: implemented
+    evidence:
+      - "manual P14 stage trace builds target projection DAG before planning"
+  - spec: "solver/pipeline.rs::step_plan"
+    implementation: "geosolver-core/src/solver/pipeline.rs::step_plan"
+    status: implemented
+    evidence:
+      - "manual P14 stage trace plans all projection blocks before execution"
+  - spec: "solver/pipeline.rs::step_execute"
+    implementation: "geosolver-core/src/solver/pipeline.rs::step_execute"
+    status: implemented
+    evidence:
+      - "manual P14 stage trace executes declared ladder plans and verifies emitted messages"
+  - spec: "solver/pipeline.rs::step_compose"
+    implementation: "geosolver-core/src/solver/pipeline.rs::step_compose"
+    status: implemented
+    evidence:
+      - "manual P14 stage trace composes projection messages before final support"
+      - "empty-relation structural DAG composes to an empty ComposedProjection before nonfinite support finalization"
+  - spec: "solver/pipeline.rs::step_support"
+    implementation: "geosolver-core/src/solver/pipeline.rs::step_support"
+    status: implemented
+    evidence:
+      - "manual P14 stage trace obtains final support or certified nonfinite outcome"
+  - spec: "solver/pipeline.rs::step_roots"
+    implementation: "geosolver-core/src/solver/pipeline.rs::step_roots"
+    status: implemented
+    evidence:
+      - "manual P14 stage trace produces squarefree support, exact root isolation, and decoded candidates"
+  - spec: "solver/pipeline.rs::step_cost_trace"
+    implementation: "geosolver-core/src/solver/pipeline.rs::step_cost_trace"
+    status: implemented
+    evidence:
+      - "P14 tests assert populated global, block, composition, and verification trace fields where pipeline data exists"
+      - "P14 remediation asserts per-block coefficient height fields are nonzero for successful and bounded-resource traces where coefficient data exists"
+      - "P14 remediation records final support degree delta and certificate size kappa on finite success traces"
+  - spec: "solver/pipeline.rs::step_failure_cost_trace"
+    implementation: "geosolver-core/src/solver/pipeline.rs::step_failure_cost_trace"
+    status: implemented
+    evidence:
+      - "failure traces start from the same compressed-system and DAG global cost context as success traces"
+      - "finite-resource failure block traces are enriched from authorized DAG block relation IDs"
+      - "pre-verification finite-resource failure traces do not fabricate verification checked-relation counts"
+  - spec: "result/output.rs::TargetSolveResult"
+    implementation: "geosolver-core/src/result/output.rs::TargetSolveResult"
+    status: implemented
+    evidence:
+      - "P14 tests assert status, support, squarefree support, roots, candidates, projection messages, certificate, diagnostics, exact-image certificate, and cost trace by branch"
+      - "finite resource failure finalization carries observed coefficient height into public ProjectionCostTrace"
+      - "post-compression failures can be finalized with caller-supplied GlobalCostTrace"
+  - spec: "cost trace coefficient-height fields"
+    implementation: "geosolver-core/src/kernels/* + geosolver-core/src/types/polynomial.rs"
+    status: implemented
+    evidence:
+      - "production kernel success traces populate coefficient_height_before_bits from input relations"
+      - "production kernel success traces populate coefficient_height_after_bits from emitted output relations"
+      - "TargetRelationSearch, Universal, Groebner pair-limit, and SparseResultant template resource failures carry observed coefficient_height_bits"
+  - spec: "GlobalCostTrace final support/certificate parameters"
+    implementation: "geosolver-core/src/result/cost_trace.rs::GlobalCostTrace"
+    status: implemented
+    evidence:
+      - "final_support_degree records Appendix 30 delta when finite support exists"
+      - "certificate_size records Appendix 30 kappa as deterministic core-certificate component count when a core certificate exists"
+      - "nonfinite/failure traces leave final_support_degree and certificate_size absent rather than inventing values"

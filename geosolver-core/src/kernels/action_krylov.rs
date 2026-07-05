@@ -30,8 +30,9 @@ use crate::types::ids::{KernelPlanId, PackageId, RelationId, VariableId};
 use crate::types::matrix::{SparseMatrixQ, VectorQ};
 use crate::types::monomial::normalize_monomial;
 use crate::types::polynomial::{
-    constant_poly, normalize_poly, poly_monomial_count, poly_mul, poly_scale, poly_total_degree,
-    poly_variables, variable_poly, SparsePolynomialQ, TermQ,
+    constant_poly, max_poly_coefficient_height_bits, normalize_poly, poly_coefficient_height_bits,
+    poly_monomial_count, poly_mul, poly_scale, poly_total_degree, poly_variables, variable_poly,
+    SparsePolynomialQ, TermQ,
 };
 use crate::types::rational::{add_q, div_q, is_zero_q, mul_q, neg_q, one_q, zero_q, RationalQ};
 use crate::types::univariate::{normalize_univariate, UniPolynomialQ};
@@ -436,8 +437,13 @@ pub fn execute_target_action_krylov(
             cols: trace.matrix_cols.max(1),
             entries: Vec::new(),
         })),
-        coefficient_height_before_bits: 0,
-        coefficient_height_after_bits: poly_monomial_count(&trace.relation),
+        coefficient_height_before_bits: max_poly_coefficient_height_bits(
+            &inputs
+                .iter()
+                .map(|input| input.polynomial.clone())
+                .collect::<Vec<_>>(),
+        ),
+        coefficient_height_after_bits: poly_coefficient_height_bits(&trace.relation),
     };
     let certificate = KernelCertificate::from_execution_plan_with_payload(
         plan,

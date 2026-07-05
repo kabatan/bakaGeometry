@@ -13,6 +13,8 @@ pub struct GlobalCostTrace {
     pub max_coefficient_height_bits: usize,
     pub max_block_width: usize,
     pub max_separator_width: usize,
+    pub final_support_degree: Option<usize>,
+    pub certificate_size: Option<usize>,
     pub block_traces: Vec<ProjectionCostTrace>,
     pub composition_trace: CompositionCostTrace,
     pub verification_trace: VerificationCostTrace,

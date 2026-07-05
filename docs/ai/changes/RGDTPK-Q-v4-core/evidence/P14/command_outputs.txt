@@ -1,0 +1,44 @@
+P14 full pipeline integration command output summary
+
+Timestamp: 20260706 P14 implementation pass.
+
+1. cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+   Result: PASS.
+
+2. cargo test --manifest-path geosolver-core/Cargo.toml --test p14_full_pipeline_integration -- --nocapture
+   Result: PASS.
+   Cases:
+   - p14_stage_trace_executes_appendix_29_pipeline_in_order
+   - p14_empty_relation_nonfinite_still_runs_appendix_29_stages
+   - p14_groebner_resource_error_carries_coefficient_height
+   - p14_sparse_resultant_resource_error_carries_coefficient_height
+   - p14_public_candidate_cover_success_has_all_result_fields_and_trace
+   - p14_public_exact_image_success_is_not_candidate_cover
+   - p14_public_exact_image_empty_keeps_support_but_no_candidates
+   - p14_public_certified_nonfinite_is_finalized_without_panic
+   - p14_public_bounded_hard_case_has_status_and_resource_trace
+   - p14_public_invalid_input_maps_to_result_not_panic
+
+3. rg -n "TemporaryPipelineNotConnected|temporary_pipeline_not_connected|NotYetImplemented" geosolver-core/src geosolver-core/tests
+   Result: PASS, no matches.
+
+4. cargo clippy --manifest-path geosolver-core/Cargo.toml --all-targets --all-features -- -D warnings
+   Result: PASS.
+
+5. cargo test --manifest-path geosolver-core/Cargo.toml --all-targets --all-features -- --nocapture
+   Result: PASS.
+   Summary:
+   - lib tests: 212 passed.
+   - fcr_final_nonfinite_semantics: 2 passed.
+   - fcr_p10_acceptance_suite: 12 passed.
+   - fcr_p11_red_team_suite: 10 passed.
+   - fcr_p4_pure_planning: 7 passed.
+   - p12_roots_decode_integration: 1 passed.
+   - p12g_generality_stress: 1 passed.
+   - p13_exact_image_semantics: 7 passed.
+   - p14_full_pipeline_integration: 10 passed.
+   - p3_public_pipeline_integration: 2 passed.
+
+6. git diff --check
+   Result: PASS.
+   Note: PowerShell reported CRLF normalization warnings only; no whitespace errors.

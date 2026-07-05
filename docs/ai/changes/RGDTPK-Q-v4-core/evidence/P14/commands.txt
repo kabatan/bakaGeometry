@@ -1,0 +1,8 @@
+P14 full pipeline integration commands
+
+1. cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+2. cargo test --manifest-path geosolver-core/Cargo.toml --test p14_full_pipeline_integration -- --nocapture
+3. rg -n "TemporaryPipelineNotConnected|temporary_pipeline_not_connected|NotYetImplemented" geosolver-core/src geosolver-core/tests
+4. cargo clippy --manifest-path geosolver-core/Cargo.toml --all-targets --all-features -- -D warnings
+5. cargo test --manifest-path geosolver-core/Cargo.toml --all-targets --all-features -- --nocapture
+6. git diff --check

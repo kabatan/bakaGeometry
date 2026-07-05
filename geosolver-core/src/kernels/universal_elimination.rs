@@ -36,7 +36,9 @@ use crate::result::status::{
 use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::{BlockId, KernelPlanId, PackageId, RelationId, VariableId};
 use crate::types::matrix::{matrix_density, SparseMatrixQ};
-use crate::types::polynomial::{poly_monomial_count, poly_variables, SparsePolynomialQ};
+use crate::types::polynomial::{
+    max_poly_coefficient_height_bits, poly_monomial_count, poly_variables, SparsePolynomialQ,
+};
 use crate::verify::certificates::{
     KernelCertificate, KernelCertificatePayload, UniversalProjectionCertificate,
 };
@@ -451,7 +453,7 @@ fn execute_universal_stage_with_solver_ctx(
                 EliminationStrategy::LocalGroebner(options),
                 solver_ctx,
             )?;
-            enforce_stage_resource_bounds(stage, ctx.system.target, &result)?;
+            enforce_stage_resource_bounds(stage, ctx.system.target, &result, &relations)?;
             validate_local_elimination_result(&result, &stage.exported_variables, &relations)?;
             let output_memberships = result
                 .generators
@@ -483,8 +485,8 @@ fn execute_universal_stage_with_solver_ctx(
                     cols: result.matrix_cols.max(1),
                     entries: Vec::new(),
                 })),
-                coefficient_height_before_bits: 0,
-                coefficient_height_after_bits: generators.iter().map(poly_monomial_count).sum(),
+                coefficient_height_before_bits: max_poly_coefficient_height_bits(&relations),
+                coefficient_height_after_bits: max_poly_coefficient_height_bits(&generators),
             };
             verify_universal_no_coordinate_fallback(&stage_execution_plan_shadow(stage), &trace)?;
             Ok(build_universal_message(
@@ -559,6 +561,7 @@ pub fn verify_universal_no_coordinate_fallback(
                 plan,
                 rows,
                 trace.matrix_cols.unwrap_or(0),
+                trace.coefficient_height_before_bits,
             ));
         }
     }
@@ -570,6 +573,7 @@ pub fn verify_universal_no_coordinate_fallback(
                 plan,
                 trace.matrix_rows.unwrap_or(0),
                 cols,
+                trace.coefficient_height_before_bits,
             ));
         }
     }
@@ -977,6 +981,7 @@ fn enforce_stage_resource_bounds(
     stage: &UniversalStagePlan,
     target: VariableId,
     result: &LocalEliminationResult,
+    relations: &[SparsePolynomialQ],
 ) -> Result<(), SolverError> {
     if stage
         .resource_bounds
@@ -992,6 +997,7 @@ fn enforce_stage_resource_bounds(
             &stage_execution_plan_shadow(stage),
             result.matrix_rows,
             result.matrix_cols,
+            max_poly_coefficient_height_bits(relations),
         ));
     }
     Ok(())
@@ -1174,6 +1180,7 @@ fn finite_resource_failure(
     plan: &KernelExecutionPlan,
     rows: usize,
     cols: usize,
+    coefficient_height_bits: usize,
 ) -> SolverError {
     SolverError {
         target,
@@ -1188,7 +1195,7 @@ fn finite_resource_failure(
                 entries: Vec::new(),
             })),
             quotient_rank_estimate: None,
-            coefficient_height_bits: None,
+            coefficient_height_bits: Some(coefficient_height_bits),
             memory_bytes: plan.resource_bounds.max_memory_bytes,
         }),
     }

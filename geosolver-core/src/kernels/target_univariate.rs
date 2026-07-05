@@ -210,7 +210,9 @@ pub fn execute_target_univariate(
         coefficient_height_before_bits: crate::preprocess::compression::max_coefficient_height_bits(
             &collect_planned_block_relations(plan, ctx),
         ),
-        coefficient_height_after_bits: crate::types::polynomial::poly_monomial_count(&support),
+        coefficient_height_after_bits: crate::types::polynomial::poly_coefficient_height_bits(
+            &support,
+        ),
     };
     let certificate = KernelCertificate::from_execution_plan_with_payload(
         plan,

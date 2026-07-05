@@ -16,11 +16,11 @@ use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::{RelationId, VariableId};
 use crate::types::monomial::normalize_monomial;
 use crate::types::polynomial::{
-    clear_denominators_primitive, constant_poly, normalize_poly, poly_add, poly_monomial_count,
-    poly_mul, poly_total_degree, poly_variables, substitute_poly, SparsePolynomialQ,
-    SubstitutionMap, TermQ,
+    clear_denominators_primitive, constant_poly, max_poly_coefficient_height_bits, normalize_poly,
+    poly_add, poly_monomial_count, poly_mul, poly_total_degree, poly_variables, substitute_poly,
+    SparsePolynomialQ, SubstitutionMap, TermQ,
 };
-use crate::types::rational::{bit_height_q, int_q};
+use crate::types::rational::int_q;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CompressionTrace {
@@ -563,12 +563,12 @@ pub fn max_total_degree(relations: &[CanonicalRelationQ]) -> usize {
 }
 
 pub fn max_coefficient_height_bits(relations: &[CanonicalRelationQ]) -> usize {
-    relations
-        .iter()
-        .flat_map(|relation| relation.polynomial.terms.iter())
-        .map(|term| bit_height_q(&term.coeff))
-        .max()
-        .unwrap_or(0)
+    max_poly_coefficient_height_bits(
+        &relations
+            .iter()
+            .map(|relation| relation.polynomial.clone())
+            .collect::<Vec<_>>(),
+    )
 }
 
 pub fn component_hash(

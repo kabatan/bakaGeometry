@@ -2,7 +2,8 @@
 
 Status: FCR-P12 final closure passed spec, boundary, and quality review. FCR-P0A/FCR-P1A and
 FCR-P0 through FCR-P12 are complete for the candidate-cover layer. P13 exact-image implementation
-passed spec, boundary, and quality review for MECH-012 only.
+passed spec, boundary, and quality review for MECH-012 only. P14 full-pipeline integration passed
+spec, boundary, and quality review for Appendix 29-30 stage-trace evidence only.
 
 Approved FCR claim:
 
@@ -52,7 +53,9 @@ pipeline.
 
 Required final FCR claim target is `CANDIDATE_COVER_CORE_READY`, not another partial mechanism
 label. FCR-P12 spec, boundary, and quality reviews passed for that candidate-cover-only claim. P13
-spec, boundary, and quality reviews passed for MECH-012 exact-image semantics only.
+spec, boundary, and quality reviews passed for MECH-012 exact-image semantics only. P14 spec,
+boundary, and quality reviews passed for full-pipeline integration / Appendix 29-30 stage-trace
+evidence only.
 
 Final closure binds `CoreInvariantFlags` to fresh static scans and replay/tamper evidence in
 `FULL_CORE_INVARIANT_SCAN_BINDING.md`. Static scans are necessary but not sufficient; the claim also
@@ -89,7 +92,7 @@ The following claim is approved by FCR-P12 reviewers for the candidate-cover lay
 | `evidence/FCR-P12/scan_outputs.txt` | prepared |
 | `evidence/FCR-P12/reviewer_results.md` | PASS |
 
-## P13 Evidence Pending Review
+## P13 Evidence
 
 | Artifact | Status |
 | --- | --- |
@@ -107,6 +110,30 @@ nonfinite requiring the real nonfinite certificate path. Semantic nonfinite case
 semantic/guard/saturation proof return `CertificateDesignGap`. It does not close P14/P15/P16,
 final public replay-bound nonfinite readiness, source fidelity, benchmark readiness, or full
 acceptance.
+
+## P14 Evidence
+
+| Artifact | Status |
+| --- | --- |
+| `geosolver-core/tests/p14_full_pipeline_integration.rs` | 10/10 PASS |
+| `geosolver-core/src/result/status.rs` temporary scaffold cleanup | implemented |
+| `geosolver-core/src/result/diagnostics.rs` temporary scaffold cleanup | implemented |
+| production kernel coefficient-height cost trace remediation | implemented |
+| failure cost trace context preservation remediation | implemented |
+| final support degree and certificate size cost trace remediation | implemented |
+| empty-relation nonfinite branch full-stage remediation | implemented |
+| `evidence/P14/command_outputs.txt` | prepared |
+| `evidence/P14/reviewer_results.md` | PASS |
+
+P14 evidence covers Appendix 29 stage ordering, public `solve_target` finite and failure branches,
+full result-field checks, populated cost traces where data exists, expected-error finalization
+without panic, candidate-cover/exact-image status separation, runtime invariant flag truthfulness,
+removal of temporary pipeline scaffold identifiers, empty-relation nonfinite execution through
+plan/execute/verify/compose, and coefficient-height trace binding. It does not close P15/P16, final
+public replay-bound nonfinite readiness, source fidelity, benchmark readiness, or full acceptance.
+Finite success traces also include final support degree `delta` and certificate size `kappa`; these
+fields are absent when no finite support/core certificate exists. Post-compression failure traces
+preserve known global cost context and avoid synthetic verification counts.
 
 Fresh FCR-P12 commands:
 

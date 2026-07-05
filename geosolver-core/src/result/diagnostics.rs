@@ -28,14 +28,6 @@ impl DiagnosticRecord {
 
     pub fn from_solver_error(err: &SolverError) -> DiagnosticRecord {
         match &err.kind {
-            SolverErrorKind::TemporaryPipelineNotConnected => DiagnosticRecord {
-                name: "TemporaryPipelineNotConnected".to_string(),
-                message:
-                    "The public API scaffold is present before P14 connects the full orchestrator."
-                        .to_string(),
-                stage: Some(StageId("P1".to_string())),
-                details: BTreeMap::new(),
-            },
             SolverErrorKind::InvalidInput { message } => DiagnosticRecord {
                 name: "InvalidInput".to_string(),
                 message: message.clone(),

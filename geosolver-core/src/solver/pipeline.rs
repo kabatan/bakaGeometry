@@ -22,15 +22,18 @@ use crate::problem::canonicalize::CanonicalSystemQ;
 use crate::problem::context::SolverContext;
 use crate::problem::input::RationalTargetProblem;
 use crate::problem::validate::{validate_input, ValidatedProblem};
-use crate::result::cost_trace::{GlobalCostTrace, VerificationCostTrace};
+use crate::result::cost_trace::{GlobalCostTrace, ProjectionCostTrace, VerificationCostTrace};
+use crate::result::output::projection_trace_from_solver_error;
 use crate::result::status::{AlgebraicReason, FailureKind, SolverError, SolverErrorKind, StageId};
 use crate::roots::decode::{decode_candidates, TargetCandidate};
 use crate::roots::isolate::{isolate_real_roots, RealRootRecord, RootIsolationOptions};
 use crate::roots::squarefree::squarefree_support;
 use crate::types::hash::Hash;
 use crate::types::ids::{BlockId, VariableId};
-use crate::types::polynomial::{poly_monomial_count, poly_total_degree};
-use crate::types::univariate::UniPolynomialQ;
+use crate::types::polynomial::{
+    max_poly_coefficient_height_bits, poly_monomial_count, poly_total_degree, SparsePolynomialQ,
+};
+use crate::types::univariate::{degree_uni, UniPolynomialQ};
 use crate::verify::run_certificate::{
     build_core_run_certificate, build_final_dag_replay_evidence_from_dag, CoreRunCertificate,
     CoreRunCertificateInput,
@@ -249,6 +252,8 @@ pub fn step_cost_trace(
     dag: &TargetProjectionDAG,
     messages: &[ProjectionMessage],
     composed: Option<&ComposedProjection>,
+    support: Option<&UniPolynomialQ>,
+    certificate: Option<&CoreRunCertificate>,
 ) -> GlobalCostTrace {
     let relation_polys = compressed
         .relations
@@ -279,6 +284,8 @@ pub fn step_cost_trace(
         max_coefficient_height_bits: max_coefficient_height_bits(&compressed.relations),
         max_block_width,
         max_separator_width,
+        final_support_degree: support.and_then(degree_uni),
+        certificate_size: certificate.map(core_certificate_size_kappa),
         block_traces: messages
             .iter()
             .map(|message| message.cost_trace.clone())
@@ -293,6 +300,142 @@ pub fn step_cost_trace(
                 .sum(),
         },
     }
+}
+
+pub fn step_failure_cost_trace(
+    compressed: &CompressedSystemQ,
+    dag: &TargetProjectionDAG,
+    messages: &[ProjectionMessage],
+    composed: Option<&ComposedProjection>,
+    support: Option<&UniPolynomialQ>,
+    certificate: Option<&CoreRunCertificate>,
+    err: &SolverError,
+) -> GlobalCostTrace {
+    let mut trace = step_cost_trace(compressed, dag, messages, composed, support, certificate);
+    if let Some(mut failure_trace) = projection_trace_from_solver_error(err) {
+        enrich_failure_projection_trace(&mut failure_trace, compressed, dag);
+        trace.block_traces.push(failure_trace);
+    }
+    trace
+}
+
+fn enrich_failure_projection_trace(
+    trace: &mut ProjectionCostTrace,
+    compressed: &CompressedSystemQ,
+    dag: &TargetProjectionDAG,
+) {
+    let Some(block) = dag
+        .blocks
+        .iter()
+        .find(|block| block.block_id == trace.block_id)
+    else {
+        enrich_failure_trace_from_global_system(trace, compressed);
+        return;
+    };
+
+    let relation_polys = block_relation_polys(compressed, block);
+    trace.local_variable_count = block.local_variables.len();
+    trace.exported_variable_count = block.exported_variables.len();
+    trace.local_relation_count = block.relation_ids.len();
+    trace.local_monomial_count = relation_polys.iter().map(poly_monomial_count).sum();
+    let coefficient_height = if relation_polys.is_empty() {
+        max_coefficient_height_bits(&compressed.relations)
+    } else {
+        max_poly_coefficient_height_bits(&relation_polys)
+    };
+    if trace.coefficient_height_before_bits == 0 {
+        trace.coefficient_height_before_bits = coefficient_height;
+    }
+    if trace.coefficient_height_after_bits == 0 {
+        trace.coefficient_height_after_bits = trace.coefficient_height_before_bits;
+    }
+}
+
+fn enrich_failure_trace_from_global_system(
+    trace: &mut ProjectionCostTrace,
+    compressed: &CompressedSystemQ,
+) {
+    let relation_polys = compressed
+        .relations
+        .iter()
+        .map(|relation| relation.polynomial.clone())
+        .collect::<Vec<_>>();
+    trace.local_variable_count = compressed.variables.len();
+    trace.exported_variable_count = if compressed.variables.contains(&compressed.target) {
+        1
+    } else {
+        0
+    };
+    trace.local_relation_count = compressed.relations.len();
+    trace.local_monomial_count = relation_polys.iter().map(poly_monomial_count).sum();
+    let coefficient_height = max_poly_coefficient_height_bits(&relation_polys);
+    if trace.coefficient_height_before_bits == 0 {
+        trace.coefficient_height_before_bits = coefficient_height;
+    }
+    if trace.coefficient_height_after_bits == 0 {
+        trace.coefficient_height_after_bits = trace.coefficient_height_before_bits;
+    }
+}
+
+fn block_relation_polys(
+    compressed: &CompressedSystemQ,
+    block: &ProjectionBlock,
+) -> Vec<SparsePolynomialQ> {
+    let relation_by_id = compressed
+        .relations
+        .iter()
+        .map(|relation| (relation.id, &relation.polynomial))
+        .collect::<BTreeMap<_, _>>();
+    block
+        .relation_ids
+        .iter()
+        .filter_map(|relation_id| relation_by_id.get(relation_id).map(|poly| (*poly).clone()))
+        .collect()
+}
+
+fn core_certificate_size_kappa(cert: &CoreRunCertificate) -> usize {
+    let mut size = 10;
+    size += cert.kernel_plan_hashes.len();
+    size += cert.projection_message_hashes.len();
+    size += cert.global_support_hash.is_some() as usize;
+    size += cert.squarefree_support_hash.is_some() as usize;
+    size += cert.root_isolation_hash.is_some() as usize;
+    size += cert.decoded_candidate_hash.is_some() as usize;
+    size += cert.global_support_certificate_hash.is_some() as usize;
+    size += cert.final_dag_replay_evidence_hash.is_some() as usize;
+    if let Some(evidence) = &cert.final_dag_replay_evidence {
+        size += evidence.actual_projection_dag_hash.is_some() as usize;
+        size += evidence.projection_message_hashes.len();
+        size += evidence.kernel_plan_hashes.len();
+        size += evidence.message_block_ids.len();
+        size += evidence
+            .per_message_source_relation_hashes
+            .iter()
+            .map(Vec::len)
+            .sum::<usize>();
+        size += evidence
+            .message_child_dependency_hashes
+            .iter()
+            .map(Vec::len)
+            .sum::<usize>();
+        size += evidence.block_authorization_hashes.len();
+        size += evidence
+            .block_relation_ids
+            .iter()
+            .map(Vec::len)
+            .sum::<usize>();
+        size += evidence
+            .block_relation_hashes
+            .iter()
+            .map(Vec::len)
+            .sum::<usize>();
+        size += evidence.child_edges.len();
+        size += evidence.edge_authorization_hashes.len();
+        size += evidence.support_certificate_hash.is_some() as usize;
+        size += evidence.root_isolation_hash.is_some() as usize;
+        size += evidence.decoded_candidate_hash.is_some() as usize;
+    }
+    size
 }
 
 pub fn step_core_certificate(

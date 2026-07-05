@@ -9,7 +9,8 @@ use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::VariableId;
 use crate::types::monomial::{monomial_mul, monomial_to_bytes, normalize_monomial, Monomial};
 use crate::types::rational::{
-    add_q, int_q, is_zero_q, lcm_denominators, mul_q, neg_q, rational_to_bytes, RationalQ,
+    add_q, bit_height_q, int_q, is_zero_q, lcm_denominators, mul_q, neg_q, rational_to_bytes,
+    RationalQ,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -180,6 +181,22 @@ pub fn poly_total_degree(a: &SparsePolynomialQ) -> u32 {
 
 pub fn poly_monomial_count(a: &SparsePolynomialQ) -> usize {
     a.terms.len()
+}
+
+pub fn poly_coefficient_height_bits(a: &SparsePolynomialQ) -> usize {
+    a.terms
+        .iter()
+        .map(|term| bit_height_q(&term.coeff))
+        .max()
+        .unwrap_or(0)
+}
+
+pub fn max_poly_coefficient_height_bits(polys: &[SparsePolynomialQ]) -> usize {
+    polys
+        .iter()
+        .map(poly_coefficient_height_bits)
+        .max()
+        .unwrap_or(0)
 }
 
 pub fn clear_denominators_primitive(a: &SparsePolynomialQ) -> SparsePolynomialQ {

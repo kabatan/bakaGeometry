@@ -12,7 +12,8 @@ use crate::types::hash::hash_sequence;
 use crate::types::ids::VariableId;
 use crate::types::monomial::{monomial_div, normalize_monomial, Monomial};
 use crate::types::polynomial::{
-    normalize_poly, poly_mul, poly_sub, poly_variables, zero_poly, SparsePolynomialQ, TermQ,
+    max_poly_coefficient_height_bits, normalize_poly, poly_mul, poly_sub, poly_variables,
+    zero_poly, SparsePolynomialQ, TermQ,
 };
 use crate::types::rational::{div_q, int_q, is_zero_q, RationalQ};
 
@@ -87,10 +88,13 @@ pub fn groebner_elimination_basis(
     while let Some((i, j)) = pairs.pop_front() {
         pairs_processed += 1;
         if pairs_processed > options.max_pairs || basis.len() > options.max_basis_size {
+            let observed_height = max_poly_coefficient_height_bits(&basis_polys(&basis))
+                .max(max_poly_coefficient_height_bits(relations));
             return Err(finite_resource_failure(
                 "GroebnerLocalPairLimit",
                 pairs_processed,
                 basis.len(),
+                observed_height,
             ));
         }
 
@@ -288,7 +292,12 @@ fn monomial_lcm(a: &Monomial, b: &Monomial) -> Monomial {
     normalize_monomial(entries)
 }
 
-fn finite_resource_failure(stage: &str, rows: usize, cols: usize) -> SolverError {
+fn finite_resource_failure(
+    stage: &str,
+    rows: usize,
+    cols: usize,
+    coefficient_height_bits: usize,
+) -> SolverError {
     SolverError {
         target: None,
         kind: SolverErrorKind::Failure(FailureKind::FiniteResourceFailure {
@@ -298,7 +307,7 @@ fn finite_resource_failure(stage: &str, rows: usize, cols: usize) -> SolverError
             matrix_cols: Some(cols),
             matrix_density: None,
             quotient_rank_estimate: None,
-            coefficient_height_bits: None,
+            coefficient_height_bits: Some(coefficient_height_bits),
             memory_bytes: None,
         }),
     }

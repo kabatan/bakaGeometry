@@ -31,7 +31,8 @@ use crate::types::monomial::{
     monomial_degree, monomial_mul, monomial_to_bytes, normalize_monomial, Monomial,
 };
 use crate::types::polynomial::{
-    clear_denominators_primitive, poly_add, poly_monomial_count, poly_mul, poly_scale, poly_sub,
+    clear_denominators_primitive, max_poly_coefficient_height_bits, poly_add,
+    poly_coefficient_height_bits, poly_monomial_count, poly_mul, poly_scale, poly_sub,
     poly_total_degree, poly_variables, zero_poly, SparsePolynomialQ, TermQ,
 };
 use crate::types::rational::{add_q, div_q, int_q, is_zero_q, neg_q, RationalQ};
@@ -276,7 +277,14 @@ pub fn execute_target_relation_search(
             row_monomials,
         );
         let matrix = matrix_builder.matrix.clone();
-        enforce_matrix_limits(plan, ctx.system.target, solver_ctx, &matrix)?;
+        let coefficient_height_before_bits = max_poly_coefficient_height_bits(&relation_polys);
+        enforce_matrix_limits(
+            plan,
+            ctx.system.target,
+            solver_ctx,
+            &matrix,
+            coefficient_height_before_bits,
+        )?;
         let trace = membership_matrix_trace(stage, &matrix);
         let nullspace = solve_homogeneous_modular(
             MatrixBuilder {
@@ -320,8 +328,8 @@ pub fn execute_target_relation_search(
                 matrix_rows: Some(matrix.rows),
                 matrix_cols: Some(matrix.cols),
                 matrix_density: Some(matrix_density(&matrix)),
-                coefficient_height_before_bits: 0,
-                coefficient_height_after_bits: poly_monomial_count(&relation),
+                coefficient_height_before_bits,
+                coefficient_height_after_bits: poly_coefficient_height_bits(&relation),
             };
             let membership = MembershipCertificate {
                 combination_terms: multipliers
@@ -1089,6 +1097,7 @@ fn enforce_matrix_limits(
     target: VariableId,
     ctx: &SolverContext,
     matrix: &SparseMatrixQ,
+    coefficient_height_bits: usize,
 ) -> Result<(), SolverError> {
     if ctx
         .options
@@ -1108,7 +1117,7 @@ fn enforce_matrix_limits(
                 matrix_cols: Some(matrix.cols),
                 matrix_density: Some(matrix_density(matrix)),
                 quotient_rank_estimate: None,
-                coefficient_height_bits: None,
+                coefficient_height_bits: Some(coefficient_height_bits),
                 memory_bytes: ctx.options.max_memory_bytes,
             }),
         });

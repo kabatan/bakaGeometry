@@ -11,8 +11,8 @@ use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::VariableId;
 use crate::types::monomial::{monomial_to_bytes, normalize_monomial, Monomial};
 use crate::types::polynomial::{
-    normalize_poly, poly_add, poly_mul, poly_sub, poly_variables, zero_poly, SparsePolynomialQ,
-    TermQ,
+    max_poly_coefficient_height_bits, normalize_poly, poly_add, poly_mul, poly_sub, poly_variables,
+    zero_poly, SparsePolynomialQ, TermQ,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -117,10 +117,12 @@ pub fn build_sparse_resultant_template(
     }
     let dim = deg_a as usize + deg_b as usize;
     if dim > input.max_matrix_dim {
+        let coefficient_height_bits = max_poly_coefficient_height_bits(&input.polynomials);
         return Err(finite_resource_failure(
             "SparseResultantTemplateMatrixCap",
             dim,
             dim,
+            coefficient_height_bits,
         ));
     }
 
@@ -447,7 +449,12 @@ fn hash_template(input: &ResultantInput, supports: &[MonomialSupport], dim: usiz
     hash_sequence("resultant-template", &chunks)
 }
 
-fn finite_resource_failure(stage: &str, rows: usize, cols: usize) -> SolverError {
+fn finite_resource_failure(
+    stage: &str,
+    rows: usize,
+    cols: usize,
+    coefficient_height_bits: usize,
+) -> SolverError {
     SolverError {
         target: None,
         kind: SolverErrorKind::Failure(FailureKind::FiniteResourceFailure {
@@ -457,7 +464,7 @@ fn finite_resource_failure(stage: &str, rows: usize, cols: usize) -> SolverError
             matrix_cols: Some(cols),
             matrix_density: None,
             quotient_rank_estimate: None,
-            coefficient_height_bits: None,
+            coefficient_height_bits: Some(coefficient_height_bits),
             memory_bytes: None,
         }),
     }

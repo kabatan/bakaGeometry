@@ -39,6 +39,21 @@ pub fn compose_projection_messages(
     if !blocks.contains_key(&dag.root_block_id) {
         return Err(implementation_bug("composition DAG root block is missing"));
     }
+    if messages.is_empty() && dag.blocks.iter().all(|block| block.relation_ids.is_empty()) {
+        let mut composed = ComposedProjection {
+            target,
+            root_block_id: dag.root_block_id,
+            message_relations: Vec::new(),
+            root_relations: Vec::new(),
+            source_message_hashes: Vec::new(),
+            separator_elimination_hashes: Vec::new(),
+            separator_elimination_messages: Vec::new(),
+            composition_cost: CompositionCostTrace::default(),
+            composed_hash: hash_sequence("composed-projection", &[]),
+        };
+        composed.composed_hash = hash_composed_projection(&composed);
+        return Ok(composed);
+    }
 
     let mut relations = Vec::new();
     let mut message_hashes = Vec::new();

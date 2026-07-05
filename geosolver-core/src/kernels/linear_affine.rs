@@ -18,8 +18,8 @@ use crate::result::status::{AlgebraicReason, FailureKind, SolverError, SolverErr
 use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::{KernelPlanId, PackageId, RelationId, VariableId};
 use crate::types::polynomial::{
-    clear_denominators_primitive, poly_monomial_count, poly_scale, poly_variables, substitute_poly,
-    SparsePolynomialQ, SubstitutionMap,
+    clear_denominators_primitive, max_poly_coefficient_height_bits, poly_monomial_count,
+    poly_scale, poly_variables, substitute_poly, SparsePolynomialQ, SubstitutionMap,
 };
 use crate::types::rational::{div_q, int_q, is_zero_q, neg_q};
 use crate::verify::certificates::{
@@ -338,7 +338,7 @@ pub fn execute_linear_affine(
         matrix_cols: Some(order.steps.len().max(1)),
         matrix_density: None,
         coefficient_height_before_bits: max_coefficient_height_bits(&ctx.system.relations),
-        coefficient_height_after_bits: exported_relations.iter().map(poly_monomial_count).sum(),
+        coefficient_height_after_bits: max_poly_coefficient_height_bits(&exported_relations),
     };
     let certificate = KernelCertificate::from_execution_plan_with_payload(
         plan,

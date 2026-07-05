@@ -36,8 +36,8 @@ use crate::types::ids::{BlockId, PackageId, RelationId, VariableId};
 use crate::types::matrix::{matrix_density, SparseMatrixQ};
 use crate::types::monomial::monomial_to_bytes;
 use crate::types::polynomial::{
-    clear_denominators_primitive, poly_monomial_count, poly_total_degree, poly_variables,
-    SparsePolynomialQ,
+    clear_denominators_primitive, max_poly_coefficient_height_bits, poly_coefficient_height_bits,
+    poly_monomial_count, poly_total_degree, poly_variables, SparsePolynomialQ,
 };
 use crate::types::rational::rational_to_bytes;
 use crate::verify::certificates::{
@@ -355,8 +355,8 @@ pub fn execute_specialization_interpolation(
             cols: trace.matrix_cols.max(1),
             entries: Vec::new(),
         })),
-        coefficient_height_before_bits: 0,
-        coefficient_height_after_bits: poly_monomial_count(&trace.relation),
+        coefficient_height_before_bits: max_poly_coefficient_height_bits(&relation_polys),
+        coefficient_height_after_bits: poly_coefficient_height_bits(&trace.relation),
     };
     let certificate = KernelCertificate::from_execution_plan_with_payload(
         plan,

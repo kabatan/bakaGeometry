@@ -53,7 +53,6 @@ pub enum FailureKind {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SolverErrorKind {
     InvalidInput { message: String },
-    TemporaryPipelineNotConnected,
     Failure(FailureKind),
 }
 
@@ -74,17 +73,9 @@ impl SolverError {
         }
     }
 
-    pub fn temporary_pipeline_not_connected(target: Option<VariableId>) -> Self {
-        Self {
-            target,
-            kind: SolverErrorKind::TemporaryPipelineNotConnected,
-        }
-    }
-
     pub fn public_status(&self) -> SolverStatus {
         match &self.kind {
             SolverErrorKind::InvalidInput { .. } => SolverStatus::InvalidInput,
-            SolverErrorKind::TemporaryPipelineNotConnected => SolverStatus::ImplementationBug,
             SolverErrorKind::Failure(FailureKind::FiniteResourceFailure { .. }) => {
                 SolverStatus::FiniteResourceFailure
             }

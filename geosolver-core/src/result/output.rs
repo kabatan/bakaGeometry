@@ -49,9 +49,26 @@ impl TargetSolveResult {
         Self::from_solver_error_with_target(err, Some(fallback_target))
     }
 
+    pub fn from_solver_error_for_target_with_cost_trace(
+        err: SolverError,
+        fallback_target: VariableId,
+        cost_trace: GlobalCostTrace,
+    ) -> TargetSolveResult {
+        Self::from_solver_error_with_target_and_cost_trace(err, Some(fallback_target), cost_trace)
+    }
+
     fn from_solver_error_with_target(
         err: SolverError,
         fallback_target: Option<VariableId>,
+    ) -> TargetSolveResult {
+        let cost_trace = cost_trace_from_solver_error(&err);
+        Self::from_solver_error_with_target_and_cost_trace(err, fallback_target, cost_trace)
+    }
+
+    fn from_solver_error_with_target_and_cost_trace(
+        err: SolverError,
+        fallback_target: Option<VariableId>,
+        cost_trace: GlobalCostTrace,
     ) -> TargetSolveResult {
         TargetSolveResult {
             status: err.public_status(),
@@ -64,7 +81,7 @@ impl TargetSolveResult {
             certificate: None,
             exact_image_certificate: None,
             diagnostics: vec![DiagnosticRecord::from_solver_error(&err)],
-            cost_trace: cost_trace_from_solver_error(&err),
+            cost_trace,
         }
     }
 }
@@ -79,6 +96,13 @@ pub fn finalize_failure_result(input: FinalizeFailureInput) -> TargetSolveResult
 
 fn cost_trace_from_solver_error(err: &SolverError) -> GlobalCostTrace {
     let mut trace = GlobalCostTrace::default();
+    if let Some(block_trace) = projection_trace_from_solver_error(err) {
+        trace.block_traces.push(block_trace);
+    }
+    trace
+}
+
+pub(crate) fn projection_trace_from_solver_error(err: &SolverError) -> Option<ProjectionCostTrace> {
     if let SolverErrorKind::Failure(FailureKind::FiniteResourceFailure {
         stage,
         block_id,
@@ -90,19 +114,19 @@ fn cost_trace_from_solver_error(err: &SolverError) -> GlobalCostTrace {
         ..
     }) = &err.kind
     {
-        trace.block_traces.push(ProjectionCostTrace {
+        return Some(ProjectionCostTrace {
             block_id: block_id.unwrap_or(BlockId(0)),
             kernel_kind: kernel_kind_from_failure_stage(stage),
             estimated_quotient_rank: *quotient_rank_estimate,
             matrix_rows: *matrix_rows,
             matrix_cols: *matrix_cols,
             matrix_density: matrix_density.clone(),
+            coefficient_height_before_bits: coefficient_height_bits.unwrap_or(0),
             coefficient_height_after_bits: coefficient_height_bits.unwrap_or(0),
             ..ProjectionCostTrace::default()
         });
-        trace.verification_trace.checked_relation_count = 1;
     }
-    trace
+    None
 }
 
 fn kernel_kind_from_failure_stage(stage: &crate::result::status::StageId) -> KernelKind {
@@ -110,7 +134,9 @@ fn kernel_kind_from_failure_stage(stage: &crate::result::status::StageId) -> Ker
         "LinearAffineKernel" => KernelKind::LinearAffine,
         "TargetRelationSearchKernel" => KernelKind::TargetRelationSearch,
         "SparseResultantProjectionKernel" => KernelKind::SparseResultantProjection,
+        "SparseResultantTemplateMatrixCap" => KernelKind::SparseResultantProjection,
         "UniversalTargetEliminationKernel" => KernelKind::UniversalTargetElimination,
+        "GroebnerLocalPairLimit" => KernelKind::UniversalTargetElimination,
         "RegularChainProjectionKernel" => KernelKind::RegularChainProjection,
         "NormTraceProjectionKernel" => KernelKind::NormTraceProjection,
         "SpecializationInterpolationKernel" => KernelKind::SpecializationInterpolation,

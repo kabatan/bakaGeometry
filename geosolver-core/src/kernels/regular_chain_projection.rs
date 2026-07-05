@@ -23,8 +23,8 @@ use crate::result::status::{
 use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::{KernelPlanId, PackageId, RelationId, VariableId};
 use crate::types::polynomial::{
-    clear_denominators_primitive, poly_monomial_count, poly_total_degree, poly_variables,
-    SparsePolynomialQ,
+    clear_denominators_primitive, max_poly_coefficient_height_bits, poly_monomial_count,
+    poly_total_degree, poly_variables, SparsePolynomialQ,
 };
 use crate::verify::certificates::{
     KernelCertificate, KernelCertificatePayload, RegularChainProjectionCertificate,
@@ -266,8 +266,8 @@ pub fn execute_regular_chain_projection(
         matrix_rows: Some(trace.dag.chains.len().max(1)),
         matrix_cols: Some(trace.generators.len().max(1)),
         matrix_density: None,
-        coefficient_height_before_bits: 0,
-        coefficient_height_after_bits: trace.generators.iter().map(poly_monomial_count).sum(),
+        coefficient_height_before_bits: max_poly_coefficient_height_bits(&relations),
+        coefficient_height_after_bits: max_poly_coefficient_height_bits(&trace.generators),
     };
     let certificate = KernelCertificate::from_execution_plan_with_payload(
         plan,
