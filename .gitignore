@@ -1,0 +1,8 @@
+/geosolver-core/target/
+**/target/
+
+.DS_Store
+Thumbs.db
+
+*.tmp
+*.log

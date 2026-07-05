@@ -1,0 +1,38 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running unittests src\lib.rs (geosolver-core\target\debug\deps\geosolver_core-bcb5dad8bd0bd994.exe)
+
+running 25 tests
+test types::matrix::tests::matrix_shape_density_and_hash_are_deterministic ... ok
+test types::monomial::tests::monomial_normalization_sorts_and_combines ... ok
+test problem::validate::tests::invalid_target_is_rejected ... ok
+test problem::validate::tests::invalid_semantic_slack_variable_is_rejected ... ok
+test types::univariate::tests::derivative_and_eval_are_exact ... ok
+test problem::validate::tests::roles_do_not_affect_validation ... ok
+test types::polynomial::tests::normalization_merges_terms_and_hashes_deterministically ... ok
+test types::ids::tests::fresh_ids_are_monotone ... ok
+test problem::canonicalize::tests::denominator_normalization_is_preserved ... ok
+test problem::canonicalize::tests::zero_relations_are_removed_with_diagnostics ... ok
+test problem::validate::tests::slack_and_branch_semantics_are_accepted_when_references_exist ... ok
+test types::ids::tests::stable_ids_are_namespace_bound ... ok
+test types::interval::tests::interval_invariants_hold ... ok
+test problem::semantic::tests::semantic_reference_check_rejects_unknown_slack_variable ... ok
+test types::monomial::tests::monomial_division_is_exact_when_possible ... ok
+test problem::semantic::tests::semantic_relations_are_collected_without_role_dispatch ... ok
+test types::polynomial::tests::clear_denominators_makes_primitive_integer_poly ... ok
+test problem::validate::tests::invalid_semantic_reference_is_rejected ... ok
+test types::rational::tests::normalizes_sign_and_gcd ... ok
+test types::rational::tests::exact_arithmetic_identity ... ok
+test types::rational::tests::zero_is_canonical ... ok
+test types::univariate::tests::hash_is_stable_for_equal_polynomials ... ok
+test problem::canonicalize::tests::nonzero_constant_relation_is_contradiction ... ok
+test types::univariate::tests::gcd_and_squarefree_are_monic ... ok
+test types::polynomial::tests::derivative_and_substitution_are_exact ... ok
+
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests geosolver_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

@@ -1,0 +1,118 @@
+schema_version: "rgdtpk-review-v2.2"
+phase_id: "P0"
+phase_kind: "setup"
+review_status: "FAIL_FIXABLE"
+phase_closable: false
+claim_ceiling_after_phase: "SCAFFOLD_READY"
+base_spec_sha256: "dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c"
+plan_sha256: "e78cfebc3cce75fbe632c1d0384f59eee7168a27c81d7326c1f02362584b26bc"
+source_map_sha256: "c3fc89dd76d1bf68684ad5359f6e2c4accf28e8db87c0e725b36aba21a2362a2"
+review_archive_schema_sha256: "53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad"
+review_summary_schema_sha256: "ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0"
+evidence_manifest_schema_sha256: "70fd1c72382f5ab847e3eb2eb40f135abb628f46c2a1e5ebf006acdba81c8e0f"
+schema_mirror_sha256: "ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0"
+commit: "unborn-master-no-commit"
+prompt_sha256: "7053b76e62bb9ba44907c6c57447a00d0fc7b268d4f789fcc9676b3df281a09e"
+response_sha256: "965c33cc80516cd8462e501675b13ce81d8c6da98c07f4f5e12307f56266d701"
+evidence_manifest_sha256: "7ee0ce20668e61b7c9ad1db1a75a127689e8779cf69059ed0ce29ecd9549bbbb"
+prompt_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-223810Z/prompt.md"
+response_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-223810Z/response.md"
+evidence_manifest_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-223810Z/evidence_manifest.yaml"
+reviewer_identity: "guardian_boundary_reviewer"
+reviewed_rids: ["RGQ-000", "RGQ-035", "RGQ-040", "RGQ-047", "RGQ-052", "RGQ-060", "RGQ-064"]
+reviewed_mechs: ["MECH-016"]
+source_sections_checked:
+  - "PLAN.md P0"
+  - "REVIEW_ARCHIVE_SCHEMA.md"
+  - "REVIEW_SUMMARY_SCHEMA.yaml"
+files_inspected:
+  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/static_scans.txt"
+  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/command_outputs.txt"
+  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/user_approval_20260705.md"
+evidence_inspected:
+  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/static_scans.txt"
+  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/command_outputs.txt"
+commands_inspected:
+  - "P0 closure evidence review"
+function_implementation_table: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/function_implementation_table.yaml"
+algorithmic_sufficiency:
+  verdict: "not_applicable"
+  rationale: "P0 is setup only and this review failed on evidence discipline."
+forbidden_pattern_scan:
+  heavy_fallback: "not_applicable"
+  narrow_slice_escape: "not_applicable"
+  hidden_fallback: "not_applicable"
+  decorative_certificate: "not_applicable"
+  placeholder_candidate: "not_applicable"
+  geometry_dispatch: "not_applicable"
+  unsupported_for_well_formed_input: "not_applicable"
+  exact_image_overclaim: "not_applicable"
+  target_relation_schedule_discretion: "not_applicable"
+  weak_action_krylov_coverage: "not_applicable"
+  nonfinite_without_positive_proof: "not_applicable"
+  non_spec_status: "not_applicable"
+  required_function_deferred: "not_applicable"
+  appendix_override_bypass: "not_applicable"
+  stress_fixture_dispatch: "not_applicable"
+not_applicable_justifications:
+  "algorithmic_sufficiency": "P0 contains no solver code."
+  "forbidden_pattern_scan": "The failed issue was evidence scan discipline, not solver behavior."
+raw_response_consistency:
+  raw_response_contains_blocker: true
+  raw_response_contains_required_fix: true
+  summary_overrides_raw_response: false
+  reviewer_declared_files_inspected: true
+phase_specific_checks:
+  - check_id: "p0-static-scan-self-match"
+    required_by: "RGQ-060"
+    verdict: "fail"
+    evidence: "static_scans.txt recorded a Plan command self-match as status=fail."
+    reviewer_rationale: "P0 cannot pass with failed relevant scan evidence."
+appendix_override_checks:
+  - appendix_section: "not_applicable"
+    controlling_requirement: "RGQ-057"
+    verdict: "not_applicable"
+    evidence: "P0 setup review only."
+    reviewer_rationale: "No algorithmic Appendix override path implemented."
+status_mapping_checks:
+  - error_or_internal_condition: "not_applicable"
+    mapped_solver_status: "not_applicable"
+    verdict: "not_applicable"
+    evidence: "No solver status code exists in P0."
+    reviewer_rationale: "P0 setup review only."
+suite_partition_checks:
+  - suite_name: "not_applicable"
+    verdict: "not_applicable"
+    evidence: "No P15 suite exists in P0."
+    reviewer_rationale: "P0 setup review only."
+semantic_deletion_challenges: []
+tamper_challenges: []
+unresolved_risks:
+  - "P0 closure evidence must be regenerated and reviewed again."
+blocking_findings:
+  - "P0 static scan recorded a failed forbidden phrase scan caused by Plan command self-match."
+  - "No current P0 closure review archive binds newer closure evidence."
+required_fixes:
+  - "Regenerate or annotate the static scan so Plan command self-match is not recorded as status=fail."
+  - "Create a new P0 closure review archive with updated manifest and summary."
+pass_conditions:
+  schema_valid: true
+  schema_mirror_byte_identical: true
+  no_blocking_findings: false
+  no_required_fixes: false
+  raw_response_consistent: true
+  algorithmic_sufficiency_satisfied: true
+  all_forbidden_scans_pass: false
+  phase_specific_checks_pass: false
+  appendix_overrides_respected: true
+  status_mapping_respected: true
+  suite_partition_respected: true
+  reviewer_read_code_not_only_summary: true
+  no_controlling_stub_or_placeholder: true
+  exact_verification_present_where_required: true
+  no_failures_overridden_by_summary: true
+  fresh_evidence_after_last_code_change: true
+  pass_matches_raw_response: true
+  schema_hashes_match_current_files: true
+  prompt_and_response_archived: true
+  evidence_manifest_archived_and_valid: true

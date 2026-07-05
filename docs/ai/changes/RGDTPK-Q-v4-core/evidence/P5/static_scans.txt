@@ -1,0 +1,17 @@
+P5 static scans after the last relevant code change:
+
+1. General forbidden implementation markers in P5-owned graph files and P4 preprocess files.
+   Command: rg -n "TODO|todo|stub|placeholder|unimplemented!|panic!|TemporaryPipelineNotConnected|temporary_pipeline|coordinate|geometry|diagram|random|f64|f32" geosolver-core\src\graph geosolver-core\src\preprocess
+   Exit code: 1
+   Result: pass, no matches.
+
+2. Geometry dispatch, fixture/answer dispatch, coordinate fallback, CAS/QE fallback, and final-status overclaim scan in P5-owned graph files.
+   Command: rg -n "circle|triangle|tangent|area|incircle|circumcircle|fixture|official solution|expected answer|problem_id|coordinate solution|coordinate roots|full coordinate|RUR|CAD|QE|homotopy|CertifiedCandidateCover|CertifiedExactTargetImage|CertifiedNonFiniteTargetImage" geosolver-core\src\graph
+   Exit code: 1
+   Result: pass, no matches.
+   Note: the scan intentionally does not flag the identifier `target_distance`; that field is graph-theoretic target influence distance, not geometric distance dispatch.
+
+3. Positive P5 function scan.
+   Command: rg -n "build_relation_variable_hypergraph|connected_components|relation_variables|variable_relations|build_target_influence_graph|build_weighted_primal_graph|variable_weight|edge_weight|articulation_variable_candidates|min_fill_separator_candidates|score_separator|build_target_rooted_decomposition|build_target_projection_dag|authorize_block_relations|validate_projection_dag|structural_metrics|estimate_local_quotient_rank|estimate_sparse_template_size|estimate_coefficient_growth" geosolver-core\src\graph
+   Exit code: 0
+   Result: pass. Matches show all Appendix A section 12 required graph, DAG, authorization, validation, and metrics functions are implemented in P5-owned graph files.

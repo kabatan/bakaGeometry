@@ -1,0 +1,70 @@
+Freshness point: after P5 implementation and separator test-oracle correction.
+
+Initial focused graph test run:
+
+Command: cargo test --manifest-path geosolver-core\Cargo.toml graph -- --nocapture
+Exit code: 1 before targeted test fix
+Key output:
+  running 9 tests
+  graph::weighted_primal::tests::weighted_primal_weights_are_algebraic_only ... ok
+  graph::tree_decomposition::tests::no_useful_separator_keeps_one_large_root ... ok
+  graph::hypergraph::tests::hypergraph_represents_every_polynomial_occurrence ... ok
+  graph::metrics::tests::structural_metrics_use_authorized_relations_only ... ok
+  graph::projection_dag::tests::no_separator_builds_one_large_target_block ... ok
+  graph::projection_dag::tests::authorization_mismatch_fails_validation ... ok
+  graph::projection_dag::tests::relation_duplication_without_certificate_fails ... ok
+  graph::projection_dag::tests::relation_deletion_fails_validation ... ok
+  graph::separators::tests::articulation_candidate_is_algebraic_incidence_based ... FAILED
+  assertion failed: candidates.iter().any(|candidate| candidate.vars.contains(&x))
+Interpretation:
+  The implementation correctly did not report an articulation in a triangle graph. The oracle was wrong because one polynomial contained all three variables.
+
+Verification after targeted test-oracle fix:
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo fmt --manifest-path geosolver-core\Cargo.toml -- --check
+Exit code: 0
+Output: no output.
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml graph -- --nocapture
+Exit code: 0
+Key output:
+  running 9 tests
+  graph::separators::tests::articulation_candidate_is_algebraic_incidence_based ... ok
+  graph::weighted_primal::tests::weighted_primal_weights_are_algebraic_only ... ok
+  graph::tree_decomposition::tests::no_useful_separator_keeps_one_large_root ... ok
+  graph::hypergraph::tests::hypergraph_represents_every_polynomial_occurrence ... ok
+  graph::metrics::tests::structural_metrics_use_authorized_relations_only ... ok
+  graph::projection_dag::tests::no_separator_builds_one_large_target_block ... ok
+  graph::projection_dag::tests::relation_deletion_fails_validation ... ok
+  graph::projection_dag::tests::authorization_mismatch_fails_validation ... ok
+  graph::projection_dag::tests::relation_duplication_without_certificate_fails ... ok
+  test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 88 filtered out
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml -- --nocapture
+Exit code: 0
+Key output:
+  running 97 tests
+  graph::separators::tests::articulation_candidate_is_algebraic_incidence_based ... ok
+  graph::hypergraph::tests::hypergraph_represents_every_polynomial_occurrence ... ok
+  graph::projection_dag::tests::relation_duplication_without_certificate_fails ... ok
+  graph::metrics::tests::structural_metrics_use_authorized_relations_only ... ok
+  graph::projection_dag::tests::no_separator_builds_one_large_target_block ... ok
+  graph::tree_decomposition::tests::no_useful_separator_keeps_one_large_root ... ok
+  graph::weighted_primal::tests::weighted_primal_weights_are_algebraic_only ... ok
+  graph::projection_dag::tests::relation_deletion_fails_validation ... ok
+  graph::projection_dag::tests::authorization_mismatch_fails_validation ... ok
+  test result: ok. 97 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+  Doc-tests geosolver_core: 0 passed; 0 failed
+
+Git state:
+
+Command: git rev-parse --is-inside-work-tree
+Exit code: 0
+Output: true
+
+Command: git rev-parse --verify HEAD
+Exit code: 1
+Output: fatal: Needed a single revision
+
+Interpretation:
+  The workspace is an unborn git repository with no HEAD commit. Evidence uses explicit file hashes and the review archive rather than commit-bound diff proof.

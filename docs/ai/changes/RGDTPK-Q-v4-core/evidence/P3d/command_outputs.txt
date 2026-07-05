@@ -1,0 +1,44 @@
+Freshness point: after the second P3d FAIL_FIXABLE fix in geosolver-core/src/algebra/resultant.rs. The fix rejects overlapping, duplicate, and noncanonical eliminate/keep boundaries; validates trace moduli are prime; and makes invalid/tampered modular trace verification return false instead of panicking.
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo fmt --manifest-path geosolver-core\Cargo.toml -- --check
+Exit code: 0
+Output: no output.
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::resultant -- --nocapture
+Exit code: 0
+Key output:
+  running 7 tests
+  algebra::resultant::tests::resultant_template_rejects_non_keep_variables ... ok
+  algebra::resultant::tests::resultant_template_rejects_overlapping_or_duplicate_keep_variables ... ok
+  algebra::resultant::tests::resultant_template_rejects_noncanonical_keep_order ... ok
+  algebra::resultant::tests::resultant_certificate_rejects_tampered_trace_prime_without_panic ... ok
+  algebra::resultant::tests::resultant_certificate_rejects_nonprime_trace_modulus ... ok
+  algebra::resultant::tests::resultant_support_template_and_certificate_are_exact ... ok
+  algebra::resultant::tests::resultant_certificate_rejects_tampered_relation_hash ... ok
+  test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 59 filtered out
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::interpolation -- --nocapture
+Exit code: 0
+Key output:
+  running 3 tests
+  algebra::interpolation::tests::specialization_points_are_deterministic_and_specialization_is_exact ... ok
+  algebra::interpolation::tests::bad_interpolation_sample_fails_final_verification ... ok
+  algebra::interpolation::tests::sparse_coefficient_interpolation_reconstructs_relation_candidate ... ok
+  test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 59 filtered out
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml -- --nocapture
+Exit code: 0
+Key output:
+  running 66 tests
+  algebra::resultant::tests::resultant_template_rejects_non_keep_variables ... ok
+  algebra::resultant::tests::resultant_template_rejects_overlapping_or_duplicate_keep_variables ... ok
+  algebra::resultant::tests::resultant_template_rejects_noncanonical_keep_order ... ok
+  algebra::resultant::tests::resultant_certificate_rejects_tampered_trace_prime_without_panic ... ok
+  algebra::resultant::tests::resultant_certificate_rejects_nonprime_trace_modulus ... ok
+  algebra::resultant::tests::resultant_support_template_and_certificate_are_exact ... ok
+  algebra::resultant::tests::resultant_certificate_rejects_tampered_relation_hash ... ok
+  algebra::interpolation::tests::specialization_points_are_deterministic_and_specialization_is_exact ... ok
+  algebra::interpolation::tests::bad_interpolation_sample_fails_final_verification ... ok
+  algebra::interpolation::tests::sparse_coefficient_interpolation_reconstructs_relation_candidate ... ok
+  test result: ok. 66 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+  Doc-tests geosolver_core: 0 passed; 0 failed

@@ -1,0 +1,9 @@
+docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-221429Z/review_summary.yaml: VALID
+docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-223810Z/review_summary.yaml: VALID
+docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-221429Z/evidence_manifest.yaml: VALID
+docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-223810Z/evidence_manifest.yaml: VALID
+synthetic minimal P0 PASS summary: VALID
+synthetic PASS-with-blocker summary: rejected (1 errors); first=['synthetic blocker'] is expected to be empty
+synthetic PASS-with-required-fix summary: rejected (1 errors); first=['synthetic required fix'] is expected to be empty
+synthetic PASS-with-false-pass-condition summary: rejected (1 errors); first=True was expected
+synthetic evidence manifest missing command exit_code: rejected (1 errors); first='exit_code' is a required property

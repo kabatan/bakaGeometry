@@ -1,0 +1,16 @@
+P3e static scans after the last relevant code change:
+
+1. General forbidden implementation markers in P3e-owned files.
+   Command: rg -n "TODO|todo!|unimplemented|placeholder|dummy|fake|stub|Unsupported|unsupported" geosolver-core\src\algebra\quotient.rs geosolver-core\src\algebra\krylov.rs
+   Exit code: 1
+   Result: pass, no matches.
+
+2. Coordinate export, weak coverage, certified-status, and floating-path scan in P3e-owned files.
+   Command: rg -n "coordinate root|coordinate_roots|coordinate solution|full coordinate RUR|full_coordinate|RUR|parametr|single-vector.*return|block Wiedemann|trace power|CertifiedCandidateCover|CertifiedExactTargetImage|CertifiedNonFiniteTargetImage|f64|f32|approx" geosolver-core\src\algebra\quotient.rs geosolver-core\src\algebra\krylov.rs
+   Exit code: 0
+   Result: pass with intentional boundary matches only. Matches are `no_coordinate_roots_exported`, `no_full_coordinate_rur_exported`, `no_coordinate_solution_export`, and the validation error string requiring no coordinate roots/full coordinate RUR. No coordinate roots/RUR API, weak-coverage return path, certified solver status, floating path, block Wiedemann, or trace-power acceptance path was found.
+
+3. P3e positive boundary scan for verified characteristic coverage.
+   Command: rg -n "VerifiedCharacteristicSupportCoverage|characteristic_polynomial|Cayley|cayley|target_action_matrix|normal-form|normal_form|undercoverage|CertificateDesignGap|no_coordinate_solution_export|no_full_coordinate_rur_exported" geosolver-core\src\algebra\quotient.rs geosolver-core\src\algebra\krylov.rs
+   Exit code: 0
+   Result: pass. Matches show the only accepted coverage kind, target-action matrix materialization, exact normal-form column checking, exact characteristic polynomial, exact Cayley-Hamilton verification, CertificateDesignGap rejection, and undercoverage regression.

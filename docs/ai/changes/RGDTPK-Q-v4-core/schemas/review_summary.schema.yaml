@@ -1,0 +1,451 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$title: "RGDTPK-Q-v4 review_summary.yaml schema v2.2"
+type: object
+additionalProperties: false
+required:
+  - schema_version
+  - phase_id
+  - phase_kind
+  - review_status
+  - phase_closable
+  - claim_ceiling_after_phase
+  - base_spec_sha256
+  - plan_sha256
+  - source_map_sha256
+  - review_archive_schema_sha256
+  - review_summary_schema_sha256
+  - evidence_manifest_schema_sha256
+  - schema_mirror_sha256
+  - commit
+  - prompt_sha256
+  - response_sha256
+  - evidence_manifest_sha256
+  - prompt_path
+  - response_path
+  - evidence_manifest_path
+  - reviewer_identity
+  - reviewed_rids
+  - reviewed_mechs
+  - source_sections_checked
+  - files_inspected
+  - evidence_inspected
+  - commands_inspected
+  - function_implementation_table
+  - algorithmic_sufficiency
+  - forbidden_pattern_scan
+  - not_applicable_justifications
+  - raw_response_consistency
+  - phase_specific_checks
+  - appendix_override_checks
+  - status_mapping_checks
+  - suite_partition_checks
+  - semantic_deletion_challenges
+  - tamper_challenges
+  - unresolved_risks
+  - blocking_findings
+  - required_fixes
+  - pass_conditions
+properties:
+  schema_version:
+    const: "rgdtpk-review-v2.2"
+  phase_id:
+    type: string
+    pattern: "^P(0|1|2|3a|3b|3c|3d|3e|3f|4|5|6|7|8a|8b|8c|8d|9|10|11|12|13|14|15|16)$"
+  phase_kind:
+    enum: [setup, data_model, algorithmic, integration, acceptance, closure]
+  review_status:
+    enum: [PASS, FAIL_FIXABLE, FAIL_BLOCKING, USER_DECISION_REQUIRED]
+  phase_closable:
+    type: boolean
+  claim_ceiling_after_phase:
+    type: string
+    pattern: "^(SCAFFOLD_READY|PARTIAL_MECHANISM_READY:MECH-[0-9]{3}|CANDIDATE_COVER_CORE_READY|EXACT_IMAGE_CORE_READY|RGDTPK_Q_V4_ACCEPTANCE_COMPLETE|SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC)$"
+  base_spec_sha256: {$ref: "#/$defs/sha256"}
+  plan_sha256: {$ref: "#/$defs/sha256"}
+  source_map_sha256: {$ref: "#/$defs/sha256"}
+  review_archive_schema_sha256: {$ref: "#/$defs/sha256"}
+  review_summary_schema_sha256: {$ref: "#/$defs/sha256"}
+  evidence_manifest_schema_sha256: {$ref: "#/$defs/sha256"}
+  schema_mirror_sha256: {$ref: "#/$defs/sha256"}
+  commit:
+    type: string
+    minLength: 1
+  prompt_sha256: {$ref: "#/$defs/sha256"}
+  response_sha256: {$ref: "#/$defs/sha256"}
+  evidence_manifest_sha256: {$ref: "#/$defs/sha256"}
+  prompt_path:
+    type: string
+    pattern: '^docs/ai/changes/RGDTPK-Q-v4-core/reviews/P(0|1|2|3a|3b|3c|3d|3e|3f|4|5|6|7|8a|8b|8c|8d|9|10|11|12|13|14|15|16)/[0-9]{8}-[0-9]{6}Z/prompt\.md$'
+  response_path:
+    type: string
+    pattern: '^docs/ai/changes/RGDTPK-Q-v4-core/reviews/P(0|1|2|3a|3b|3c|3d|3e|3f|4|5|6|7|8a|8b|8c|8d|9|10|11|12|13|14|15|16)/[0-9]{8}-[0-9]{6}Z/response\.md$'
+  evidence_manifest_path:
+    type: string
+    pattern: '^docs/ai/changes/RGDTPK-Q-v4-core/reviews/P(0|1|2|3a|3b|3c|3d|3e|3f|4|5|6|7|8a|8b|8c|8d|9|10|11|12|13|14|15|16)/[0-9]{8}-[0-9]{6}Z/evidence_manifest\.yaml$'
+  reviewer_identity:
+    type: string
+    minLength: 1
+  reviewed_rids:
+    type: array
+    minItems: 1
+    items:
+      type: string
+      pattern: "^RGQ-[0-9]{3}$"
+  reviewed_mechs:
+    type: array
+    items:
+      type: string
+      pattern: "^MECH-[0-9]{3}$"
+  source_sections_checked:
+    type: array
+    minItems: 1
+    items: {type: string, minLength: 1}
+  files_inspected:
+    type: array
+    minItems: 1
+    items: {type: string, minLength: 1}
+  evidence_inspected:
+    type: array
+    minItems: 1
+    items: {type: string, minLength: 1}
+  commands_inspected:
+    type: array
+    minItems: 1
+    items: {type: string, minLength: 1}
+  function_implementation_table:
+    type: string
+    minLength: 1
+  algorithmic_sufficiency:
+    type: object
+    additionalProperties: false
+    required: [verdict, rationale]
+    properties:
+      verdict:
+        enum: [sufficient, insufficient, not_applicable]
+      rationale:
+        type: string
+        minLength: 1
+  forbidden_pattern_scan:
+    type: object
+    additionalProperties: false
+    required:
+      - heavy_fallback
+      - narrow_slice_escape
+      - hidden_fallback
+      - decorative_certificate
+      - placeholder_candidate
+      - geometry_dispatch
+      - unsupported_for_well_formed_input
+      - exact_image_overclaim
+      - target_relation_schedule_discretion
+      - weak_action_krylov_coverage
+      - nonfinite_without_positive_proof
+      - non_spec_status
+      - required_function_deferred
+      - appendix_override_bypass
+      - stress_fixture_dispatch
+    properties:
+      heavy_fallback: {$ref: "#/$defs/pass_fail_na"}
+      narrow_slice_escape: {$ref: "#/$defs/pass_fail_na"}
+      hidden_fallback: {$ref: "#/$defs/pass_fail_na"}
+      decorative_certificate: {$ref: "#/$defs/pass_fail_na"}
+      placeholder_candidate: {$ref: "#/$defs/pass_fail_na"}
+      geometry_dispatch: {$ref: "#/$defs/pass_fail_na"}
+      unsupported_for_well_formed_input: {$ref: "#/$defs/pass_fail_na"}
+      exact_image_overclaim: {$ref: "#/$defs/pass_fail_na"}
+      target_relation_schedule_discretion: {$ref: "#/$defs/pass_fail_na"}
+      weak_action_krylov_coverage: {$ref: "#/$defs/pass_fail_na"}
+      nonfinite_without_positive_proof: {$ref: "#/$defs/pass_fail_na"}
+      non_spec_status: {$ref: "#/$defs/pass_fail_na"}
+      required_function_deferred: {$ref: "#/$defs/pass_fail_na"}
+      appendix_override_bypass: {$ref: "#/$defs/pass_fail_na"}
+      stress_fixture_dispatch: {$ref: "#/$defs/pass_fail_na"}
+  not_applicable_justifications:
+    type: object
+    additionalProperties:
+      type: string
+      minLength: 1
+  raw_response_consistency:
+    type: object
+    additionalProperties: false
+    required:
+      - raw_response_contains_blocker
+      - raw_response_contains_required_fix
+      - summary_overrides_raw_response
+      - reviewer_declared_files_inspected
+    properties:
+      raw_response_contains_blocker: {type: boolean}
+      raw_response_contains_required_fix: {type: boolean}
+      summary_overrides_raw_response: {type: boolean}
+      reviewer_declared_files_inspected: {type: boolean}
+  phase_specific_checks:
+    type: array
+    minItems: 1
+    items: {$ref: "#/$defs/check_item"}
+  appendix_override_checks:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      additionalProperties: false
+      required: [appendix_section, controlling_requirement, verdict, evidence, reviewer_rationale]
+      properties:
+        appendix_section: {type: string, minLength: 1}
+        controlling_requirement: {type: string, pattern: "^RGQ-[0-9]{3}$"}
+        verdict: {enum: [pass, fail, not_applicable]}
+        evidence: {type: string, minLength: 1}
+        reviewer_rationale: {type: string, minLength: 1}
+  status_mapping_checks:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      additionalProperties: false
+      required: [error_or_internal_condition, mapped_solver_status, verdict, evidence, reviewer_rationale]
+      properties:
+        error_or_internal_condition: {type: string, minLength: 1}
+        mapped_solver_status: {type: string, minLength: 1}
+        verdict: {enum: [pass, fail, not_applicable]}
+        evidence: {type: string, minLength: 1}
+        reviewer_rationale: {type: string, minLength: 1}
+  suite_partition_checks:
+    type: array
+    minItems: 1
+    items:
+      type: object
+      additionalProperties: false
+      required: [suite_name, verdict, evidence, reviewer_rationale]
+      properties:
+        suite_name:
+          enum: [support_producing_candidate_cover_suite, exact_image_semantics_suite, failure_and_nonfinite_semantics_suite, not_applicable]
+        verdict: {enum: [pass, fail, not_applicable]}
+        evidence: {type: string, minLength: 1}
+        reviewer_rationale: {type: string, minLength: 1}
+  semantic_deletion_challenges:
+    type: array
+    items: {$ref: "#/$defs/challenge_item"}
+  tamper_challenges:
+    type: array
+    items: {$ref: "#/$defs/challenge_item"}
+  unresolved_risks:
+    type: array
+    items: {type: string}
+  blocking_findings:
+    type: array
+    items: {type: string}
+  required_fixes:
+    type: array
+    items: {type: string}
+  pass_conditions:
+    type: object
+    additionalProperties: false
+    required:
+      - schema_valid
+      - schema_mirror_byte_identical
+      - no_blocking_findings
+      - no_required_fixes
+      - raw_response_consistent
+      - algorithmic_sufficiency_satisfied
+      - all_forbidden_scans_pass
+      - phase_specific_checks_pass
+      - appendix_overrides_respected
+      - status_mapping_respected
+      - suite_partition_respected
+      - reviewer_read_code_not_only_summary
+      - no_controlling_stub_or_placeholder
+      - exact_verification_present_where_required
+      - no_failures_overridden_by_summary
+      - fresh_evidence_after_last_code_change
+      - pass_matches_raw_response
+      - schema_hashes_match_current_files
+      - prompt_and_response_archived
+      - evidence_manifest_archived_and_valid
+    properties:
+      schema_valid: {type: boolean}
+      schema_mirror_byte_identical: {type: boolean}
+      no_blocking_findings: {type: boolean}
+      no_required_fixes: {type: boolean}
+      raw_response_consistent: {type: boolean}
+      algorithmic_sufficiency_satisfied: {type: boolean}
+      all_forbidden_scans_pass: {type: boolean}
+      phase_specific_checks_pass: {type: boolean}
+      appendix_overrides_respected: {type: boolean}
+      status_mapping_respected: {type: boolean}
+      suite_partition_respected: {type: boolean}
+      reviewer_read_code_not_only_summary: {type: boolean}
+      no_controlling_stub_or_placeholder: {type: boolean}
+      exact_verification_present_where_required: {type: boolean}
+      no_failures_overridden_by_summary: {type: boolean}
+      fresh_evidence_after_last_code_change: {type: boolean}
+      pass_matches_raw_response: {type: boolean}
+      schema_hashes_match_current_files: {type: boolean}
+      prompt_and_response_archived: {type: boolean}
+      evidence_manifest_archived_and_valid: {type: boolean}
+$defs:
+  sha256:
+    type: string
+    pattern: "^[0-9a-f]{64}$"
+  pass_fail_na:
+    enum: [pass, fail, not_applicable]
+  check_item:
+    type: object
+    additionalProperties: false
+    required: [check_id, required_by, verdict, evidence, reviewer_rationale]
+    properties:
+      check_id: {type: string, minLength: 1}
+      required_by: {type: string, minLength: 1}
+      verdict: {enum: [pass, fail, not_applicable]}
+      evidence: {type: string, minLength: 1}
+      reviewer_rationale: {type: string, minLength: 1}
+  challenge_item:
+    type: object
+    additionalProperties: false
+    required: [challenge_id, target, verdict, evidence, reviewer_rationale]
+    properties:
+      challenge_id: {type: string, minLength: 1}
+      target: {type: string, minLength: 1}
+      verdict: {enum: [pass, fail, not_applicable]}
+      evidence: {type: string, minLength: 1}
+      reviewer_rationale: {type: string, minLength: 1}
+allOf:
+  - if:
+      properties: {review_status: {const: PASS}}
+      required: [review_status]
+    then:
+      properties:
+        phase_closable: {const: true}
+        blocking_findings: {maxItems: 0}
+        required_fixes: {maxItems: 0}
+        raw_response_consistency:
+          properties:
+            raw_response_contains_blocker: {const: false}
+            raw_response_contains_required_fix: {const: false}
+            summary_overrides_raw_response: {const: false}
+            reviewer_declared_files_inspected: {const: true}
+        forbidden_pattern_scan:
+          properties:
+            heavy_fallback: {enum: [pass, not_applicable]}
+            narrow_slice_escape: {enum: [pass, not_applicable]}
+            hidden_fallback: {enum: [pass, not_applicable]}
+            decorative_certificate: {enum: [pass, not_applicable]}
+            placeholder_candidate: {enum: [pass, not_applicable]}
+            geometry_dispatch: {enum: [pass, not_applicable]}
+            unsupported_for_well_formed_input: {enum: [pass, not_applicable]}
+            exact_image_overclaim: {enum: [pass, not_applicable]}
+            target_relation_schedule_discretion: {enum: [pass, not_applicable]}
+            weak_action_krylov_coverage: {enum: [pass, not_applicable]}
+            nonfinite_without_positive_proof: {enum: [pass, not_applicable]}
+            non_spec_status: {enum: [pass, not_applicable]}
+            required_function_deferred: {enum: [pass, not_applicable]}
+            appendix_override_bypass: {enum: [pass, not_applicable]}
+            stress_fixture_dispatch: {enum: [pass, not_applicable]}
+        phase_specific_checks:
+          items:
+            properties:
+              verdict: {enum: [pass, not_applicable]}
+        appendix_override_checks:
+          items:
+            properties:
+              verdict: {enum: [pass, not_applicable]}
+        status_mapping_checks:
+          items:
+            properties:
+              verdict: {enum: [pass, not_applicable]}
+        suite_partition_checks:
+          items:
+            properties:
+              verdict: {enum: [pass, not_applicable]}
+        pass_conditions:
+          properties:
+            schema_valid: {const: true}
+            schema_mirror_byte_identical: {const: true}
+            no_blocking_findings: {const: true}
+            no_required_fixes: {const: true}
+            raw_response_consistent: {const: true}
+            algorithmic_sufficiency_satisfied: {const: true}
+            all_forbidden_scans_pass: {const: true}
+            phase_specific_checks_pass: {const: true}
+            appendix_overrides_respected: {const: true}
+            status_mapping_respected: {const: true}
+            suite_partition_respected: {const: true}
+            reviewer_read_code_not_only_summary: {const: true}
+            no_controlling_stub_or_placeholder: {const: true}
+            exact_verification_present_where_required: {const: true}
+            no_failures_overridden_by_summary: {const: true}
+            fresh_evidence_after_last_code_change: {const: true}
+            pass_matches_raw_response: {const: true}
+            schema_hashes_match_current_files: {const: true}
+            prompt_and_response_archived: {const: true}
+            evidence_manifest_archived_and_valid: {const: true}
+  - if:
+      properties:
+        review_status: {const: PASS}
+        phase_id:
+          not: {const: P0}
+      required: [review_status, phase_id]
+    then:
+      properties:
+        algorithmic_sufficiency:
+          properties:
+            verdict: {const: sufficient}
+  - if:
+      properties:
+        review_status: {const: PASS}
+        phase_id:
+          enum: [P15, P16]
+      required: [review_status, phase_id]
+    then:
+      properties:
+        forbidden_pattern_scan:
+          properties:
+            heavy_fallback: {const: pass}
+            narrow_slice_escape: {const: pass}
+            hidden_fallback: {const: pass}
+            decorative_certificate: {const: pass}
+            placeholder_candidate: {const: pass}
+            geometry_dispatch: {const: pass}
+            unsupported_for_well_formed_input: {const: pass}
+            exact_image_overclaim: {const: pass}
+            target_relation_schedule_discretion: {const: pass}
+            weak_action_krylov_coverage: {const: pass}
+            nonfinite_without_positive_proof: {const: pass}
+            non_spec_status: {const: pass}
+            required_function_deferred: {const: pass}
+            appendix_override_bypass: {const: pass}
+            stress_fixture_dispatch: {const: pass}
+        suite_partition_checks:
+          minItems: 3
+          allOf:
+            - contains:
+                type: object
+                properties:
+                  suite_name: {const: support_producing_candidate_cover_suite}
+                  verdict: {const: pass}
+            - contains:
+                type: object
+                properties:
+                  suite_name: {const: exact_image_semantics_suite}
+                  verdict: {const: pass}
+            - contains:
+                type: object
+                properties:
+                  suite_name: {const: failure_and_nonfinite_semantics_suite}
+                  verdict: {const: pass}
+  - if:
+      properties:
+        review_status: {const: PASS}
+        phase_id:
+          enum: [P5, P8d, P11, P15, P16]
+      required: [review_status, phase_id]
+    then:
+      properties:
+        semantic_deletion_challenges: {minItems: 1}
+        tamper_challenges: {minItems: 1}
+  - if:
+      properties:
+        review_status:
+          enum: [FAIL_FIXABLE, FAIL_BLOCKING, USER_DECISION_REQUIRED]
+      required: [review_status]
+    then:
+      properties:
+        phase_closable: {const: false}

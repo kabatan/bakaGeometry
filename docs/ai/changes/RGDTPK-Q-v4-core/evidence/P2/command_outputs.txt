@@ -1,0 +1,117 @@
+===== cargo_fmt_check.txt =====
+<no output>
+===== cargo_test_all.txt =====
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running unittests src\lib.rs (geosolver-core\target\debug\deps\geosolver_core-bcb5dad8bd0bd994.exe)
+
+running 25 tests
+test types::matrix::tests::matrix_shape_density_and_hash_are_deterministic ... ok
+test types::monomial::tests::monomial_normalization_sorts_and_combines ... ok
+test problem::validate::tests::invalid_target_is_rejected ... ok
+test problem::validate::tests::invalid_semantic_slack_variable_is_rejected ... ok
+test types::univariate::tests::derivative_and_eval_are_exact ... ok
+test problem::validate::tests::roles_do_not_affect_validation ... ok
+test types::polynomial::tests::normalization_merges_terms_and_hashes_deterministically ... ok
+test types::ids::tests::fresh_ids_are_monotone ... ok
+test problem::canonicalize::tests::denominator_normalization_is_preserved ... ok
+test problem::canonicalize::tests::zero_relations_are_removed_with_diagnostics ... ok
+test problem::validate::tests::slack_and_branch_semantics_are_accepted_when_references_exist ... ok
+test types::ids::tests::stable_ids_are_namespace_bound ... ok
+test types::interval::tests::interval_invariants_hold ... ok
+test problem::semantic::tests::semantic_reference_check_rejects_unknown_slack_variable ... ok
+test types::monomial::tests::monomial_division_is_exact_when_possible ... ok
+test problem::semantic::tests::semantic_relations_are_collected_without_role_dispatch ... ok
+test types::polynomial::tests::clear_denominators_makes_primitive_integer_poly ... ok
+test problem::validate::tests::invalid_semantic_reference_is_rejected ... ok
+test types::rational::tests::normalizes_sign_and_gcd ... ok
+test types::rational::tests::exact_arithmetic_identity ... ok
+test types::rational::tests::zero_is_canonical ... ok
+test types::univariate::tests::hash_is_stable_for_equal_polynomials ... ok
+test problem::canonicalize::tests::nonzero_constant_relation_is_contradiction ... ok
+test types::univariate::tests::gcd_and_squarefree_are_monic ... ok
+test types::polynomial::tests::derivative_and_substitution_are_exact ... ok
+
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests geosolver_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+===== static_scan_unsupported.txt =====
+no Unsupported status/path found
+===== static_scan_geometry_fixture.txt =====
+no geometry/fixture/expected-answer dispatch words found in production code
+===== notes.md =====
+---
+purpose: phase-evidence-notes
+status: active
+authority: non-authoritative-evidence
+---
+
+# P2 Notes
+
+P2 implements problem input records, semantic encoding records, validation, canonicalization, solver context records, public status/error mapping, diagnostics, cost trace records, and result finalization helpers.
+
+Validation does not inspect geometry names and does not reject because a variable has a coordinate role or because branch/slack semantics are present. Semantic encodings are checked for encoded relation IDs and declared semantic variable references, including `slack_variables`.
+
+Canonicalization clears denominators through primitive normalization, removes zero relations with diagnostics, preserves semantic encodings, and returns `InvalidInput` for a nonzero constant contradiction.
+
+The `TemporaryPipelineNotConnected` path remains reachable because P14 has not connected the full orchestrator. It is still mapped to public `ImplementationBug` with a diagnostic and remains tracked for P14 removal.
+===== function_implementation_table.yaml =====
+phase_id: "P2"
+phase_kind: "data_model"
+claim_scope: "Problem input, semantic references, validation, canonicalization, context records, public status/error/result semantics."
+claim_ceiling_after_phase: "SCAFFOLD_READY"
+rows:
+  - item: "problem/input.rs RationalTargetProblem and make_problem"
+    owner_path: "geosolver-core/src/problem/input.rs"
+    required_by: ["RGQ-001", "RGQ-002", "RGQ-012", "Appendix A 9.1"]
+    status: "implemented"
+    public_functions: ["make_problem"]
+  - item: "problem/semantic.rs real constraint encodings"
+    owner_path: "geosolver-core/src/problem/semantic.rs"
+    required_by: ["RGQ-003", "RGQ-012", "Appendix A 9.2"]
+    status: "implemented"
+    public_functions: ["register_slack_encoding", "semantic_relations", "verify_semantic_references"]
+  - item: "problem/validate.rs input validation"
+    owner_path: "geosolver-core/src/problem/validate.rs"
+    required_by: ["RGQ-001", "RGQ-006", "RGQ-012"]
+    status: "implemented"
+    notes: "Rejects invalid target declarations, undeclared polynomial variables, non-normalized zero coefficient terms, and invalid semantic references. Variable roles and branch/slack semantics do not control acceptance."
+    public_functions: ["validate_input"]
+  - item: "problem/canonicalize.rs canonicalization"
+    owner_path: "geosolver-core/src/problem/canonicalize.rs"
+    required_by: ["RGQ-012"]
+    status: "implemented"
+    notes: "Clears denominators, normalizes, removes zero relations with diagnostics, detects nonzero constant contradiction, preserves semantic encodings."
+    public_functions: ["canonicalize_system", "canonicalize_relation", "canonical_variable_order"]
+  - item: "problem/context.rs SolverContext"
+    owner_path: "geosolver-core/src/problem/context.rs"
+    required_by: ["RGQ-030", "Appendix A 9.5"]
+    status: "implemented"
+    public_functions: ["new_context", "check_resource", "push_diagnostic"]
+  - item: "result/status.rs closed public statuses and SolverError mapping"
+    owner_path: "geosolver-core/src/result/status.rs"
+    required_by: ["RGQ-006", "RGQ-030", "RGQ-058"]
+    status: "implemented"
+    notes: "Public TargetSolveResult statuses are only Appendix A SolverStatus variants; internal errors map explicitly."
+  - item: "result/diagnostics.rs"
+    owner_path: "geosolver-core/src/result/diagnostics.rs"
+    required_by: ["RGQ-030"]
+    status: "implemented"
+  - item: "result/cost_trace.rs"
+    owner_path: "geosolver-core/src/result/cost_trace.rs"
+    required_by: ["RGQ-030", "RGQ-031"]
+    status: "implemented"
+  - item: "result/output.rs"
+    owner_path: "geosolver-core/src/result/output.rs"
+    required_by: ["RGQ-030"]
+    status: "implemented"
+    public_functions: ["finalize_success_result", "finalize_failure_result"]
+  - item: "TemporaryPipelineNotConnected"
+    owner_path: "geosolver-core/src/solver/orchestrator.rs"
+    required_by: ["PLAN:P1", "PLAN:P14"]
+    status: "temporary_path_still_reachable"
+    notes: "Allowed before P14, tracked for removal before P14 closure."

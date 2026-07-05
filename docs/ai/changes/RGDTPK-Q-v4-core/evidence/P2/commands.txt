@@ -1,0 +1,4 @@
+cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture
+rg Unsupported in geosolver-core/src
+rg geometry/fixture/expected-answer dispatch words in geosolver-core/src

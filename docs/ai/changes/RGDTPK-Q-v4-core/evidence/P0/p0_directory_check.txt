@@ -1,0 +1,2 @@
+exists docs\ai\changes\RGDTPK-Q-v4-core\evidence
+exists docs\ai\changes\RGDTPK-Q-v4-core\reviews

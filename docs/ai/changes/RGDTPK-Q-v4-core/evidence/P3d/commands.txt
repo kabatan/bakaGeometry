@@ -1,0 +1,7 @@
+$env:CARGO_INCREMENTAL='0'; cargo fmt --manifest-path geosolver-core\Cargo.toml -- --check
+$env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::resultant -- --nocapture
+$env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::interpolation -- --nocapture
+$env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml -- --nocapture
+rg -n "TODO|todo!|unimplemented|placeholder|dummy|fake|stub|Unsupported|unsupported" geosolver-core\src\algebra\resultant.rs geosolver-core\src\algebra\interpolation.rs
+rg -n "coordinate root|coordinate_roots|coordinate solution|full coordinate|RUR|parametr|solve.*coordinate|global coordinate|CAS|CAD|QE|homotopy|CertifiedNonFiniteTargetImage|CertifiedExactTargetImage|CertifiedCandidateCover" geosolver-core\src\algebra\resultant.rs geosolver-core\src\algebra\interpolation.rs
+rg -n "validate_keep_variables|is_prime_u64|trace_prime_is_valid_for_poly|noncanonical_keep_order|nonprime_trace_modulus|CandidateOnlyRequiresExactMembership|verify_resultant_certificate|verify_interpolated_relation" geosolver-core\src\algebra\resultant.rs geosolver-core\src\algebra\interpolation.rs

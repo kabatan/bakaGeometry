@@ -1,0 +1,54 @@
+Freshness point: after P4 implementation and test-oracle correction.
+
+Initial focused test run:
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml preprocess -- --nocapture
+Exit code: 1 before targeted test fix
+Key output:
+  running 8 tests
+  preprocess::definitional::tests::finds_constant_pivot_definitions_without_using_target ... ok
+  preprocess::binomial::tests::binomial_simplification_removes_scaled_duplicates_without_factor_split ... ok
+  preprocess::saturation::tests::saturation_records_only_explicit_nonzero_witnesses ... ok
+  preprocess::independent::tests::target_independent_component_becomes_feasibility_obligation ... ok
+  preprocess::compression::tests::pre_kernel_compression_runs_steps_in_required_order ... FAILED
+  preprocess::linear_affine::tests::rejects_nonconstant_affine_without_explicit_guard ... ok
+  preprocess::compression::tests::explicit_saturation_and_independent_obligation_survive_pipeline ... ok
+  preprocess::linear_affine::tests::guarded_affine_pivot_records_denominator_guard ... ok
+  assertion left == right failed: left 2, right 1
+Interpretation:
+  The implementation safely made two substitutions. After `y = x`, the relation `t - y` became `t - x`, allowing the safe constant-pivot affine substitution `x = t`.
+
+Verification after targeted test-oracle fix:
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo fmt --manifest-path geosolver-core\Cargo.toml -- --check
+Exit code: 0
+Output: no output.
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml preprocess -- --nocapture
+Exit code: 0
+Key output:
+  running 8 tests
+  preprocess::definitional::tests::finds_constant_pivot_definitions_without_using_target ... ok
+  preprocess::binomial::tests::binomial_simplification_removes_scaled_duplicates_without_factor_split ... ok
+  preprocess::independent::tests::target_independent_component_becomes_feasibility_obligation ... ok
+  preprocess::saturation::tests::saturation_records_only_explicit_nonzero_witnesses ... ok
+  preprocess::compression::tests::pre_kernel_compression_runs_steps_in_required_order ... ok
+  preprocess::linear_affine::tests::rejects_nonconstant_affine_without_explicit_guard ... ok
+  preprocess::compression::tests::explicit_saturation_and_independent_obligation_survive_pipeline ... ok
+  preprocess::linear_affine::tests::guarded_affine_pivot_records_denominator_guard ... ok
+  test result: ok. 8 passed; 0 failed; 80 filtered out
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml -- --nocapture
+Exit code: 0
+Key output:
+  running 88 tests
+  preprocess::binomial::tests::binomial_simplification_removes_scaled_duplicates_without_factor_split ... ok
+  preprocess::definitional::tests::finds_constant_pivot_definitions_without_using_target ... ok
+  preprocess::independent::tests::target_independent_component_becomes_feasibility_obligation ... ok
+  preprocess::saturation::tests::saturation_records_only_explicit_nonzero_witnesses ... ok
+  preprocess::compression::tests::pre_kernel_compression_runs_steps_in_required_order ... ok
+  preprocess::linear_affine::tests::rejects_nonconstant_affine_without_explicit_guard ... ok
+  preprocess::compression::tests::explicit_saturation_and_independent_obligation_survive_pipeline ... ok
+  preprocess::linear_affine::tests::guarded_affine_pivot_records_denominator_guard ... ok
+  test result: ok. 88 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+  Doc-tests geosolver_core: 0 passed; 0 failed

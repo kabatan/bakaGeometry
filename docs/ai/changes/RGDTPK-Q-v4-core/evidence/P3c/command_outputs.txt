@@ -1,0 +1,44 @@
+Freshness point: after adding direct P3c F4 regression coverage in geosolver-core/src/algebra/f4.rs and after prior P3a/P3b PASS fixes.
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo fmt --manifest-path geosolver-core\Cargo.toml -- --check
+Exit code: 0
+Output: no output.
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::groebner -- --nocapture
+Exit code: 0
+Key output:
+  running 1 test
+  algebra::groebner::tests::local_groebner_eliminates_to_keep_variable_with_certificate ... ok
+  test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 55 filtered out
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::elimination -- --nocapture
+Exit code: 0
+Key output:
+  running 3 tests
+  algebra::elimination::tests::dispatcher_checks_disjoint_keep_and_eliminate_sets ... ok
+  algebra::elimination::tests::non_keep_export_is_implementation_bug ... ok
+  algebra::elimination::tests::dispatcher_exports_keep_only_generator_with_certificate ... ok
+  test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 53 filtered out
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::f4 -- --nocapture
+Exit code: 0
+Key output:
+  running 2 tests
+  algebra::f4::tests::f4_reduce_batch_reduces_targets_and_records_matrix_shape ... ok
+  algebra::f4::tests::f4_elimination_local_exports_keep_only_generators_with_certificates ... ok
+  test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 54 filtered out
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml -- --nocapture
+Exit code: 0
+Key output:
+  running 56 tests
+  algebra::f4::tests::f4_reduce_batch_reduces_targets_and_records_matrix_shape ... ok
+  algebra::f4::tests::f4_elimination_local_exports_keep_only_generators_with_certificates ... ok
+  algebra::groebner::tests::local_groebner_eliminates_to_keep_variable_with_certificate ... ok
+  algebra::elimination::tests::dispatcher_checks_disjoint_keep_and_eliminate_sets ... ok
+  algebra::elimination::tests::dispatcher_exports_keep_only_generator_with_certificate ... ok
+  algebra::elimination::tests::non_keep_export_is_implementation_bug ... ok
+  test result: ok. 56 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+  Doc-tests geosolver_core: 0 passed; 0 failed
+
+Operational note: an earlier attempted command with multiple Cargo TESTNAME filters failed with a Cargo CLI usage error. It was not a code/test failure and is superseded by the successful per-module test commands above.

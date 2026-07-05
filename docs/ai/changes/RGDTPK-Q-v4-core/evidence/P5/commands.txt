@@ -1,0 +1,19 @@
+Freshness point: after implementing P5 graph, decomposition, TargetProjectionDAG authorization, and metrics in geosolver-core/src/graph.
+
+Commands run:
+
+1. $env:CARGO_INCREMENTAL='0'; cargo fmt --manifest-path geosolver-core\Cargo.toml -- --check
+2. $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml graph -- --nocapture
+3. $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml -- --nocapture
+4. rg -n "TODO|todo|stub|placeholder|unimplemented!|panic!|TemporaryPipelineNotConnected|temporary_pipeline|coordinate|geometry|diagram|random|f64|f32" geosolver-core\src\graph geosolver-core\src\preprocess
+5. rg -n "circle|triangle|tangent|area|incircle|circumcircle|fixture|official solution|expected answer|problem_id|coordinate solution|coordinate roots|full coordinate|RUR|CAD|QE|homotopy|CertifiedCandidateCover|CertifiedExactTargetImage|CertifiedNonFiniteTargetImage" geosolver-core\src\graph
+6. rg -n "build_relation_variable_hypergraph|connected_components|relation_variables|variable_relations|build_target_influence_graph|build_weighted_primal_graph|variable_weight|edge_weight|articulation_variable_candidates|min_fill_separator_candidates|score_separator|build_target_rooted_decomposition|build_target_projection_dag|authorize_block_relations|validate_projection_dag|structural_metrics|estimate_local_quotient_rank|estimate_sparse_template_size|estimate_coefficient_growth" geosolver-core\src\graph
+7. git rev-parse --is-inside-work-tree
+8. git rev-parse --verify HEAD
+
+Failure/fix loop captured:
+
+- Initial graph focused run had one test failure: `graph::separators::tests::articulation_candidate_is_algebraic_incidence_based`.
+- Root-cause hypothesis: the test oracle used relation `t*x - y`, which makes `t`, `x`, and `y` co-occur in one polynomial and therefore creates a triangle in the primal graph. In that graph `x` is not an articulation variable.
+- Targeted fix: change the test oracle to use the algebraic incidence chain `t*x = 0`, `x*y = 0` and build `CompressedSystemQ` directly from `CompressionState` so P4 compression does not rewrite the graph oracle.
+- Verification: reran fmt check, graph focused tests, and full crate tests successfully.

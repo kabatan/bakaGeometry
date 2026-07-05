@@ -1,0 +1,7 @@
+python -m pip install jsonschema
+PowerShell PACK_MANIFEST.sha256 verification over workspace files
+PowerShell Get-FileHash schema mirror check
+python - YAML parse and JSON Schema validation for actual and synthetic review/evidence artifacts
+Get-ChildItem docs/ai -Recurse -File
+rg scans for RGQ-051 polarity, forbidden old final-claim phrase, and schema mirror references
+git status --short --untracked-files=all

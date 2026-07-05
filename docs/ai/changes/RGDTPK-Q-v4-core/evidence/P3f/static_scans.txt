@@ -1,0 +1,16 @@
+P3f static scans after the last relevant code change:
+
+1. General forbidden implementation markers in P3f-owned files.
+   Command: rg -n "TODO|todo!|unimplemented|placeholder|dummy|fake|stub|Unsupported|unsupported" geosolver-core\src\algebra\regular_chain.rs geosolver-core\src\algebra\norm_trace.rs geosolver-core\src\algebra\real_root.rs geosolver-core\src\algebra\sign.rs
+   Exit code: 1
+   Result: pass, no matches.
+
+2. Geometry dispatch, floating path, full-coordinate, and solver-status overclaim scan in P3f-owned files.
+   Command: rg -n "geometry|geometric|fixture|expected answer|f64|f32|approx|coordinate solution|coordinate roots|RUR|CAD|QE|homotopy|full coordinate|CertifiedCandidateCover|CertifiedExactTargetImage|CertifiedNonFiniteTargetImage" geosolver-core\src\algebra\regular_chain.rs geosolver-core\src\algebra\norm_trace.rs geosolver-core\src\algebra\real_root.rs geosolver-core\src\algebra\sign.rs
+   Exit code: 1
+   Result: pass, no matches.
+
+3. Positive P3f function and boundary scan.
+   Command: rg -n "local_regular_chain_decomposition|project_chain_to_variables|combine_chain_projections|detect_explicit_tower|norm_of_target_minus_expression|verify_norm_relation|sturm_sequence|isolate_real_roots_sturm|isolate_real_roots_descartes|sign_at_algebraic_root|thom_encoding|component_semantics|guards|Resultant|Sturm|RefinementRequired" geosolver-core\src\algebra\regular_chain.rs geosolver-core\src\algebra\norm_trace.rs geosolver-core\src\algebra\real_root.rs geosolver-core\src\algebra\sign.rs
+   Exit code: 0
+   Result: pass. Matches show all Appendix A section 10.16 through 10.19 functions, component/guard semantics fields, exact resultant-backed norm verification, exact Sturm helpers, and the non-success RefinementRequired sign boundary.

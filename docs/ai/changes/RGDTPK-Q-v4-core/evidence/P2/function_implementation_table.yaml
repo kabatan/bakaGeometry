@@ -1,0 +1,55 @@
+phase_id: "P2"
+phase_kind: "data_model"
+claim_scope: "Problem input, semantic references, validation, canonicalization, context records, public status/error/result semantics."
+claim_ceiling_after_phase: "SCAFFOLD_READY"
+rows:
+  - item: "problem/input.rs RationalTargetProblem and make_problem"
+    owner_path: "geosolver-core/src/problem/input.rs"
+    required_by: ["RGQ-001", "RGQ-002", "RGQ-012", "Appendix A 9.1"]
+    status: "implemented"
+    public_functions: ["make_problem"]
+  - item: "problem/semantic.rs real constraint encodings"
+    owner_path: "geosolver-core/src/problem/semantic.rs"
+    required_by: ["RGQ-003", "RGQ-012", "Appendix A 9.2"]
+    status: "implemented"
+    public_functions: ["register_slack_encoding", "semantic_relations", "verify_semantic_references"]
+  - item: "problem/validate.rs input validation"
+    owner_path: "geosolver-core/src/problem/validate.rs"
+    required_by: ["RGQ-001", "RGQ-006", "RGQ-012"]
+    status: "implemented"
+    notes: "Rejects invalid target declarations, undeclared polynomial variables, non-normalized zero coefficient terms, and invalid semantic references. Variable roles and branch/slack semantics do not control acceptance."
+    public_functions: ["validate_input"]
+  - item: "problem/canonicalize.rs canonicalization"
+    owner_path: "geosolver-core/src/problem/canonicalize.rs"
+    required_by: ["RGQ-012"]
+    status: "implemented"
+    notes: "Clears denominators, normalizes, removes zero relations with diagnostics, detects nonzero constant contradiction, preserves semantic encodings."
+    public_functions: ["canonicalize_system", "canonicalize_relation", "canonical_variable_order"]
+  - item: "problem/context.rs SolverContext"
+    owner_path: "geosolver-core/src/problem/context.rs"
+    required_by: ["RGQ-030", "Appendix A 9.5"]
+    status: "implemented"
+    public_functions: ["new_context", "check_resource", "push_diagnostic"]
+  - item: "result/status.rs closed public statuses and SolverError mapping"
+    owner_path: "geosolver-core/src/result/status.rs"
+    required_by: ["RGQ-006", "RGQ-030", "RGQ-058"]
+    status: "implemented"
+    notes: "Public TargetSolveResult statuses are only Appendix A SolverStatus variants; internal errors map explicitly."
+  - item: "result/diagnostics.rs"
+    owner_path: "geosolver-core/src/result/diagnostics.rs"
+    required_by: ["RGQ-030"]
+    status: "implemented"
+  - item: "result/cost_trace.rs"
+    owner_path: "geosolver-core/src/result/cost_trace.rs"
+    required_by: ["RGQ-030", "RGQ-031"]
+    status: "implemented"
+  - item: "result/output.rs"
+    owner_path: "geosolver-core/src/result/output.rs"
+    required_by: ["RGQ-030"]
+    status: "implemented"
+    public_functions: ["finalize_success_result", "finalize_failure_result"]
+  - item: "TemporaryPipelineNotConnected"
+    owner_path: "geosolver-core/src/solver/orchestrator.rs"
+    required_by: ["PLAN:P1", "PLAN:P14"]
+    status: "temporary_path_still_reachable"
+    notes: "Allowed before P14, tracked for removal before P14 closure."

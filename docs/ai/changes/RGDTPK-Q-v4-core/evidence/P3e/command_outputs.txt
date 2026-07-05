@@ -1,0 +1,30 @@
+Freshness point: after implementing geosolver-core/src/algebra/quotient.rs and geosolver-core/src/algebra/krylov.rs for P3e.
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo fmt --manifest-path geosolver-core\Cargo.toml -- --check
+Exit code: 0
+Output: no output.
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::quotient -- --nocapture
+Exit code: 0
+Key output:
+  running 1 test
+  algebra::quotient::tests::explicit_handle_exposes_no_coordinate_solution_api_and_normal_forms_exactly ... ok
+  test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 68 filtered out
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::krylov -- --nocapture
+Exit code: 0
+Key output:
+  running 2 tests
+  algebra::krylov::tests::single_vector_krylov_undercoverage_is_rejected ... ok
+  algebra::krylov::tests::verified_characteristic_support_coverage_is_accepted ... ok
+  test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 67 filtered out
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml -- --nocapture
+Exit code: 0
+Key output:
+  running 69 tests
+  algebra::quotient::tests::explicit_handle_exposes_no_coordinate_solution_api_and_normal_forms_exactly ... ok
+  algebra::krylov::tests::single_vector_krylov_undercoverage_is_rejected ... ok
+  algebra::krylov::tests::verified_characteristic_support_coverage_is_accepted ... ok
+  test result: ok. 69 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+  Doc-tests geosolver_core: 0 passed; 0 failed

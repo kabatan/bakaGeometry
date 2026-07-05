@@ -1,0 +1,17 @@
+Freshness point: after implementing P4 preprocess compression passes in geosolver-core/src/preprocess.
+
+Commands run:
+
+1. $env:CARGO_INCREMENTAL='0'; cargo fmt --manifest-path geosolver-core\Cargo.toml -- --check
+2. $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml preprocess -- --nocapture
+3. $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml -- --nocapture
+4. rg -n "TODO|todo!|unimplemented|placeholder|dummy|fake|stub|Unsupported|unsupported|implemented in P4" geosolver-core\src\preprocess\compression.rs geosolver-core\src\preprocess\definitional.rs geosolver-core\src\preprocess\linear_affine.rs geosolver-core\src\preprocess\binomial.rs geosolver-core\src\preprocess\saturation.rs geosolver-core\src\preprocess\independent.rs
+5. rg -n "geometry|geometric|circle|triangle|tangent|distance|area|incircle|circumcircle|fixture|official solution|expected answer|factor selection|full coordinate|coordinate solution|coordinate roots|RUR|CAD|QE|homotopy|CertifiedCandidateCover|CertifiedExactTargetImage|CertifiedNonFiniteTargetImage" geosolver-core\src\preprocess\compression.rs geosolver-core\src\preprocess\definitional.rs geosolver-core\src\preprocess\linear_affine.rs geosolver-core\src\preprocess\binomial.rs geosolver-core\src\preprocess\saturation.rs geosolver-core\src\preprocess\independent.rs
+6. rg -n "pre_kernel_compress|find_definitional_relations|apply_definitional_elimination|find_linear_affine_candidates|select_safe_affine_pivots|eliminate_linear_affine_variables|detect_binomial_relations|simplify_binomial_relations|apply_explicit_saturations|is_explicit_nonzero_factor|mark_target_independent_components|compute_component_feasibility_obligations|ordered_steps|ExplicitNonZeroWitness|AffineDenominator|FeasibilityObligation|clear_denominators_primitive" geosolver-core\src\preprocess\compression.rs geosolver-core\src\preprocess\definitional.rs geosolver-core\src\preprocess\linear_affine.rs geosolver-core\src\preprocess\binomial.rs geosolver-core\src\preprocess\saturation.rs geosolver-core\src\preprocess\independent.rs
+
+Failure/fix loop captured:
+
+- Initial preprocess focused run had one test failure: `pre_kernel_compression_runs_steps_in_required_order` expected one substitution but observed two.
+- Root-cause hypothesis: the compression pipeline correctly performed a second safe constant-pivot affine substitution after definitional elimination (`t - x = 0` allows eliminating `x` as `x = t`).
+- Targeted fix: update the test oracle to expect two substitutions and no remaining relations in that algebraically free-target case.
+- Verification: reran fmt check, preprocess focused tests, and full crate tests successfully.

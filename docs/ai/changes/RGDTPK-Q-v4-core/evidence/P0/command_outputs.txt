@@ -1,0 +1,130 @@
+===== pack_manifest_check.txt =====
+checked=20; status=OK
+===== schema_mirror_check.txt =====
+root=ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0
+mirror=ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0
+mirror=byte-identical
+===== schema_validation.txt =====
+docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-221429Z/review_summary.yaml: VALID
+docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-223810Z/review_summary.yaml: VALID
+docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-221429Z/evidence_manifest.yaml: VALID
+docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-223810Z/evidence_manifest.yaml: VALID
+synthetic minimal P0 PASS summary: VALID
+synthetic PASS-with-blocker summary: rejected (1 errors); first=['synthetic blocker'] is expected to be empty
+synthetic PASS-with-required-fix summary: rejected (1 errors); first=['synthetic required fix'] is expected to be empty
+synthetic PASS-with-false-pass-condition summary: rejected (1 errors); first=True was expected
+synthetic evidence manifest missing command exit_code: rejected (1 errors); first='exit_code' is a required property
+===== docs_ai_file_list.txt =====
+docs/ai/ACTIVE_CONTEXT.md
+docs/ai/changes/RGDTPK-Q-v4-core/BASE_SPEC.md
+docs/ai/changes/RGDTPK-Q-v4-core/CLOSURE.md
+docs/ai/changes/RGDTPK-Q-v4-core/CONSISTENCY_AUDIT_V2_2.md
+docs/ai/changes/RGDTPK-Q-v4-core/CONSISTENCY_AUDIT.md
+docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/command_outputs.txt
+docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/commands.txt
+docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/docs_ai_file_list.txt
+docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/function_implementation_table.yaml
+docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/git_status_untracked.txt
+docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/notes.md
+docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/p0_directory_check.txt
+docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/pack_manifest_check.txt
+docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/schema_mirror_check.txt
+docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/schema_validation.txt
+docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/static_scans.txt
+docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/user_approval_20260705.md
+docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/yaml_parse_check.txt
+docs/ai/changes/RGDTPK-Q-v4-core/ISSUE_FIX_MAP.md
+docs/ai/changes/RGDTPK-Q-v4-core/PACK_MANIFEST.sha256
+docs/ai/changes/RGDTPK-Q-v4-core/PATCH_NOTES_V2_1.md
+docs/ai/changes/RGDTPK-Q-v4-core/PATCH_NOTES_V2_2.md
+docs/ai/changes/RGDTPK-Q-v4-core/PLAN.md
+docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_ARCHIVE_SCHEMA.md
+docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_SUMMARY_SCHEMA.yaml
+docs/ai/changes/RGDTPK-Q-v4-core/REVIEWER_PROMPTS.md
+docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-221429Z/evidence_manifest.yaml
+docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-221429Z/prompt.md
+docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-221429Z/response.md
+docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-221429Z/review_summary.yaml
+docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-223810Z/evidence_manifest.yaml
+docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-223810Z/prompt.md
+docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-223810Z/response.md
+docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-223810Z/review_summary.yaml
+docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-224531Z/prompt.md
+docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-224531Z/response.md
+docs/ai/changes/RGDTPK-Q-v4-core/schemas/evidence_manifest.schema.yaml
+docs/ai/changes/RGDTPK-Q-v4-core/schemas/review_summary.schema.yaml
+docs/ai/changes/RGDTPK-Q-v4-core/SESSION_HANDOFF.md
+docs/ai/changes/RGDTPK-Q-v4-core/SOURCE_MAP.md
+docs/ai/sources/geosolver_core_r_gdtpk_q_algorithm_spec_v4.md
+docs/ai/sources/geosolver_failure_causes_generalized_2026_07_04.md
+docs/ai/SPEC_REGISTRY.md
+===== static_scans.txt =====
+scan=rgq051_correct_polarity
+docs/ai/changes/RGDTPK-Q-v4-core/CONSISTENCY_AUDIT.md:22:| Corrected `RGQ-051` polarity | PASS | The normative sentence says relation-search exhaustion, sparse heuristic failure, Universal stage failure, or composition failure must not route to `CertifiedNonFiniteTargetImage`. The wrong polarity is absent from the instruction pack. |
+docs/ai/changes/RGDTPK-Q-v4-core/BASE_SPEC.md:702:No relation found within RGQ-042 bounds, sparse heuristic failure, Universal stage failure, or composition failure to produce target-only support must not route to `CertifiedNonFiniteTargetImage`. Such cases must route to `AlgorithmicHardCase`, `FiniteResourceFailure`, or `CertificateDesignGap` according to the available evidence. The only route to `CertifiedNonFiniteTargetImage` is the positive proof required by RGQ-045. This rule must be enforced in code and tested.
+status=pass
+scan=forbidden_old_candidate_cover_acceptance_phrase
+scope=docs/ai/changes/RGDTPK-Q-v4-core/CLOSURE.md docs/ai/changes/RGDTPK-Q-v4-core/BASE_SPEC.md
+no matches; status=pass
+note=PLAN.md intentionally excluded from this forbidden-claim scan because it contains the scan command text itself, not a closure claim.
+scan=schema_mirror_references
+docs/ai/changes/RGDTPK-Q-v4-core/CONSISTENCY_AUDIT.md:13:| Review schema mirror check | PASS | `REVIEW_SUMMARY_SCHEMA.yaml` and `schemas/review_summary.schema.yaml` are byte-identical. |
+docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_SUMMARY_SCHEMA.yaml:18:  - schema_mirror_sha256
+docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_SUMMARY_SCHEMA.yaml:69:  schema_mirror_sha256: {$ref: "#/$defs/sha256"}
+docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_SUMMARY_SCHEMA.yaml:244:      - schema_mirror_byte_identical
+docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_SUMMARY_SCHEMA.yaml:265:      schema_mirror_byte_identical: {type: boolean}
+docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_SUMMARY_SCHEMA.yaml:361:            schema_mirror_byte_identical: {const: true}
+docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_ARCHIVE_SCHEMA.md:11:`REVIEW_SUMMARY_SCHEMA.yaml` and `schemas/review_summary.schema.yaml` must be byte-identical. If this markdown and any YAML schema differ, the stricter rule wins and the Agent must stop for `BaseSpecConflict` rather than choosing the easier rule.
+docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_ARCHIVE_SCHEMA.md:27:The authoritative machine-checkable form is `REVIEW_SUMMARY_SCHEMA.yaml`, byte-identical to `schemas/review_summary.schema.yaml`. Every summary must use schema version `rgdtpk-review-v2.2` and include all fields required by that schema, including the v2.2 hardening fields `schema_mirror_sha256`, `appendix_override_checks`, `status_mapping_checks`, and `suite_partition_checks`.
+docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_ARCHIVE_SCHEMA.md:44:schema_mirror_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_ARCHIVE_SCHEMA.md:117:  schema_mirror_byte_identical: true
+docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_ARCHIVE_SCHEMA.md:153:REVIEW_SUMMARY_SCHEMA.yaml and schemas/review_summary.schema.yaml are byte-identical
+status=pass
+===== git_status_untracked.txt =====
+?? README.md
+?? docs/ai/ACTIVE_CONTEXT.md
+?? docs/ai/SPEC_REGISTRY.md
+?? docs/ai/changes/RGDTPK-Q-v4-core/BASE_SPEC.md
+?? docs/ai/changes/RGDTPK-Q-v4-core/CLOSURE.md
+?? docs/ai/changes/RGDTPK-Q-v4-core/CONSISTENCY_AUDIT.md
+?? docs/ai/changes/RGDTPK-Q-v4-core/CONSISTENCY_AUDIT_V2_2.md
+?? docs/ai/changes/RGDTPK-Q-v4-core/ISSUE_FIX_MAP.md
+?? docs/ai/changes/RGDTPK-Q-v4-core/PACK_MANIFEST.sha256
+?? docs/ai/changes/RGDTPK-Q-v4-core/PATCH_NOTES_V2_1.md
+?? docs/ai/changes/RGDTPK-Q-v4-core/PATCH_NOTES_V2_2.md
+?? docs/ai/changes/RGDTPK-Q-v4-core/PLAN.md
+?? docs/ai/changes/RGDTPK-Q-v4-core/REVIEWER_PROMPTS.md
+?? docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_ARCHIVE_SCHEMA.md
+?? docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_SUMMARY_SCHEMA.yaml
+?? docs/ai/changes/RGDTPK-Q-v4-core/SESSION_HANDOFF.md
+?? docs/ai/changes/RGDTPK-Q-v4-core/SOURCE_MAP.md
+?? docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/command_outputs.txt
+?? docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/commands.txt
+?? docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/docs_ai_file_list.txt
+?? docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/function_implementation_table.yaml
+?? docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/git_status_untracked.txt
+?? docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/notes.md
+?? docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/p0_directory_check.txt
+?? docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/pack_manifest_check.txt
+?? docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/schema_mirror_check.txt
+?? docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/schema_validation.txt
+?? docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/static_scans.txt
+?? docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/user_approval_20260705.md
+?? docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/yaml_parse_check.txt
+?? docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-221429Z/evidence_manifest.yaml
+?? docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-221429Z/prompt.md
+?? docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-221429Z/response.md
+?? docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-221429Z/review_summary.yaml
+?? docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-223810Z/evidence_manifest.yaml
+?? docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-223810Z/prompt.md
+?? docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-223810Z/response.md
+?? docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-223810Z/review_summary.yaml
+?? docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-224531Z/prompt.md
+?? docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-224531Z/response.md
+?? docs/ai/changes/RGDTPK-Q-v4-core/schemas/evidence_manifest.schema.yaml
+?? docs/ai/changes/RGDTPK-Q-v4-core/schemas/review_summary.schema.yaml
+?? docs/ai/sources/geosolver_core_r_gdtpk_q_algorithm_spec_v4.md
+?? docs/ai/sources/geosolver_failure_causes_generalized_2026_07_04.md
+===== p0_directory_check.txt =====
+exists docs\ai\changes\RGDTPK-Q-v4-core\evidence
+exists docs\ai\changes\RGDTPK-Q-v4-core\reviews

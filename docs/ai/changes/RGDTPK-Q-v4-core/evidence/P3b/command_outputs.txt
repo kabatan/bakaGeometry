@@ -1,0 +1,55 @@
+Freshness point: after the fourth P3b FAIL_FIXABLE fix in geosolver-core/src/algebra/linear_solve.rs. The fix gates rational reconstruction on actually reaching the configured stable pivot-column rank-profile threshold, adds homogeneous and inhomogeneous regressions for max-prime exhaustion before stability, and includes prior P3b fixes.
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo fmt --manifest-path geosolver-core\Cargo.toml -- --check
+Exit code: 0
+Output: no output.
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::linear_solve -- --nocapture
+Exit code: 0
+Key output:
+  running 8 tests
+  algebra::linear_solve::tests::every_prime_in_solve_sequence_avoids_matrix_denominators_and_coefficients ... ok
+  algebra::linear_solve::tests::homogeneous_does_not_reconstruct_without_stability ... ok
+  algebra::linear_solve::tests::inhomogeneous_does_not_reconstruct_without_stability ... ok
+  algebra::linear_solve::tests::inhomogeneous_prime_sequence_avoids_rhs_denominators ... ok
+  algebra::linear_solve::tests::inhomogeneous_reconstruction_uses_only_stable_rank_profile_suffix ... ok
+  algebra::linear_solve::tests::inhomogeneous_modular_solve_returns_candidate_solution_not_proof ... ok
+  algebra::linear_solve::tests::modular_solve_waits_for_stable_rank_profile_not_rank_only ... ok
+  algebra::linear_solve::tests::homogeneous_modular_solve_exposes_candidate_trace_only ... ok
+  test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 46 filtered out
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml -- --nocapture
+Exit code: 0
+Key output:
+  running 54 tests
+  algebra::crt::tests::crt_round_trip_combines_coprime_moduli ... ok
+  algebra::crt::tests::incompatible_crt_returns_none_in_checked_api ... ok
+  algebra::dense_matrix::tests::dense_rank_matches_sparse_algorithm ... ok
+  algebra::linear_solve::tests::homogeneous_modular_solve_exposes_candidate_trace_only ... ok
+  algebra::linear_solve::tests::homogeneous_does_not_reconstruct_without_stability ... ok
+  algebra::linear_solve::tests::inhomogeneous_modular_solve_returns_candidate_solution_not_proof ... ok
+  algebra::linear_solve::tests::inhomogeneous_does_not_reconstruct_without_stability ... ok
+  algebra::linear_solve::tests::every_prime_in_solve_sequence_avoids_matrix_denominators_and_coefficients ... ok
+  algebra::linear_solve::tests::inhomogeneous_prime_sequence_avoids_rhs_denominators ... ok
+  algebra::linear_solve::tests::modular_solve_waits_for_stable_rank_profile_not_rank_only ... ok
+  algebra::linear_solve::tests::inhomogeneous_reconstruction_uses_only_stable_rank_profile_suffix ... ok
+  algebra::modular::tests::prime_choice_is_deterministic_and_avoids_denominators_and_coefficients ... ok
+  algebra::modular::tests::rational_coefficients_reduce_and_lift_exactly ... ok
+  algebra::rational_reconstruction::tests::polynomial_reconstruction_normalizes_terms ... ok
+  algebra::rational_reconstruction::tests::rational_reconstruction_round_trip_is_exact ... ok
+  algebra::rational_reconstruction::tests::unstable_reconstruction_fails_when_multiple_small_lifts_exist ... ok
+  algebra::sparse_matrix::tests::sparse_rank_and_nullspace_are_exact_mod_prime ... ok
+  test result: ok. 54 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+  Doc-tests geosolver_core: 0 passed; 0 failed
+
+Command: rg -n "todo!|unimplemented!|placeholder|dummy|fake|stub|Unsupported|unsupported" geosolver-core\src
+Exit code: 1
+Output: no matches.
+
+Command: rg -n "circle|triangle|tangent|distance|area|incircle|circumcircle|orthic|mixtilinear|fixture|expected|answer|problem_id|official" geosolver-core\src
+Exit code: 1
+Output: no matches.
+
+Command: rg -n "f64|f32|as f64|as f32|approx|proof_status.*Certified|Certified.*modular|CandidateOnlyRequiresExactQCheck|pivot_columns|rank profile|rank_profile|reconstructed_.*candidate|reconstruction_height_bound" geosolver-core\src\algebra
+Exit code: 0
+Output: matches are the pivot-column trace fields/usages, `CandidateOnlyRequiresExactQCheck`, reconstruction candidate fields, and tests. No floating exact path or modular-certified proof marker was found.

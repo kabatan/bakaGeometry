@@ -1,0 +1,6 @@
+cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+cargo test --manifest-path geosolver-core/Cargo.toml types -- --nocapture
+cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture
+PowerShell required Appendix A section 6 file existence check
+rg forbidden implementation markers in geosolver-core/src
+rg non-spec public status words in geosolver-core/src

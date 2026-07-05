@@ -1,0 +1,99 @@
+Freshness point: after P3f implementation and scalar-normalization test fix.
+
+Initial focused test run:
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::real_root -- --nocapture
+Exit code: 0
+Key output:
+  running 2 tests
+  algebra::real_root::tests::rational_midpoint_roots_do_not_break_isolation ... ok
+  algebra::real_root::tests::sturm_sequence_counts_two_real_roots_exactly ... ok
+  test result: ok. 2 passed; 0 failed; 78 filtered out
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::sign -- --nocapture
+Exit code: 0
+Key output:
+  running 2 tests
+  algebra::sign::tests::sign_at_isolated_root_is_exact_when_interval_has_no_guard_root ... ok
+  algebra::sign::tests::thom_encoding_records_derivative_signs ... ok
+  test result: ok. 2 passed; 0 failed; 78 filtered out
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::norm_trace -- --nocapture
+Exit code: 1 before targeted fix
+Key output:
+  running 4 tests
+  algebra::norm_trace::tests::noncanonical_exported_variables_do_not_detect_a_tower ... ok
+  algebra::norm_trace::tests::detects_explicit_tower_by_algebraic_form ... ok
+  algebra::norm_trace::tests::tower_hash_is_stable ... ok
+  algebra::norm_trace::tests::norm_relation_is_exactly_recomputed ... FAILED
+  assertion left == right failed:
+    left: 2 - T^2
+    right: T^2 - 2
+Interpretation:
+  The norm relation was correct up to nonzero scalar. The test was too strict about resultant sign convention. The fix normalized both sides with clear_denominators_primitive before comparing.
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::regular_chain -- --nocapture
+Exit code: 0
+Key output:
+  running 3 tests
+  algebra::regular_chain::tests::duplicate_main_variables_are_rejected ... ok
+  algebra::regular_chain::tests::union_combination_multiplies_component_generators ... ok
+  algebra::regular_chain::tests::regular_chain_projection_preserves_guards_and_keep_variables ... ok
+  test result: ok. 3 passed; 0 failed; 77 filtered out
+
+Verification after targeted fix:
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo fmt --manifest-path geosolver-core\Cargo.toml -- --check
+Exit code: 0
+Output: no output.
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::norm_trace -- --nocapture
+Exit code: 0
+Key output:
+  running 4 tests
+  algebra::norm_trace::tests::noncanonical_exported_variables_do_not_detect_a_tower ... ok
+  algebra::norm_trace::tests::detects_explicit_tower_by_algebraic_form ... ok
+  algebra::norm_trace::tests::tower_hash_is_stable ... ok
+  algebra::norm_trace::tests::norm_relation_is_exactly_recomputed ... ok
+  test result: ok. 4 passed; 0 failed; 76 filtered out
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::real_root -- --nocapture
+Exit code: 0
+Key output:
+  running 2 tests
+  algebra::real_root::tests::sturm_sequence_counts_two_real_roots_exactly ... ok
+  algebra::real_root::tests::rational_midpoint_roots_do_not_break_isolation ... ok
+  test result: ok. 2 passed; 0 failed; 78 filtered out
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::sign -- --nocapture
+Exit code: 0
+Key output:
+  running 2 tests
+  algebra::sign::tests::sign_at_isolated_root_is_exact_when_interval_has_no_guard_root ... ok
+  algebra::sign::tests::thom_encoding_records_derivative_signs ... ok
+  test result: ok. 2 passed; 0 failed; 78 filtered out
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::regular_chain -- --nocapture
+Exit code: 0
+Key output:
+  running 3 tests
+  algebra::regular_chain::tests::duplicate_main_variables_are_rejected ... ok
+  algebra::regular_chain::tests::union_combination_multiplies_component_generators ... ok
+  algebra::regular_chain::tests::regular_chain_projection_preserves_guards_and_keep_variables ... ok
+  test result: ok. 3 passed; 0 failed; 77 filtered out
+
+Command: $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml -- --nocapture
+Exit code: 0
+Key output:
+  running 80 tests
+  algebra::regular_chain::tests::duplicate_main_variables_are_rejected ... ok
+  algebra::regular_chain::tests::union_combination_multiplies_component_generators ... ok
+  algebra::regular_chain::tests::regular_chain_projection_preserves_guards_and_keep_variables ... ok
+  algebra::real_root::tests::sturm_sequence_counts_two_real_roots_exactly ... ok
+  algebra::real_root::tests::rational_midpoint_roots_do_not_break_isolation ... ok
+  algebra::norm_trace::tests::detects_explicit_tower_by_algebraic_form ... ok
+  algebra::norm_trace::tests::norm_relation_is_exactly_recomputed ... ok
+  algebra::sign::tests::sign_at_isolated_root_is_exact_when_interval_has_no_guard_root ... ok
+  algebra::sign::tests::thom_encoding_records_derivative_signs ... ok
+  test result: ok. 80 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+  Doc-tests geosolver_core: 0 passed; 0 failed

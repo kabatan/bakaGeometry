@@ -1,0 +1,105 @@
+schema_version: "rgdtpk-review-v2.2"
+phase_id: "P2"
+phase_kind: "data_model"
+review_status: "FAIL_FIXABLE"
+phase_closable: false
+claim_ceiling_after_phase: "SCAFFOLD_READY"
+base_spec_sha256: "dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c"
+plan_sha256: "e78cfebc3cce75fbe632c1d0384f59eee7168a27c81d7326c1f02362584b26bc"
+source_map_sha256: "c3fc89dd76d1bf68684ad5359f6e2c4accf28e8db87c0e725b36aba21a2362a2"
+review_archive_schema_sha256: "53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad"
+review_summary_schema_sha256: "ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0"
+evidence_manifest_schema_sha256: "70fd1c72382f5ab847e3eb2eb40f135abb628f46c2a1e5ebf006acdba81c8e0f"
+schema_mirror_sha256: "ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0"
+commit: "unborn-master-no-commit"
+prompt_sha256: "f17341e183f974aef2558c340aebbc874cc80b1416b226072a53caadbbaa5e9d"
+response_sha256: "a209817212487c0780369a0bcd69ae514e4bf13c74982df6acac62b7c894445a"
+evidence_manifest_sha256: "48c44b2d74496ad0fd3513e096e5248f29fea88864d8587ba987652be86e792d"
+prompt_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P2/20260704-231223Z/prompt.md"
+response_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P2/20260704-231223Z/response.md"
+evidence_manifest_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P2/20260704-231223Z/evidence_manifest.yaml"
+reviewer_identity: "guardian_boundary_reviewer"
+reviewed_rids: ["RGQ-012", "RGQ-058"]
+reviewed_mechs: ["MECH-001", "MECH-002", "MECH-012"]
+source_sections_checked: ["PLAN.md P2", "BASE_SPEC.md RGQ-012"]
+files_inspected: ["geosolver-core/src/problem/semantic.rs", "geosolver-core/src/problem/validate.rs"]
+evidence_inspected: ["docs/ai/changes/RGDTPK-Q-v4-core/reviews/P2/20260704-231223Z/response.md"]
+commands_inspected: ["P2 boundary review"]
+function_implementation_table: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P2/function_implementation_table.yaml"
+algorithmic_sufficiency:
+  verdict: "insufficient"
+  rationale: "Semantic validation did not yet reject undeclared semantic variable references."
+forbidden_pattern_scan:
+  heavy_fallback: "not_applicable"
+  narrow_slice_escape: "not_applicable"
+  hidden_fallback: "not_applicable"
+  decorative_certificate: "not_applicable"
+  placeholder_candidate: "not_applicable"
+  geometry_dispatch: "not_applicable"
+  unsupported_for_well_formed_input: "not_applicable"
+  exact_image_overclaim: "not_applicable"
+  target_relation_schedule_discretion: "not_applicable"
+  weak_action_krylov_coverage: "not_applicable"
+  nonfinite_without_positive_proof: "not_applicable"
+  non_spec_status: "not_applicable"
+  required_function_deferred: "not_applicable"
+  appendix_override_bypass: "not_applicable"
+  stress_fixture_dispatch: "not_applicable"
+not_applicable_justifications:
+  "forbidden_pattern_scan": "Review failed on P2 semantic validation, not solver kernel behavior."
+raw_response_consistency:
+  raw_response_contains_blocker: true
+  raw_response_contains_required_fix: true
+  summary_overrides_raw_response: false
+  reviewer_declared_files_inspected: true
+phase_specific_checks:
+  - check_id: "p2-semantic-variable-reference-validation"
+    required_by: "RGQ-012"
+    verdict: "fail"
+    evidence: "Reviewer found slack_variables were not checked against declared variables."
+    reviewer_rationale: "Invalid semantic references were incompletely validated."
+appendix_override_checks:
+  - appendix_section: "Appendix A section 9"
+    controlling_requirement: "RGQ-057"
+    verdict: "not_applicable"
+    evidence: "P2 failed before any Appendix override issue."
+    reviewer_rationale: "No hardening override path was evaluated."
+status_mapping_checks:
+  - error_or_internal_condition: "InvalidInput"
+    mapped_solver_status: "InvalidInput"
+    verdict: "not_applicable"
+    evidence: "Review failed before closure."
+    reviewer_rationale: "Status mapping was not the blocking issue."
+suite_partition_checks:
+  - suite_name: "not_applicable"
+    verdict: "not_applicable"
+    evidence: "P15 suite partition is not active in P2."
+    reviewer_rationale: "No acceptance claim is made."
+semantic_deletion_challenges: []
+tamper_challenges: []
+unresolved_risks: []
+blocking_findings:
+  - "Semantic validation did not reject undeclared slack_variables."
+required_fixes:
+  - "Extend semantic validation to reject undeclared semantic variable references and add a regression test."
+pass_conditions:
+  schema_valid: true
+  schema_mirror_byte_identical: true
+  no_blocking_findings: false
+  no_required_fixes: false
+  raw_response_consistent: true
+  algorithmic_sufficiency_satisfied: false
+  all_forbidden_scans_pass: true
+  phase_specific_checks_pass: false
+  appendix_overrides_respected: true
+  status_mapping_respected: true
+  suite_partition_respected: true
+  reviewer_read_code_not_only_summary: true
+  no_controlling_stub_or_placeholder: true
+  exact_verification_present_where_required: false
+  no_failures_overridden_by_summary: true
+  fresh_evidence_after_last_code_change: true
+  pass_matches_raw_response: true
+  schema_hashes_match_current_files: true
+  prompt_and_response_archived: true
+  evidence_manifest_archived_and_valid: true

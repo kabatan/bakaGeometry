@@ -1,0 +1,37 @@
+Freshness point: after edits to geosolver-core/src/algebra/polynomial_ops.rs and geosolver-core/src/algebra/normal_form.rs.
+
+Command: cargo fmt --manifest-path geosolver-core\Cargo.toml -- --check
+Exit code: 0
+Output: no output.
+
+Command: cargo test --manifest-path geosolver-core\Cargo.toml -- --nocapture
+Exit code: 0
+Key output:
+  running 33 tests
+  algebra::normal_form::tests::correct_membership_certificate_reconstructs_identity ... ok
+  algebra::normal_form::tests::incorrect_membership_certificate_fails_exact_identity ... ok
+  algebra::normal_form::tests::out_of_range_relation_reference_fails ... ok
+  algebra::normal_form::tests::normal_form_returns_exact_remainder ... ok
+  algebra::polynomial_ops::tests::content_and_primitive_part_reconstruct_input ... ok
+  algebra::polynomial_ops::tests::leading_term_uses_declared_order ... ok
+  algebra::polynomial_ops::tests::reduction_respects_coefficients_and_records_quotients ... ok
+  algebra::polynomial_ops::tests::s_polynomial_cancels_leading_terms ... ok
+  test result: ok. 33 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+  Doc-tests geosolver_core: 0 passed; 0 failed
+
+Command: rg -n "todo!|unimplemented!|placeholder|dummy|fake|stub|Unsupported|unsupported" geosolver-core\src
+Exit code: 1
+Output: no matches.
+
+Command: rg -n "circle|triangle|tangent|distance|area|incircle|circumcircle|orthic|mixtilinear|fixture|expected|answer|problem_id|official" geosolver-core\src
+Exit code: 1
+Output: no matches.
+
+Command: rg -n "return true|Ok\(\(\)\)|certificate_hash|hash ==|== .*hash|verify_membership_by_certificate" geosolver-core\src\algebra
+Exit code: 0
+Output:
+  geosolver-core\src\algebra\normal_form.rs:26:pub fn verify_membership_by_certificate(
+  geosolver-core\src\algebra\normal_form.rs:83:        assert!(verify_membership_by_certificate(&g, &cert, &[r1, r2]));
+  geosolver-core\src\algebra\normal_form.rs:96:        assert!(!verify_membership_by_certificate(&g, &cert, &[r1]));
+  geosolver-core\src\algebra\normal_form.rs:107:        assert!(!verify_membership_by_certificate(
+Interpretation: the P3a verifier function and tests are present; this scan did not find hash-only proof terms or unconditional success patterns in algebra code.

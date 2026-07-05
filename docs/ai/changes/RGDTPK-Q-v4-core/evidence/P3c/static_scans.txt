@@ -1,0 +1,18 @@
+P3c static scans after the last relevant code change:
+
+1. General forbidden implementation markers in P3c-owned files.
+   Command: rg -n "TODO|todo!|unimplemented|placeholder|dummy|fake|stub|Unsupported|unsupported" geosolver-core\src\algebra\groebner.rs geosolver-core\src\algebra\f4.rs geosolver-core\src\algebra\elimination.rs
+   Exit code: 1
+   Result: pass, no matches.
+
+2. Forbidden coordinate/global/nonfinite-elimination vocabulary in P3c-owned files.
+   Command: rg -n "coordinate root|coordinate_roots|coordinate solution|full coordinate|RUR|parametr|solve.*coordinate|global coordinate|CAS|CAD|QE|homotopy|nonfinite|CertifiedNonFiniteTargetImage|lex basis|root isolation" geosolver-core\src\algebra\groebner.rs geosolver-core\src\algebra\f4.rs geosolver-core\src\algebra\elimination.rs
+   Exit code: 1
+   Result: pass, no matches.
+
+3. P3c positive boundary scan for keep-variable restriction and exact certificate checks.
+   Command: rg -n "polynomial_in_keep_variables|verify_membership_by_certificate|LocalF4|LocalGroebner|eliminate_to_keep_variables|ensure_disjoint|target|separator" geosolver-core\src\algebra\groebner.rs geosolver-core\src\algebra\f4.rs geosolver-core\src\algebra\elimination.rs
+   Exit code: 0
+   Result: pass. Matches show `polynomial_in_keep_variables`, `verify_membership_by_certificate`, `LocalGroebner`, `LocalF4`, `eliminate_to_keep_variables`, and `ensure_disjoint` in the P3c execution and validation path.
+
+False-positive note: an intentionally broad exploratory scan including the standalone word `Certified` matched `CertifiedPolynomialQ` and `CertifiedEliminationGenerator`. These are expected local membership-certificate wrapper types, not nonfinite, coordinate-root, or proof-overclaim statuses.

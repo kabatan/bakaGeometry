@@ -1,0 +1,39 @@
+schema_version: "rgdtpk-evidence-manifest-v2.2"
+phase_id: "P3b"
+commit: "unborn-master-no-commit"
+algorithm_spec_source_sha256: "2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed"
+failure_source_sha256: "df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e"
+base_spec_sha256: "dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c"
+plan_sha256: "e78cfebc3cce75fbe632c1d0384f59eee7168a27c81d7326c1f02362584b26bc"
+source_map_sha256: "c3fc89dd76d1bf68684ad5359f6e2c4accf28e8db87c0e725b36aba21a2362a2"
+review_archive_schema_sha256: "53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad"
+review_summary_schema_sha256: "ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0"
+evidence_manifest_schema_sha256: "70fd1c72382f5ab847e3eb2eb40f135abb628f46c2a1e5ebf006acdba81c8e0f"
+evidence_files:
+  - path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3b/20260705-000419Z/response.md"
+    sha256: "7b052c6780aa3c6a29a854ed1a3b9eb7d9ff4f9f76e89642f2dd6cd60947501b"
+    purpose: "Reviewer FAIL_FIXABLE response identifying rank-profile stabilization gap."
+command_outputs:
+  - command: "P3b boundary review after prime/reconstruction fix"
+    cwd: "C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry"
+    exit_code: 0
+    output_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3b/20260705-000419Z/response.md"
+    output_sha256: "7b052c6780aa3c6a29a854ed1a3b9eb7d9ff4f9f76e89642f2dd6cd60947501b"
+    finished_at_utc: "20260705-000419Z"
+static_scans:
+  - scan_id: "p3b-rank-profile-stabilization-missing"
+    command: "guardian boundary review"
+    forbidden_pattern: "rank-only stabilization instead of rank-profile stabilization"
+    result: "fail"
+    output_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3b/20260705-000419Z/response.md"
+function_implementation_table: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3b/function_implementation_table.yaml"
+related_reviews:
+  - "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3b/20260704-235154Z/response.md"
+  - "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3b/20260705-000419Z/response.md"
+known_limitations:
+  - "This is a historical FAIL_FIXABLE review and does not close P3b."
+  - "The blocker is addressed by later P3b code/evidence before any P3b PASS claim."
+algorithmic_claims_made: []
+claim_ceiling_after_phase: "SCAFFOLD_READY"
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

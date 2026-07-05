@@ -1,0 +1,21 @@
+scan=rgq051_correct_polarity
+docs/ai/changes/RGDTPK-Q-v4-core/CONSISTENCY_AUDIT.md:22:| Corrected `RGQ-051` polarity | PASS | The normative sentence says relation-search exhaustion, sparse heuristic failure, Universal stage failure, or composition failure must not route to `CertifiedNonFiniteTargetImage`. The wrong polarity is absent from the instruction pack. |
+docs/ai/changes/RGDTPK-Q-v4-core/BASE_SPEC.md:702:No relation found within RGQ-042 bounds, sparse heuristic failure, Universal stage failure, or composition failure to produce target-only support must not route to `CertifiedNonFiniteTargetImage`. Such cases must route to `AlgorithmicHardCase`, `FiniteResourceFailure`, or `CertificateDesignGap` according to the available evidence. The only route to `CertifiedNonFiniteTargetImage` is the positive proof required by RGQ-045. This rule must be enforced in code and tested.
+status=pass
+scan=forbidden_old_candidate_cover_acceptance_phrase
+scope=docs/ai/changes/RGDTPK-Q-v4-core/CLOSURE.md docs/ai/changes/RGDTPK-Q-v4-core/BASE_SPEC.md
+no matches; status=pass
+note=PLAN.md intentionally excluded from this forbidden-claim scan because it contains the scan command text itself, not a closure claim.
+scan=schema_mirror_references
+docs/ai/changes/RGDTPK-Q-v4-core/CONSISTENCY_AUDIT.md:13:| Review schema mirror check | PASS | `REVIEW_SUMMARY_SCHEMA.yaml` and `schemas/review_summary.schema.yaml` are byte-identical. |
+docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_SUMMARY_SCHEMA.yaml:18:  - schema_mirror_sha256
+docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_SUMMARY_SCHEMA.yaml:69:  schema_mirror_sha256: {$ref: "#/$defs/sha256"}
+docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_SUMMARY_SCHEMA.yaml:244:      - schema_mirror_byte_identical
+docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_SUMMARY_SCHEMA.yaml:265:      schema_mirror_byte_identical: {type: boolean}
+docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_SUMMARY_SCHEMA.yaml:361:            schema_mirror_byte_identical: {const: true}
+docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_ARCHIVE_SCHEMA.md:11:`REVIEW_SUMMARY_SCHEMA.yaml` and `schemas/review_summary.schema.yaml` must be byte-identical. If this markdown and any YAML schema differ, the stricter rule wins and the Agent must stop for `BaseSpecConflict` rather than choosing the easier rule.
+docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_ARCHIVE_SCHEMA.md:27:The authoritative machine-checkable form is `REVIEW_SUMMARY_SCHEMA.yaml`, byte-identical to `schemas/review_summary.schema.yaml`. Every summary must use schema version `rgdtpk-review-v2.2` and include all fields required by that schema, including the v2.2 hardening fields `schema_mirror_sha256`, `appendix_override_checks`, `status_mapping_checks`, and `suite_partition_checks`.
+docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_ARCHIVE_SCHEMA.md:44:schema_mirror_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_ARCHIVE_SCHEMA.md:117:  schema_mirror_byte_identical: true
+docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_ARCHIVE_SCHEMA.md:153:REVIEW_SUMMARY_SCHEMA.yaml and schemas/review_summary.schema.yaml are byte-identical
+status=pass

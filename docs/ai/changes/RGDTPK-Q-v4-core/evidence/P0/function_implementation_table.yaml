@@ -1,0 +1,27 @@
+phase_id: "P0"
+phase_kind: "setup"
+rows:
+  - item: "Guardian documentation layout"
+    owner_path: "docs/ai"
+    required_by: ["PLAN:P0", "RGQ-047", "RGQ-060", "RGQ-064"]
+    status: "implemented"
+    evidence: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/docs_ai_file_list.txt"
+    notes: "Setup artifacts only; no solver code or algorithmic R-ID closure."
+  - item: "Source copies and hash binding"
+    owner_path: "docs/ai/sources"
+    required_by: ["RGQ-000", "PLAN:P0"]
+    status: "implemented"
+    evidence: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/pack_manifest_check.txt"
+    notes: "Imported source files match PACK_MANIFEST.sha256."
+  - item: "Review schema mirrors"
+    owner_path: "docs/ai/changes/RGDTPK-Q-v4-core"
+    required_by: ["RGQ-047", "RGQ-060"]
+    status: "implemented"
+    evidence: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/schema_mirror_check.txt"
+    notes: "Root and mirror review summary schemas are byte-identical."
+  - item: "Implementation approval"
+    owner_path: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/user_approval_20260705.md"
+    required_by: ["PLAN:Execution rule 1"]
+    status: "implemented"
+    evidence: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/user_approval_20260705.md"
+    notes: "Approval is recorded separately and does not modify source authority."

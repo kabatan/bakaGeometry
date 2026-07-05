@@ -1,0 +1,73 @@
+phase_id: "P1"
+phase_kind: "data_model"
+claim_scope: "Crate scaffold, public API shell, exact base types, deterministic hashes, exact intervals."
+claim_ceiling_after_phase: "SCAFFOLD_READY"
+rows:
+  - item: "geosolver-core crate and exact folder layout"
+    owner_path: "geosolver-core"
+    required_by: ["RGQ-007", "PLAN:P1"]
+    status: "implemented"
+    evidence: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P1/required_files_check.txt"
+    notes: "All files listed by Appendix A section 6 exist."
+  - item: "src/lib.rs public modules"
+    owner_path: "geosolver-core/src/lib.rs"
+    required_by: ["RGQ-008", "Appendix A 7.1"]
+    status: "implemented"
+    evidence: "cargo test --manifest-path geosolver-core/Cargo.toml"
+    notes: "Public modules are exposed from lib.rs; solver logic is not in lib.rs."
+  - item: "src/api.rs solve_target"
+    owner_path: "geosolver-core/src/api.rs"
+    required_by: ["RGQ-008", "PLAN:P1"]
+    status: "implemented_with_temporary_pipeline_gate"
+    evidence: "geosolver-core/src/result/diagnostics.rs"
+    notes: "Calls SolverContext::new and solver::orchestrator::solve_with_context; pre-P14 temporary path maps to SolverStatus::ImplementationBug with diagnostic TemporaryPipelineNotConnected."
+  - item: "types/ids.rs"
+    owner_path: "geosolver-core/src/types/ids.rs"
+    required_by: ["RGQ-009", "Appendix A 5.1", "Appendix A 8.1"]
+    status: "implemented"
+    public_functions: ["fresh_variable_id", "fresh_relation_id", "stable_id_from_name"]
+  - item: "types/hash.rs"
+    owner_path: "geosolver-core/src/types/hash.rs"
+    required_by: ["RGQ-009"]
+    status: "implemented"
+    public_functions: ["hash_bytes", "hash_tagged", "hash_sequence"]
+  - item: "types/rational.rs"
+    owner_path: "geosolver-core/src/types/rational.rs"
+    required_by: ["RGQ-010", "Appendix A 5.2", "Appendix A 8.2"]
+    status: "implemented"
+    public_functions: ["new_q", "normalize_q", "add_q", "sub_q", "mul_q", "div_q", "bit_height_q"]
+  - item: "types/monomial.rs"
+    owner_path: "geosolver-core/src/types/monomial.rs"
+    required_by: ["RGQ-010", "Appendix A 5.3", "Appendix A 8.3"]
+    status: "implemented"
+    public_functions: ["normalize_monomial", "monomial_mul", "monomial_div", "monomial_degree", "monomial_variables", "compare_monomial"]
+  - item: "types/polynomial.rs"
+    owner_path: "geosolver-core/src/types/polynomial.rs"
+    required_by: ["RGQ-010", "Appendix A 5.3", "Appendix A 8.4"]
+    status: "implemented"
+    public_functions: ["normalize_poly", "poly_add", "poly_sub", "poly_mul", "poly_scale", "poly_derivative", "poly_variables", "poly_total_degree", "poly_monomial_count", "clear_denominators_primitive", "substitute_poly"]
+  - item: "types/univariate.rs"
+    owner_path: "geosolver-core/src/types/univariate.rs"
+    required_by: ["RGQ-010", "Appendix A 5.3", "Appendix A 8.5"]
+    status: "implemented"
+    public_functions: ["normalize_univariate", "degree_uni", "derivative_uni", "gcd_uni", "squarefree_part_uni", "eval_uni_q"]
+  - item: "types/matrix.rs"
+    owner_path: "geosolver-core/src/types/matrix.rs"
+    required_by: ["RGQ-009", "Appendix A 8.6"]
+    status: "implemented"
+    public_functions: ["matrix_shape", "matrix_density", "hash_matrix"]
+  - item: "types/interval.rs"
+    owner_path: "geosolver-core/src/types/interval.rs"
+    required_by: ["RGQ-010", "Appendix A 8.7"]
+    status: "implemented"
+    public_functions: ["interval_new", "interval_contains_q", "interval_disjoint"]
+  - item: "closed SolverStatus enum"
+    owner_path: "geosolver-core/src/result/status.rs"
+    required_by: ["RGQ-058", "PLAN:P1"]
+    status: "implemented_for_api_scaffold"
+    notes: "Only Appendix A SolverStatus variants are public; P2 will close full status semantics."
+  - item: "later-phase module files"
+    owner_path: "geosolver-core/src"
+    required_by: ["RGQ-007", "RGQ-059", "PLAN:P1"]
+    status: "files_exist_without_phase_claim"
+    notes: "Files owned by later phases exist for layout compliance. Their algorithmic functions are not claimed closed in P1."

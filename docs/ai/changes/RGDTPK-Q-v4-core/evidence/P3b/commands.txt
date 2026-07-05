@@ -1,0 +1,6 @@
+$env:CARGO_INCREMENTAL='0'; cargo fmt --manifest-path geosolver-core\Cargo.toml -- --check
+$env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::linear_solve -- --nocapture
+$env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml -- --nocapture
+rg -n "todo!|unimplemented!|placeholder|dummy|fake|stub|Unsupported|unsupported" geosolver-core\src
+rg -n "circle|triangle|tangent|distance|area|incircle|circumcircle|orthic|mixtilinear|fixture|expected|answer|problem_id|official" geosolver-core\src
+rg -n "f64|f32|as f64|as f32|approx|proof_status.*Certified|Certified.*modular|CandidateOnlyRequiresExactQCheck|pivot_columns|rank profile|rank_profile|reconstructed_.*candidate|reconstruction_height_bound" geosolver-core\src\algebra

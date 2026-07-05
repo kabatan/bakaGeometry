@@ -1,0 +1,16 @@
+P3b static scans after the fourth P3b FAIL_FIXABLE fix:
+
+1. General forbidden implementation markers.
+   Command: rg -n "todo!|unimplemented!|placeholder|dummy|fake|stub|Unsupported|unsupported" geosolver-core\src
+   Exit code: 1
+   Result: pass, no matches.
+
+2. Geometry, fixture, and answer dispatch vocabulary.
+   Command: rg -n "circle|triangle|tangent|distance|area|incircle|circumcircle|orthic|mixtilinear|fixture|expected|answer|problem_id|official" geosolver-core\src
+   Exit code: 1
+   Result: pass, no matches.
+
+3. P3b fail-condition scan for floating exact paths and modular proof overclaim.
+   Command: rg -n "f64|f32|as f64|as f32|approx|proof_status.*Certified|Certified.*modular|CandidateOnlyRequiresExactQCheck|pivot_columns|rank profile|rank_profile|reconstructed_.*candidate|reconstruction_height_bound" geosolver-core\src\algebra
+   Exit code: 0
+   Result: pass. No floating exact path or modular-certified proof marker was found. Matches are limited to pivot-column rank profile tracing, explicit `CandidateOnlyRequiresExactQCheck` status, rational reconstruction candidate fields, and tests asserting candidate-only handoff and no reconstruction before configured stability.

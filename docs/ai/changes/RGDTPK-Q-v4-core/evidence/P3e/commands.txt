@@ -1,0 +1,7 @@
+$env:CARGO_INCREMENTAL='0'; cargo fmt --manifest-path geosolver-core\Cargo.toml -- --check
+$env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::quotient -- --nocapture
+$env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::krylov -- --nocapture
+$env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml -- --nocapture
+rg -n "TODO|todo!|unimplemented|placeholder|dummy|fake|stub|Unsupported|unsupported" geosolver-core\src\algebra\quotient.rs geosolver-core\src\algebra\krylov.rs
+rg -n "coordinate root|coordinate_roots|coordinate solution|full coordinate RUR|full_coordinate|RUR|parametr|single-vector.*return|block Wiedemann|trace power|CertifiedCandidateCover|CertifiedExactTargetImage|CertifiedNonFiniteTargetImage|f64|f32|approx" geosolver-core\src\algebra\quotient.rs geosolver-core\src\algebra\krylov.rs
+rg -n "VerifiedCharacteristicSupportCoverage|characteristic_polynomial|Cayley|cayley|target_action_matrix|normal-form|normal_form|undercoverage|CertificateDesignGap|no_coordinate_solution_export|no_full_coordinate_rur_exported" geosolver-core\src\algebra\quotient.rs geosolver-core\src\algebra\krylov.rs

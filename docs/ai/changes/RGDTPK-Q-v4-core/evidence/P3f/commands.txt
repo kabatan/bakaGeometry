@@ -1,0 +1,20 @@
+Freshness point: after implementing geosolver-core/src/algebra/regular_chain.rs, norm_trace.rs, real_root.rs, and sign.rs for P3f.
+
+Commands run:
+
+1. $env:CARGO_INCREMENTAL='0'; cargo fmt --manifest-path geosolver-core\Cargo.toml -- --check
+2. $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::real_root -- --nocapture
+3. $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::sign -- --nocapture
+4. $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::norm_trace -- --nocapture
+5. $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml algebra::regular_chain -- --nocapture
+6. $env:CARGO_INCREMENTAL='0'; cargo test --manifest-path geosolver-core\Cargo.toml -- --nocapture
+7. rg -n "TODO|todo!|unimplemented|placeholder|dummy|fake|stub|Unsupported|unsupported" geosolver-core\src\algebra\regular_chain.rs geosolver-core\src\algebra\norm_trace.rs geosolver-core\src\algebra\real_root.rs geosolver-core\src\algebra\sign.rs
+8. rg -n "geometry|geometric|fixture|expected answer|f64|f32|approx|coordinate solution|coordinate roots|RUR|CAD|QE|homotopy|full coordinate|CertifiedCandidateCover|CertifiedExactTargetImage|CertifiedNonFiniteTargetImage" geosolver-core\src\algebra\regular_chain.rs geosolver-core\src\algebra\norm_trace.rs geosolver-core\src\algebra\real_root.rs geosolver-core\src\algebra\sign.rs
+9. rg -n "local_regular_chain_decomposition|project_chain_to_variables|combine_chain_projections|detect_explicit_tower|norm_of_target_minus_expression|verify_norm_relation|sturm_sequence|isolate_real_roots_sturm|isolate_real_roots_descartes|sign_at_algebraic_root|thom_encoding|component_semantics|guards|Resultant|Sturm|RefinementRequired" geosolver-core\src\algebra\regular_chain.rs geosolver-core\src\algebra\norm_trace.rs geosolver-core\src\algebra\real_root.rs geosolver-core\src\algebra\sign.rs
+
+Failure/fix loop captured:
+
+- Initial focused P3f run found one failing test: algebra::norm_trace::tests::norm_relation_is_exactly_recomputed.
+- Root-cause hypothesis: Sylvester resultant is canonical only up to a nonzero scalar; the implementation normalized returned relations with clear_denominators_primitive, while the test compared against an unnormalized sign convention.
+- Targeted fix: compare both the returned norm relation and the expected relation after clear_denominators_primitive.
+- Verification: reran algebra::norm_trace, P3f focused tests, fmt check, and the full crate test suite successfully.
