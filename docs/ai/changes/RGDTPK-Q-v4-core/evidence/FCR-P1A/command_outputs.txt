@@ -1,0 +1,36 @@
+Appendix A sections 7-29 extracted rows: 313
+Missing required rows from map: 0
+Section 6 layout rows with MISSING current_path: 0
+Exact-image P13 defer rows: 5
+Candidate-cover rows incorrectly deferred to P13: 0
+Forbidden readiness claim markers treated as claims: 0
+Status counts: implemented=355, incorrect=49, missing=93, quarantined=0, test_only=0
+Known marker counts: temporary_pipeline_not_connected=2, f4_reduce_batch=1, admit_action_krylov=1, step_compress=1, classify_real_target_image=1, MessageIdeal=2
+
+--- rg forbidden/source-fidelity and known-defect markers ---
+5:Claim ceiling after this map: `PARTIAL_MECHANISM_READY:MECH-011`. `SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC`, `EXACT_IMAGE_CORE_READY`, and `RGDTPK_Q_V4_ACCEPTANCE_COMPLETE` remain forbidden. No R-ID is marked VERIFIED here.
+27:| 4 | Top-level pipeline and invariants I1-I10 | geosolver-core/src/solver/orchestrator.rs | True | False | incorrect | solve_with_context currently returns temporary_pipeline_not_connected; full ordered pipeline required in FCR-P3. | missing | replace |
+276:| 10 | `algebra/f4.rs::fn f4_reduce_batch` | `MISSING` | true | false | missing | Appendix function absent; current f4.rs only exposes *_for_tests NotProductionF4 helpers | missing | implement |
+389:| 19 | `section-19::fn admit_action_krylov` | `MISSING` | true | false | missing | Appendix name absent; current code exposes admit_target_action_krylov and is alias/univariate limited | missing | implement |
+427:| 27 | `fiber/exact_image.rs::fn classify_real_target_image` | `MISSING` | false | true | missing | Exact-image real-fiber/slack/guard semantics are explicitly P13-scoped; no exact-image readiness claim is allowed before P13. | missing | defer_to_P13_exact_image |
+429:| 27 | `fiber/hermite.rs::fn hermite_real_root_count_for_fiber` | `MISSING` | false | true | missing | Exact-image real-fiber/slack/guard semantics are explicitly P13-scoped; no exact-image readiness claim is allowed before P13. | missing | defer_to_P13_exact_image |
+431:| 27 | `fiber/thom.rs::fn thom_sign_classify` | `MISSING` | false | true | missing | Exact-image real-fiber/slack/guard semantics are explicitly P13-scoped; no exact-image readiness claim is allowed before P13. | missing | defer_to_P13_exact_image |
+433:| 27 | `fiber/slack_semantics.rs::fn apply_real_constraint_semantics` | `MISSING` | false | true | missing | Exact-image real-fiber/slack/guard semantics are explicitly P13-scoped; no exact-image readiness claim is allowed before P13. | missing | defer_to_P13_exact_image |
+434:| 27 | `fiber/slack_semantics.rs::fn verify_slack_encoding_consistency` | `MISSING` | false | true | missing | Exact-image real-fiber/slack/guard semantics are explicitly P13-scoped; no exact-image readiness claim is allowed before P13. | missing | defer_to_P13_exact_image |
+449:| 29 | `solver/pipeline.rs::fn step_compress` | `MISSING` | true | false | missing | Appendix pipeline stage absent; FCR-P3 must add full stage | missing | implement |
+458:| 29 | `solver/orchestrator.rs::fn solve_with_context` | `src/solver/orchestrator.rs::fn solve_with_context` | true | false | incorrect | returns temporary_pipeline_not_connected; FCR-P3 replacement required | missing | replace |
+
+--- git diff --check ---
+warning: in the working copy of 'docs/ai/ACTIVE_CONTEXT.md', LF will be replaced by CRLF the next time Git touches it
+
+--- map mechanical checks ---
+table_row_shape_bad=0
+section6_missing_rows=0
+non_section27_exact_defer_rows=0
+FCR-P1A map mechanical checks PASS
+
+--- review archive schema validation ---
+FCR-P1A review archive schemas PASS
+
+--- final git diff --check ---
+warning: in the working copy of 'docs/ai/ACTIVE_CONTEXT.md', LF will be replaced by CRLF the next time Git touches it

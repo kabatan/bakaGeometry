@@ -1,0 +1,4 @@
+python extract Appendix A sections 7-29 declarations and compare with FULL_CORE_SOURCE_SPEC_COMPLIANCE_MAP.md
+python verify Section 6 layout rows and exact-image P13 defer rows in FULL_CORE_SOURCE_SPEC_COMPLIANCE_MAP.md
+rg forbidden/source-fidelity and known-defect markers in FULL_CORE_SOURCE_SPEC_COMPLIANCE_MAP.md
+git diff --check
