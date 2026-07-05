@@ -1,0 +1,12 @@
+FCR-P11 verification commands
+
+1. cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+2. cargo test --manifest-path geosolver-core/Cargo.toml --test fcr_p11_red_team_suite -- --nocapture
+3. cargo test --manifest-path geosolver-core/Cargo.toml --test fcr_p10_acceptance_suite -- --nocapture
+4. cargo test --manifest-path geosolver-core/Cargo.toml --test fcr_final_nonfinite_semantics -- --nocapture
+5. cargo test --manifest-path geosolver-core/Cargo.toml verify::replay::tests -- --nocapture
+6. cargo test --manifest-path geosolver-core/Cargo.toml --quiet
+7. git diff --check
+8. rg -n "circle|triangle|tangent|distance|area|incircle|circumcircle|orthic|mixtilinear|fixture|expected|answer|problem_id|official" geosolver-core/src
+9. rg -n "temporary_pipeline_not_connected|NotProductionF4|for_tests|fake|stub|placeholder|dummy|unimplemented!|todo!" geosolver-core/src
+10. rg -n "coordinate solution|coordinate roots|full coordinate RUR|solve_all_coordinates|CAD|QE|RCF" geosolver-core/src

@@ -1,8 +1,7 @@
 # Closure Packet - RGDTPK-Q-v4-core
 
 Status: Full Core Repair active before P13/P14/P15/P16. FCR-P0A/FCR-P1A and FCR-P0 through
-FCR-P10 have been implemented; FCR-P11 red-team/final-nonfinite gate and FCR-P12 final closure are
-still required.
+FCR-P11 have been implemented; FCR-P12 final closure is still required.
 
 Current maximum claim ceiling:
 
@@ -44,10 +43,10 @@ FCR requires repair or removal of narrow production paths, including alias/univa
 TargetActionKrylov, module-only stress proof, synthetic replay substitutes, plan-time execution
 paths, fake or non-generic kernel claims, and any public pipeline gap in `api::solve_target`.
 
-FCR-P10 evidence is not final closure evidence. Certified nonfinite target image is now owned by
-FCR-P11 final nonfinite semantics unless the public result carries a machine-readable,
-replay-bound nonfinite certificate. FCR-P11 must also run the red-team reviewer that creates at
-least 10 new non-fixture algebraic inputs and executes them through the public or near-public
+FCR-P10/P11 evidence is not final closure evidence. FCR-P11 selected the conservative final
+nonfinite route: public nonfinite results do not yet carry a machine-readable replay-bound
+certificate, so nonfinite readiness is excluded from `CANDIDATE_COVER_CORE_READY`. FCR-P11 also ran
+the red-team suite with 10 fresh non-fixture algebraic inputs through the public or near-public
 pipeline.
 
 Required final FCR claim target is `CANDIDATE_COVER_CORE_READY`, not another partial mechanism
@@ -63,7 +62,6 @@ The following are still not complete:
 
 - P13 exact-image semantics
 - P14/P15/P16 historical exact-image/final-acceptance phases
-- FCR-P11 red-team and final nonfinite gate
 - FCR-P12 final closure and source-fidelity audit
 - FCR generic candidate-cover core readiness
 - final nonfinite readiness with public replay-bound certificate

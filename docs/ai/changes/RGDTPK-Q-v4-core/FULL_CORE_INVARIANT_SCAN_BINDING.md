@@ -1,8 +1,8 @@
 # Full Core Invariant and Static-Scan Binding
 
-Status: pending FCR-P12 final closure.
+Status: FCR-P11 preconditions recorded; FCR-P12 must rerun fresh final scans and bind hashes.
 
-This file is a required final-closure artifact. It is not evidence yet.
+Timestamp: 20260706-055251+09:00
 
 `CoreInvariantFlags` must not be treated as free booleans. Final closure must bind each invariant
 flag to fresh static scans and to dynamic replay/tamper or semantic evidence where applicable.
@@ -11,11 +11,12 @@ Required binding:
 
 | Closure invariant | Required static evidence | Required dynamic evidence | Status |
 | --- | --- | --- | --- |
-| no geometry dispatch | scan production source for geometry-family dispatch terms | red-team inputs are algebraic-only and do not use geometry labels | pending |
-| no problem-id/fixture/expected-answer dispatch | scan source and tests for problem id, fixture, expected answer, official answer terms | variable/relation/order mutation does not change algorithmic path | pending |
-| no hidden fallback | scan for fallback/temporary/stub/nonproduction markers | tampering plan/DAG/message/certificate causes replay or execution failure | pending |
-| no QE/CAD/RCF/full-coordinate fallback | scan source for QE/CAD/RCF, coordinate roots, full coordinate RUR, solve-all-coordinates | success paths expose target candidates only, not coordinate solutions | pending |
-| actual DAG replay | scan/review replay path and certificate fields | replay rejects DAG, block authorization, child message, plan, support, root, and candidate tamper | pending |
+| no geometry dispatch | `rg` no-dispatch scan over `geosolver-core/src`: hit_count=137, reviewed as terminology/invariant names rather than production dispatch | P11 red-team inputs are algebraic-only and avoid geometry labels | P11 precondition recorded; rerun in FCR-P12 |
+| no problem-id/fixture/expected-answer dispatch | same no-dispatch scan plus P11 fresh variable ids/relation orders | P11 suite mutates variable ids, relation order, and polynomial syntax outside FCR-P10 inputs | P11 precondition recorded; rerun in FCR-P12 |
+| no hidden fallback | fallback/stub scan over `geosolver-core/src`: hit_count=20, reviewed as quarantined/pre-existing markers | support-producing P11 cases require replay acceptance; failure case keeps trace | P11 precondition recorded; rerun in FCR-P12 |
+| no QE/CAD/RCF/full-coordinate fallback | QE/CAD/full-coordinate scan over `geosolver-core/src`: hit_count=3, reviewed as rejection/error text | success paths expose target support, isolated target roots, and decoded target candidates only | P11 precondition recorded; rerun in FCR-P12 |
+| actual DAG replay | inspect `CoreRunCertificate`/`FinalDagReplayEvidence` and run replay tests | P11 support-producing cases call `replay_run_certificate`; FCR-P12 must rerun replay/tamper suite | P11 precondition recorded; rerun in FCR-P12 |
 
-Final closure must fail if this file remains pending, if scans are only summarized without command
-outputs, or if static scans are used as a substitute for dynamic replay/red-team evidence.
+P11 does not close final invariant evidence. FCR-P12 final closure must rerun scans, record command
+outputs, bind scan hashes where required, and keep static scans as necessary but insufficient
+without dynamic red-team and replay/tamper evidence.

@@ -6,7 +6,7 @@ Current instruction pack version: v2.2 consistency-hardened plus mandatory P5R r
 mandatory P12G remediation, and mandatory Full Core Repair overlay
 `RGDTPK-Q-v4-full-core-repair-v1` before P13/P14/P15/P16.
 
-Current latest claim ceiling after FCR-P10:
+Current latest claim ceiling after FCR-P11:
 
 ```text
 PARTIAL_MECHANISM_READY:MECH-011
@@ -14,9 +14,9 @@ PARTIAL_MECHANISM_READY:MECH-011
 
 Full Core Repair is active and supersedes the prior P13 readiness statement. P13, P14, P15, and
 P16 are blocked until `FULL_CORE_REPAIR_PLAN.md` passes. FCR-P0A/FCR-P1A and FCR-P0 through
-FCR-P10 are complete for their narrowed scopes. Next work is FCR-P11 red-team/final-nonfinite gate,
-then FCR-P12 final closure. FCR-P10 evidence must not be used as final nonfinite, exact-image,
-source-fidelity, full-acceptance, or `CANDIDATE_COVER_CORE_READY` evidence.
+FCR-P11 are complete for their narrowed scopes. Next work is FCR-P12 final closure. FCR-P10/P11
+evidence must not be used as final nonfinite, exact-image, source-fidelity, full-acceptance, or
+`CANDIDATE_COVER_CORE_READY` evidence until FCR-P12 closure passes.
 
 Read first:
 
