@@ -1,0 +1,24 @@
+FCR-P6 static scan command:
+
+rg -n "FCR-P6|FCR-007|fcr_universal_one_large_block_multivariate_projection|fcr_universal_keep_only_exports_no_coordinate_roots|fcr_elimination_membership_certificates_replay|fcr_nonproduction_f4_not_reachable|EliminationStrategy::LocalGroebner|NonProductionGroebnerBatchForTests|cfg\(test\)|pub mod f4|output_memberships|extract_verified_export_generators|verify_membership_outputs|clear_denominators_primitive" docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_PLAN.md docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_BASE_SPEC.md geosolver-core/src/algebra/mod.rs geosolver-core/src/algebra/elimination.rs geosolver-core/src/algebra/f4.rs geosolver-core/src/kernels/universal_elimination.rs geosolver-core/src/verify/verify_message.rs
+
+Selected fresh hits:
+
+- docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_BASE_SPEC.md:211 identifies FCR-007.
+- docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_PLAN.md:444 identifies FCR-P6.
+- docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_PLAN.md:476-479 lists the required FCR-P6 tests.
+- geosolver-core/src/algebra/mod.rs:4-5 keeps algebra/f4.rs behind #[cfg(test)].
+- geosolver-core/src/algebra/elimination.rs:23-24 keeps NonProductionGroebnerBatchForTests behind #[cfg(test)].
+- geosolver-core/src/algebra/elimination.rs:68-69 rejects the test-only non-production batch strategy if invoked in test builds.
+- geosolver-core/src/kernels/universal_elimination.rs:451 uses EliminationStrategy::LocalGroebner in the Universal local elimination production path.
+- geosolver-core/src/kernels/universal_elimination.rs:456-514 exports output_memberships with the Universal local Groebner payload.
+- geosolver-core/src/kernels/universal_elimination.rs:577 defines extract_verified_export_generators.
+- geosolver-core/src/kernels/universal_elimination.rs:1219,1256,1284,1337 define the four required FCR-P6 tests.
+- geosolver-core/src/kernels/universal_elimination.rs:1339 and 1582 split static source scans at #[cfg(test)] so forbidden fallback scans apply to production source.
+- geosolver-core/src/verify/verify_message.rs:387-394 verifies Universal output_memberships by exact Q membership replay.
+
+Interpretation:
+
+- F4 is not compiled as a production algebra module because algebra/mod.rs gates f4 behind #[cfg(test)].
+- Universal production execution does not call f4.rs, *_for_tests, or NonProductionGroebnerBatch.
+- Universal local Groebner output relations now match the exact polynomials covered by output_memberships; the old primitive conversion in universal_elimination.rs was removed from this path.

@@ -1,0 +1,36 @@
+FCR-P6 command evidence summary, refreshed after the last code change.
+
+1. cargo fmt
+   cwd: geosolver-core
+   exit_code: 0
+
+2. cargo test --lib fcr_
+   cwd: geosolver-core
+   exit_code: 0
+   summary: 8 passed, 0 failed.
+   Included required FCR-P6 tests:
+   - fcr_universal_one_large_block_multivariate_projection
+   - fcr_universal_keep_only_exports_no_coordinate_roots
+   - fcr_elimination_membership_certificates_replay
+   - fcr_nonproduction_f4_not_reachable
+
+3. cargo test
+   cwd: geosolver-core
+   exit_code: 0
+   summary:
+   - lib tests: 205 passed, 0 failed
+   - tests/fcr_p4_pure_planning.rs: 7 passed, 0 failed
+   - tests/p12_roots_decode_integration.rs: 1 passed, 0 failed
+   - tests/p12g_generality_stress.rs: 1 passed, 0 failed
+   - tests/p3_public_pipeline_integration.rs: 1 passed, 0 failed
+   - doc tests: 0 passed, 0 failed
+
+4. cargo check
+   cwd: geosolver-core
+   exit_code: 0
+   summary: Finished dev profile successfully.
+
+5. git diff --check
+   cwd: repository root
+   exit_code: 0
+   summary: no whitespace errors; Git emitted line-ending warnings only for tracked Rust files.

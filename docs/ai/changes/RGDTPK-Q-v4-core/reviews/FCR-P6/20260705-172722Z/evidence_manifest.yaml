@@ -1,0 +1,135 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: FCR-P6
+commit: 75678f311a4f756c94bead0e19a51c5c2d04848a+fcr-p6-worktree
+algorithm_spec_source_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+failure_source_sha256: a97b50bf597ed590889a7609a2cb25d9ec40f7be27d47adf332e52d3fa8abe36
+base_spec_sha256: 1f73bd7a26b2566b08f53d31b14785110466e8ae6170b6769d1af17d50a36047
+plan_sha256: b836599108c1db4a4e828e672780e5074049045fe5fa590e94252cdc91850bb9
+source_map_sha256: 892b75221a3f724ab864e0214e3a0559e99331cda0b8fba4976f5a21372f08ec
+review_archive_schema_sha256: d3db02e4abc8cc3065e2be8e82614b3703266ad0c0ce6cf3c0ce85ad662d364c
+review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
+evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_BASE_SPEC.md
+  sha256: 1f73bd7a26b2566b08f53d31b14785110466e8ae6170b6769d1af17d50a36047
+  purpose: "FCR-P6 source: FCR-007/FCR-009 local elimination requirements and non-production fallback rules"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_PLAN.md
+  sha256: b836599108c1db4a4e828e672780e5074049045fe5fa590e94252cdc91850bb9
+  purpose: "FCR-P6 source: production F4/Groebner target/separator elimination plan"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_SOURCE_SPEC_COMPLIANCE_MAP.md
+  sha256: 892b75221a3f724ab864e0214e3a0559e99331cda0b8fba4976f5a21372f08ec
+  purpose: "FCR-P6 source: claim limits and residual SparseResultant rows"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_REVIEWER_PROMPTS.md
+  sha256: 28075ea55b02213c4b38f5304735f87b163ab7eddb15121eefe072878a1f387b
+  purpose: "FCR-P6 source: reviewer fail/pass prompt"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/BASE_SPEC.md
+  sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+  purpose: "FCR-P6 source: approved base spec and MECH-008"
+- path: geosolver-core/src/algebra/mod.rs
+  sha256: c1a2beef6b6192db4efce9b3d7a73ecdeed282d4222ff9523c39179b58fd5178
+  purpose: "FCR-P6 code: f4 module is test-only"
+- path: geosolver-core/src/algebra/f4.rs
+  sha256: 97adaee528cea3056134ef611cf643a2ba530a86d74b170c8c3cd8a6b5699490
+  purpose: "FCR-P6 code: non-production F4 test support remains test-only"
+- path: geosolver-core/src/algebra/elimination.rs
+  sha256: a6c837d9ab398b504e9246ab5222095cbf47ae7e1801117620fc2e792801a6b4
+  purpose: "FCR-P6 code: certified local Groebner elimination dispatcher"
+- path: geosolver-core/src/algebra/groebner.rs
+  sha256: e6731ddf9b123d56090206c54694638f7c210cf1978f215442ace3b42d495dd6
+  purpose: "FCR-P6 code: certified Groebner basis and reductions"
+- path: geosolver-core/src/kernels/universal_elimination.rs
+  sha256: 47834f1471163dd03b84f5d58b98c4ea0dd6a307fba52cb91c71d1f76f32f277
+  purpose: "FCR-P6 code: Universal local Groebner execution, output membership binding, tests"
+- path: geosolver-core/src/verify/verify_message.rs
+  sha256: 4e3bdd78ec03a7ab34dee1d830c936bf7e6f5df1e9eed2de4e065a351360c5c8
+  purpose: "FCR-P6 code: Universal payload membership replay"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P6/commands.txt
+  sha256: 7345127ce56b9301b171f10507ec76abe57ec7fc893da7c3b5d6c7db06c321a2
+  purpose: "FCR-P6 evidence: commands run"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P6/command_outputs.txt
+  sha256: 736f4907519f99d9ef840c14b349c9f8d8a4b95be7bdc91c13c4e1ca9d3308b5
+  purpose: "FCR-P6 evidence: command outputs and summaries"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P6/universal_elimination_static_scan.txt
+  sha256: 04ce9fed335552dd200f89d0a8a8ad1b27f8802230e12a316ff0dddfdab535cd
+  purpose: "FCR-P6 evidence: Universal/F4 reachability static scan"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P6/guardian_boundary_reviewer_pass.md
+  sha256: 7c399ab600c4690b758057057c9b893144e4709ced67824edad53b2eec659de7
+  purpose: "FCR-P6 evidence: guardian PASS response"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P6/20260705-172722Z/prompt.md
+  sha256: 327ccafc463db4454c621e422879463420cb25354701e809b63b044a1220f4dc
+  purpose: "FCR-P6 archived reviewer prompt"
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P6/20260705-172722Z/response.md
+  sha256: 7c399ab600c4690b758057057c9b893144e4709ced67824edad53b2eec659de7
+  purpose: "FCR-P6 archived reviewer response"
+command_outputs:
+- command: cargo fmt
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P6/command_outputs.txt
+  output_sha256: 736f4907519f99d9ef840c14b349c9f8d8a4b95be7bdc91c13c4e1ca9d3308b5
+  finished_at_utc: 20260705-172722Z
+- command: cargo test --lib fcr_
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P6/command_outputs.txt
+  output_sha256: 736f4907519f99d9ef840c14b349c9f8d8a4b95be7bdc91c13c4e1ca9d3308b5
+  finished_at_utc: 20260705-172722Z
+- command: cargo test
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P6/command_outputs.txt
+  output_sha256: 736f4907519f99d9ef840c14b349c9f8d8a4b95be7bdc91c13c4e1ca9d3308b5
+  finished_at_utc: 20260705-172722Z
+- command: cargo check
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P6/command_outputs.txt
+  output_sha256: 736f4907519f99d9ef840c14b349c9f8d8a4b95be7bdc91c13c4e1ca9d3308b5
+  finished_at_utc: 20260705-172722Z
+- command: git diff --check
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P6/command_outputs.txt
+  output_sha256: 736f4907519f99d9ef840c14b349c9f8d8a4b95be7bdc91c13c4e1ca9d3308b5
+  finished_at_utc: 20260705-172722Z
+- command: static FCR-P6 F4/Groebner/Universal elimination scan
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P6/universal_elimination_static_scan.txt
+  output_sha256: 04ce9fed335552dd200f89d0a8a8ad1b27f8802230e12a316ff0dddfdab535cd
+  finished_at_utc: 20260705-172722Z
+- command: guardian_boundary_reviewer FCR-P6
+  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P6/guardian_boundary_reviewer_pass.md
+  output_sha256: 7c399ab600c4690b758057057c9b893144e4709ced67824edad53b2eec659de7
+  finished_at_utc: 20260705-172722Z
+static_scans:
+- scan_id: fcr-p6-f4-test-only
+  command: rg cfg(test), pub mod f4, NonProductionGroebnerBatchForTests
+  forbidden_pattern: fake/test F4 production reachable from Universal execution
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P6/universal_elimination_static_scan.txt
+- scan_id: fcr-p6-universal-local-groebner
+  command: rg EliminationStrategy::LocalGroebner and output_memberships
+  forbidden_pattern: Universal production path calling NotProductionF4 or *_for_tests batch route
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P6/universal_elimination_static_scan.txt
+- scan_id: fcr-p6-required-tests
+  command: rg required fcr_universal/fcr_elimination/fcr_nonproduction tests
+  forbidden_pattern: missing FCR-P6 required tests
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P6/universal_elimination_static_scan.txt
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_PRODUCTION_AUDIT.md
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P6/guardian_boundary_reviewer_pass.md
+known_limitations:
+- FCR-P6 does not claim real production F4; f4 remains test-only and no F4 readiness/source-fidelity claim is supported.
+- FULL_CORE_SOURCE_SPEC_COMPLIANCE_MAP.md still records SparseResultant rows as incorrect; FCR-P7 retains the full SparseResultant generic-kernel repair.
+- FCR-P6 does not authorize P13, exact-image readiness, final candidate-cover readiness, full source fidelity, or acceptance completion.
+- No R-ID is marked VERIFIED.
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-008
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-008
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

@@ -1,0 +1,7 @@
+cargo fmt
+cargo test --lib fcr_
+cargo test
+cargo check
+git diff --check
+static FCR-P6 F4/Groebner/Universal elimination scan
+guardian_boundary_reviewer FCR-P6

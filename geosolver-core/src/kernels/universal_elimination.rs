@@ -36,9 +36,7 @@ use crate::result::status::{
 use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::{BlockId, KernelPlanId, PackageId, RelationId, VariableId};
 use crate::types::matrix::{matrix_density, SparseMatrixQ};
-use crate::types::polynomial::{
-    clear_denominators_primitive, poly_monomial_count, poly_variables, SparsePolynomialQ,
-};
+use crate::types::polynomial::{poly_monomial_count, poly_variables, SparsePolynomialQ};
 use crate::verify::certificates::{
     KernelCertificate, KernelCertificatePayload, UniversalProjectionCertificate,
 };
@@ -510,7 +508,7 @@ fn execute_universal_stage_with_solver_ctx(
                         .generators
                         .iter()
                         .filter(|generator| !generator.generator.terms.is_empty())
-                        .map(|generator| clear_denominators_primitive(&generator.generator))
+                        .map(|generator| generator.generator.clone())
                         .collect(),
                     inner_payload: None,
                     output_memberships,
@@ -591,7 +589,7 @@ pub fn extract_verified_export_generators(
                 "universal local elimination exported a non-keep variable",
             ));
         }
-        out.push(clear_denominators_primitive(&generator.generator));
+        out.push(generator.generator.clone());
     }
     Ok(out)
 }
@@ -1210,10 +1208,166 @@ mod tests {
     use crate::solver::options::SolverOptions;
     use crate::types::hash::hash_sequence;
     use crate::types::ids::{BlockId, PackageId, VariableId};
-    use crate::types::polynomial::{constant_poly, poly_mul, poly_sub, variable_poly};
-    use crate::types::rational::int_q;
+    use crate::types::polynomial::{
+        constant_poly, poly_add, poly_mul, poly_scale, poly_sub, poly_variables, variable_poly,
+    };
+    use crate::types::rational::{div_q, int_q};
 
     use super::*;
+
+    #[test]
+    fn fcr_universal_one_large_block_multivariate_projection() {
+        let t = VariableId(0);
+        let x = VariableId(1);
+        let y = VariableId(2);
+        let compressed = compressed_system(
+            vec![t, x, y],
+            t,
+            vec![
+                poly_sub(&variable_poly(x), &constant_poly(int_q(1))),
+                poly_sub(&variable_poly(y), &constant_poly(int_q(2))),
+                poly_sub(
+                    &poly_add(&variable_poly(x), &variable_poly(y)),
+                    &variable_poly(t),
+                ),
+            ],
+        );
+        let (message, kctx) = execute_local_groebner_stage_for_test(compressed, [t, x, y], [t]);
+
+        assert_eq!(message.kernel_kind, KernelKind::UniversalTargetElimination);
+        assert_eq!(message.representation, MessageRepresentation::GeneratorSet);
+        assert_eq!(
+            message.projection_strength,
+            ProjectionStrength::CandidateCoverStrong
+        );
+        assert!(crate::verify::verify_message::verify_projection_message(&message, &kctx).is_ok());
+        let exported = [t].into_iter().collect();
+        assert!(message
+            .relation_generators
+            .iter()
+            .all(|poly| poly_variables(poly).is_subset(&exported)));
+        assert!(message
+            .relation_generators
+            .iter()
+            .any(|poly| poly_variables(poly).contains(&t)));
+    }
+
+    #[test]
+    fn fcr_universal_keep_only_exports_no_coordinate_roots() {
+        let t = VariableId(0);
+        let s = VariableId(1);
+        let x = VariableId(2);
+        let compressed = compressed_system(
+            vec![t, s, x],
+            t,
+            vec![
+                poly_sub(&variable_poly(x), &variable_poly(t)),
+                poly_sub(&variable_poly(s), &constant_poly(int_q(2))),
+            ],
+        );
+        let (message, kctx) = execute_local_groebner_stage_for_test(compressed, [t, s, x], [t, s]);
+
+        assert!(crate::verify::verify_message::verify_projection_message(&message, &kctx).is_ok());
+        assert!(message
+            .relation_generators
+            .iter()
+            .all(|poly| !poly_variables(poly).contains(&x)));
+        let KernelCertificatePayload::Universal(proof) = &message.certificate.payload else {
+            panic!("universal message must carry universal payload");
+        };
+        assert!(proof.inner_payload.is_none());
+        assert!(!proof.output_memberships.is_empty());
+        assert_eq!(proof.output_relations, message.relation_generators);
+    }
+
+    #[test]
+    fn fcr_elimination_membership_certificates_replay() {
+        let t = VariableId(0);
+        let x = VariableId(1);
+        let half = div_q(&int_q(1), &int_q(2)).unwrap();
+        let rational_keep_relation = poly_sub(
+            &poly_scale(&variable_poly(t), &half),
+            &constant_poly(int_q(1)),
+        );
+        let raw_relations = vec![
+            rational_keep_relation,
+            poly_sub(&variable_poly(x), &variable_poly(t)),
+        ];
+        let mut direct_ctx = new_context(SolverOptions::default());
+        let direct_result = eliminate_to_keep_variables(
+            &raw_relations,
+            &[x],
+            &[t],
+            EliminationStrategy::LocalGroebner(GroebnerOptions::default()),
+            &mut direct_ctx,
+        )
+        .unwrap();
+        validate_local_elimination_result(&direct_result, &[t], &raw_relations).unwrap();
+        assert!(direct_result.generators.iter().all(|generator| {
+            crate::algebra::normal_form::verify_membership_by_certificate(
+                &generator.generator,
+                &generator.certificate,
+                &raw_relations,
+            )
+        }));
+
+        let compressed = compressed_system(vec![t, x], t, raw_relations);
+        let (message, kctx) = execute_local_groebner_stage_for_test(compressed, [t, x], [t]);
+
+        assert!(crate::verify::verify_message::verify_projection_message(&message, &kctx).is_ok());
+        let KernelCertificatePayload::Universal(proof) = &message.certificate.payload else {
+            panic!("universal message must carry universal payload");
+        };
+        assert_eq!(proof.output_relations.len(), proof.output_memberships.len());
+        assert_eq!(proof.output_relations, message.relation_generators);
+
+        let mut tampered = message.clone();
+        let KernelCertificatePayload::Universal(proof) = &mut tampered.certificate.payload else {
+            panic!("universal message must carry universal payload");
+        };
+        proof.output_memberships.clear();
+        tampered.certificate.binding_hash =
+            crate::verify::certificates::kernel_certificate_binding_hash(&tampered.certificate);
+        assert!(
+            crate::verify::verify_message::verify_projection_message(&tampered, &kctx).is_err()
+        );
+    }
+
+    #[test]
+    fn fcr_nonproduction_f4_not_reachable() {
+        let universal_production_source = include_str!("universal_elimination.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+        for fragment in [
+            "NotProductionF4",
+            "NonProductionGroebnerBatch",
+            "groebner_backed_batch_reduce_for_tests",
+            "non_production_groebner_batch_elimination_for_tests",
+        ] {
+            assert!(
+                !universal_production_source.contains(fragment),
+                "production Universal path must not reference {fragment}"
+            );
+        }
+        assert!(include_str!("../algebra/mod.rs").contains("#[cfg(test)]\npub mod f4;"));
+
+        let t = VariableId(0);
+        let x = VariableId(1);
+        let relations = vec![poly_sub(&variable_poly(x), &variable_poly(t))];
+        let mut solver_ctx = new_context(SolverOptions::default());
+        let err = eliminate_to_keep_variables(
+            &relations,
+            &[x],
+            &[t],
+            EliminationStrategy::NonProductionGroebnerBatchForTests(
+                crate::algebra::f4::GroebnerBackedBatchOptions::default(),
+            ),
+            &mut solver_ctx,
+        )
+        .unwrap_err();
+        assert_eq!(err.public_status(), SolverStatus::CertificateDesignGap);
+    }
 
     #[test]
     fn p8d_universal_one_large_block_exports_target_relation() {
@@ -1424,7 +1578,10 @@ mod tests {
 
     #[test]
     fn p8d_static_forbidden_fallback_apis_absent() {
-        let source = include_str!("universal_elimination.rs");
+        let source = include_str!("universal_elimination.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
         for fragment in [
             concat!("Certified", "NonFinite", "TargetImage"),
             concat!("coordinate", "_root"),
@@ -1502,5 +1659,31 @@ mod tests {
             &[message.relation_generators[0].hash.0.to_vec()],
         );
         message
+    }
+
+    fn execute_local_groebner_stage_for_test<const N: usize, const M: usize>(
+        compressed: crate::preprocess::compression::CompressedSystemQ,
+        local_variables: [VariableId; N],
+        exported_variables: [VariableId; M],
+    ) -> (ProjectionMessage, KernelContext) {
+        let block = test_block(&compressed, local_variables, exported_variables);
+        let mut solver_ctx = new_context(SolverOptions::default());
+        let mut kctx = KernelContext {
+            block,
+            system: compressed,
+            child_messages: Vec::new(),
+        };
+        let kernel = UniversalTargetEliminationKernel;
+        let admission = kernel.admit(&kctx.block, &kctx);
+        let plan = kernel.plan(&admission, &kctx, &solver_ctx).unwrap();
+        let stage = build_stage_plans(&plan)
+            .unwrap()
+            .into_iter()
+            .find(|stage| stage.strategy == UniversalStrategy::LocalGroebnerEliminationToKeepZ)
+            .expect("Universal plan must contain local Groebner stage");
+        let message =
+            execute_universal_stage_with_solver_ctx(&stage, &mut kctx, &mut solver_ctx, &plan)
+                .unwrap();
+        (message, kctx)
     }
 }
