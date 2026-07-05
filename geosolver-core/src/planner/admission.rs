@@ -3,26 +3,19 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Serialize};
 
 use crate::graph::projection_dag::ProjectionBlock;
-#[cfg(test)]
 use crate::kernels::action_krylov::plan_target_action_krylov;
 use crate::kernels::linear_affine::{find_triangular_affine_order, plan_linear_affine};
-#[cfg(test)]
 use crate::kernels::norm_trace_projection::plan_norm_trace_projection;
-#[cfg(test)]
 use crate::kernels::regular_chain_projection::plan_regular_chain_projection;
-#[cfg(test)]
 use crate::kernels::sparse_resultant::plan_sparse_resultant;
-#[cfg(test)]
 use crate::kernels::specialization_interpolation::plan_specialization_interpolation;
 use crate::kernels::traits::KernelKind;
-#[cfg(test)]
 use crate::kernels::universal_elimination::plan_universal_elimination;
 use crate::planner::kernel_plan::{
     planned_failure_behavior, rank_plan, resource_bounds_hash, support_plan_hash, template_plan,
     CertificateRoute, KernelExecutionPlan, KernelSupportPlan, LocalNonfinitePolicy, ResourceBounds,
 };
 use crate::planner::probes::ProbeResults;
-#[cfg(test)]
 use crate::planner::relation_schedule::build_dense_relation_search_schedule;
 use crate::preprocess::compression::CompressedSystemQ;
 use crate::problem::context::SolverContext;
@@ -55,11 +48,6 @@ impl KernelAdmission {
 }
 
 pub fn all_planner_kernel_kinds() -> Vec<KernelKind> {
-    #[cfg(not(test))]
-    {
-        return vec![KernelKind::TargetUnivariate, KernelKind::LinearAffine];
-    }
-    #[cfg(test)]
     vec![
         KernelKind::TargetUnivariate,
         KernelKind::LinearAffine,
@@ -117,17 +105,14 @@ fn build_kernel_admission(
         .copied()
         .collect::<Vec<_>>();
     let local_relations = block_relations(block, relations_by_id);
-    #[cfg(test)]
     let relation_polys = local_relations
         .iter()
         .map(|relation| relation.polynomial.clone())
         .collect::<Vec<_>>();
-    #[cfg(test)]
     let relation_hashes = local_relations
         .iter()
         .map(|relation| relation.hash)
         .collect::<Vec<_>>();
-    #[cfg(test)]
     let source_relation_ids = local_relations
         .iter()
         .map(|relation| relation.id)
@@ -172,7 +157,6 @@ fn build_kernel_admission(
                 declined("no authorized target-only relation")
             }
         }
-        #[cfg(test)]
         KernelKind::TargetRelationSearch => {
             if relation_polys.is_empty() {
                 declined("no authorized local relations for dense relation search")
@@ -199,7 +183,6 @@ fn build_kernel_admission(
                 )
             }
         }
-        #[cfg(test)]
         KernelKind::UniversalTargetElimination => {
             match plan_universal_elimination(block, system, ctx, plan_id) {
                 Ok(plan) => (KernelAdmissionStatus::Admitted, Some(plan)),
@@ -218,14 +201,12 @@ fn build_kernel_admission(
                 declined("no complete safe triangular affine elimination order")
             }
         }
-        #[cfg(test)]
         KernelKind::SparseResultantProjection => {
             match plan_sparse_resultant(block, system, ctx, plan_id) {
                 Ok(plan) => (KernelAdmissionStatus::Admitted, Some(plan)),
                 Err(_) => declined("not sparse enough for a finite resultant template"),
             }
         }
-        #[cfg(test)]
         KernelKind::TargetActionKrylov => {
             match plan_target_action_krylov(block, system, ctx, plan_id) {
                 Ok(plan) => (KernelAdmissionStatus::Admitted, Some(plan)),
@@ -234,21 +215,18 @@ fn build_kernel_admission(
                 ),
             }
         }
-        #[cfg(test)]
         KernelKind::NormTraceProjection => {
             match plan_norm_trace_projection(block, system, ctx, plan_id) {
                 Ok(plan) => (KernelAdmissionStatus::Admitted, Some(plan)),
                 Err(_) => declined("no explicit algebraic tower norm/trace projection plan"),
             }
         }
-        #[cfg(test)]
         KernelKind::RegularChainProjection => {
             match plan_regular_chain_projection(block, system, ctx, plan_id) {
                 Ok(plan) => (KernelAdmissionStatus::Admitted, Some(plan)),
                 Err(_) => declined("no triangular regular-chain projection plan"),
             }
         }
-        #[cfg(test)]
         KernelKind::SpecializationInterpolation => {
             match plan_specialization_interpolation(block, system, ctx, plan_id) {
                 Ok(plan) => (KernelAdmissionStatus::Admitted, Some(plan)),
@@ -256,16 +234,6 @@ fn build_kernel_admission(
                     "specialization-interpolation exact verification plan is not applicable",
                 ),
             }
-        }
-        #[cfg(not(test))]
-        KernelKind::TargetRelationSearch
-        | KernelKind::SparseResultantProjection
-        | KernelKind::TargetActionKrylov
-        | KernelKind::NormTraceProjection
-        | KernelKind::RegularChainProjection
-        | KernelKind::SpecializationInterpolation
-        | KernelKind::UniversalTargetElimination => {
-            declined("FCR-P2 quarantined until generic production implementation is complete")
         }
     };
     finish_admission(
@@ -429,31 +397,26 @@ fn block_relations<'a>(
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn fcr_p7_production_planner_kernel_list_has_no_advanced_completion_claims() {
-        let source = include_str!("admission.rs");
-        let start = source
-            .find("#[cfg(not(test))]")
-            .expect("production planner branch must be explicit");
-        let after_start = &source[start..];
-        let end = after_start
-            .find("#[cfg(test)]\n    vec![")
-            .expect("test planner branch must remain separate");
-        let production_branch = &after_start[..end];
+    use super::all_planner_kernel_kinds;
+    use crate::kernels::traits::KernelKind;
 
-        assert!(production_branch.contains("KernelKind::TargetUnivariate"));
-        assert!(production_branch.contains("KernelKind::LinearAffine"));
-        for advanced in [
-            "SparseResultantProjection",
-            "NormTraceProjection",
-            "RegularChainProjection",
-            "SpecializationInterpolation",
-        ] {
-            assert!(
-                !production_branch.contains(advanced),
-                "{advanced} must not appear in the production planner kernel list"
-            );
-        }
+    #[test]
+    fn fcr_p10_production_planner_kernel_list_has_full_candidate_cover_ladder() {
+        let kinds = all_planner_kernel_kinds();
+        assert_eq!(
+            kinds,
+            vec![
+                KernelKind::TargetUnivariate,
+                KernelKind::LinearAffine,
+                KernelKind::TargetRelationSearch,
+                KernelKind::SparseResultantProjection,
+                KernelKind::TargetActionKrylov,
+                KernelKind::NormTraceProjection,
+                KernelKind::RegularChainProjection,
+                KernelKind::SpecializationInterpolation,
+                KernelKind::UniversalTargetElimination,
+            ]
+        );
     }
 }
 

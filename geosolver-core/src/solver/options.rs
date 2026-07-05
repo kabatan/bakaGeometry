@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::kernels::traits::KernelKind;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SolverOptions {
     pub exact_image_mode: bool,
@@ -10,6 +12,8 @@ pub struct SolverOptions {
     pub max_coefficient_height_bits: Option<usize>,
     pub root_isolation_method: RootIsolationMethod,
     pub certificate_level: CertificateLevel,
+    #[serde(default)]
+    pub kernel_priority: Vec<KernelKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -35,6 +39,7 @@ impl Default for SolverOptions {
             max_coefficient_height_bits: None,
             root_isolation_method: RootIsolationMethod::Sturm,
             certificate_level: CertificateLevel::Minimal,
+            kernel_priority: Vec::new(),
         }
     }
 }

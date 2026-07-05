@@ -77,7 +77,6 @@ struct SparseResultantTrace {
     matrix_rows: usize,
     matrix_cols: usize,
     max_degree: usize,
-    template_trace_hash: Hash,
     output_support_hash: Hash,
     trace_hash: Hash,
 }
@@ -265,19 +264,21 @@ pub fn execute_sparse_resultant(
         &plan.exported_variables,
         max_dim,
     )?;
+    let probe = probe_sparse_resultant_plan(
+        &relation_polys,
+        &plan.eliminated_variables,
+        &plan.exported_variables,
+        max_dim,
+    )?;
     let Some(template) = &plan.support_plan.template_plan else {
         return Err(implementation_bug(
             "sparse resultant plan lacks template plan",
         ));
     };
-    if template.matrix_rows != trace.matrix_rows
-        || template.matrix_cols != trace.matrix_cols
-        || template.row_monomial_hash != trace.template_trace_hash
-        || template.column_support_hash
-            != planned_resultant_output_support_hash(
-                &plan.exported_variables,
-                plan.support_plan.degree_bound,
-            )
+    if template.matrix_rows != probe.matrix_rows
+        || template.matrix_cols != probe.matrix_cols
+        || template.row_monomial_hash != probe.template_trace_hash
+        || template.column_support_hash != probe.output_support_hash
         || support_plan_hash(&plan.support_plan) != plan.support_plan.support_hash
     {
         return Err(implementation_bug(
@@ -487,7 +488,6 @@ fn build_sparse_resultant_trace(
             .map(|poly| poly_total_degree(poly) as usize)
             .max()
             .unwrap_or(0),
-        template_trace_hash,
         output_support_hash,
         trace_hash,
     })

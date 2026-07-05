@@ -134,18 +134,13 @@ pub fn step_execute(
 
     for block in execution_order(dag) {
         let Some(plan) = plans_by_block.get(&block.block_id) else {
-            return Err(implementation_bug("projection block has no KernelPlan"));
+            if block_requires_projection(&block) {
+                return Err(implementation_bug("projection block has no KernelPlan"));
+            }
+            continue;
         };
-        let child_messages = block
-            .child_block_ids
-            .iter()
-            .filter_map(|child_id| messages_by_block.get(child_id).cloned())
-            .collect::<Vec<_>>();
-        if child_messages.len() != block.child_block_ids.len() {
-            return Err(implementation_bug(
-                "projection block executed before all child messages were available",
-            ));
-        }
+        let child_messages =
+            collect_child_projection_messages(&block, &blocks_by_id, &messages_by_block)?;
         for child_id in &block.child_block_ids {
             if !blocks_by_id.contains_key(child_id) {
                 return Err(implementation_bug(
@@ -171,25 +166,30 @@ pub fn step_verify_messages(
         .iter()
         .map(|message| (message.block_id, message.clone()))
         .collect::<BTreeMap<_, _>>();
-    if messages_by_block.len() != dag.blocks.len() {
+    if messages_by_block.len() != messages.len() {
         return Err(implementation_bug(
-            "projection message set does not cover each DAG block exactly once",
+            "projection message set contains duplicate block messages",
         ));
     }
+    let blocks_by_id = dag
+        .blocks
+        .iter()
+        .map(|block| (block.block_id, block))
+        .collect::<BTreeMap<_, _>>();
     for block in execution_order(dag) {
+        if !block_requires_projection(&block) {
+            if messages_by_block.contains_key(&block.block_id) {
+                return Err(implementation_bug(
+                    "structural projection block unexpectedly produced a message",
+                ));
+            }
+            continue;
+        }
         let Some(message) = messages_by_block.get(&block.block_id) else {
             return Err(implementation_bug("projection block has no message"));
         };
-        let child_messages = block
-            .child_block_ids
-            .iter()
-            .filter_map(|child_id| messages_by_block.get(child_id).cloned())
-            .collect::<Vec<_>>();
-        if child_messages.len() != block.child_block_ids.len() {
-            return Err(implementation_bug(
-                "projection message verification lacks a child message",
-            ));
-        }
+        let child_messages =
+            collect_child_projection_messages(&block, &blocks_by_id, &messages_by_block)?;
         let kctx = KernelContext {
             block: block.clone(),
             system: compressed.clone(),
@@ -404,6 +404,53 @@ fn execution_order(dag: &TargetProjectionDAG) -> Vec<ProjectionBlock> {
         )
     });
     blocks
+}
+
+fn block_requires_projection(block: &ProjectionBlock) -> bool {
+    !block.relation_ids.is_empty()
+}
+
+fn collect_child_projection_messages(
+    block: &ProjectionBlock,
+    blocks_by_id: &BTreeMap<BlockId, &ProjectionBlock>,
+    messages_by_block: &BTreeMap<BlockId, ProjectionMessage>,
+) -> Result<Vec<ProjectionMessage>, SolverError> {
+    let mut out = Vec::new();
+    for child_id in &block.child_block_ids {
+        collect_projection_messages_from_subtree(
+            *child_id,
+            blocks_by_id,
+            messages_by_block,
+            &mut out,
+        )?;
+    }
+    Ok(out)
+}
+
+fn collect_projection_messages_from_subtree(
+    block_id: BlockId,
+    blocks_by_id: &BTreeMap<BlockId, &ProjectionBlock>,
+    messages_by_block: &BTreeMap<BlockId, ProjectionMessage>,
+    out: &mut Vec<ProjectionMessage>,
+) -> Result<(), SolverError> {
+    let Some(block) = blocks_by_id.get(&block_id) else {
+        return Err(implementation_bug(
+            "projection block references missing child",
+        ));
+    };
+    if let Some(message) = messages_by_block.get(&block_id) {
+        out.push(message.clone());
+        return Ok(());
+    }
+    if block_requires_projection(block) {
+        return Err(implementation_bug(
+            "projection block executed before all descendant messages were available",
+        ));
+    }
+    for child_id in &block.child_block_ids {
+        collect_projection_messages_from_subtree(*child_id, blocks_by_id, messages_by_block, out)?;
+    }
+    Ok(())
 }
 
 fn block_depth_from_root(dag: &TargetProjectionDAG, block_id: BlockId) -> usize {

@@ -1,0 +1,67 @@
+FCR-P10 command output summary
+
+Timestamp: 20260706-044112+09:00
+
+PASS: cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+Output: no formatting differences.
+
+PASS: cargo check --manifest-path geosolver-core/Cargo.toml
+Output: Finished dev profile for geosolver-core.
+
+PASS: cargo test --manifest-path geosolver-core/Cargo.toml --test fcr_p10_acceptance_suite -- --nocapture
+Output: 13 passed, 0 failed.
+Cases:
+- A1 no initial target-only relation, one block
+- A2 multivariate finite quotient/action, nonlinear target
+- A3 multiple eliminated variables/separators
+- A4 sparse resultant/eliminant with no target-only input
+- A5 specialization/interpolation style multiseparator
+- A6 guarded rational affine preprocessing through support
+- A7 target-independent component with feasibility obligation
+- A8 one-large-block Universal path under relation-search cap
+- A9 regular-chain style projection
+- A10 norm/trace two-step tower
+- A11 non-real support empty candidate cover
+- A12 certified nonfinite via positive zero-target-elimination proof
+- A13 resource-bounded hard case status with nonempty matrix-dimension cost trace and preserved target/kernel metadata
+Boundary-remediation coverage:
+- the shared problem builder scales every input relation by a deterministic nonzero rational factor and asserts the scaled relation changed;
+- A3 recomposes public DAG projection messages and checks each child message is essential, then exercises near-public production message-only composition over two separators;
+- A5 recomposes the public DAG projection messages and checks each child message is essential.
+Quality-remediation coverage:
+- public failure finalization preserves the requested problem target as fallback metadata;
+- finite-resource cost traces derive kernel identity from the finite-resource failure stage;
+- A13 asserts `result.target == t` and TargetRelationSearch kernel identity for the forced bounded failure.
+Kernel evidence assertions:
+- A2 asserts TargetActionKrylov executed through api::solve_target with a nonlinear target quotient case.
+- A4 asserts SparseResultantProjection executed through api::solve_target.
+- A5 asserts SpecializationInterpolation executed through api::solve_target on a decomposed target+separator child block.
+- A8 asserts UniversalTargetElimination executed through api::solve_target.
+- A9 asserts RegularChainProjection executed through api::solve_target.
+- A10 asserts NormTraceProjection executed through api::solve_target on a non-affine two-step tower.
+- A13 asserts the bounded failure result retains at least one block cost trace with matrix rows or columns, the requested target, and TargetRelationSearch kernel identity.
+
+PASS: cargo test --manifest-path geosolver-core/Cargo.toml
+Output: lib tests 209 passed; fcr_p10_acceptance_suite 13 passed; fcr_p4_pure_planning 7 passed; p12 roots decode 1 passed; p12g stress manifest 1 passed; p3 public integration 2 passed; doctests 0.
+
+PASS: cargo test --manifest-path geosolver-core/Cargo.toml verify::replay::tests -- --nocapture
+Output: 16 passed, 0 failed.
+
+PASS: cargo test --manifest-path geosolver-core/Cargo.toml --test fcr_p4_pure_planning fcr_plan_sparse_resultant_does_not_construct_output_relation -- --nocapture
+Output: 1 passed, 0 failed.
+
+PASS: cargo test --manifest-path geosolver-core/Cargo.toml --test fcr_p10_acceptance_suite fcr_p10_a13_public_resource_bounded_hard_case_has_spec_status -- --nocapture
+Output: 1 passed, 0 failed.
+
+PASS: git diff --check
+Output: no whitespace errors. Git reported CRLF conversion warnings only.
+
+Reviewer remediation note:
+- Initial spec_verifier result was FAIL_FIXABLE because A2/A4/A5/A8/A9/A10 category labels did not prove the named production kernels executed.
+- Second spec_verifier result was FAIL_FIXABLE because A13 did not assert a cost trace and public failure finalization returned GlobalCostTrace::default().
+- Guardian boundary reviewer then returned FAIL_FIXABLE because anti-hack coefficient scaling and multiseparator/message-removal composition evidence were incomplete.
+- Quality reviewer then returned FAIL_FIXABLE because public FiniteResourceFailure results could lose the requested target and hard-code cost-trace kernel identity.
+- Quality reviewer rerun returned PASS after the target/kernel metadata fix.
+- Final spec_verifier and guardian_boundary_reviewer rechecks returned PASS after the quality fix.
+- Remediation added explicit public-result kernel assertions, production kernel priority ordering, target+separator child exports, structural relationless DAG block handling, replay support for structural blocks, a SpecializationInterpolation admission guard requiring target-bearing local relations, FiniteResourceFailure cost-trace retention in public failure results, shared nonzero rational relation scaling, A3/A5 composition-removal checks, public failure target fallback, stage-derived finite-resource kernel identity, and A13 assertions for target/kernel metadata.
+- Re-run acceptance and full test evidence above reflects the remediated implementation.

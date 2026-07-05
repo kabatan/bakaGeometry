@@ -1,0 +1,47 @@
+FCR-P10 static scan summary
+
+Anti-hack scan:
+Command:
+rg -n "circle|triangle|tangent|distance|area|incircle|circumcircle|orthic|mixtilinear|fixture|expected|answer|problem_id|official" geosolver-core/src geosolver-core/tests
+
+Result:
+- Fresh run hit_count=139.
+- No production fixture/case-id/expected-answer dispatch was found.
+- Remaining hits are assertion messages, expected-value local variables inside tests/verifiers, certificate invariant field names such as no_problem_id_dispatch/no_expected_answer_dispatch, and graph metric terminology such as target_distance.
+- No FCR-P10 implementation path dispatches on fixture names, problem IDs, or expected answers.
+
+Temporary/stub scan:
+Command:
+rg -n "temporary_pipeline_not_connected|NotProductionF4|for_tests|fake|stub|placeholder|dummy|unimplemented!|todo!" geosolver-core/src geosolver-core/tests
+
+Result:
+- Fresh run hit_count=21.
+- Remaining hits are the pre-existing SolverError constructor temporary_pipeline_not_connected, explicitly quarantined NotProductionF4/for_tests helpers under algebra/f4.rs, synthetic_for_tests test certificates, and a p12 test name using nonplaceholder wording.
+- No FCR-P10 production path dispatches to nonproduction F4, stubs, placeholders, dummy outputs, todo, or unimplemented code.
+
+Coordinate export scan:
+Command:
+rg -n "coordinate solution|coordinate roots|full coordinate RUR|solve_all_coordinates|CAD|QE|RCF" geosolver-core/src geosolver-core/tests
+
+Result:
+- Fresh run hit_count=3.
+- Remaining hits are rejection/error text in quotient/action checks.
+- No production output path exports coordinate solutions, coordinate roots, full coordinate RUR, CAD, QE, or RCF.
+
+Production reachability scan:
+Command:
+rg -n "pub mod (action_krylov|norm_trace_projection|regular_chain_projection|sparse_resultant|specialization_interpolation|universal_elimination)|KernelKind::(TargetActionKrylov|NormTraceProjection|RegularChainProjection|SparseResultantProjection|SpecializationInterpolation|UniversalTargetElimination)" geosolver-core/src/kernels/mod.rs geosolver-core/src/planner/admission.rs
+
+Result:
+- geosolver-core/src/kernels/mod.rs exposes action_krylov, norm_trace_projection, regular_chain_projection, sparse_resultant, specialization_interpolation, and universal_elimination as production modules.
+- geosolver-core/src/kernels/mod.rs maps those KernelKind variants in kernel_by_kind/all_kernels.
+- geosolver-core/src/planner/admission.rs includes those KernelKind variants in all_planner_kernel_kinds and build_kernel_admission.
+- geosolver-core/src/solver/options.rs exposes kernel_priority as a generic production option; default is empty and preserves the declared cost ladder, while P10 uses it to assert named-kernel coverage without fixture dispatch.
+
+cfg(test) quarantine scan:
+Command:
+rg -n "#\[cfg\(test\)\]\s*(pub )?mod (action_krylov|norm_trace_projection|regular_chain_projection|sparse_resultant|specialization_interpolation|universal_elimination)|#\[cfg\(test\)\].*KernelKind::(TargetActionKrylov|NormTraceProjection|RegularChainProjection|SparseResultantProjection|SpecializationInterpolation|UniversalTargetElimination)" geosolver-core/src/kernels/mod.rs geosolver-core/src/planner/admission.rs
+
+Result:
+- Fresh run hit_count=0.
+- No matches.

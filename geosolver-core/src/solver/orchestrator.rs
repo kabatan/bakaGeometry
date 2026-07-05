@@ -1,3 +1,4 @@
+use crate::compose::compose::{hash_composed_projection, ComposedProjection};
 use crate::problem::context::SolverContext;
 use crate::problem::input::RationalTargetProblem;
 use crate::result::diagnostics::DiagnosticRecord;
@@ -19,6 +20,33 @@ pub fn solve_with_context(
     let compressed = step_compress(canonical.clone(), &mut ctx)?;
     let graphs = step_build_graphs(&compressed, &mut ctx)?;
     let dag = step_build_dag(&graphs, &compressed, &mut ctx)?;
+    if compressed.relations.is_empty() {
+        let mut composed = ComposedProjection {
+            target,
+            root_block_id: dag.root_block_id,
+            message_relations: Vec::new(),
+            root_relations: Vec::new(),
+            source_message_hashes: Vec::new(),
+            separator_elimination_hashes: Vec::new(),
+            separator_elimination_messages: Vec::new(),
+            composition_cost: Default::default(),
+            composed_hash: crate::types::hash::hash_sequence("composed-projection", &[]),
+        };
+        composed.composed_hash = hash_composed_projection(&composed);
+        let support_outcome = step_support(&composed, target, &mut ctx)?;
+        let cost_trace = step_cost_trace(&compressed, &dag, &[], Some(&composed));
+        if let crate::compose::final_support::FinalSupportComputation::CertifiedNonFinite(cert) =
+            support_outcome
+        {
+            return finalize_nonfinite_pipeline_result(
+                target,
+                cert,
+                &composed,
+                Vec::new(),
+                cost_trace,
+            );
+        }
+    }
     let plans = step_plan(&dag, &compressed, &mut ctx)?;
     let messages = step_execute(&dag, &plans, &compressed, &mut ctx)?;
     step_verify_messages(&dag, &messages, &compressed)?;

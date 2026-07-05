@@ -244,6 +244,15 @@ pub fn build_final_dag_replay_evidence_from_dag(
         .map(|relation| (relation.id, relation.hash))
         .collect::<BTreeMap<_, _>>();
     let projection_message_hashes = hash_projection_messages(messages);
+    let blocks_by_id = dag
+        .blocks
+        .iter()
+        .map(|block| (block.block_id, block))
+        .collect::<BTreeMap<_, _>>();
+    let message_hashes_by_block = messages
+        .iter()
+        .map(|message| (message.block_id, message.package_hash))
+        .collect::<BTreeMap<_, _>>();
     let message_block_ids = messages
         .iter()
         .map(|message| message.block_id)
@@ -255,20 +264,14 @@ pub fn build_final_dag_replay_evidence_from_dag(
     let message_child_dependency_hashes = messages
         .iter()
         .map(|message| {
-            dag.blocks
-                .iter()
-                .find(|block| block.block_id == message.block_id)
+            blocks_by_id
+                .get(&message.block_id)
                 .map(|block| {
-                    block
-                        .child_block_ids
-                        .iter()
-                        .filter_map(|child_id| {
-                            messages
-                                .iter()
-                                .find(|candidate| candidate.block_id == *child_id)
-                                .map(|candidate| candidate.package_hash)
-                        })
-                        .collect::<Vec<_>>()
+                    collect_descendant_message_hashes(
+                        block,
+                        &blocks_by_id,
+                        &message_hashes_by_block,
+                    )
                 })
                 .unwrap_or_default()
         })
@@ -343,6 +346,41 @@ pub fn build_final_dag_replay_evidence_from_dag(
         decoded_candidate_hash,
         true,
     )
+}
+
+fn collect_descendant_message_hashes(
+    block: &crate::graph::projection_dag::ProjectionBlock,
+    blocks_by_id: &BTreeMap<BlockId, &crate::graph::projection_dag::ProjectionBlock>,
+    message_hashes_by_block: &BTreeMap<BlockId, Hash>,
+) -> Vec<Hash> {
+    let mut out = Vec::new();
+    for child_id in &block.child_block_ids {
+        collect_message_hashes_from_subtree(
+            *child_id,
+            blocks_by_id,
+            message_hashes_by_block,
+            &mut out,
+        );
+    }
+    out
+}
+
+fn collect_message_hashes_from_subtree(
+    block_id: BlockId,
+    blocks_by_id: &BTreeMap<BlockId, &crate::graph::projection_dag::ProjectionBlock>,
+    message_hashes_by_block: &BTreeMap<BlockId, Hash>,
+    out: &mut Vec<Hash>,
+) {
+    if let Some(hash) = message_hashes_by_block.get(&block_id) {
+        out.push(*hash);
+        return;
+    }
+    let Some(block) = blocks_by_id.get(&block_id) else {
+        return;
+    };
+    for child_id in &block.child_block_ids {
+        collect_message_hashes_from_subtree(*child_id, blocks_by_id, message_hashes_by_block, out);
+    }
 }
 
 pub fn require_final_claim_dag_replay_evidence(

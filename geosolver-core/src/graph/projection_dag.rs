@@ -55,6 +55,7 @@ pub fn build_target_projection_dag(
     let root_block_id = materialize_blocks(
         &decomposition.root,
         None,
+        system.target,
         &BTreeSet::from([system.target]),
         &mut blocks,
     );
@@ -243,23 +244,32 @@ impl ProjectionBlock {
 fn materialize_blocks(
     node: &DecompositionNode,
     parent_block_id: Option<BlockId>,
+    target: VariableId,
     export_to_parent: &BTreeSet<VariableId>,
     blocks: &mut Vec<ProjectionBlock>,
 ) -> BlockId {
     let block_id = BlockId(blocks.len() as u32);
+    let mut local_variables = node.variables.clone();
+    local_variables.insert(target);
+    let mut exported_to_parent = export_to_parent.clone();
+    exported_to_parent.insert(target);
     blocks.push(ProjectionBlock::new(
         block_id,
         parent_block_id,
-        node.variables.clone(),
-        export_to_parent
-            .intersection(&node.variables)
+        local_variables.clone(),
+        exported_to_parent
+            .intersection(&local_variables)
             .copied()
             .collect::<BTreeSet<_>>(),
     ));
     let child_ids = node
         .children
         .iter()
-        .map(|child| materialize_blocks(child, Some(block_id), &node.separator, blocks))
+        .map(|child| {
+            let mut child_export = node.separator.clone();
+            child_export.insert(target);
+            materialize_blocks(child, Some(block_id), target, &child_export, blocks)
+        })
         .collect::<Vec<_>>();
     blocks[block_id.0 as usize].child_block_ids = child_ids;
     block_id

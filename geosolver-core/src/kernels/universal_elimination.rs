@@ -451,7 +451,7 @@ fn execute_universal_stage_with_solver_ctx(
                 EliminationStrategy::LocalGroebner(options),
                 solver_ctx,
             )?;
-            enforce_stage_resource_bounds(stage, &result)?;
+            enforce_stage_resource_bounds(stage, ctx.system.target, &result)?;
             validate_local_elimination_result(&result, &stage.exported_variables, &relations)?;
             let output_memberships = result
                 .generators
@@ -555,6 +555,7 @@ pub fn verify_universal_no_coordinate_fallback(
     {
         if rows > max_rows {
             return Err(finite_resource_failure(
+                None,
                 plan,
                 rows,
                 trace.matrix_cols.unwrap_or(0),
@@ -565,6 +566,7 @@ pub fn verify_universal_no_coordinate_fallback(
     {
         if cols > max_cols {
             return Err(finite_resource_failure(
+                None,
                 plan,
                 trace.matrix_rows.unwrap_or(0),
                 cols,
@@ -973,6 +975,7 @@ fn block_relations(block: &ProjectionBlock, system: &CompressedSystemQ) -> Vec<C
 
 fn enforce_stage_resource_bounds(
     stage: &UniversalStagePlan,
+    target: VariableId,
     result: &LocalEliminationResult,
 ) -> Result<(), SolverError> {
     if stage
@@ -985,6 +988,7 @@ fn enforce_stage_resource_bounds(
             .is_some_and(|limit| result.matrix_cols > limit)
     {
         return Err(finite_resource_failure(
+            Some(target),
             &stage_execution_plan_shadow(stage),
             result.matrix_rows,
             result.matrix_cols,
@@ -1165,9 +1169,14 @@ fn algorithmic_hard_case_for_block(
     }
 }
 
-fn finite_resource_failure(plan: &KernelExecutionPlan, rows: usize, cols: usize) -> SolverError {
+fn finite_resource_failure(
+    target: Option<VariableId>,
+    plan: &KernelExecutionPlan,
+    rows: usize,
+    cols: usize,
+) -> SolverError {
     SolverError {
-        target: None,
+        target,
         kind: SolverErrorKind::Failure(FailureKind::FiniteResourceFailure {
             stage: StageId("UniversalTargetEliminationKernel".to_owned()),
             block_id: Some(plan.block_id),

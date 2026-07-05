@@ -3,9 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Serialize};
 
 use crate::preprocess::binomial::simplify_binomial_relations;
-use crate::preprocess::definitional::{
-    apply_definitional_elimination, find_definitional_relations,
-};
+use crate::preprocess::definitional::apply_definitional_elimination;
 use crate::preprocess::independent::mark_target_independent_components;
 use crate::preprocess::linear_affine::eliminate_linear_affine_variables;
 use crate::preprocess::saturation::apply_explicit_saturations;
@@ -209,8 +207,7 @@ pub fn pre_kernel_compress(
     state.trace.monomial_count_before = total_monomial_count(&state.relations);
     state.trace.coefficient_height_before_bits = max_coefficient_height_bits(&state.relations);
 
-    let candidates = find_definitional_relations(&state.to_canonical_system());
-    state = apply_definitional_elimination(state, &candidates, ctx)?;
+    state = apply_definitional_elimination(state, &[], ctx)?;
     state.record_step(CompressionStepKind::DefinitionalElimination);
 
     state = eliminate_linear_affine_variables(state, ctx)?;

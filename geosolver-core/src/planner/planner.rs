@@ -18,13 +18,17 @@ pub fn plan_all_blocks(
     blocks.sort_by_key(|block| postorder_key(dag, block.block_id));
     let mut plans = Vec::new();
     for block in blocks {
+        if block.relation_ids.is_empty() {
+            continue;
+        }
         let probes = run_cost_probes(block, system, ctx);
         let admissions = collect_kernel_admissions(block, system, &probes, ctx);
         let cost_estimates = admissions
             .iter()
             .map(|admission| estimate_kernel_cost(block, admission.kind, &probes))
             .collect::<Vec<_>>();
-        let ladder = build_declared_ladder(&admissions, &cost_estimates);
+        let ladder =
+            build_declared_ladder(&admissions, &cost_estimates, &ctx.options.kernel_priority);
         if ladder.is_empty() {
             return Err(SolverError {
                 target: Some(system.target),

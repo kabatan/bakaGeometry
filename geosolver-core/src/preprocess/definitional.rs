@@ -67,20 +67,24 @@ pub fn find_definitional_relations(system: &CanonicalSystemQ) -> Vec<Definitiona
 
 pub fn apply_definitional_elimination(
     mut state: CompressionState,
-    candidates: &[DefinitionalCandidate],
+    _candidates: &[DefinitionalCandidate],
     _ctx: &mut SolverContext,
 ) -> Result<CompressionState, SolverError> {
-    for candidate in candidates {
-        if candidate.variable == state.target || !state.variables.contains(&candidate.variable) {
-            continue;
-        }
-        if !state
-            .relations
-            .iter()
-            .any(|relation| relation.id == candidate.source_relation_id)
-        {
-            continue;
-        }
+    loop {
+        let current = state.to_canonical_system();
+        let Some(candidate) = find_definitional_relations(&current)
+            .into_iter()
+            .find(|candidate| {
+                candidate.variable != state.target
+                    && state.variables.contains(&candidate.variable)
+                    && state
+                        .relations
+                        .iter()
+                        .any(|relation| relation.id == candidate.source_relation_id)
+            })
+        else {
+            break;
+        };
         state.apply_polynomial_substitution(
             candidate.variable,
             &candidate.expression,
@@ -88,7 +92,7 @@ pub fn apply_definitional_elimination(
         );
         state.add_substitution(
             candidate.variable,
-            candidate.expression.clone(),
+            candidate.expression,
             None,
             candidate.source_relation_id,
             SubstitutionKind::Definitional,
@@ -113,9 +117,12 @@ fn neg_poly(poly: &SparsePolynomialQ) -> SparsePolynomialQ {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::preprocess::compression::CompressionState;
     use crate::problem::canonicalize::canonicalize_system;
+    use crate::problem::context::new_context;
     use crate::problem::input::make_problem;
     use crate::problem::validate::validate_input;
+    use crate::solver::options::SolverOptions;
     use crate::types::polynomial::{constant_poly, poly_sub, variable_poly};
     use crate::types::rational::int_q;
 
@@ -135,5 +142,36 @@ mod tests {
         assert_eq!(candidates.len(), 1);
         assert_eq!(candidates[0].variable, y);
         assert_eq!(candidates[0].expression, constant_poly(int_q(3)));
+    }
+
+    #[test]
+    fn cascading_definitions_are_recomputed_after_each_substitution() {
+        let t = VariableId(0);
+        let s = VariableId(1);
+        let x = VariableId(2);
+        let canonical = canonicalize_system(
+            validate_input(make_problem(
+                vec![t, s, x],
+                t,
+                vec![
+                    poly_sub(&variable_poly(x), &constant_poly(int_q(2))),
+                    poly_sub(&variable_poly(s), &variable_poly(x)),
+                    poly_sub(&variable_poly(t), &variable_poly(s)),
+                ],
+                Vec::new(),
+            ))
+            .unwrap(),
+        )
+        .unwrap();
+        let state = CompressionState::from_system(canonical);
+        let mut ctx = new_context(SolverOptions::default());
+        let state = apply_definitional_elimination(state, &[], &mut ctx).unwrap();
+
+        assert!(
+            state.relations.iter().any(|relation| relation.polynomial
+                == poly_sub(&constant_poly(int_q(2)), &variable_poly(t))),
+            "relations={:?}",
+            state.relations
+        );
     }
 }

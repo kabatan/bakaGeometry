@@ -124,13 +124,21 @@ pub fn admit_specialization_interpolation(
         .difference(&block.exported_variables)
         .copied()
         .collect::<Vec<_>>();
-    let relation_count = collect_relation_inputs(block, &ctx.system, &ctx.child_messages).len();
+    let inputs = collect_relation_inputs(block, &ctx.system, &ctx.child_messages);
+    let relation_count = inputs.len();
     let has_separator = exported.iter().any(|var| *var != ctx.system.target);
-    let status = if relation_count >= 2 && has_separator && !eliminated.is_empty() {
+    let has_target_relation = inputs
+        .iter()
+        .any(|input| poly_variables(&input.polynomial).contains(&ctx.system.target));
+    let status = if relation_count >= 2
+        && has_separator
+        && has_target_relation
+        && !eliminated.is_empty()
+    {
         KernelAdmissionStatus::Admitted
     } else {
         KernelAdmissionStatus::Declined {
-            reason: "specialization-interpolation requires local relations and a non-target exported separator".to_owned(),
+            reason: "specialization-interpolation requires local target-bearing relations and a non-target exported separator".to_owned(),
         }
     };
     finish_admission(block, status, exported, eliminated, None)
@@ -157,6 +165,14 @@ pub fn plan_specialization_interpolation_with_messages(
         .iter()
         .map(|input| input.polynomial.clone())
         .collect::<Vec<_>>();
+    if !relation_polys
+        .iter()
+        .any(|relation| poly_variables(relation).contains(&system.target))
+    {
+        return Err(algorithmic_hard_case(
+            "specialization-interpolation requires at least one target-bearing relation",
+        ));
+    }
     let exported = sorted_set(&block.exported_variables);
     let eliminated = block
         .local_variables

@@ -276,7 +276,7 @@ pub fn execute_target_relation_search(
             row_monomials,
         );
         let matrix = matrix_builder.matrix.clone();
-        enforce_matrix_limits(plan, solver_ctx, &matrix)?;
+        enforce_matrix_limits(plan, ctx.system.target, solver_ctx, &matrix)?;
         let trace = membership_matrix_trace(stage, &matrix);
         let nullspace = solve_homogeneous_modular(
             MatrixBuilder {
@@ -1086,6 +1086,7 @@ fn block_relations(
 
 fn enforce_matrix_limits(
     plan: &KernelExecutionPlan,
+    target: VariableId,
     ctx: &SolverContext,
     matrix: &SparseMatrixQ,
 ) -> Result<(), SolverError> {
@@ -1099,7 +1100,7 @@ fn enforce_matrix_limits(
             .is_some_and(|limit| matrix.cols > limit)
     {
         return Err(SolverError {
-            target: None,
+            target: Some(target),
             kind: SolverErrorKind::Failure(FailureKind::FiniteResourceFailure {
                 stage: StageId("TargetRelationSearchKernel".to_owned()),
                 block_id: Some(plan.block_id),

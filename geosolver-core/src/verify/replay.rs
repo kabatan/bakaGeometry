@@ -12,7 +12,7 @@ use crate::graph::separators::CostModel;
 use crate::graph::tree_decomposition::build_target_rooted_decomposition;
 use crate::graph::weighted_primal::build_weighted_primal_graph;
 use crate::kernels::traits::ReplayResult;
-use crate::preprocess::compression::CompressionState;
+use crate::preprocess::compression::pre_kernel_compress;
 use crate::problem::canonicalize::canonicalize_system;
 use crate::problem::context::new_context;
 use crate::problem::input::RationalTargetProblem;
@@ -70,7 +70,10 @@ fn replay_checks(result: &TargetSolveResult, problem: &RationalTargetProblem) ->
     if cert.canonical_system_hash != canonical.canonical_hash {
         return false;
     }
-    let compressed = CompressionState::from_system(canonical.clone()).to_compressed_system();
+    let mut ctx = new_context(SolverOptions::default());
+    let Ok(compressed) = pre_kernel_compress(canonical.clone(), &mut ctx) else {
+        return false;
+    };
     if cert.compression_hash != compressed.compressed_hash {
         return false;
     }
@@ -181,17 +184,31 @@ pub(crate) fn verify_projection_messages_with_actual_blocks(
     if message_dependencies.len() != result.projection_messages.len() {
         return false;
     }
-    if result.projection_messages.len() != blocks.len() {
-        return false;
-    }
     let mut seen_blocks = BTreeSet::new();
     for message in &result.projection_messages {
         if !seen_blocks.insert(message.block_id) {
             return false;
         }
     }
+    if !blocks.iter().all(|block| {
+        if block.relation_ids.is_empty() {
+            !seen_blocks.contains(&block.block_id)
+        } else {
+            seen_blocks.contains(&block.block_id)
+        }
+    }) {
+        return false;
+    }
+    if !result.projection_messages.iter().all(|message| {
+        blocks
+            .iter()
+            .any(|block| block.block_id == message.block_id && !block.relation_ids.is_empty())
+    }) {
+        return false;
+    }
     if !blocks
         .iter()
+        .filter(|block| !block.relation_ids.is_empty())
         .all(|block| seen_blocks.contains(&block.block_id))
     {
         return false;
@@ -212,7 +229,7 @@ pub(crate) fn verify_projection_messages_with_actual_blocks(
             let Some(child_message) = result.projection_messages.get(*dep_idx).cloned() else {
                 return false;
             };
-            if !block.child_block_ids.contains(&child_message.block_id) {
+            if !block_is_descendant(block.block_id, child_message.block_id, blocks) {
                 return false;
             }
             let Some(child_block) = blocks
@@ -221,7 +238,7 @@ pub(crate) fn verify_projection_messages_with_actual_blocks(
             else {
                 return false;
             };
-            if child_block.parent_block_id != Some(block.block_id) {
+            if child_block.relation_ids.is_empty() {
                 return false;
             }
             child_messages.push(child_message);
@@ -264,22 +281,76 @@ fn actual_dag_message_dependencies(
             return None;
         }
     }
-    if index_by_block.len() != dag.blocks.len() {
+    let blocks_by_id = dag
+        .blocks
+        .iter()
+        .map(|block| (block.block_id, block))
+        .collect::<std::collections::BTreeMap<_, _>>();
+    if !dag.blocks.iter().all(|block| {
+        if block.relation_ids.is_empty() {
+            !index_by_block.contains_key(&block.block_id)
+        } else {
+            index_by_block.contains_key(&block.block_id)
+        }
+    }) {
         return None;
     }
     let mut dependencies = Vec::new();
     for message in messages {
-        let block = dag
-            .blocks
-            .iter()
-            .find(|block| block.block_id == message.block_id)?;
+        let block = blocks_by_id.get(&message.block_id)?;
+        if block.relation_ids.is_empty() {
+            return None;
+        }
         let mut deps = Vec::new();
         for child_id in &block.child_block_ids {
-            deps.push(*index_by_block.get(child_id)?);
+            collect_dependency_indices_from_subtree(
+                *child_id,
+                &blocks_by_id,
+                &index_by_block,
+                &mut deps,
+            )?;
         }
         dependencies.push(deps);
     }
     Some(dependencies)
+}
+
+fn collect_dependency_indices_from_subtree(
+    block_id: crate::types::ids::BlockId,
+    blocks_by_id: &std::collections::BTreeMap<crate::types::ids::BlockId, &ProjectionBlock>,
+    index_by_block: &std::collections::BTreeMap<crate::types::ids::BlockId, usize>,
+    out: &mut Vec<usize>,
+) -> Option<()> {
+    if let Some(index) = index_by_block.get(&block_id) {
+        out.push(*index);
+        return Some(());
+    }
+    let block = blocks_by_id.get(&block_id)?;
+    if !block.relation_ids.is_empty() {
+        return None;
+    }
+    for child_id in &block.child_block_ids {
+        collect_dependency_indices_from_subtree(*child_id, blocks_by_id, index_by_block, out)?;
+    }
+    Some(())
+}
+
+fn block_is_descendant(
+    parent_id: crate::types::ids::BlockId,
+    candidate_id: crate::types::ids::BlockId,
+    blocks: &[ProjectionBlock],
+) -> bool {
+    let mut current = Some(candidate_id);
+    while let Some(block_id) = current {
+        if block_id == parent_id {
+            return true;
+        }
+        current = blocks
+            .iter()
+            .find(|block| block.block_id == block_id)
+            .and_then(|block| block.parent_block_id);
+    }
+    false
 }
 
 fn verify_support_from_messages(
@@ -396,7 +467,7 @@ mod tests {
     use crate::kernels::traits::TargetProjectionKernel;
     use crate::kernels::universal_elimination::UniversalTargetEliminationKernel;
     use crate::planner::kernel_plan::CertificateRoute;
-    use crate::preprocess::compression::CompressionState;
+    use crate::preprocess::compression::{pre_kernel_compress, CompressionState};
     use crate::problem::canonicalize::canonicalize_system;
     use crate::problem::context::new_context;
     use crate::problem::input::make_problem;
@@ -1456,7 +1527,8 @@ mod tests {
         problem: &crate::problem::input::RationalTargetProblem,
     ) -> crate::preprocess::compression::CompressedSystemQ {
         let canonical = canonicalize_system(validate_input(problem.clone()).unwrap()).unwrap();
-        CompressionState::from_system(canonical).to_compressed_system()
+        let mut ctx = new_context(SolverOptions::default());
+        pre_kernel_compress(canonical, &mut ctx).unwrap()
     }
 
     fn global_support_certificate_hash(
