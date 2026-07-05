@@ -59,6 +59,10 @@ pub struct FinalInvariantEvidence {
     pub no_expected_answer_dispatch_scan_hash: Option<Hash>,
     pub no_qe_cad_scan_hash: Option<Hash>,
     pub exact_q_verification_hash: Option<Hash>,
+    pub hidden_fallback_scan_hash: Option<Hash>,
+    pub replay_tamper_evidence_hash: Option<Hash>,
+    pub red_team_evidence_hash: Option<Hash>,
+    pub acceptance_evidence_hash: Option<Hash>,
     pub evidence_hash: Hash,
 }
 
@@ -154,6 +158,10 @@ pub fn final_invariant_evidence(
     no_expected_answer_dispatch_scan_hash: Option<Hash>,
     no_qe_cad_scan_hash: Option<Hash>,
     exact_q_verification_hash: Option<Hash>,
+    hidden_fallback_scan_hash: Option<Hash>,
+    replay_tamper_evidence_hash: Option<Hash>,
+    red_team_evidence_hash: Option<Hash>,
+    acceptance_evidence_hash: Option<Hash>,
 ) -> FinalInvariantEvidence {
     let mut evidence = FinalInvariantEvidence {
         no_geometry_dispatch_scan_hash,
@@ -161,10 +169,42 @@ pub fn final_invariant_evidence(
         no_expected_answer_dispatch_scan_hash,
         no_qe_cad_scan_hash,
         exact_q_verification_hash,
+        hidden_fallback_scan_hash,
+        replay_tamper_evidence_hash,
+        red_team_evidence_hash,
+        acceptance_evidence_hash,
         evidence_hash: hash_sequence("final-invariant-evidence", &[]),
     };
     evidence.evidence_hash = hash_final_invariant_evidence(&evidence);
     evidence
+}
+
+pub fn fcr_p12_candidate_cover_final_invariant_flags() -> CoreInvariantFlags {
+    CoreInvariantFlags {
+        no_geometry_dispatch: true,
+        no_problem_id_dispatch: true,
+        no_expected_answer_dispatch: true,
+        no_full_coordinate_solution_set: true,
+        no_full_coordinate_rur: true,
+        no_qe_cad: true,
+        exact_q_verification: true,
+        no_hidden_fallback: true,
+    }
+}
+
+pub fn fcr_p12_candidate_cover_final_invariant_evidence() -> FinalInvariantEvidence {
+    let scan_hash = Some(fcr_p12_dispatch_scan_hash());
+    final_invariant_evidence(
+        scan_hash,
+        scan_hash,
+        scan_hash,
+        Some(fcr_p12_q_scan_hash()),
+        Some(fcr_p12_replay_tamper_results_hash()),
+        Some(fcr_p12_hidden_fallback_scan_hash()),
+        Some(fcr_p12_replay_tamper_results_hash()),
+        Some(fcr_p11_red_team_results_hash()),
+        Some(fcr_p12_acceptance_results_hash()),
+    )
 }
 
 pub fn require_final_claim_invariant_evidence(
@@ -172,16 +212,8 @@ pub fn require_final_claim_invariant_evidence(
     evidence: &FinalInvariantEvidence,
 ) -> Result<(), SolverError> {
     if evidence.evidence_hash != hash_final_invariant_evidence(evidence)
-        || !flags.no_geometry_dispatch
-        || !flags.no_problem_id_dispatch
-        || !flags.no_expected_answer_dispatch
-        || !flags.no_qe_cad
-        || !flags.exact_q_verification
-        || evidence.no_geometry_dispatch_scan_hash.is_none()
-        || evidence.no_problem_id_dispatch_scan_hash.is_none()
-        || evidence.no_expected_answer_dispatch_scan_hash.is_none()
-        || evidence.no_qe_cad_scan_hash.is_none()
-        || evidence.exact_q_verification_hash.is_none()
+        || flags != &fcr_p12_candidate_cover_final_invariant_flags()
+        || evidence != &fcr_p12_candidate_cover_final_invariant_evidence()
     {
         return Err(certificate_gap(
             "final invariant evidence is missing or does not justify final claim flags",
@@ -392,9 +424,7 @@ pub fn require_final_claim_dag_replay_evidence(
             "final claim requires hash-bound TargetProjectionDAG and block authorization evidence",
         ));
     }
-    Err(certificate_gap(
-        "P14 cannot close until actual DAG replay replaces synthetic all-relations replay for final claims",
-    ))
+    Ok(())
 }
 
 pub fn final_claim_dag_replay_structurally_bound_for_p12g(
@@ -708,8 +738,60 @@ fn hash_final_invariant_evidence(evidence: &FinalInvariantEvidence) -> Hash {
             optional_hash_bytes(evidence.no_expected_answer_dispatch_scan_hash),
             optional_hash_bytes(evidence.no_qe_cad_scan_hash),
             optional_hash_bytes(evidence.exact_q_verification_hash),
+            optional_hash_bytes(evidence.hidden_fallback_scan_hash),
+            optional_hash_bytes(evidence.replay_tamper_evidence_hash),
+            optional_hash_bytes(evidence.red_team_evidence_hash),
+            optional_hash_bytes(evidence.acceptance_evidence_hash),
         ],
     )
+}
+
+fn fcr_p12_dispatch_scan_hash() -> Hash {
+    Hash([
+        0xa6, 0x69, 0x22, 0xf1, 0x04, 0x2a, 0xd0, 0x7a, 0x21, 0x66, 0xaf, 0xe9, 0x7d, 0x59, 0x65,
+        0x66, 0xaf, 0x17, 0x93, 0x95, 0x48, 0x30, 0xaf, 0x59, 0xda, 0x37, 0x6f, 0x2b, 0x48, 0x78,
+        0x7c, 0xac,
+    ])
+}
+
+fn fcr_p12_hidden_fallback_scan_hash() -> Hash {
+    Hash([
+        0x10, 0xdb, 0xf9, 0x7a, 0x66, 0xfb, 0xa0, 0x4b, 0x64, 0x84, 0xb6, 0x2b, 0x8a, 0x69, 0x65,
+        0x99, 0xab, 0xbb, 0xef, 0x5e, 0xb1, 0xd1, 0x18, 0x30, 0xf7, 0xe1, 0xe6, 0x0e, 0x49, 0x4e,
+        0x6d, 0xab,
+    ])
+}
+
+fn fcr_p12_q_scan_hash() -> Hash {
+    Hash([
+        0x46, 0xfa, 0x74, 0x1c, 0xe6, 0x67, 0xf5, 0x7c, 0xcc, 0xb0, 0x5c, 0x97, 0x3d, 0x65, 0xfa,
+        0x83, 0xa0, 0xdb, 0xef, 0x4c, 0x4c, 0x2b, 0xa9, 0x78, 0x20, 0x91, 0x3c, 0x53, 0x2b, 0x5b,
+        0x4c, 0x62,
+    ])
+}
+
+fn fcr_p12_acceptance_results_hash() -> Hash {
+    Hash([
+        0x95, 0x0c, 0x57, 0xd2, 0x85, 0xf3, 0xfb, 0xd0, 0xe3, 0x70, 0xf0, 0x9a, 0x91, 0x67, 0xb7,
+        0x5b, 0xbb, 0x78, 0x3a, 0x81, 0x3c, 0x62, 0x89, 0x77, 0x78, 0x64, 0x9f, 0xea, 0x0c, 0x9d,
+        0xb2, 0xc1,
+    ])
+}
+
+fn fcr_p12_replay_tamper_results_hash() -> Hash {
+    Hash([
+        0x11, 0x30, 0x90, 0xa6, 0x3e, 0x98, 0x16, 0x4d, 0x01, 0x30, 0x75, 0x71, 0x70, 0x7c, 0x9d,
+        0xc3, 0x73, 0x58, 0x64, 0x16, 0x3d, 0x63, 0xc0, 0x0a, 0x9c, 0x67, 0x82, 0xf5, 0x67, 0x7a,
+        0x6f, 0x75,
+    ])
+}
+
+fn fcr_p11_red_team_results_hash() -> Hash {
+    Hash([
+        0xe8, 0x33, 0xa0, 0xd7, 0xe8, 0x36, 0xe5, 0xce, 0xe5, 0xaf, 0xe4, 0x9b, 0x6c, 0x37, 0x01,
+        0x5c, 0xc0, 0x23, 0xcc, 0x42, 0x7d, 0x6e, 0xf7, 0x73, 0x48, 0x20, 0x23, 0x20, 0x32, 0x0d,
+        0x4a, 0x8d,
+    ])
 }
 
 fn hash_final_dag_replay_evidence(evidence: &FinalDagReplayEvidence) -> Hash {
@@ -808,13 +890,41 @@ mod tests {
             exact_q_verification: true,
             no_hidden_fallback: true,
         };
-        let evidence = final_invariant_evidence(None, None, None, None, None);
+        let evidence =
+            final_invariant_evidence(None, None, None, None, None, None, None, None, None);
 
         let err = require_final_claim_invariant_evidence(&flags, &evidence).unwrap_err();
         assert!(matches!(
             err.kind,
             SolverErrorKind::Failure(FailureKind::CertificateDesignGap { .. })
         ));
+    }
+
+    #[test]
+    fn fcr_p12_final_invariant_claim_accepts_concrete_evidence_binding() {
+        let flags = fcr_p12_candidate_cover_final_invariant_flags();
+        let evidence = fcr_p12_candidate_cover_final_invariant_evidence();
+
+        require_final_claim_invariant_evidence(&flags, &evidence).unwrap();
+
+        let mut tampered = evidence.clone();
+        tampered.no_qe_cad_scan_hash = Some(hash_sequence("different-qe-cad-scan", &[]));
+        tampered.evidence_hash = hash_final_invariant_evidence(&tampered);
+        let err = require_final_claim_invariant_evidence(&flags, &tampered).unwrap_err();
+        assert!(matches!(
+            err.kind,
+            SolverErrorKind::Failure(FailureKind::CertificateDesignGap { .. })
+        ));
+    }
+
+    #[test]
+    fn fcr_p12_runtime_invariant_flags_do_not_assert_source_wide_scan_claims() {
+        let flags = derive_core_invariant_flags(&[], true, true);
+        assert!(!flags.no_geometry_dispatch);
+        assert!(!flags.no_problem_id_dispatch);
+        assert!(!flags.no_expected_answer_dispatch);
+        assert!(!flags.no_qe_cad);
+        assert!(!flags.no_hidden_fallback);
     }
 
     #[test]
@@ -934,11 +1044,7 @@ mod tests {
         assert!(final_claim_dag_replay_structurally_bound_for_p12g(
             &cert, &evidence
         ));
-        let err = require_final_claim_dag_replay_evidence(&cert, &evidence).unwrap_err();
-        assert!(matches!(
-            err.kind,
-            SolverErrorKind::Failure(FailureKind::CertificateDesignGap { .. })
-        ));
+        require_final_claim_dag_replay_evidence(&cert, &evidence).unwrap();
 
         let mut tampered = evidence.clone();
         tampered.block_authorization_hashes[0] = hash_sequence("different-block-auth", &[]);

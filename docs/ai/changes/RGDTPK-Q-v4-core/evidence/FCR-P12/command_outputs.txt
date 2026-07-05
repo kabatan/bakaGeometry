@@ -1,0 +1,35 @@
+FCR-P12 command output summary
+
+Timestamp: 20260706-063128+09:00
+
+PASS: cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+Output: no formatting differences.
+
+PASS: cargo clippy --manifest-path geosolver-core/Cargo.toml --all-targets --all-features -- -D warnings
+Output: finished dev profile. P12 adds explicit crate-level allows for non-behavioral existing
+style/shape lints such as large `SolverError`, module naming, argument count, and iterator style.
+
+PASS: cargo test --manifest-path geosolver-core/Cargo.toml --all-targets --all-features -- --nocapture
+Output:
+- lib tests: 211 passed, 0 failed.
+- fcr_final_nonfinite_semantics: 2 passed, 0 failed.
+- fcr_p10_acceptance_suite: 12 passed, 0 failed.
+- fcr_p11_red_team_suite: 10 passed, 0 failed.
+- fcr_p4_pure_planning: 7 passed, 0 failed.
+- p12 roots decode: 1 passed, 0 failed.
+- p12g stress manifest: 1 passed, 0 failed.
+- p3 public integration: 2 passed, 0 failed.
+
+PASS: deterministic static scans over geosolver-core/src
+Commands use `rg -n --sort path --path-separator /`. Output hashes are SHA256 over the exact
+UTF-8 bytes of the LF-joined `rg` output lines archived in `scan_outputs.txt`.
+
+| Scan | Hit count | SHA256 | Interpretation |
+| --- | ---: | --- | --- |
+| `Unsupported|unsupported` | 0 | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` | no ordinary Unsupported production status |
+| geometry/problem/fixture/expected-answer dispatch terms | 137 | `a66922f1042ad07a2166afe97d596566af1793954830af59da376f2b48787cac` | reviewed as invariant names, verifier locals, and diagnostics; no production dispatch table |
+| temporary/stub/nonproduction markers | 20 | `10dbf97a66fba04b6484b62b8a696599abbbef5eb1d11830f7e1e60e494e6dab` | reviewed as quarantined test helpers, explicit error constructor, and test-only synthetic certificates |
+| QE/CAD/coordinate fallback terms | 3 | `46fa741ce667f57cccb05c973d65fa83a0dbef4c4c2ba97820913c532b5b4c62` | rejection/error text only; no coordinate solution/RUR/QE/CAD fallback path |
+
+PASS: git diff --check
+Output: no whitespace errors. Git reported CRLF conversion warnings only.

@@ -132,9 +132,10 @@ fn assert_public_composition_uses_multiple_messages(
 }
 
 fn options_prioritizing(kind: KernelKind) -> SolverOptions {
-    let mut options = SolverOptions::default();
-    options.kernel_priority = vec![kind];
-    options
+    SolverOptions {
+        kernel_priority: vec![kind],
+        ..SolverOptions::default()
+    }
 }
 
 fn problem(

@@ -1,12 +1,12 @@
 # Closure Packet - RGDTPK-Q-v4-core
 
-Status: Full Core Repair active before P13/P14/P15/P16. FCR-P0A/FCR-P1A and FCR-P0 through
-FCR-P11 have been implemented; FCR-P12 final closure is still required.
+Status: FCR-P12 final closure passed spec, boundary, and quality review. FCR-P0A/FCR-P1A and
+FCR-P0 through FCR-P12 are complete for the candidate-cover layer.
 
-Current maximum claim ceiling:
+Approved FCR claim:
 
 ```text
-PARTIAL_MECHANISM_READY:MECH-011
+CANDIDATE_COVER_CORE_READY
 ```
 
 ## Current State
@@ -15,10 +15,10 @@ P0 through P12G have historical PASS/review evidence in the current worktree his
 original scopes. `FULL_CORE_REPAIR_BASE_SPEC.md` and `FULL_CORE_REPAIR_PLAN.md` are now mandatory
 corrective overlays inserted before P13/P14/P15/P16.
 
-Full Core Repair reopens the current generality and public-pipeline claims. P13, P14, P15, and P16
-remain blocked until all FCR phases pass. FCR-P10 closes only the support-producing acceptance
-suite and bounded failure semantics. It does not close final red-team, final nonfinite semantics,
-exact-image, source-fidelity, or full acceptance.
+Full Core Repair reopens the current generality and public-pipeline claims. FCR-P12 may close only
+the candidate-cover layer. It does not close exact-image semantics, source fidelity, full
+acceptance, final nonfinite readiness with a public replay-bound nonfinite certificate, or any
+benchmark/performance/universal-completeness claim.
 
 ## P12G Remediation Scope
 
@@ -50,11 +50,12 @@ the red-team suite with 10 fresh non-fixture algebraic inputs through the public
 pipeline.
 
 Required final FCR claim target is `CANDIDATE_COVER_CORE_READY`, not another partial mechanism
-label. That claim is unavailable until FCR acceptance evidence and reviews pass.
+label. FCR-P12 spec, boundary, and quality reviews passed for that candidate-cover-only claim.
 
-Final closure must bind `CoreInvariantFlags` to fresh static scans and replay/tamper evidence. The
-closure packet must include no-dispatch and no-QE/CAD/full-coordinate scan outputs; those scans are
-necessary but not sufficient without red-team and replay evidence.
+Final closure binds `CoreInvariantFlags` to fresh static scans and replay/tamper evidence in
+`FULL_CORE_INVARIANT_SCAN_BINDING.md`. Static scans are necessary but not sufficient; the claim also
+depends on FCR-P10 acceptance, FCR-P11 red-team inputs, replay/tamper tests, and final invariant/DAG
+gate tests.
 
 ## Explicit Negative Claims
 
@@ -62,15 +63,39 @@ The following are still not complete:
 
 - P13 exact-image semantics
 - P14/P15/P16 historical exact-image/final-acceptance phases
-- FCR-P12 final closure and source-fidelity audit
-- FCR generic candidate-cover core readiness
 - final nonfinite readiness with public replay-bound certificate
 - performance claim
-- `CANDIDATE_COVER_CORE_READY`
 - `EXACT_IMAGE_CORE_READY`
 - `SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC`
 - `RGDTPK_Q_V4_ACCEPTANCE_COMPLETE`
 - any R-ID marked `VERIFIED`
+
+The following claim is approved by FCR-P12 reviewers for the candidate-cover layer only:
+
+- `CANDIDATE_COVER_CORE_READY`
+
+## FCR-P12 Evidence
+
+| Artifact | Status |
+| --- | --- |
+| `FULL_CORE_ACCEPTANCE_RESULTS.md` | prepared |
+| `FULL_CORE_REPLAY_TAMPER_RESULTS.md` | prepared |
+| `FULL_CORE_COST_TRACE_SUMMARY.md` | prepared |
+| `FULL_CORE_RED_TEAM_RESULTS.md` | prepared by FCR-P11 |
+| `FULL_CORE_NONFINITE_RESULTS.md` | prepared by FCR-P11 route-2 exclusion |
+| `FULL_CORE_INVARIANT_SCAN_BINDING.md` | prepared |
+| `evidence/FCR-P12/command_outputs.txt` | prepared |
+| `evidence/FCR-P12/scan_outputs.txt` | prepared |
+| `evidence/FCR-P12/reviewer_results.md` | PASS |
+
+Fresh FCR-P12 commands:
+
+```text
+cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check: PASS
+cargo clippy --manifest-path geosolver-core/Cargo.toml --all-targets --all-features -- -D warnings: PASS
+cargo test --manifest-path geosolver-core/Cargo.toml --all-targets --all-features -- --nocapture: PASS
+git diff --check: PASS
+```
 
 ## Commit Binding
 

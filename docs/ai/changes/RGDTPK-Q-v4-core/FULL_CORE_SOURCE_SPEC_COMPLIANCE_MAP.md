@@ -4,6 +4,25 @@ Purpose: FCR-P1A source-to-code map for v4 Appendix A sections 0-34 under FCR-01
 
 Claim ceiling after this map: `PARTIAL_MECHANISM_READY:MECH-011`. `SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC`, `EXACT_IMAGE_CORE_READY`, and `RGDTPK_Q_V4_ACCEPTANCE_COMPLETE` remain forbidden. No R-ID is marked VERIFIED here.
 
+## FCR-P12 Supersession Addendum
+
+This map records the FCR-P1A defect ledger before the later FCR-P2 through FCR-P12 implementation
+work. Rows below that say the public solver is not connected, TargetActionKrylov is
+alias/univariate limited, replay is synthetic/all-relations, or CoreInvariantFlags require
+replacement are historical defect records unless the current `CLOSURE.md`,
+`FULL_CORE_ACCEPTANCE_RESULTS.md`, `FULL_CORE_REPLAY_TAMPER_RESULTS.md`,
+`FULL_CORE_INVARIANT_SCAN_BINDING.md`, and FCR-P10/FCR-P11 evidence still preserve the defect.
+
+Current claim authority after the FCR-P12 reviewer pass is candidate-cover-only:
+
+```text
+CANDIDATE_COVER_CORE_READY
+```
+
+This addendum does not grant exact-image readiness, source fidelity, full acceptance, performance,
+final nonfinite public replay-bound readiness, or any R-ID `VERIFIED` status. Section 27
+exact-image rows remain P13-scoped.
+
 ## Schema
 
 Each row below uses the FCR-018 fields: `spec_section`, `required_path`, `current_path`, `production_required_for_candidate_cover`, `exact_image_only_or_later_phase`, `implementation_status`, `algorithmic_notes`, `certificate_or_replay`, and `repair_action`.

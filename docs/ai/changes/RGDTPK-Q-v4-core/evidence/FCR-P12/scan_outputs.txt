@@ -1,0 +1,200 @@
+FCR-P12 deterministic static scan outputs
+
+Hash rule: SHA256 over the exact UTF-8 bytes of the LF-joined rg output lines shown under each scan. Empty output hashes the empty byte string.
+
+## unsupported
+
+Command: rg -n --sort path --path-separator / "Unsupported|unsupported" geosolver-core/src
+Hit count: 0
+SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+```text
+```
+
+## dispatch
+
+Command: rg -n --sort path --path-separator / "circle|triangle|tangent|distance|area|incircle|circumcircle|orthic|mixtilinear|fixture|expected|answer|problem_id|official" geosolver-core/src
+Hit count: 137
+SHA256: a66922f1042ad07a2166afe97d596566af1793954830af59da376f2b48787cac
+
+```text
+geosolver-core/src/algebra/interpolation.rs:410:    let expected = specialized_variables
+geosolver-core/src/algebra/interpolation.rs:422:        if keys != expected {
+geosolver-core/src/algebra/norm_trace.rs:310:        let expected_step_hash = hash_sequence(
+geosolver-core/src/algebra/norm_trace.rs:317:        if step.step_hash != expected_step_hash {
+geosolver-core/src/algebra/norm_trace.rs:482:        let expected = poly_sub(&poly_mul(&t, &t), &constant_poly(int_q(2)));
+geosolver-core/src/algebra/norm_trace.rs:485:            clear_denominators_primitive(&expected)
+geosolver-core/src/algebra/norm_trace.rs:536:        let expected = poly_sub(&poly_mul(&t2, &t2), &constant_poly(int_q(2)));
+geosolver-core/src/algebra/norm_trace.rs:537:        assert!(same_up_to_sign(&relation, &expected));
+geosolver-core/src/algebra/quotient.rs:578:    let expected = standard_monomial_basis_from_groebner(&basis_result, variables, &order)?;
+geosolver-core/src/algebra/quotient.rs:579:    if expected != input.basis_polynomials {
+geosolver-core/src/algebra/quotient.rs:705:                "normal-form basis element certificate is not the expected unit vector",
+geosolver-core/src/compose/compose.rs:418:            panic!("expected certified nonfinite outcome");
+geosolver-core/src/compose/compose.rs:491:        expected: &[crate::types::rational::RationalQ],
+geosolver-core/src/compose/compose.rs:493:        actual == expected
+geosolver-core/src/compose/compose.rs:498:                == expected
+geosolver-core/src/graph/weighted_primal.rs:29:    pub target_distance: Option<usize>,
+geosolver-core/src/graph/weighted_primal.rs:59:    let distances = target_distances(&adjacency, system.target);
+geosolver-core/src/graph/weighted_primal.rs:65:                variable_weight_with_distance(*var, system, distances.get(var).copied()),
+geosolver-core/src/graph/weighted_primal.rs:95:    variable_weight_with_distance(v, system, None)
+geosolver-core/src/graph/weighted_primal.rs:104:        target_distance: None,
+geosolver-core/src/graph/weighted_primal.rs:192:fn variable_weight_with_distance(
+geosolver-core/src/graph/weighted_primal.rs:195:    target_distance: Option<usize>,
+geosolver-core/src/graph/weighted_primal.rs:211:    let distance_penalty = target_distance.unwrap_or(system.variables.len().saturating_add(1));
+geosolver-core/src/graph/weighted_primal.rs:216:        + distance_penalty;
+geosolver-core/src/graph/weighted_primal.rs:222:        target_distance,
+geosolver-core/src/graph/weighted_primal.rs:227:fn target_distances(
+geosolver-core/src/graph/weighted_primal.rs:231:    let mut distances = BTreeMap::new();
+geosolver-core/src/graph/weighted_primal.rs:233:    distances.insert(target, 0);
+geosolver-core/src/graph/weighted_primal.rs:234:    while let Some((var, distance)) = queue.pop_front() {
+geosolver-core/src/graph/weighted_primal.rs:236:            if let std::collections::btree_map::Entry::Vacant(entry) = distances.entry(neighbor) {
+geosolver-core/src/graph/weighted_primal.rs:237:                entry.insert(distance + 1);
+geosolver-core/src/graph/weighted_primal.rs:238:                queue.push_back((neighbor, distance + 1));
+geosolver-core/src/graph/weighted_primal.rs:242:    distances
+geosolver-core/src/kernels/action_krylov.rs:1169:    let mut expected = plan.source_relation_hashes.clone();
+geosolver-core/src/kernels/action_krylov.rs:1174:    expected.sort();
+geosolver-core/src/kernels/action_krylov.rs:1176:    if expected != actual {
+geosolver-core/src/kernels/action_krylov.rs:1188:    let mut expected = plan.source_relation_hashes.clone();
+geosolver-core/src/kernels/action_krylov.rs:1190:    expected.sort();
+geosolver-core/src/kernels/action_krylov.rs:1192:    if expected != actual {
+geosolver-core/src/kernels/action_krylov.rs:1892:            other => panic!("unexpected payload: {other:?}"),
+geosolver-core/src/kernels/action_krylov.rs:1901:            other => panic!("unexpected payload: {other:?}"),
+geosolver-core/src/kernels/linear_affine.rs:475:    for (id, expected_hash) in plan
+geosolver-core/src/kernels/linear_affine.rs:490:        if relation.hash != *expected_hash {
+geosolver-core/src/kernels/norm_trace_projection.rs:467:    let mut expected = plan.source_relation_hashes.clone();
+geosolver-core/src/kernels/norm_trace_projection.rs:472:    expected.sort();
+geosolver-core/src/kernels/norm_trace_projection.rs:474:    if expected != actual {
+geosolver-core/src/kernels/norm_trace_projection.rs:631:        let expected = poly_sub(
+geosolver-core/src/kernels/norm_trace_projection.rs:642:        assert!(same_up_to_sign(&message.relation_generators[0], &expected));
+geosolver-core/src/kernels/norm_trace_projection.rs:745:        let expected = poly_sub(&poly_mul(&t2, &t2), &constant_poly(int_q(2)));
+geosolver-core/src/kernels/norm_trace_projection.rs:748:        assert!(same_up_to_sign(&message.relation_generators[0], &expected));
+geosolver-core/src/kernels/regular_chain_projection.rs:499:    let mut expected = plan.source_relation_hashes.clone();
+geosolver-core/src/kernels/regular_chain_projection.rs:504:    expected.sort();
+geosolver-core/src/kernels/regular_chain_projection.rs:506:    if expected != actual {
+geosolver-core/src/kernels/sparse_resultant.rs:729:    let mut expected = plan.source_relation_hashes.clone();
+geosolver-core/src/kernels/sparse_resultant.rs:734:    expected.sort();
+geosolver-core/src/kernels/sparse_resultant.rs:736:    if expected != actual {
+geosolver-core/src/kernels/specialization_interpolation.rs:788:    let mut expected = plan.source_relation_hashes.clone();
+geosolver-core/src/kernels/specialization_interpolation.rs:793:    expected.sort();
+geosolver-core/src/kernels/specialization_interpolation.rs:795:    if expected != actual {
+geosolver-core/src/kernels/target_relation_search.rs:1049:    for (id, expected_hash) in plan
+geosolver-core/src/kernels/target_relation_search.rs:1064:        if relation.hash != *expected_hash {
+geosolver-core/src/kernels/target_relation_search.rs:1363:        for (relations, eliminated, exported, expected_z_seed, cap, expected_d_max) in cases {
+geosolver-core/src/kernels/target_relation_search.rs:1373:            assert_eq!(schedule.z_seed, expected_z_seed);
+geosolver-core/src/kernels/target_relation_search.rs:1375:            assert_eq!(schedule.d_max, expected_d_max);
+geosolver-core/src/kernels/target_relation_search.rs:1382:                (expected_z_seed..=cap).collect::<Vec<_>>()
+geosolver-core/src/kernels/target_univariate.rs:437:    let mut expected = plan
+geosolver-core/src/kernels/target_univariate.rs:446:    expected.sort();
+geosolver-core/src/kernels/target_univariate.rs:448:    if expected != actual {
+geosolver-core/src/kernels/universal_elimination.rs:793:    let expected = [
+geosolver-core/src/kernels/universal_elimination.rs:799:    if steps.len() != expected.len()
+geosolver-core/src/kernels/universal_elimination.rs:802:            .zip(expected)
+geosolver-core/src/kernels/universal_elimination.rs:803:            .any(|(step, expected)| step.strategy != expected)
+geosolver-core/src/kernels/universal_elimination.rs:913:    expected: &[Hash],
+geosolver-core/src/kernels/universal_elimination.rs:916:    let mut expected = expected.to_vec();
+geosolver-core/src/kernels/universal_elimination.rs:921:    expected.sort();
+geosolver-core/src/kernels/universal_elimination.rs:923:    if expected != actual {
+geosolver-core/src/planner/kernel_plan.rs:258:    expected_plan_hash: Hash,
+geosolver-core/src/planner/kernel_plan.rs:260:    if plan.plan_hash != expected_plan_hash || hash_kernel_plan(plan) != expected_plan_hash {
+geosolver-core/src/planner/kernel_plan.rs:484:    let expected = certified_probe_plan(
+geosolver-core/src/planner/kernel_plan.rs:492:    if plan.plan_work_classification != expected {
+geosolver-core/src/planner/planner.rs:122:        let expected_schedule = build_dense_relation_search_schedule(
+geosolver-core/src/planner/planner.rs:139:            expected_schedule.schedule_hash
+geosolver-core/src/preprocess/linear_affine.rs:421:        let expected_pivot_numerator = rational_candidate.numerator.clone();
+geosolver-core/src/preprocess/linear_affine.rs:422:        let expected_pivot_denominator = rational_candidate.denominator.clone();
+geosolver-core/src/preprocess/linear_affine.rs:440:        let expected = poly_sub(
+geosolver-core/src/preprocess/linear_affine.rs:452:        assert_eq!(transformed_y_minus_two_relation.polynomial, expected);
+geosolver-core/src/preprocess/linear_affine.rs:465:        assert_eq!(cert.numerator, expected_pivot_numerator);
+geosolver-core/src/preprocess/linear_affine.rs:466:        assert_eq!(cert.denominator, expected_pivot_denominator);
+geosolver-core/src/preprocess/linear_affine.rs:546:        let expected_target_support = poly_sub(
+geosolver-core/src/preprocess/linear_affine.rs:554:        let expected_guarded_relation = poly_sub(
+geosolver-core/src/preprocess/linear_affine.rs:573:                &expected_guarded_relation
+geosolver-core/src/preprocess/linear_affine.rs:587:            &substitute_x_equals_one(&expected_guarded_relation, x),
+geosolver-core/src/preprocess/linear_affine.rs:588:            &expected_target_support
+geosolver-core/src/solver/pipeline.rs:183:                    "structural projection block unexpectedly produced a message",
+geosolver-core/src/verify/replay.rs:123:    let expected_replay_evidence = build_final_dag_replay_evidence_from_dag(
+geosolver-core/src/verify/replay.rs:132:    if cert.final_dag_replay_evidence_hash != Some(expected_replay_evidence.evidence_hash)
+geosolver-core/src/verify/replay.rs:133:        || cert.final_dag_replay_evidence.as_ref() != Some(&expected_replay_evidence)
+geosolver-core/src/verify/replay.rs:163:    let expected_invariants = derive_core_invariant_flags(
+geosolver-core/src/verify/replay.rs:168:    if cert.invariants != expected_invariants || !expected_invariants.p11_replay_enforced() {
+geosolver-core/src/verify/replay.rs:359:    expected_certificate_hash: Option<Hash>,
+geosolver-core/src/verify/replay.rs:376:    expected_certificate_hash == Some(cert.certificate_hash)
+geosolver-core/src/verify/replay.rs:1030:            panic!("expected target action payload");
+geosolver-core/src/verify/replay.rs:1056:            panic!("expected regular chain payload");
+geosolver-core/src/verify/replay.rs:1080:            panic!("expected sparse resultant payload");
+geosolver-core/src/verify/replay.rs:1105:            panic!("expected norm trace payload");
+geosolver-core/src/verify/replay.rs:1120:            panic!("expected norm trace payload");
+geosolver-core/src/verify/replay.rs:1137:            panic!("expected norm trace payload");
+geosolver-core/src/verify/run_certificate.rs:46:    pub no_problem_id_dispatch: bool,
+geosolver-core/src/verify/run_certificate.rs:47:    pub no_expected_answer_dispatch: bool,
+geosolver-core/src/verify/run_certificate.rs:58:    pub no_problem_id_dispatch_scan_hash: Option<Hash>,
+geosolver-core/src/verify/run_certificate.rs:59:    pub no_expected_answer_dispatch_scan_hash: Option<Hash>,
+geosolver-core/src/verify/run_certificate.rs:157:    no_problem_id_dispatch_scan_hash: Option<Hash>,
+geosolver-core/src/verify/run_certificate.rs:158:    no_expected_answer_dispatch_scan_hash: Option<Hash>,
+geosolver-core/src/verify/run_certificate.rs:168:        no_problem_id_dispatch_scan_hash,
+geosolver-core/src/verify/run_certificate.rs:169:        no_expected_answer_dispatch_scan_hash,
+geosolver-core/src/verify/run_certificate.rs:185:        no_problem_id_dispatch: true,
+geosolver-core/src/verify/run_certificate.rs:186:        no_expected_answer_dispatch: true,
+geosolver-core/src/verify/run_certificate.rs:614:        no_problem_id_dispatch: false,
+geosolver-core/src/verify/run_certificate.rs:615:        no_expected_answer_dispatch: false,
+geosolver-core/src/verify/run_certificate.rs:716:        cert.invariants.no_problem_id_dispatch as u8,
+geosolver-core/src/verify/run_certificate.rs:717:        cert.invariants.no_expected_answer_dispatch as u8,
+geosolver-core/src/verify/run_certificate.rs:737:            optional_hash_bytes(evidence.no_problem_id_dispatch_scan_hash),
+geosolver-core/src/verify/run_certificate.rs:738:            optional_hash_bytes(evidence.no_expected_answer_dispatch_scan_hash),
+geosolver-core/src/verify/run_certificate.rs:885:            no_problem_id_dispatch: false,
+geosolver-core/src/verify/run_certificate.rs:886:            no_expected_answer_dispatch: false,
+geosolver-core/src/verify/run_certificate.rs:924:        assert!(!flags.no_problem_id_dispatch);
+geosolver-core/src/verify/run_certificate.rs:925:        assert!(!flags.no_expected_answer_dispatch);
+geosolver-core/src/verify/run_certificate.rs:1086:                no_problem_id_dispatch: false,
+geosolver-core/src/verify/run_certificate.rs:1087:                no_expected_answer_dispatch: false,
+geosolver-core/src/verify/verify_message.rs:93:    if cert.certificate_route != expected_route(message.kernel_kind) {
+geosolver-core/src/verify/verify_message.rs:258:            let expected = target_support_from_relations(&proof.source_relations, proof.target)
+geosolver-core/src/verify/verify_message.rs:265:            if expected != proof.support_relation {
+geosolver-core/src/verify/verify_message.rs:850:fn expected_route(kind: KernelKind) -> CertificateRoute {
+geosolver-core/src/verify/verify_support.rs:43:    let expected = support_from_target_only_relations(composed).ok_or_else(|| {
+geosolver-core/src/verify/verify_support.rs:50:    if normalized != expected {
+geosolver-core/src/verify/verify_support.rs:89:    for (expected_hash, message) in composed
+geosolver-core/src/verify/verify_support.rs:94:        if *expected_hash != message.package_hash {
+```
+
+## temporary_stub
+
+Command: rg -n --sort path --path-separator / "todo!|unimplemented!|placeholder|dummy|fake|stub|temporary_pipeline_not_connected|NotProductionF4|for_tests" geosolver-core/src
+Hit count: 20
+SHA256: 10dbf97a66fba04b6484b62b8a696599abbbef5eb1d11830f7e1e60e494e6dab
+
+```text
+geosolver-core/src/algebra/f4.rs:13:    NotProductionF4,
+geosolver-core/src/algebra/f4.rs:26:            implementation_level: F4ImplementationLevel::NotProductionF4,
+geosolver-core/src/algebra/f4.rs:39:pub fn groebner_backed_batch_reduce_for_tests(
+geosolver-core/src/algebra/f4.rs:59:pub fn non_production_groebner_batch_elimination_for_tests(
+geosolver-core/src/algebra/f4.rs:94:        let result = groebner_backed_batch_reduce_for_tests(
+geosolver-core/src/algebra/f4.rs:107:            F4ImplementationLevel::NotProductionF4
+geosolver-core/src/algebra/f4.rs:120:        let result = non_production_groebner_batch_elimination_for_tests(
+geosolver-core/src/algebra/f4.rs:135:        let reduced = groebner_backed_batch_reduce_for_tests(
+geosolver-core/src/compose/compose.rs:443:            certificate: KernelCertificate::synthetic_for_tests(hash_sequence(
+geosolver-core/src/kernels/sparse_resultant.rs:1063:            certificate: KernelCertificate::synthetic_for_tests(certificate_hash),
+geosolver-core/src/kernels/specialization_interpolation.rs:1196:            certificate: KernelCertificate::synthetic_for_tests(certificate_hash),
+geosolver-core/src/kernels/target_univariate.rs:869:            certificate: KernelCertificate::synthetic_for_tests(certificate_hash),
+geosolver-core/src/kernels/universal_elimination.rs:1352:            "NotProductionF4",
+geosolver-core/src/kernels/universal_elimination.rs:1354:            "groebner_backed_batch_reduce_for_tests",
+geosolver-core/src/kernels/universal_elimination.rs:1355:            "non_production_groebner_batch_elimination_for_tests",
+geosolver-core/src/kernels/universal_elimination.rs:1662:            certificate: KernelCertificate::synthetic_for_tests(certificate_hash),
+geosolver-core/src/result/status.rs:77:    pub fn temporary_pipeline_not_connected(target: Option<VariableId>) -> Self {
+geosolver-core/src/verify/certificates.rs:67:    pub fn synthetic_for_tests(certificate_hash: Hash) -> Self {
+geosolver-core/src/verify/replay.rs:868:        synthetic.certificate = KernelCertificate::synthetic_for_tests(Hash([6; 32]));
+geosolver-core/src/verify/replay.rs:1775:            certificate: KernelCertificate::synthetic_for_tests(support.hash),
+```
+
+## qe_cad_coord
+
+Command: rg -n --sort path --path-separator / "CAD|QE|RCF|coordinate solution|coordinate roots|full coordinate RUR|RUR|solve_all_coordinates" geosolver-core/src
+Hit count: 3
+SHA256: 46fa741ce667f57cccb05c973d65fa83a0dbef4c4c2ba97820913c532b5b4c62
+
+```text
+geosolver-core/src/algebra/quotient.rs:531:            "quotient handle must not expose coordinate roots or full coordinate RUR",
+geosolver-core/src/algebra/quotient.rs:603:            "quotient handle must not expose coordinate roots or full coordinate RUR",
+geosolver-core/src/kernels/action_krylov.rs:407:            "target-action-krylov quotient exported coordinate roots or RUR",
+```
+

@@ -120,9 +120,10 @@ fn assert_executed_kernel(result: &TargetSolveResult, kind: KernelKind) {
 }
 
 fn options_prioritizing(kind: KernelKind) -> SolverOptions {
-    let mut options = SolverOptions::default();
-    options.kernel_priority = vec![kind];
-    options
+    SolverOptions {
+        kernel_priority: vec![kind],
+        ..SolverOptions::default()
+    }
 }
 
 fn problem(

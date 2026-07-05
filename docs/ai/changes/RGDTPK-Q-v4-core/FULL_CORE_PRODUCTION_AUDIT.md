@@ -2,7 +2,10 @@
 
 Purpose: FCR-P1 direct audit of current P1-P12G production code. This file records actual current implementation classes and required repair actions; it is not implementation readiness evidence.
 
-Claim ceiling after this audit remains `PARTIAL_MECHANISM_READY:MECH-011`. `CANDIDATE_COVER_CORE_READY`, exact-image readiness, source-fidelity, and acceptance completion remain forbidden.
+P12 addendum: this file is the historical FCR-P1 direct audit and remains useful for defect
+provenance. FCR-P2 through FCR-P12 remediation evidence supersedes the original blocker state for
+the candidate-cover layer only. Exact-image readiness, source-fidelity, full acceptance, benchmark
+claims, and final nonfinite readiness remain outside the FCR-P12 claim.
 
 ## Scope
 
