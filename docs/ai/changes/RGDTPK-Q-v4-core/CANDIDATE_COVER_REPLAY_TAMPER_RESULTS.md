@@ -49,6 +49,23 @@ composed_ideal_membership_route_rejects_multiplier_tamper: PASS
 composed_ideal_membership_route_rejects_removed_relation: PASS
 ```
 
+Boundary note: multiplier and removed-relation tamper are verifier-level checks on the
+machine-readable `ComposedIdealMembershipSupportCertificate`. Public replay does not serialize those
+multipliers separately; it replay-binds the recomputed support certificate through
+`CoreRunCertificate.global_support_certificate_hash`.
+
+Replay-level checks for support evidence are covered by:
+
+```text
+p11_replay_fails_on_input_canonical_dag_plan_and_squarefree_tamper: PASS
+ccc_p12_red_team_runs_sixteen_fresh_public_inputs: PASS
+```
+
+The first rejects tampered global support certificate hashes through `replay_run_certificate`. The
+second uses `api::solve_target`, replays every support-producing fresh red-team success, and checks
+that the run certificate's global support certificate hash equals the exact certificate recomputed
+from actual DAG/messages/composition.
+
 ## Candidate-Cover Semantic Separation
 
 `p13_candidate_cover_mode_does_not_claim_exact_image_for_semantic_problem` verifies candidate-cover
@@ -61,5 +78,6 @@ spurious-root inputs retain the extra roots in candidate-cover mode.
 ## Tamper/Fallback Residual Boundary
 
 Existing P11/P15/P16 replay tamper suites remain relevant for input/message/support/root/candidate,
-exact-image classification hash, and nonfinite certificate tamper. This repair adds Route B support
-certificate tamper coverage and does not broaden the final claim beyond candidate-cover readiness.
+exact-image classification hash, and nonfinite certificate tamper. This repair adds Route B
+verifier-level support-certificate tamper coverage, plus replay-level support-certificate hash
+binding checks, and does not broaden the final claim beyond candidate-cover readiness.

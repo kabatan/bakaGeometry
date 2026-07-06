@@ -51,8 +51,10 @@ does not run exact-image fiber/guard/slack/branch filtering unless `exact_image_
   - emits `CandidateCoverMayContainSpuriousRoots`;
   - keeps candidate-cover mode separate from exact-image filtering.
 - `tests/ccc_candidate_cover_completion.rs`
-  - adds four public spurious-root retention cases;
-  - adds 12 fresh public red-team algebraic inputs.
+  - adds four public P11 spurious-root retention cases;
+  - adds 16 fresh P12 public red-team algebraic inputs, including four new spurious-root cases;
+  - rebuilds DAG/composition/support verification evidence per support-producing success and checks
+    the replay-bound global support certificate hash.
 - `tests/p13_exact_image_semantics.rs`
   - asserts candidate-cover diagnostics on the semantic spurious-root case.
 

@@ -1,6 +1,18 @@
 use geosolver_core::api::solve_target;
+use geosolver_core::compose::compose::compose_projection_messages;
+use geosolver_core::graph::hypergraph::build_relation_variable_hypergraph;
+use geosolver_core::graph::influence::build_target_influence_graph;
+use geosolver_core::graph::projection_dag::build_target_projection_dag;
+use geosolver_core::graph::separators::CostModel;
+use geosolver_core::graph::tree_decomposition::build_target_rooted_decomposition;
+use geosolver_core::graph::weighted_primal::build_weighted_primal_graph;
+use geosolver_core::kernels::traits::KernelKind;
+use geosolver_core::preprocess::compression::pre_kernel_compress;
+use geosolver_core::problem::canonicalize::canonicalize_system;
+use geosolver_core::problem::context::new_context;
 use geosolver_core::problem::input::{make_problem, RationalTargetProblem};
 use geosolver_core::problem::semantic::{register_slack_encoding, RealConstraintKind};
+use geosolver_core::problem::validate::validate_input;
 use geosolver_core::result::output::TargetSolveResult;
 use geosolver_core::result::status::SolverStatus;
 use geosolver_core::solver::options::SolverOptions;
@@ -11,6 +23,13 @@ use geosolver_core::types::polynomial::{
 };
 use geosolver_core::types::rational::int_q;
 use geosolver_core::verify::replay_run_certificate;
+use geosolver_core::verify::verify_support::{verify_global_support, GlobalSupportProofRoute};
+
+#[derive(Debug)]
+struct CandidateCoverEvidence {
+    proof_route: GlobalSupportProofRoute,
+    producer_kernels: Vec<KernelKind>,
+}
 
 fn v(id: u32) -> SparsePolynomialQ {
     variable_poly(VariableId(id))
@@ -82,6 +101,8 @@ fn assert_candidate_cover(
     label: &str,
     problem: RationalTargetProblem,
     allow_empty_real_roots: bool,
+    expected_route: GlobalSupportProofRoute,
+    expected_kernels: &[KernelKind],
 ) -> TargetSolveResult {
     let result = solve_target(problem.clone(), SolverOptions::default());
     assert_eq!(
@@ -120,11 +141,81 @@ fn assert_candidate_cover(
         replay_run_certificate(&result, &problem).accepted,
         "{label}: replay rejected"
     );
+    let evidence = candidate_cover_evidence(&problem, &result);
+    assert_eq!(
+        evidence.proof_route, expected_route,
+        "{label}: unexpected global support proof route {:?}",
+        evidence.proof_route
+    );
+    assert_eq!(
+        evidence.producer_kernels, expected_kernels,
+        "{label}: unexpected public/near-public producer kernels {:?}",
+        evidence.producer_kernels
+    );
     result
 }
 
+fn candidate_cover_evidence(
+    problem: &RationalTargetProblem,
+    result: &TargetSolveResult,
+) -> CandidateCoverEvidence {
+    let cert = result
+        .certificate
+        .as_ref()
+        .expect("candidate cover certificate");
+    let support = result
+        .support_polynomial
+        .as_ref()
+        .expect("candidate cover support polynomial");
+    assert!(
+        cert.global_support_certificate_hash.is_some(),
+        "candidate cover certificate must bind global support proof"
+    );
+
+    let validated = validate_input(problem.clone()).expect("valid red-team input");
+    let canonical = canonicalize_system(validated).expect("canonical red-team input");
+    let mut ctx = new_context(SolverOptions::default());
+    let compressed = pre_kernel_compress(canonical, &mut ctx).expect("compressed red-team input");
+    let hypergraph = build_relation_variable_hypergraph(&compressed);
+    let influence = build_target_influence_graph(&hypergraph, problem.target);
+    let primal = build_weighted_primal_graph(&compressed, &influence);
+    let decomposition =
+        build_target_rooted_decomposition(&primal, problem.target, &CostModel::default());
+    let dag = build_target_projection_dag(&compressed, &influence, &decomposition)
+        .expect("red-team DAG rebuild");
+    let composed = compose_projection_messages(
+        &dag,
+        result.projection_messages.clone(),
+        result.target,
+        &mut ctx,
+    )
+    .expect("red-team message composition");
+    let support_certificate =
+        verify_global_support(support, &composed).expect("red-team support proof");
+    assert_eq!(
+        cert.global_support_certificate_hash,
+        Some(support_certificate.certificate_hash),
+        "run certificate must replay-bind the exact support certificate"
+    );
+
+    CandidateCoverEvidence {
+        proof_route: support_certificate.proof_route,
+        producer_kernels: result
+            .projection_messages
+            .iter()
+            .map(|message| message.kernel_kind)
+            .collect(),
+    }
+}
+
 fn assert_spurious_cover_kept(label: &str, problem: RationalTargetProblem, retained_root: i64) {
-    let result = assert_candidate_cover(label, problem, false);
+    let result = assert_candidate_cover(
+        label,
+        problem,
+        false,
+        GlobalSupportProofRoute::TargetOnlyRootRelationProduct,
+        &[KernelKind::TargetUnivariate],
+    );
     assert!(
         result.decoded_candidates.len() >= 2,
         "{label}: candidate-cover mode must keep all roots of S(T)"
@@ -201,7 +292,7 @@ fn ccc_p11_a12_spurious_roots_are_allowed_in_candidate_cover_mode() {
 }
 
 #[test]
-fn ccc_p12_red_team_runs_twelve_fresh_public_inputs() {
+fn ccc_p12_red_team_runs_sixteen_fresh_public_inputs() {
     let t = VariableId(710);
     let x = VariableId(711);
     assert_candidate_cover(
@@ -215,6 +306,8 @@ fn ccc_p12_red_team_runs_twelve_fresh_public_inputs() {
             ],
         ),
         false,
+        GlobalSupportProofRoute::TargetOnlyRootRelationProduct,
+        &[KernelKind::TargetUnivariate],
     );
 
     let t = VariableId(712);
@@ -232,6 +325,8 @@ fn ccc_p12_red_team_runs_twelve_fresh_public_inputs() {
             ],
         ),
         false,
+        GlobalSupportProofRoute::TargetOnlyRootRelationProduct,
+        &[KernelKind::TargetUnivariate],
     );
 
     let t = VariableId(715);
@@ -247,6 +342,8 @@ fn ccc_p12_red_team_runs_twelve_fresh_public_inputs() {
             ],
         ),
         false,
+        GlobalSupportProofRoute::TargetOnlyRootRelationProduct,
+        &[KernelKind::TargetRelationSearch],
     );
 
     let t = VariableId(717);
@@ -258,6 +355,8 @@ fn ccc_p12_red_team_runs_twelve_fresh_public_inputs() {
             vec![poly_add(&poly_mul(&v(t.0), &v(t.0)), &c(1))],
         ),
         true,
+        GlobalSupportProofRoute::TargetOnlyRootRelationProduct,
+        &[KernelKind::TargetUnivariate],
     );
 
     let t = VariableId(718);
@@ -273,6 +372,8 @@ fn ccc_p12_red_team_runs_twelve_fresh_public_inputs() {
             ],
         ),
         false,
+        GlobalSupportProofRoute::TargetOnlyRootRelationProduct,
+        &[KernelKind::TargetUnivariate],
     );
 
     let t = VariableId(720);
@@ -290,6 +391,8 @@ fn ccc_p12_red_team_runs_twelve_fresh_public_inputs() {
             ],
         ),
         false,
+        GlobalSupportProofRoute::TargetOnlyRootRelationProduct,
+        &[KernelKind::TargetUnivariate],
     );
 
     let t = VariableId(723);
@@ -307,6 +410,8 @@ fn ccc_p12_red_team_runs_twelve_fresh_public_inputs() {
             ],
         ),
         false,
+        GlobalSupportProofRoute::TargetOnlyRootRelationProduct,
+        &[KernelKind::TargetRelationSearch],
     );
 
     let t = VariableId(726);
@@ -324,6 +429,8 @@ fn ccc_p12_red_team_runs_twelve_fresh_public_inputs() {
             ],
         ),
         false,
+        GlobalSupportProofRoute::TargetOnlyRootRelationProduct,
+        &[KernelKind::TargetUnivariate],
     );
 
     let t = VariableId(729);
@@ -368,6 +475,8 @@ fn ccc_p12_red_team_runs_twelve_fresh_public_inputs() {
             ],
         ),
         false,
+        GlobalSupportProofRoute::TargetOnlyRootRelationProduct,
+        &[KernelKind::TargetRelationSearch],
     );
 
     let t = VariableId(734);
@@ -385,5 +494,63 @@ fn ccc_p12_red_team_runs_twelve_fresh_public_inputs() {
             ],
         ),
         false,
+        GlobalSupportProofRoute::TargetOnlyRootRelationProduct,
+        &[KernelKind::TargetRelationSearch],
+    );
+
+    let target = VariableId(737);
+    let slack = VariableId(738);
+    assert_spurious_cover_kept(
+        "fresh 13 P12 positive slack keeps zero spurious root",
+        semantic_problem(
+            target,
+            slack,
+            support_product(target, &[0, 2]),
+            v(target.0),
+            RealConstraintKind::Positive,
+        ),
+        0,
+    );
+
+    let target = VariableId(739);
+    let slack = VariableId(740);
+    assert_spurious_cover_kept(
+        "fresh 14 P12 positive slack keeps negative spurious root",
+        semantic_problem(
+            target,
+            slack,
+            support_product(target, &[-4, 1]),
+            v(target.0),
+            RealConstraintKind::Positive,
+        ),
+        -4,
+    );
+
+    let target = VariableId(741);
+    let slack = VariableId(742);
+    assert_spurious_cover_kept(
+        "fresh 15 P12 nonnegative guard keeps shifted spurious root",
+        semantic_problem(
+            target,
+            slack,
+            support_product(target, &[-5, 3]),
+            poly_sub(&v(target.0), &c(1)),
+            RealConstraintKind::NonNegative,
+        ),
+        -5,
+    );
+
+    let target = VariableId(743);
+    let slack = VariableId(744);
+    assert_spurious_cover_kept(
+        "fresh 16 P12 branch-choice slack keeps unfiltered branch root",
+        semantic_problem(
+            target,
+            slack,
+            support_product(target, &[-6, 0]),
+            poly_add(&v(target.0), &c(6)),
+            RealConstraintKind::BranchChoice,
+        ),
+        -6,
     );
 }
