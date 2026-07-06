@@ -1,0 +1,50 @@
+phase: ACR-P6
+archive_kind: guardian_boundary_review
+status: PASS
+files_reviewed:
+  - docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_COMPLETION_REPAIR_BASE_SPEC.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_COMPLETION_REPAIR_PLAN.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_COMPLETION_REVIEWER_PROMPTS.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_P6_MECH_EVIDENCE.md
+  - geosolver-core/src/kernels/universal_elimination.rs
+  - geosolver-core/src/planner/cost_model.rs
+  - geosolver-core/src/planner/kernel_plan.rs
+  - geosolver-core/src/solver/pipeline.rs
+  - geosolver-core/src/verify/certificates.rs
+  - geosolver-core/src/verify/replay.rs
+  - geosolver-core/src/verify/verify_message.rs
+command_evidence:
+  - command: "cargo fmt --check"
+    cwd: geosolver-core
+    result: PASS
+  - command: "cargo check"
+    cwd: geosolver-core
+    result: PASS
+  - command: "cargo test --lib acr_p6 -- --nocapture"
+    cwd: geosolver-core
+    result: "1 passed"
+  - command: "cargo test --lib kernels::universal_elimination::tests -- --nocapture"
+    cwd: geosolver-core
+    result: "10 passed"
+  - command: "cargo test --lib verify::replay::tests -- --nocapture"
+    cwd: geosolver-core
+    result: "16 passed"
+  - command: "cargo test --lib"
+    cwd: geosolver-core
+    result: "238 passed"
+  - command: "rg -n -i forbidden-marker-pattern src -g \"*.rs\""
+    cwd: geosolver-core
+    result: "no matches"
+  - command: "git diff --check"
+    cwd: repository root
+    result: "PASS with CRLF warnings only"
+limitations:
+  - "PASS scope is ACR-P6 only."
+  - "This does not authorize ACR-P7+, final candidate-cover readiness, source fidelity, full acceptance, production safety, or any R-ID VERIFIED claim."
+additional_reviews:
+  - reviewer: spec_verifier
+    status: PASS
+    archive: docs/ai/changes/RGDTPK-Q-v4-core/reviews/ACR-P6/20260706-200604Z/spec_verifier_response.md
+  - reviewer: quality_reviewer
+    status: PASS
+    archive: docs/ai/changes/RGDTPK-Q-v4-core/reviews/ACR-P6/20260706-200604Z/quality_reviewer_response.md

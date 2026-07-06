@@ -23,6 +23,7 @@ use crate::compose::message::{hash_projection_message, ProjectionMessage};
 use crate::compose::message::{MessageRepresentation, ProjectionStrength};
 use crate::kernels::target_univariate::target_only_support_from_polynomials;
 use crate::kernels::traits::{KernelContext, KernelKind};
+use crate::planner::cost_model::RouteCostClass;
 use crate::planner::kernel_plan::{CertificateRoute, UniversalStrategy};
 use crate::preprocess::compression::{affine_parts_in_variable, substitute_rational_and_clear};
 use crate::result::status::{FailureKind, SolverError, SolverErrorKind};
@@ -435,6 +436,17 @@ fn verify_universal_strategy_trace(
             "universal attempted strategy sequence is not the fixed generic sequence",
         ));
     }
+    if proof.strategy_records.len() != proof.attempted_strategies.len()
+        || proof
+            .strategy_records
+            .iter()
+            .zip(&proof.attempted_strategies)
+            .any(|(record, strategy)| record.strategy != *strategy)
+    {
+        return Err(implementation_bug(
+            "universal strategy cost records do not match attempted sequence",
+        ));
+    }
     if !proof.attempted_strategies.contains(&proof.chosen_strategy) {
         return Err(implementation_bug(
             "universal chosen strategy is absent from attempted sequence",
@@ -468,7 +480,18 @@ fn verify_universal_strategy_trace(
         ));
     }
     verify_universal_source_hash_binding(proof, cert, ctx)?;
-    let expected_stage_hashes = expected_universal_stage_hashes(proof, cert, ctx);
+    let expected_stage_hashes = expected_universal_stage_hashes(proof, cert)?;
+    let skipped_cost_prohibited = proof
+        .strategy_records
+        .iter()
+        .filter(|record| record.cost_class == RouteCostClass::CostProhibited)
+        .map(|record| record.stage_hash)
+        .collect::<Vec<_>>();
+    if proof.skipped_cost_prohibited_strategy_hashes != skipped_cost_prohibited {
+        return Err(implementation_bug(
+            "universal cost-prohibited skip hashes do not match strategy records",
+        ));
+    }
     if proof.stage_hash != expected_stage_hashes[chosen_index] {
         return Err(implementation_bug(
             "universal chosen stage hash does not match replayed stage plan",
@@ -530,83 +553,43 @@ fn expected_universal_payload_source_hashes(
 fn expected_universal_stage_hashes(
     proof: &crate::verify::certificates::UniversalProjectionCertificate,
     cert: &KernelCertificate,
-    ctx: &KernelContext,
-) -> Vec<Hash> {
-    let relation_count = cert.source_relation_hashes.len();
-    let has_relations = relation_count > 0;
-    let square_or_overdetermined =
-        has_relations && relation_count >= cert.exported_variables.len().max(1);
-    let has_non_target_separator = cert
-        .exported_variables
-        .iter()
-        .any(|var| *var != ctx.system.target);
+) -> Result<Vec<Hash>, SolverError> {
     proof
-        .attempted_strategies
+        .strategy_records
         .iter()
         .enumerate()
-        .map(|(index, strategy)| {
-            let (enabled, skip_reason) = match strategy {
-                UniversalStrategy::TargetRelationSearchEscalated => (
-                    has_relations,
-                    universal_skip_reason(has_relations, "no local relations"),
-                ),
-                UniversalStrategy::SparseResultantIfSquareOrOverdetermined => (
-                    square_or_overdetermined,
-                    universal_skip_reason(square_or_overdetermined, "not square or overdetermined"),
-                ),
-                UniversalStrategy::TargetActionKrylovIfQuotientCertifiable => (
-                    has_relations,
-                    universal_skip_reason(has_relations, "no relations for target action quotient"),
-                ),
-                UniversalStrategy::SpecializeProjectInterpolateVerify => (
-                    has_non_target_separator,
-                    universal_skip_reason(
-                        has_non_target_separator,
-                        "no non-target exported separator",
-                    ),
-                ),
-                UniversalStrategy::RegularChainIfTriangular => (
-                    has_relations,
-                    universal_skip_reason(
-                        has_relations,
-                        "no relations for regular-chain detection",
-                    ),
-                ),
-                UniversalStrategy::NormTraceIfTower => (
-                    has_relations,
-                    universal_skip_reason(
-                        has_relations,
-                        "no relations for norm/trace tower detection",
-                    ),
-                ),
-                UniversalStrategy::LocalGroebnerEliminationToKeepZ => (
-                    has_relations,
-                    universal_skip_reason(
-                        has_relations,
-                        "no relations available for local elimination",
-                    ),
-                ),
-            };
-            hash_sequence(
+        .map(|(index, record)| {
+            let recomputed = hash_sequence(
                 "universal-stage-plan",
                 &[
                     cert.plan_hash.0.to_vec(),
-                    format!("{strategy:?}").into_bytes(),
+                    format!("{:?}", record.strategy).into_bytes(),
                     index.to_be_bytes().to_vec(),
-                    vec![enabled as u8],
-                    skip_reason.unwrap_or("").as_bytes().to_vec(),
+                    vec![record.enabled as u8],
+                    record
+                        .skip_reason
+                        .as_deref()
+                        .unwrap_or("")
+                        .as_bytes()
+                        .to_vec(),
+                    format!("{:?}", record.cost_class).into_bytes(),
+                    record.algebraic_work_estimate_hash.0.to_vec(),
+                    record.algebraic_work_estimate_hash.0.to_vec(),
+                    record.route_budget_hash.0.to_vec(),
+                    record.route_budget_hash.0.to_vec(),
+                    record.predicted_work_units.0.to_be_bytes().to_vec(),
+                    record.route_budget_max_work_units.0.to_be_bytes().to_vec(),
+                    record.route_budget_max_elapsed_steps.to_be_bytes().to_vec(),
                 ],
-            )
+            );
+            if record.stage_hash != recomputed {
+                return Err(implementation_bug(
+                    "universal strategy record stage hash is not reproducible",
+                ));
+            }
+            Ok(record.stage_hash)
         })
         .collect()
-}
-
-fn universal_skip_reason(enabled: bool, reason: &'static str) -> Option<&'static str> {
-    if enabled {
-        None
-    } else {
-        Some(reason)
-    }
 }
 
 fn universal_strategy_for_inner_payload(

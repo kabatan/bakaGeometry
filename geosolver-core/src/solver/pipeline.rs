@@ -1308,11 +1308,12 @@ mod tests {
     use crate::planner::algebraic_cost::{
         algebraic_work_estimate_hash, AlgebraicWorkEstimate, RouteBudget, SaturatingCount,
     };
+    use crate::planner::cost_model::RouteCostClass;
     use crate::planner::kernel_plan::KernelPlan;
     use crate::planner::kernel_plan::{
         hash_kernel_execution_plan, planned_failure_behavior, resource_bounds_hash,
         support_plan_hash, CertificateRoute, KernelSupportPlan, LocalNonfinitePolicy,
-        PlanWorkClassification, ResourceBounds,
+        PlanWorkClassification, ResourceBounds, UniversalStrategy,
     };
     use crate::planner::planner::plan_all_blocks;
     use crate::preprocess::compression::CompressionState;
@@ -1326,9 +1327,12 @@ mod tests {
     use crate::result::output::TargetSolveResult;
     use crate::solver::options::SolverOptions;
     use crate::types::ids::{BlockId, KernelPlanId, PackageId, RelationId, VariableId};
-    use crate::types::polynomial::{constant_poly, poly_add, poly_mul, poly_sub, variable_poly};
+    use crate::types::monomial::normalize_monomial;
+    use crate::types::polynomial::{
+        constant_poly, normalize_poly, poly_add, poly_mul, poly_sub, variable_poly, TermQ,
+    };
     use crate::types::rational::int_q;
-    use crate::verify::certificates::KernelCertificate;
+    use crate::verify::certificates::{KernelCertificate, KernelCertificatePayload};
 
     #[test]
     fn acr_p2_route_budget_preflight_stops_over_budget_estimate() {
@@ -1527,6 +1531,69 @@ mod tests {
         assert!(reason.0.contains("attempt=Hash"));
     }
 
+    #[test]
+    fn acr_p6_universal_skips_cost_prohibited_dense_sparse_and_returns_candidate_cover() {
+        let result =
+            p6_pipeline_result_after_first_plan_mutation(force_universal_only_declared_route);
+
+        assert_eq!(result.status, SolverStatus::CertifiedCandidateCover);
+        assert_eq!(result.projection_messages.len(), 1);
+        let message = &result.projection_messages[0];
+        assert_eq!(message.kernel_kind, KernelKind::UniversalTargetElimination);
+        let KernelCertificatePayload::Universal(proof) = &message.certificate.payload else {
+            panic!("universal message must carry universal payload");
+        };
+        assert_eq!(
+            proof.attempted_strategies,
+            proof
+                .strategy_records
+                .iter()
+                .map(|record| record.strategy)
+                .collect::<Vec<_>>()
+        );
+        let dense = proof
+            .strategy_records
+            .iter()
+            .find(|record| record.strategy == UniversalStrategy::TargetRelationSearchEscalated)
+            .expect("dense internal stage record");
+        assert_eq!(dense.cost_class, RouteCostClass::CostProhibited);
+        assert!(!dense.enabled);
+        assert!(dense
+            .skip_reason
+            .as_deref()
+            .is_some_and(|reason| reason.contains("CostProhibitedInternalStage")));
+        let sparse = proof
+            .strategy_records
+            .iter()
+            .find(|record| {
+                record.strategy == UniversalStrategy::SparseResultantIfSquareOrOverdetermined
+            })
+            .expect("sparse resultant internal stage record");
+        assert_eq!(sparse.cost_class, RouteCostClass::CostProhibited);
+        assert!(!sparse.enabled);
+        assert!(proof
+            .skipped_cost_prohibited_strategy_hashes
+            .contains(&dense.stage_hash));
+        assert!(proof
+            .skipped_cost_prohibited_strategy_hashes
+            .contains(&sparse.stage_hash));
+        assert!(proof.failed_strategy_hashes.contains(&dense.stage_hash));
+        assert!(proof.failed_strategy_hashes.contains(&sparse.stage_hash));
+        assert_eq!(
+            proof.chosen_strategy,
+            UniversalStrategy::TargetActionKrylovIfQuotientCertifiable
+        );
+        assert!(matches!(
+            proof.inner_payload.as_deref(),
+            Some(KernelCertificatePayload::TargetAction(_))
+        ));
+        assert!(crate::verify::verify_message::verify_projection_message(
+            message,
+            &p6_universal_verification_context()
+        )
+        .is_ok());
+    }
+
     fn budget_test_plan() -> KernelExecutionPlan {
         let estimate = AlgebraicWorkEstimate::new(
             2,
@@ -1704,6 +1771,118 @@ mod tests {
         }
     }
 
+    fn p6_pipeline_result_after_first_plan_mutation(
+        mut mutate_first_plan: impl FnMut(&mut KernelPlan),
+    ) -> TargetSolveResult {
+        let problem = p6_universal_high_footprint_problem();
+        let target = problem.target;
+        let mut ctx = new_context(SolverOptions::default());
+        let validated = step_validate(problem.clone(), &mut ctx).unwrap();
+        let canonical = step_canonicalize(validated, &mut ctx).unwrap();
+        let compressed = step_compress(canonical.clone(), &mut ctx).unwrap();
+        let graphs = step_build_graphs(&compressed, &mut ctx).unwrap();
+        let dag = step_build_dag(&graphs, &compressed, &mut ctx).unwrap();
+        let mut plans = step_plan(&dag, &compressed, &mut ctx).unwrap();
+        mutate_first_plan(&mut plans[0]);
+
+        let messages = step_execute(&dag, &plans, &compressed, &mut ctx).unwrap();
+        step_verify_messages(&dag, &messages, &compressed).unwrap();
+        let composed = step_compose(&dag, messages.clone(), target, &mut ctx).unwrap();
+        let support = match step_support(&composed, &compressed, target, &mut ctx).unwrap() {
+            crate::compose::final_support::FinalSupportComputation::Support(support) => support,
+            crate::compose::final_support::FinalSupportComputation::CertifiedNonFinite(_) => {
+                panic!("expected finite support")
+            }
+        };
+        let support_certificate =
+            crate::verify::verify_support::verify_global_support(&support, &composed).unwrap();
+        let roots = step_roots(&support, target, &mut ctx).unwrap();
+        let certificate = step_core_certificate(
+            &problem,
+            &canonical,
+            &compressed,
+            &graphs,
+            &dag,
+            &plans,
+            &messages,
+            Some(&support),
+            &roots,
+            None,
+            Some(&support_certificate),
+        );
+        let cost_trace = step_cost_trace(
+            &compressed,
+            &dag,
+            &messages,
+            Some(&composed),
+            Some(&support),
+            Some(&certificate),
+        );
+        let mut diagnostics = compressed.diagnostics.clone();
+        diagnostics.extend(ctx.diagnostics.clone());
+        TargetSolveResult {
+            status: SolverStatus::CertifiedCandidateCover,
+            target,
+            support_polynomial: Some(support),
+            squarefree_support_polynomial: Some(roots.squarefree_support),
+            root_isolation: roots.root_isolation,
+            decoded_candidates: roots.decoded_candidates,
+            projection_messages: messages,
+            certificate: Some(certificate),
+            exact_image_certificate: None,
+            nonfinite_certificate: None,
+            diagnostics,
+            cost_trace,
+        }
+    }
+
+    fn p6_universal_verification_context() -> crate::kernels::traits::KernelContext {
+        let problem = p6_universal_high_footprint_problem();
+        let mut ctx = new_context(SolverOptions::default());
+        let validated = step_validate(problem, &mut ctx).unwrap();
+        let canonical = step_canonicalize(validated, &mut ctx).unwrap();
+        let compressed = step_compress(canonical, &mut ctx).unwrap();
+        let graphs = step_build_graphs(&compressed, &mut ctx).unwrap();
+        let dag = step_build_dag(&graphs, &compressed, &mut ctx).unwrap();
+        crate::kernels::traits::KernelContext {
+            block: dag.blocks[0].clone(),
+            system: compressed,
+            child_messages: Vec::new(),
+        }
+    }
+
+    fn p6_universal_high_footprint_problem() -> RationalTargetProblem {
+        let t = VariableId(0);
+        let x = VariableId(1);
+        let target_relation = poly_mul(
+            &poly_sub(&variable_poly(t), &constant_poly(int_q(1))),
+            &poly_sub(&variable_poly(t), &constant_poly(int_q(2))),
+        );
+        let high_footprint_relation =
+            poly_add(&dense_univariate_relation(x, 8_300), &variable_poly(t));
+        make_problem(
+            vec![t, x],
+            t,
+            vec![target_relation, high_footprint_relation],
+            Vec::new(),
+        )
+    }
+
+    fn dense_univariate_relation(
+        variable: VariableId,
+        term_count: usize,
+    ) -> crate::types::polynomial::SparsePolynomialQ {
+        normalize_poly(crate::types::polynomial::SparsePolynomialQ {
+            terms: (0..term_count)
+                .map(|degree| TermQ {
+                    coeff: int_q(1),
+                    monomial: normalize_monomial(vec![(variable, degree as u32)]),
+                })
+                .collect(),
+            hash: hash_sequence("poly", &[]),
+        })
+    }
+
     fn force_sparse_resultant_work_budget_stop_first(plan: &mut KernelPlan) {
         let sparse = plan
             .declared_ladder
@@ -1726,6 +1905,23 @@ mod tests {
         let rebuilt = KernelPlan::new(
             plan.block_id,
             ladder,
+            plan.admissions.clone(),
+            plan.cost_estimates.clone(),
+        )
+        .unwrap();
+        *plan = rebuilt;
+    }
+
+    fn force_universal_only_declared_route(plan: &mut KernelPlan) {
+        let universal = plan
+            .declared_ladder
+            .iter()
+            .find(|entry| entry.kernel_kind == KernelKind::UniversalTargetElimination)
+            .cloned()
+            .expect("universal route should be declared");
+        let rebuilt = KernelPlan::new(
+            plan.block_id,
+            vec![universal],
             plan.admissions.clone(),
             plan.cost_estimates.clone(),
         )

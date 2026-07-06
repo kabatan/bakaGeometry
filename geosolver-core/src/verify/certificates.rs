@@ -8,6 +8,8 @@ use crate::algebra::normal_form::MembershipCertificate;
 use crate::algebra::quotient::ProductionQuotientHandleInput;
 use crate::algebra::regular_chain::{ProjectionGenerators, RegularChainDAG};
 use crate::algebra::resultant::SparseResultantCertificate;
+use crate::planner::algebraic_cost::SaturatingCount;
+use crate::planner::cost_model::RouteCostClass;
 use crate::planner::kernel_plan::{
     hash_kernel_execution_plan, AffineEliminationStep, CertificateRoute, KernelExecutionPlan,
     UniversalStrategy,
@@ -166,12 +168,28 @@ pub struct UniversalProjectionCertificate {
     pub stage_hash: Hash,
     pub stage_certificate_hash: Hash,
     pub attempted_strategies: Vec<UniversalStrategy>,
+    pub strategy_records: Vec<UniversalStrategyTraceRecord>,
+    pub skipped_cost_prohibited_strategy_hashes: Vec<Hash>,
     pub chosen_strategy: UniversalStrategy,
     pub failed_strategy_hashes: Vec<Hash>,
     pub output_relations: Vec<SparsePolynomialQ>,
     pub inner_payload: Option<Box<KernelCertificatePayload>>,
     pub output_memberships: Vec<MembershipCertificate>,
     pub source_relations: Vec<SparsePolynomialQ>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UniversalStrategyTraceRecord {
+    pub strategy: UniversalStrategy,
+    pub stage_hash: Hash,
+    pub enabled: bool,
+    pub skip_reason: Option<String>,
+    pub cost_class: RouteCostClass,
+    pub algebraic_work_estimate_hash: Hash,
+    pub route_budget_hash: Hash,
+    pub predicted_work_units: SaturatingCount,
+    pub route_budget_max_work_units: SaturatingCount,
+    pub route_budget_max_elapsed_steps: usize,
 }
 
 pub fn kernel_certificate_binding_hash(cert: &KernelCertificate) -> Hash {

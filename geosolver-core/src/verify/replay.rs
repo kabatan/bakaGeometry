@@ -1282,6 +1282,8 @@ mod tests {
                 UniversalStrategy::NormTraceIfTower,
                 UniversalStrategy::LocalGroebnerEliminationToKeepZ,
             ],
+            strategy_records: Vec::new(),
+            skipped_cost_prohibited_strategy_hashes: Vec::new(),
             chosen_strategy: UniversalStrategy::LocalGroebnerEliminationToKeepZ,
             failed_strategy_hashes: Vec::new(),
             output_relations: vec![forged_source.clone()],

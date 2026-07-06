@@ -29,12 +29,15 @@ use crate::kernels::target_relation_search::{
 };
 use crate::kernels::traits::{KernelContext, KernelKind, ReplayResult, TargetProjectionKernel};
 use crate::planner::admission::{KernelAdmission, KernelAdmissionStatus};
+use crate::planner::algebraic_cost::{AlgebraicWorkEstimate, RouteBudget};
+use crate::planner::cost_model::{estimate_kernel_cost, RouteCostClass};
 use crate::planner::kernel_plan::{
     hash_kernel_execution_plan, planned_failure_behavior, rank_plan, resource_bounds_hash,
-    support_plan_hash, template_plan, universal_strategy_step, CertificateRoute,
+    support_plan_hash, template_plan, universal_strategy_step_with_cost, CertificateRoute,
     KernelExecutionPlan, KernelSupportPlan, LocalNonfinitePolicy, ResourceBounds,
     UniversalStrategy, UniversalStrategyPlanStep,
 };
+use crate::planner::probes::run_cost_probes;
 use crate::preprocess::compression::CompressedSystemQ;
 use crate::problem::canonicalize::CanonicalRelationQ;
 use crate::problem::context::SolverContext;
@@ -50,6 +53,7 @@ use crate::types::polynomial::{
 };
 use crate::verify::certificates::{
     KernelCertificate, KernelCertificatePayload, UniversalProjectionCertificate,
+    UniversalStrategyTraceRecord,
 };
 
 pub struct UniversalTargetEliminationKernel;
@@ -113,6 +117,9 @@ pub struct UniversalStagePlan {
     pub resource_bounds: ResourceBounds,
     pub enabled: bool,
     pub skip_reason: Option<String>,
+    pub cost_class: RouteCostClass,
+    pub algebraic_work_estimate: AlgebraicWorkEstimate,
+    pub route_budget: RouteBudget,
     pub stage_hash: Hash,
 }
 
@@ -174,8 +181,15 @@ pub fn plan_universal_elimination_with_messages(
         .difference(&block.exported_variables)
         .copied()
         .collect::<Vec<_>>();
-    let strategy_sequence =
-        fixed_universal_strategy_sequence(&relation_polys, &exported_variables, system.target);
+    let strategy_sequence = fixed_universal_strategy_sequence(
+        block,
+        system,
+        child_messages,
+        solver_ctx,
+        &relation_polys,
+        &exported_variables,
+        system.target,
+    );
     let matrix_rows = relation_polys.len().max(1);
     let matrix_cols = relation_polys
         .iter()
@@ -388,6 +402,12 @@ fn execute_universal_stage_with_solver_ctx(
             &[stage.stage_hash],
         ));
     }
+    if stage.cost_class == RouteCostClass::CostProhibited {
+        return Err(implementation_bug(
+            "cost-prohibited universal internal stage reached execution",
+        ));
+    }
+    enforce_universal_stage_route_budget(stage)?;
     match stage.strategy {
         UniversalStrategy::TargetRelationSearchEscalated => {
             let admission = admit_target_relation_search(&ctx.block, ctx, solver_ctx);
@@ -398,11 +418,12 @@ fn execute_universal_stage_with_solver_ctx(
                     &[stage.stage_hash],
                 ));
             }
-            let Some(plan) = admission.execution_plan else {
+            let Some(mut plan) = admission.execution_plan else {
                 return Err(implementation_bug(
                     "target relation search stage lacks plan",
                 ));
             };
+            bind_stage_cost_to_subplan(stage, &mut plan);
             let message = execute_target_relation_search(&plan, ctx, solver_ctx)?;
             wrap_stage_message(
                 stage,
@@ -414,7 +435,7 @@ fn execute_universal_stage_with_solver_ctx(
             )
         }
         UniversalStrategy::SparseResultantIfSquareOrOverdetermined => {
-            let subplan = plan_sparse_resultant_with_messages(
+            let mut subplan = plan_sparse_resultant_with_messages(
                 &ctx.block,
                 &ctx.system,
                 &ctx.child_messages,
@@ -428,6 +449,7 @@ fn execute_universal_stage_with_solver_ctx(
                     &[stage.stage_hash],
                 )
             })?;
+            bind_stage_cost_to_subplan(stage, &mut subplan);
             let message = execute_sparse_resultant(&subplan, ctx, solver_ctx)?;
             wrap_stage_message(
                 stage,
@@ -439,7 +461,7 @@ fn execute_universal_stage_with_solver_ctx(
             )
         }
         UniversalStrategy::TargetActionKrylovIfQuotientCertifiable => {
-            let subplan = plan_target_action_krylov_with_messages(
+            let mut subplan = plan_target_action_krylov_with_messages(
                 &ctx.block,
                 &ctx.system,
                 &ctx.child_messages,
@@ -453,6 +475,7 @@ fn execute_universal_stage_with_solver_ctx(
                     &[stage.stage_hash],
                 )
             })?;
+            bind_stage_cost_to_subplan(stage, &mut subplan);
             let message = execute_target_action_krylov(&subplan, ctx, solver_ctx)?;
             wrap_stage_message(
                 stage,
@@ -464,7 +487,7 @@ fn execute_universal_stage_with_solver_ctx(
             )
         }
         UniversalStrategy::SpecializeProjectInterpolateVerify => {
-            let subplan = plan_specialization_interpolation_with_messages(
+            let mut subplan = plan_specialization_interpolation_with_messages(
                 &ctx.block,
                 &ctx.system,
                 &ctx.child_messages,
@@ -478,6 +501,7 @@ fn execute_universal_stage_with_solver_ctx(
                     &[stage.stage_hash],
                 )
             })?;
+            bind_stage_cost_to_subplan(stage, &mut subplan);
             let message = execute_specialization_interpolation(&subplan, ctx, solver_ctx)?;
             wrap_stage_message(
                 stage,
@@ -489,7 +513,7 @@ fn execute_universal_stage_with_solver_ctx(
             )
         }
         UniversalStrategy::RegularChainIfTriangular => {
-            let subplan = plan_regular_chain_projection(
+            let mut subplan = plan_regular_chain_projection(
                 &ctx.block,
                 &ctx.system,
                 solver_ctx,
@@ -502,6 +526,7 @@ fn execute_universal_stage_with_solver_ctx(
                     &[stage.stage_hash],
                 )
             })?;
+            bind_stage_cost_to_subplan(stage, &mut subplan);
             let message = execute_regular_chain_projection(&subplan, ctx, solver_ctx)?;
             wrap_stage_message(
                 stage,
@@ -513,7 +538,7 @@ fn execute_universal_stage_with_solver_ctx(
             )
         }
         UniversalStrategy::NormTraceIfTower => {
-            let subplan = plan_norm_trace_projection(
+            let mut subplan = plan_norm_trace_projection(
                 &ctx.block,
                 &ctx.system,
                 solver_ctx,
@@ -522,6 +547,7 @@ fn execute_universal_stage_with_solver_ctx(
             .map_err(|_| {
                 algorithmic_hard_case(ctx, "norm-trace stage not applicable", &[stage.stage_hash])
             })?;
+            bind_stage_cost_to_subplan(stage, &mut subplan);
             let message = execute_norm_trace_projection(&subplan, ctx, solver_ctx)?;
             wrap_stage_message(
                 stage,
@@ -590,6 +616,9 @@ fn execute_universal_stage_with_solver_ctx(
                 route_cost: Some(ProjectionCostTrace::route_cost_from_plan(parent_plan)),
             };
             verify_universal_no_coordinate_fallback(&stage_execution_plan_shadow(stage), &trace)?;
+            let strategy_records = universal_strategy_trace_records(parent_plan)?;
+            let skipped_cost_prohibited_strategy_hashes =
+                skipped_cost_prohibited_strategy_hashes(&strategy_records);
             Ok(build_universal_message(
                 stage,
                 ctx,
@@ -608,6 +637,8 @@ fn execute_universal_stage_with_solver_ctx(
                         &[stage.stage_hash.0.to_vec()],
                     ),
                     attempted_strategies: attempted_universal_strategies(parent_plan),
+                    strategy_records,
+                    skipped_cost_prohibited_strategy_hashes,
                     chosen_strategy: stage.strategy,
                     failed_strategy_hashes: failed_strategy_hashes.to_vec(),
                     output_relations: result
@@ -623,6 +654,50 @@ fn execute_universal_stage_with_solver_ctx(
             ))
         }
     }
+}
+
+fn bind_stage_cost_to_subplan(stage: &UniversalStagePlan, subplan: &mut KernelExecutionPlan) {
+    subplan.algebraic_work_estimate = stage.algebraic_work_estimate.clone();
+    subplan.route_budget = stage.route_budget.clone();
+    subplan.plan_hash = hash_kernel_execution_plan(subplan);
+}
+
+fn enforce_universal_stage_route_budget(stage: &UniversalStagePlan) -> Result<(), SolverError> {
+    if !stage.algebraic_work_estimate.is_hash_current() || !stage.route_budget.is_hash_current() {
+        return Err(implementation_bug(
+            "universal internal stage has stale algebraic work estimate or route budget",
+        ));
+    }
+    if stage.algebraic_work_estimate.predicted_work_units > stage.route_budget.max_work_units
+        || stage
+            .algebraic_work_estimate
+            .predicted_intermediate_terms
+            .is_some_and(|terms| terms.exceeds_usize(stage.route_budget.max_intermediate_terms))
+        || stage
+            .algebraic_work_estimate
+            .predicted_output_terms
+            .is_some_and(|terms| terms.exceeds_usize(stage.route_budget.max_output_terms))
+        || stage.algebraic_work_estimate.max_keep_variable_count
+            > stage.route_budget.max_keep_variables
+        || stage.algebraic_work_estimate.max_total_degree > stage.route_budget.max_total_degree
+        || stage
+            .algebraic_work_estimate
+            .predicted_coefficient_height_bits
+            .is_some_and(|bits| bits.exceeds_usize(stage.route_budget.max_coefficient_height_bits))
+    {
+        return Err(finite_resource_failure(
+            None,
+            &stage_execution_plan_shadow(stage),
+            stage.algebraic_work_estimate.matrix_rows.unwrap_or(0),
+            stage.algebraic_work_estimate.matrix_cols.unwrap_or(0),
+            stage
+                .algebraic_work_estimate
+                .predicted_coefficient_height_bits
+                .map(|bits| bits.as_usize_saturating())
+                .unwrap_or(0),
+        ));
+    }
+    Ok(())
 }
 
 pub fn verify_universal_no_coordinate_fallback(
@@ -749,6 +824,9 @@ fn wrap_stage_message(
         .into_iter()
         .map(|input| input.polynomial)
         .collect();
+    let strategy_records = universal_strategy_trace_records(parent_plan)?;
+    let skipped_cost_prohibited_strategy_hashes =
+        skipped_cost_prohibited_strategy_hashes(&strategy_records);
     Ok(build_universal_message(
         stage,
         ctx,
@@ -761,6 +839,8 @@ fn wrap_stage_message(
             stage_hash: stage.stage_hash,
             stage_certificate_hash,
             attempted_strategies: attempted_universal_strategies(parent_plan),
+            strategy_records,
+            skipped_cost_prohibited_strategy_hashes,
             chosen_strategy: stage.strategy,
             failed_strategy_hashes: failed_strategy_hashes.to_vec(),
             output_relations: relation_generators,
@@ -825,6 +905,34 @@ fn attempted_universal_strategies(parent_plan: &KernelExecutionPlan) -> Vec<Univ
         .universal_strategy_sequence
         .iter()
         .map(|step| step.strategy)
+        .collect()
+}
+
+fn universal_strategy_trace_records(
+    parent_plan: &KernelExecutionPlan,
+) -> Result<Vec<UniversalStrategyTraceRecord>, SolverError> {
+    Ok(build_stage_plans(parent_plan)?
+        .into_iter()
+        .map(|stage| UniversalStrategyTraceRecord {
+            strategy: stage.strategy,
+            stage_hash: stage.stage_hash,
+            enabled: stage.enabled,
+            skip_reason: stage.skip_reason,
+            cost_class: stage.cost_class,
+            algebraic_work_estimate_hash: stage.algebraic_work_estimate.estimate_hash,
+            route_budget_hash: stage.route_budget.budget_hash,
+            predicted_work_units: stage.algebraic_work_estimate.predicted_work_units,
+            route_budget_max_work_units: stage.route_budget.max_work_units,
+            route_budget_max_elapsed_steps: stage.route_budget.max_elapsed_steps,
+        })
+        .collect())
+}
+
+fn skipped_cost_prohibited_strategy_hashes(records: &[UniversalStrategyTraceRecord]) -> Vec<Hash> {
+    records
+        .iter()
+        .filter(|record| record.cost_class == RouteCostClass::CostProhibited)
+        .map(|record| record.stage_hash)
         .collect()
 }
 
@@ -902,6 +1010,9 @@ fn build_stage_plans(plan: &KernelExecutionPlan) -> Result<Vec<UniversalStagePla
                 resource_bounds: plan.resource_bounds.clone(),
                 enabled: step.enabled,
                 skip_reason: step.skip_reason.clone(),
+                cost_class: step.cost_class,
+                algebraic_work_estimate: step.algebraic_work_estimate.clone(),
+                route_budget: step.route_budget.clone(),
                 stage_hash: hash_sequence("universal-stage-plan", &[]),
             };
             stage.stage_hash = universal_stage_hash(&stage);
@@ -969,6 +1080,8 @@ fn planned_relation_inputs(
     plan: &KernelExecutionPlan,
     ctx: &KernelContext,
 ) -> Result<Vec<UniversalRelationInput>, SolverError> {
+    let algebraic_work_estimate = plan.algebraic_work_estimate.clone();
+    let route_budget = plan.route_budget.clone();
     let inputs = planned_stage_relation_inputs(
         &UniversalStagePlan {
             parent_plan_id: plan.plan_id,
@@ -983,6 +1096,9 @@ fn planned_relation_inputs(
             resource_bounds: plan.resource_bounds.clone(),
             enabled: true,
             skip_reason: None,
+            cost_class: RouteCostClass::ExpensiveButAllowed,
+            algebraic_work_estimate,
+            route_budget,
             stage_hash: hash_sequence("universal-stage-plan-synthetic", &[]),
         },
         ctx,
@@ -1055,6 +1171,10 @@ fn validate_source_hash_coverage(
 }
 
 fn fixed_universal_strategy_sequence(
+    block: &ProjectionBlock,
+    system: &CompressedSystemQ,
+    child_messages: &[ProjectionMessage],
+    solver_ctx: &SolverContext,
     relations: &[SparsePolynomialQ],
     exported_variables: &[VariableId],
     target: VariableId,
@@ -1062,55 +1182,132 @@ fn fixed_universal_strategy_sequence(
     let square_or_overdetermined =
         !relations.is_empty() && relations.len() >= exported_variables.len().max(1);
     let has_non_target_separator = exported_variables.iter().any(|var| *var != target);
+    let mut probe_ctx = solver_ctx.clone();
+    let probes = run_cost_probes(block, system, &mut probe_ctx);
+    let child_message_hashes = child_messages
+        .iter()
+        .map(|message| message.package_hash)
+        .collect::<BTreeSet<_>>();
     vec![
-        universal_strategy_step(
+        universal_strategy_step_for_stage(
+            block,
+            system,
+            &probes,
             UniversalStrategy::TargetRelationSearchEscalated,
+            KernelKind::TargetRelationSearch,
             !relations.is_empty(),
             empty_skip(!relations.is_empty(), "no local relations"),
         ),
-        universal_strategy_step(
+        universal_strategy_step_for_stage(
+            block,
+            system,
+            &probes,
             UniversalStrategy::SparseResultantIfSquareOrOverdetermined,
+            KernelKind::SparseResultantProjection,
             square_or_overdetermined,
             empty_skip(square_or_overdetermined, "not square or overdetermined"),
         ),
-        universal_strategy_step(
+        universal_strategy_step_for_stage(
+            block,
+            system,
+            &probes,
             UniversalStrategy::TargetActionKrylovIfQuotientCertifiable,
+            KernelKind::TargetActionKrylov,
             !relations.is_empty(),
             empty_skip(
                 !relations.is_empty(),
                 "no relations for target action quotient",
             ),
         ),
-        universal_strategy_step(
+        universal_strategy_step_for_stage(
+            block,
+            system,
+            &probes,
             UniversalStrategy::SpecializeProjectInterpolateVerify,
+            KernelKind::SpecializationInterpolation,
             has_non_target_separator,
             empty_skip(has_non_target_separator, "no non-target exported separator"),
         ),
-        universal_strategy_step(
+        universal_strategy_step_for_stage(
+            block,
+            system,
+            &probes,
             UniversalStrategy::RegularChainIfTriangular,
+            KernelKind::RegularChainProjection,
             !relations.is_empty(),
             empty_skip(
                 !relations.is_empty(),
                 "no relations for regular-chain detection",
             ),
         ),
-        universal_strategy_step(
+        universal_strategy_step_for_stage(
+            block,
+            system,
+            &probes,
             UniversalStrategy::NormTraceIfTower,
+            KernelKind::NormTraceProjection,
             !relations.is_empty(),
             empty_skip(
                 !relations.is_empty(),
                 "no relations for norm/trace tower detection",
             ),
         ),
-        universal_strategy_step(
+        universal_strategy_step_for_stage(
+            block,
+            system,
+            &probes,
             UniversalStrategy::LocalGroebnerEliminationToKeepZ,
+            KernelKind::UniversalTargetElimination,
             !relations.is_empty(),
             empty_skip(
                 !relations.is_empty(),
-                "no relations available for local elimination",
+                &format!(
+                    "no relations available for local elimination; child_message_count={}",
+                    child_message_hashes.len()
+                ),
             ),
         ),
     ]
+}
+
+fn universal_strategy_step_for_stage(
+    block: &ProjectionBlock,
+    system: &CompressedSystemQ,
+    probes: &crate::planner::probes::ProbeResults,
+    strategy: UniversalStrategy,
+    kernel_kind: KernelKind,
+    structurally_enabled: bool,
+    structural_skip_reason: Option<String>,
+) -> UniversalStrategyPlanStep {
+    let cost = estimate_kernel_cost(block, system, kernel_kind, probes);
+    let route_budget = RouteBudget::from_estimate(&cost.algebraic_work_estimate);
+    let cost_prohibited = cost.cost_class == RouteCostClass::CostProhibited
+        && matches!(
+            strategy,
+            UniversalStrategy::TargetRelationSearchEscalated
+                | UniversalStrategy::SparseResultantIfSquareOrOverdetermined
+        );
+    let enabled = structurally_enabled && !cost_prohibited;
+    let skip_reason = if !structurally_enabled {
+        structural_skip_reason
+    } else if cost_prohibited {
+        Some(format!(
+            "CostProhibitedInternalStage: strategy={strategy:?} kernel={kernel_kind:?} estimate_hash={:?} work={} budget={}",
+            cost.estimate_hash,
+            cost.algebraic_work_estimate.predicted_work_units.0,
+            route_budget.max_work_units.0
+        ))
+    } else {
+        None
+    };
+    universal_strategy_step_with_cost(
+        strategy,
+        enabled,
+        skip_reason,
+        cost.cost_class,
+        cost.algebraic_work_estimate,
+        route_budget,
+    )
 }
 
 fn block_relations(block: &ProjectionBlock, system: &CompressedSystemQ) -> Vec<CanonicalRelationQ> {
@@ -1150,7 +1347,7 @@ fn enforce_stage_resource_bounds(
 }
 
 fn stage_execution_plan_shadow(stage: &UniversalStagePlan) -> KernelExecutionPlan {
-    KernelExecutionPlan::new(
+    KernelExecutionPlan::new_with_algebraic_cost(
         stage.parent_plan_id,
         stage.block_id,
         KernelKind::UniversalTargetElimination,
@@ -1174,6 +1371,8 @@ fn stage_execution_plan_shadow(stage: &UniversalStagePlan) -> KernelExecutionPla
             support_hash: hash_sequence("universal-stage-shadow-support", &[]),
         },
         stage.resource_bounds.clone(),
+        stage.algebraic_work_estimate.clone(),
+        stage.route_budget.clone(),
         CertificateRoute::UniversalFixedLocalElimination,
         planned_failure_behavior(
             vec![
@@ -1183,6 +1382,7 @@ fn stage_execution_plan_shadow(stage: &UniversalStagePlan) -> KernelExecutionPla
             ],
             LocalNonfinitePolicy::NoLocalCertifiedNonFinite,
         ),
+        crate::planner::kernel_plan::PlanWorkClassification::PurePlan,
     )
 }
 
@@ -1200,6 +1400,25 @@ fn universal_stage_hash(stage: &UniversalStagePlan) -> Hash {
                 .unwrap_or("")
                 .as_bytes()
                 .to_vec(),
+            format!("{:?}", stage.cost_class).into_bytes(),
+            stage.algebraic_work_estimate.estimate_hash.0.to_vec(),
+            crate::planner::algebraic_cost::algebraic_work_estimate_hash(
+                &stage.algebraic_work_estimate,
+            )
+            .0
+            .to_vec(),
+            stage.route_budget.budget_hash.0.to_vec(),
+            crate::planner::algebraic_cost::route_budget_hash(&stage.route_budget)
+                .0
+                .to_vec(),
+            stage
+                .algebraic_work_estimate
+                .predicted_work_units
+                .0
+                .to_be_bytes()
+                .to_vec(),
+            stage.route_budget.max_work_units.0.to_be_bytes().to_vec(),
+            stage.route_budget.max_elapsed_steps.to_be_bytes().to_vec(),
         ],
     )
 }

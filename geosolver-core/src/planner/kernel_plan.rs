@@ -5,7 +5,7 @@ use crate::planner::admission::{KernelAdmission, KernelAdmissionStatus};
 use crate::planner::algebraic_cost::{
     algebraic_work_estimate_hash, route_budget_hash, AlgebraicWorkEstimate, RouteBudget,
 };
-use crate::planner::cost_model::KernelCostEstimate;
+use crate::planner::cost_model::{KernelCostEstimate, RouteCostClass};
 use crate::planner::relation_schedule::{
     hash_dense_relation_search_schedule, DenseRelationSearchSchedule,
 };
@@ -108,6 +108,9 @@ pub struct UniversalStrategyPlanStep {
     pub strategy: UniversalStrategy,
     pub enabled: bool,
     pub skip_reason: Option<String>,
+    pub cost_class: RouteCostClass,
+    pub algebraic_work_estimate: AlgebraicWorkEstimate,
+    pub route_budget: RouteBudget,
     pub strategy_hash: Hash,
 }
 
@@ -537,12 +540,42 @@ pub fn universal_strategy_step(
     enabled: bool,
     skip_reason: Option<String>,
 ) -> UniversalStrategyPlanStep {
-    let strategy_hash =
-        universal_strategy_step_hash_from_parts(strategy, enabled, skip_reason.as_deref());
+    let algebraic_work_estimate =
+        AlgebraicWorkEstimate::conservative_plan_shape(1, 1, 1, None, None, None, 1);
+    let route_budget = RouteBudget::from_estimate(&algebraic_work_estimate);
+    universal_strategy_step_with_cost(
+        strategy,
+        enabled,
+        skip_reason,
+        RouteCostClass::Feasible,
+        algebraic_work_estimate,
+        route_budget,
+    )
+}
+
+pub fn universal_strategy_step_with_cost(
+    strategy: UniversalStrategy,
+    enabled: bool,
+    skip_reason: Option<String>,
+    cost_class: RouteCostClass,
+    algebraic_work_estimate: AlgebraicWorkEstimate,
+    route_budget: RouteBudget,
+) -> UniversalStrategyPlanStep {
+    let strategy_hash = universal_strategy_step_hash_from_parts(
+        strategy,
+        enabled,
+        skip_reason.as_deref(),
+        cost_class,
+        &algebraic_work_estimate,
+        &route_budget,
+    );
     UniversalStrategyPlanStep {
         strategy,
         enabled,
         skip_reason,
+        cost_class,
+        algebraic_work_estimate,
+        route_budget,
         strategy_hash,
     }
 }
@@ -699,6 +732,9 @@ fn universal_strategy_step_hash(step: &UniversalStrategyPlanStep) -> Hash {
         step.strategy,
         step.enabled,
         step.skip_reason.as_deref(),
+        step.cost_class,
+        &step.algebraic_work_estimate,
+        &step.route_budget,
     )
 }
 
@@ -706,6 +742,9 @@ fn universal_strategy_step_hash_from_parts(
     strategy: UniversalStrategy,
     enabled: bool,
     skip_reason: Option<&str>,
+    cost_class: RouteCostClass,
+    algebraic_work_estimate: &AlgebraicWorkEstimate,
+    route_budget: &RouteBudget,
 ) -> Hash {
     hash_sequence(
         "universal-strategy-plan-step",
@@ -715,6 +754,20 @@ fn universal_strategy_step_hash_from_parts(
             skip_reason
                 .map(|reason| reason.as_bytes().to_vec())
                 .unwrap_or_default(),
+            format!("{cost_class:?}").into_bytes(),
+            algebraic_work_estimate.estimate_hash.0.to_vec(),
+            algebraic_work_estimate_hash(algebraic_work_estimate)
+                .0
+                .to_vec(),
+            route_budget.budget_hash.0.to_vec(),
+            route_budget_hash(route_budget).0.to_vec(),
+            algebraic_work_estimate
+                .predicted_work_units
+                .0
+                .to_be_bytes()
+                .to_vec(),
+            route_budget.max_work_units.0.to_be_bytes().to_vec(),
+            route_budget.max_elapsed_steps.to_be_bytes().to_vec(),
         ],
     )
 }

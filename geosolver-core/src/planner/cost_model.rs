@@ -157,9 +157,7 @@ pub fn classify_route_cost(
 ) -> RouteCostClass {
     match kind {
         KernelKind::TargetUnivariate | KernelKind::LinearAffine => RouteCostClass::PreferredCompact,
-        KernelKind::SparseResultantProjection
-        | KernelKind::TargetRelationSearch
-        | KernelKind::UniversalTargetElimination
+        KernelKind::SparseResultantProjection | KernelKind::TargetRelationSearch
             if dominant_expression_swell_is_prohibited(estimate) =>
         {
             RouteCostClass::CostProhibited
