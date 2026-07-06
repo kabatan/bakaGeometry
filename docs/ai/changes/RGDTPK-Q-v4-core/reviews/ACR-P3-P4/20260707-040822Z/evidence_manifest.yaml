@@ -1,0 +1,38 @@
+schema_version: guardian_review_evidence_manifest_v1
+phase: ACR-P3-P4
+review_result: PASS
+inputs:
+  - docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_COMPLETION_REPAIR_PLAN.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_ACCEPTANCE_MATRIX.yaml
+  - docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_P3_P4_MECH_EVIDENCE.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/reviews/ACR-P3-P4/20260707-040440Z/
+  - geosolver-core/src/algebra/resultant.rs
+  - geosolver-core/src/kernels/sparse_resultant.rs
+  - geosolver-core/src/planner/cost_model.rs
+  - geosolver-core/src/solver/pipeline.rs
+verification:
+  - command: cargo fmt --check
+    cwd: geosolver-core
+    result: passed
+  - command: cargo test --lib acr_p3 -- --nocapture
+    cwd: geosolver-core
+    result: 3 passed
+  - command: cargo test --lib acr_p4 -- --nocapture
+    cwd: geosolver-core
+    result: 6 passed
+  - command: cargo test --lib acr_p2 -- --nocapture
+    cwd: geosolver-core
+    result: 8 passed
+  - command: cargo check
+    cwd: geosolver-core
+    result: passed
+  - command: cargo test --lib
+    cwd: geosolver-core
+    result: 234 passed
+  - command: forbidden-pattern scan over geosolver-core/src Rust sources
+    result: no matches
+archived_files:
+  - prompt.md
+  - response.md
+  - review_summary.yaml
+  - evidence_manifest.yaml

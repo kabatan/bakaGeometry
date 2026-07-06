@@ -8,11 +8,11 @@ use crate::compose::message::{MessageRepresentation, ProjectionMessage, Projecti
 use crate::graph::projection_dag::ProjectionBlock;
 use crate::kernels::traits::{KernelContext, KernelKind, ReplayResult, TargetProjectionKernel};
 use crate::planner::admission::{KernelAdmission, KernelAdmissionStatus};
-use crate::planner::algebraic_cost::SaturatingCount;
+use crate::planner::algebraic_cost::{AlgebraicWorkEstimate, RouteBudget, SaturatingCount};
 use crate::planner::kernel_plan::{
     hash_kernel_execution_plan, planned_failure_behavior, rank_plan, resource_bounds_hash,
     support_plan_hash, template_plan, CertificateRoute, KernelExecutionPlan, KernelSupportPlan,
-    LocalNonfinitePolicy, ResourceBounds,
+    LocalNonfinitePolicy, PlanWorkClassification, ResourceBounds,
 };
 use crate::preprocess::compression::CompressedSystemQ;
 use crate::problem::canonicalize::CanonicalRelationQ;
@@ -24,10 +24,13 @@ use crate::result::status::{
 use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::{PackageId, RelationId, VariableId};
 use crate::types::matrix::matrix_density;
+use crate::types::monomial::normalize_monomial;
 use crate::types::polynomial::{
-    clear_denominators_primitive, max_poly_coefficient_height_bits, poly_coefficient_height_bits,
-    poly_monomial_count, poly_total_degree, poly_variables, SparsePolynomialQ,
+    clear_denominators_primitive, max_poly_coefficient_height_bits, normalize_poly,
+    poly_coefficient_height_bits, poly_monomial_count, poly_total_degree, poly_variables,
+    SparsePolynomialQ, TermQ,
 };
+use crate::types::rational::int_q;
 use crate::verify::certificates::{
     KernelCertificate, KernelCertificatePayload, SparseResultantProjectionCertificate,
 };
@@ -75,6 +78,7 @@ impl TargetProjectionKernel for SparseResultantProjectionKernel {
 struct SparseResultantTrace {
     relation: SparsePolynomialQ,
     certificates: Vec<SparseResultantCertificate>,
+    swell_preflight: SparseResultantSwellPreflight,
     matrix_rows: usize,
     matrix_cols: usize,
     max_degree: usize,
@@ -87,8 +91,42 @@ struct SparseResultantPlanProbe {
     matrix_rows: usize,
     matrix_cols: usize,
     max_degree: usize,
+    swell_preflight: SparseResultantSwellPreflight,
     template_trace_hash: Hash,
     output_support_hash: Hash,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct SparseResultantSwellPreflight {
+    pair_preflights: Vec<SparseResultantPairPreflight>,
+    input_term_count_per_pair: Vec<usize>,
+    max_pair_input_terms: usize,
+    max_term_count_after_coefficient_multiplication: SaturatingCount,
+    estimated_resultant_template_support: SaturatingCount,
+    keep_variable_count: usize,
+    coefficient_height_growth_bits: SaturatingCount,
+    predicted_intermediate_terms: SaturatingCount,
+    predicted_output_terms: SaturatingCount,
+    route_work_units: SaturatingCount,
+    preflight_hash: Hash,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct SparseResultantPairPreflight {
+    eliminate: VariableId,
+    left_term_count: usize,
+    right_term_count: usize,
+    left_degree: usize,
+    right_degree: usize,
+    keep_variable_count: usize,
+    matrix_rows: usize,
+    matrix_cols: usize,
+    determinant_entry_term_product: SaturatingCount,
+    output_term_upper_bound: SaturatingCount,
+    coefficient_height_growth_bits: SaturatingCount,
+    predicted_intermediate_terms: SaturatingCount,
+    route_work_units: SaturatingCount,
+    pair_hash: Hash,
 }
 
 #[derive(Debug, Clone)]
@@ -186,7 +224,44 @@ pub fn plan_sparse_resultant_with_messages(
         bounds_hash: hash_sequence("planner-resource-bounds", &[]),
     };
     bounds.bounds_hash = resource_bounds_hash(&bounds);
-    Ok(KernelExecutionPlan::new(
+    let algebraic_work_estimate = AlgebraicWorkEstimate::new(
+        block.local_variables.len(),
+        inputs.len(),
+        exported.len(),
+        relation_polys
+            .iter()
+            .map(poly_monomial_count)
+            .sum::<usize>(),
+        relation_polys
+            .iter()
+            .map(poly_monomial_count)
+            .max()
+            .unwrap_or(0)
+            .max(1),
+        probe.max_degree.max(1),
+        probe
+            .swell_preflight
+            .keep_variable_count
+            .max(exported.len())
+            .max(1),
+        Some(probe.matrix_rows),
+        Some(probe.matrix_cols),
+        Some(probe.matrix_rows.min(probe.matrix_cols)),
+        Some(probe.swell_preflight.predicted_output_terms),
+        Some(probe.swell_preflight.predicted_intermediate_terms),
+        Some(probe.swell_preflight.coefficient_height_growth_bits),
+        probe
+            .swell_preflight
+            .route_work_units
+            .max(SaturatingCount::from_usize(
+                probe
+                    .matrix_rows
+                    .max(1)
+                    .saturating_mul(probe.matrix_cols.max(1)),
+            )),
+    );
+    let route_budget = RouteBudget::from_estimate(&algebraic_work_estimate);
+    Ok(KernelExecutionPlan::new_with_algebraic_cost(
         plan_id,
         block.block_id,
         KernelKind::SparseResultantProjection,
@@ -207,6 +282,8 @@ pub fn plan_sparse_resultant_with_messages(
         eliminated,
         support_plan,
         bounds,
+        algebraic_work_estimate,
+        route_budget,
         CertificateRoute::SparseResultantExactVerification,
         planned_failure_behavior(
             vec![
@@ -216,6 +293,7 @@ pub fn plan_sparse_resultant_with_messages(
             ],
             LocalNonfinitePolicy::NotApplicable,
         ),
+        PlanWorkClassification::PurePlan,
     ))
 }
 
@@ -264,6 +342,7 @@ pub fn execute_sparse_resultant(
         &plan.eliminated_variables,
         &plan.exported_variables,
         max_dim,
+        plan,
     )?;
     let probe = probe_sparse_resultant_plan(
         &relation_polys,
@@ -271,6 +350,18 @@ pub fn execute_sparse_resultant(
         &plan.exported_variables,
         max_dim,
     )?;
+    if probe.swell_preflight.preflight_hash
+        != sparse_resultant_swell_preflight_hash(&probe.swell_preflight)
+    {
+        return Err(implementation_bug(
+            "sparse resultant swell preflight hash is stale",
+        ));
+    }
+    if trace.swell_preflight.preflight_hash != probe.swell_preflight.preflight_hash {
+        return Err(implementation_bug(
+            "sparse resultant execution route trace diverged from planned swell preflight",
+        ));
+    }
     let Some(template) = &plan.support_plan.template_plan else {
         return Err(implementation_bug(
             "sparse resultant plan lacks template plan",
@@ -356,20 +447,35 @@ fn probe_sparse_resultant_plan(
     exported: &[VariableId],
     max_dim: usize,
 ) -> Result<SparseResultantPlanProbe, SolverError> {
+    let mut current = relations.to_vec();
     let mut template_hashes = Vec::new();
+    let mut pair_costs = Vec::new();
     let mut matrix_rows = 0usize;
     let mut matrix_cols = 0usize;
     let mut max_degree = relations.iter().map(poly_total_degree).max().unwrap_or(1) as usize;
     for eliminate in eliminated {
-        let Some((_left, _right, input)) =
-            selectable_resultant_pair(relations, *eliminate, max_dim)
-        else {
+        let Some(pair) = selectable_resultant_pair(&current, *eliminate, max_dim) else {
             continue;
         };
-        let template = build_sparse_resultant_template(input)?;
+        let template = build_sparse_resultant_template(pair.input.clone())?;
         matrix_rows = matrix_rows.saturating_add(template.matrix_rows);
         matrix_cols = matrix_cols.saturating_add(template.matrix_cols);
         template_hashes.push(template.template_hash);
+        let surrogate = simulated_resultant_relation(&pair.input, &pair.footprint);
+        let mut next = current
+            .into_iter()
+            .enumerate()
+            .filter_map(|(idx, poly)| {
+                if idx == pair.left || idx == pair.right {
+                    None
+                } else {
+                    Some(poly)
+                }
+            })
+            .collect::<Vec<_>>();
+        next.push(surrogate);
+        current = next;
+        pair_costs.push(pair.footprint);
         max_degree =
             max_degree.saturating_add(template.matrix_rows.max(template.matrix_cols).max(1));
     }
@@ -378,17 +484,20 @@ fn probe_sparse_resultant_plan(
             "sparse resultant template chain was not applicable",
         ));
     }
+    let swell_preflight = combine_swell_preflight(&pair_costs);
     let template_trace_hash = hash_sequence(
         "sparse-resultant-template-trace",
         &template_hashes
             .iter()
             .map(|hash| hash.0.to_vec())
+            .chain(std::iter::once(swell_preflight.preflight_hash.0.to_vec()))
             .collect::<Vec<_>>(),
     );
     Ok(SparseResultantPlanProbe {
         matrix_rows,
         matrix_cols,
         max_degree,
+        swell_preflight,
         template_trace_hash,
         output_support_hash: planned_resultant_output_support_hash(exported, max_degree),
     })
@@ -399,33 +508,50 @@ fn build_sparse_resultant_trace(
     eliminated: &[VariableId],
     exported: &[VariableId],
     max_dim: usize,
+    plan: &KernelExecutionPlan,
 ) -> Result<SparseResultantTrace, SolverError> {
     let exported_set = exported.iter().copied().collect::<BTreeSet<_>>();
     let mut current = relations.to_vec();
     let mut certificates = Vec::new();
     let mut template_hashes = Vec::new();
+    let mut pair_costs = Vec::new();
+    let mut accumulated_work = SaturatingCount::ZERO;
     let mut matrix_rows = 0usize;
     let mut matrix_cols = 0usize;
-    for eliminate in eliminated {
-        let Some((left, right, input)) = selectable_resultant_pair(&current, *eliminate, max_dim)
-        else {
+    for (step, eliminate) in eliminated.iter().enumerate() {
+        let Some(pair) = selectable_resultant_pair(&current, *eliminate, max_dim) else {
             continue;
         };
-        let template = build_sparse_resultant_template(input)?;
+        guard_sparse_resultant_pair(plan, step, &pair.footprint)?;
+        accumulated_work = accumulated_work.saturating_add(pair.footprint.route_work_units);
+        if accumulated_work > plan.route_budget.max_work_units {
+            return Err(sparse_resultant_guard_failure(
+                plan,
+                "SparseResultantRouteWorkBudget",
+                pair.footprint.matrix_rows,
+                pair.footprint.matrix_cols,
+                pair.footprint
+                    .coefficient_height_growth_bits
+                    .as_usize_saturating(),
+            ));
+        }
+        let template = build_sparse_resultant_template(pair.input)?;
         matrix_rows = matrix_rows.saturating_add(template.matrix_rows);
         matrix_cols = matrix_cols.saturating_add(template.matrix_cols);
         template_hashes.push(template.template_hash);
+        pair_costs.push(pair.footprint.clone());
         let resultant = compute_resultant_relation(&template, ModularOptions::default())?;
         if !verify_resultant_certificate(&resultant.certificate) {
             return Err(implementation_bug(
                 "sparse resultant certificate failed exact recomputation",
             ));
         }
+        guard_sparse_resultant_output(plan, &resultant.relation, &pair.footprint)?;
         let mut next = current
             .into_iter()
             .enumerate()
             .filter_map(|(idx, poly)| {
-                if idx == left || idx == right {
+                if idx == pair.left || idx == pair.right {
                     None
                 } else {
                     Some(poly)
@@ -457,11 +583,13 @@ fn build_sparse_resultant_trace(
             "sparse resultant template chain was not applicable",
         ));
     }
+    let swell_preflight = combine_swell_preflight(&pair_costs);
     let template_trace_hash = hash_sequence(
         "sparse-resultant-template-trace",
         &template_hashes
             .iter()
             .map(|hash| hash.0.to_vec())
+            .chain(std::iter::once(swell_preflight.preflight_hash.0.to_vec()))
             .collect::<Vec<_>>(),
     );
     let output_support_hash = hash_sequence(
@@ -476,6 +604,7 @@ fn build_sparse_resultant_trace(
         "sparse-resultant-execution-trace",
         &[
             template_trace_hash.0.to_vec(),
+            swell_preflight.preflight_hash.0.to_vec(),
             output_support_hash.0.to_vec(),
             relation.hash.0.to_vec(),
         ],
@@ -483,6 +612,7 @@ fn build_sparse_resultant_trace(
     Ok(SparseResultantTrace {
         relation,
         certificates,
+        swell_preflight,
         matrix_rows,
         matrix_cols,
         max_degree: current
@@ -492,6 +622,45 @@ fn build_sparse_resultant_trace(
             .unwrap_or(0),
         output_support_hash,
         trace_hash,
+    })
+}
+
+fn simulated_resultant_relation(
+    input: &ResultantInput,
+    cost: &ResultantPairCost,
+) -> SparsePolynomialQ {
+    if input.keep_variables.is_empty() {
+        return normalize_poly(SparsePolynomialQ {
+            terms: vec![TermQ {
+                coeff: int_q(1),
+                monomial: normalize_monomial(Vec::new()),
+            }],
+            hash: hash_sequence("poly", &[]),
+        });
+    }
+    let term_limit = cost
+        .predicted_output_terms
+        .as_usize_saturating()
+        .max(1)
+        .min(8_192);
+    let degree_cap = cost.max_total_degree.max(1).min(u32::MAX as usize);
+    let mut terms = Vec::with_capacity(term_limit);
+    for idx in 0..term_limit {
+        let primary = input.keep_variables[0];
+        let mut exponents = vec![(primary, (idx + 1).min(u32::MAX as usize) as u32)];
+        if input.keep_variables.len() > 1 {
+            let secondary = input.keep_variables[idx % input.keep_variables.len()];
+            let exp = ((idx % degree_cap) + 1).min(u32::MAX as usize) as u32;
+            exponents.push((secondary, exp));
+        }
+        terms.push(TermQ {
+            coeff: int_q(1),
+            monomial: normalize_monomial(exponents),
+        });
+    }
+    normalize_poly(SparsePolynomialQ {
+        terms,
+        hash: hash_sequence("poly", &[]),
     })
 }
 
@@ -508,7 +677,7 @@ fn selectable_resultant_pair(
     relations: &[SparsePolynomialQ],
     eliminate: VariableId,
     max_dim: usize,
-) -> Option<(usize, usize, ResultantInput)> {
+) -> Option<SelectedResultantPair> {
     let mut candidates = Vec::new();
     for i in 0..relations.len() {
         for j in (i + 1)..relations.len() {
@@ -532,6 +701,13 @@ fn selectable_resultant_pair(
                 }
                 candidates.push((
                     footprint.predicted_intermediate_terms.as_usize_saturating(),
+                    footprint.route_work_units.as_usize_saturating(),
+                    footprint
+                        .coefficient_height_growth_bits
+                        .as_usize_saturating(),
+                    footprint
+                        .max_term_count_after_coefficient_multiplication
+                        .as_usize_saturating(),
                     footprint.input_term_count,
                     footprint.keep_variable_count,
                     template.matrix_rows.saturating_mul(template.matrix_cols),
@@ -540,27 +716,57 @@ fn selectable_resultant_pair(
                     i,
                     j,
                     input,
+                    footprint,
                 ));
             }
         }
     }
     candidates.sort_by_key(|entry| {
         (
-            entry.0, entry.1, entry.2, entry.3, entry.4, entry.5, entry.6, entry.7,
+            entry.0, entry.1, entry.2, entry.3, entry.4, entry.5, entry.6, entry.7, entry.8,
+            entry.9, entry.10,
         )
     });
     candidates
         .into_iter()
         .next()
-        .map(|(_, _, _, _, _, _, i, j, input)| (i, j, input))
+        .map(
+            |(_, _, _, _, _, _, _, _, _, i, j, input, footprint)| SelectedResultantPair {
+                left: i,
+                right: j,
+                input,
+                footprint,
+            },
+        )
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct SelectedResultantPair {
+    left: usize,
+    right: usize,
+    input: ResultantInput,
+    footprint: ResultantPairCost,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct ResultantPairCost {
     input_term_count: usize,
+    left_term_count: usize,
+    right_term_count: usize,
     max_input_terms: usize,
+    eliminate: VariableId,
+    left_degree: usize,
+    right_degree: usize,
+    matrix_rows: usize,
+    matrix_cols: usize,
     keep_variable_count: usize,
+    max_total_degree: usize,
+    max_term_count_after_coefficient_multiplication: SaturatingCount,
+    estimated_resultant_template_support: SaturatingCount,
+    coefficient_height_growth_bits: SaturatingCount,
     predicted_intermediate_terms: SaturatingCount,
+    predicted_output_terms: SaturatingCount,
+    route_work_units: SaturatingCount,
 }
 
 fn resultant_pair_cost(
@@ -568,6 +774,18 @@ fn resultant_pair_cost(
     matrix_rows: usize,
     matrix_cols: usize,
 ) -> ResultantPairCost {
+    let left_term_count = input
+        .polynomials
+        .first()
+        .map(poly_monomial_count)
+        .unwrap_or(0)
+        .max(1);
+    let right_term_count = input
+        .polynomials
+        .get(1)
+        .map(poly_monomial_count)
+        .unwrap_or(0)
+        .max(1);
     let input_term_count = input
         .polynomials
         .iter()
@@ -581,28 +799,374 @@ fn resultant_pair_cost(
         .max()
         .unwrap_or(0)
         .max(1);
+    let left_degree = input
+        .polynomials
+        .first()
+        .map(|poly| degree_in_variable(poly, input.eliminate) as usize)
+        .unwrap_or(0);
+    let right_degree = input
+        .polynomials
+        .get(1)
+        .map(|poly| degree_in_variable(poly, input.eliminate) as usize)
+        .unwrap_or(0);
     let keep_variable_count = input.keep_variables.len();
+    let max_total_degree = input
+        .polynomials
+        .iter()
+        .map(poly_total_degree)
+        .max()
+        .unwrap_or(0) as usize
+        + matrix_rows.max(matrix_cols).max(1);
+    let matrix_area = matrix_rows.max(1).saturating_mul(matrix_cols.max(1));
+    let max_term_count_after_coefficient_multiplication = input
+        .polynomials
+        .iter()
+        .map(|poly| SaturatingCount::from_usize(poly_monomial_count(poly).max(1)))
+        .fold(SaturatingCount::ONE, |acc, terms| acc.saturating_mul(terms));
+    let estimated_resultant_template_support = max_term_count_after_coefficient_multiplication
+        .saturating_mul(SaturatingCount::from_usize(
+            matrix_area.saturating_mul(keep_variable_count.max(1)),
+        ));
+    let input_height_bits = max_poly_coefficient_height_bits(&input.polynomials).max(1);
+    let coefficient_height_growth_bits = SaturatingCount::from_usize(input_height_bits)
+        .saturating_mul(SaturatingCount::from_usize(
+            matrix_rows.max(matrix_cols).max(1),
+        ))
+        .saturating_add(SaturatingCount::from_usize(input_term_count));
     let predicted_intermediate_terms = input
         .polynomials
         .iter()
         .map(|poly| SaturatingCount::from_usize(poly_monomial_count(poly).max(1)))
         .fold(SaturatingCount::ONE, |acc, terms| acc.saturating_mul(terms))
-        .saturating_mul(SaturatingCount::from_usize(
-            matrix_rows.max(1).saturating_mul(matrix_cols.max(1)),
-        ))
+        .saturating_mul(SaturatingCount::from_usize(matrix_area))
         .saturating_mul(SaturatingCount::from_usize(keep_variable_count.max(1)));
+    let predicted_output_terms = predicted_intermediate_terms
+        .max(max_term_count_after_coefficient_multiplication)
+        .max(SaturatingCount::from_usize(max_input_terms));
+    let route_work_units = predicted_intermediate_terms
+        .saturating_mul(SaturatingCount::from_usize(matrix_area))
+        .saturating_add(coefficient_height_growth_bits);
     ResultantPairCost {
         input_term_count,
+        left_term_count,
+        right_term_count,
         max_input_terms,
+        eliminate: input.eliminate,
+        left_degree,
+        right_degree,
+        matrix_rows,
+        matrix_cols,
         keep_variable_count,
+        max_total_degree,
+        max_term_count_after_coefficient_multiplication,
+        estimated_resultant_template_support,
+        coefficient_height_growth_bits,
         predicted_intermediate_terms,
+        predicted_output_terms,
+        route_work_units,
     }
 }
 
 fn resultant_pair_growth_is_prohibited(cost: &ResultantPairCost) -> bool {
     cost.max_input_terms > 8_192
         || cost.keep_variable_count > 24
+        || cost
+            .max_term_count_after_coefficient_multiplication
+            .exceeds_usize(250_000)
+        || cost
+            .estimated_resultant_template_support
+            .exceeds_usize(250_000)
         || cost.predicted_intermediate_terms.exceeds_usize(250_000)
+        || cost.coefficient_height_growth_bits.exceeds_usize(16_384)
+}
+
+fn combine_swell_preflight(costs: &[ResultantPairCost]) -> SparseResultantSwellPreflight {
+    let pair_preflights = costs
+        .iter()
+        .map(sparse_resultant_pair_preflight)
+        .collect::<Vec<_>>();
+    let input_term_count_per_pair = costs
+        .iter()
+        .map(|cost| cost.input_term_count)
+        .collect::<Vec<_>>();
+    let max_pair_input_terms = costs
+        .iter()
+        .map(|cost| cost.max_input_terms)
+        .max()
+        .unwrap_or(0);
+    let max_term_count_after_coefficient_multiplication = costs
+        .iter()
+        .map(|cost| cost.max_term_count_after_coefficient_multiplication)
+        .max()
+        .unwrap_or_default();
+    let estimated_resultant_template_support = costs
+        .iter()
+        .map(|cost| cost.estimated_resultant_template_support)
+        .fold(SaturatingCount::ZERO, |acc, count| {
+            acc.saturating_add(count)
+        });
+    let keep_variable_count = costs
+        .iter()
+        .map(|cost| cost.keep_variable_count)
+        .max()
+        .unwrap_or(0);
+    let coefficient_height_growth_bits = costs
+        .iter()
+        .map(|cost| cost.coefficient_height_growth_bits)
+        .max()
+        .unwrap_or_default();
+    let predicted_intermediate_terms = costs
+        .iter()
+        .map(|cost| cost.predicted_intermediate_terms)
+        .fold(SaturatingCount::ZERO, |acc, count| {
+            acc.saturating_add(count)
+        });
+    let predicted_output_terms = costs
+        .iter()
+        .map(|cost| cost.predicted_output_terms)
+        .fold(SaturatingCount::ZERO, |acc, count| {
+            acc.saturating_add(count)
+        });
+    let route_work_units = costs
+        .iter()
+        .map(|cost| cost.route_work_units)
+        .fold(SaturatingCount::ZERO, |acc, count| {
+            acc.saturating_add(count)
+        });
+    let mut preflight = SparseResultantSwellPreflight {
+        pair_preflights,
+        input_term_count_per_pair,
+        max_pair_input_terms,
+        max_term_count_after_coefficient_multiplication,
+        estimated_resultant_template_support,
+        keep_variable_count,
+        coefficient_height_growth_bits,
+        predicted_intermediate_terms,
+        predicted_output_terms,
+        route_work_units,
+        preflight_hash: hash_sequence("sparse-resultant-swell-preflight", &[]),
+    };
+    preflight.preflight_hash = sparse_resultant_swell_preflight_hash(&preflight);
+    preflight
+}
+
+fn sparse_resultant_pair_preflight(cost: &ResultantPairCost) -> SparseResultantPairPreflight {
+    let mut preflight = SparseResultantPairPreflight {
+        eliminate: cost.eliminate,
+        left_term_count: cost.left_term_count,
+        right_term_count: cost.right_term_count,
+        left_degree: cost.left_degree,
+        right_degree: cost.right_degree,
+        keep_variable_count: cost.keep_variable_count,
+        matrix_rows: cost.matrix_rows,
+        matrix_cols: cost.matrix_cols,
+        determinant_entry_term_product: cost.max_term_count_after_coefficient_multiplication,
+        output_term_upper_bound: cost.predicted_output_terms,
+        coefficient_height_growth_bits: cost.coefficient_height_growth_bits,
+        predicted_intermediate_terms: cost.predicted_intermediate_terms,
+        route_work_units: cost.route_work_units,
+        pair_hash: hash_sequence("sparse-resultant-pair-preflight", &[]),
+    };
+    preflight.pair_hash = sparse_resultant_pair_preflight_hash(&preflight);
+    preflight
+}
+
+fn sparse_resultant_pair_preflight_hash(preflight: &SparseResultantPairPreflight) -> Hash {
+    hash_sequence(
+        "sparse-resultant-pair-preflight",
+        &[
+            preflight.eliminate.0.to_be_bytes().to_vec(),
+            preflight.left_term_count.to_be_bytes().to_vec(),
+            preflight.right_term_count.to_be_bytes().to_vec(),
+            preflight.left_degree.to_be_bytes().to_vec(),
+            preflight.right_degree.to_be_bytes().to_vec(),
+            preflight.keep_variable_count.to_be_bytes().to_vec(),
+            preflight.matrix_rows.to_be_bytes().to_vec(),
+            preflight.matrix_cols.to_be_bytes().to_vec(),
+            preflight
+                .determinant_entry_term_product
+                .0
+                .to_be_bytes()
+                .to_vec(),
+            preflight.output_term_upper_bound.0.to_be_bytes().to_vec(),
+            preflight
+                .coefficient_height_growth_bits
+                .0
+                .to_be_bytes()
+                .to_vec(),
+            preflight
+                .predicted_intermediate_terms
+                .0
+                .to_be_bytes()
+                .to_vec(),
+            preflight.route_work_units.0.to_be_bytes().to_vec(),
+        ],
+    )
+}
+
+fn sparse_resultant_swell_preflight_hash(preflight: &SparseResultantSwellPreflight) -> Hash {
+    let mut chunks = Vec::new();
+    chunks.push(
+        (preflight.pair_preflights.len() as u64)
+            .to_be_bytes()
+            .to_vec(),
+    );
+    for pair in &preflight.pair_preflights {
+        chunks.push(pair.pair_hash.0.to_vec());
+    }
+    chunks.push(
+        (preflight.input_term_count_per_pair.len() as u64)
+            .to_be_bytes()
+            .to_vec(),
+    );
+    for count in &preflight.input_term_count_per_pair {
+        chunks.push(count.to_be_bytes().to_vec());
+    }
+    chunks.push(preflight.max_pair_input_terms.to_be_bytes().to_vec());
+    chunks.push(
+        preflight
+            .max_term_count_after_coefficient_multiplication
+            .0
+            .to_be_bytes()
+            .to_vec(),
+    );
+    chunks.push(
+        preflight
+            .estimated_resultant_template_support
+            .0
+            .to_be_bytes()
+            .to_vec(),
+    );
+    chunks.push(preflight.keep_variable_count.to_be_bytes().to_vec());
+    chunks.push(
+        preflight
+            .coefficient_height_growth_bits
+            .0
+            .to_be_bytes()
+            .to_vec(),
+    );
+    chunks.push(
+        preflight
+            .predicted_intermediate_terms
+            .0
+            .to_be_bytes()
+            .to_vec(),
+    );
+    chunks.push(preflight.predicted_output_terms.0.to_be_bytes().to_vec());
+    chunks.push(preflight.route_work_units.0.to_be_bytes().to_vec());
+    hash_sequence("sparse-resultant-swell-preflight", &chunks)
+}
+
+fn guard_sparse_resultant_pair(
+    plan: &KernelExecutionPlan,
+    step: usize,
+    cost: &ResultantPairCost,
+) -> Result<(), SolverError> {
+    if step >= plan.route_budget.max_elapsed_steps {
+        return Err(sparse_resultant_guard_failure(
+            plan,
+            "SparseResultantChainStepBudget",
+            cost.matrix_rows,
+            cost.matrix_cols,
+            cost.coefficient_height_growth_bits.as_usize_saturating(),
+        ));
+    }
+    if cost.max_input_terms > plan.route_budget.max_input_terms_per_pair {
+        return Err(sparse_resultant_guard_failure(
+            plan,
+            "SparseResultantPairInputTermBudget",
+            cost.matrix_rows,
+            cost.matrix_cols,
+            cost.coefficient_height_growth_bits.as_usize_saturating(),
+        ));
+    }
+    if cost.keep_variable_count > plan.route_budget.max_keep_variables {
+        return Err(sparse_resultant_guard_failure(
+            plan,
+            "SparseResultantKeepVariableBudget",
+            cost.matrix_rows,
+            cost.matrix_cols,
+            cost.coefficient_height_growth_bits.as_usize_saturating(),
+        ));
+    }
+    if cost
+        .predicted_intermediate_terms
+        .exceeds_usize(plan.route_budget.max_intermediate_terms)
+    {
+        return Err(sparse_resultant_guard_failure(
+            plan,
+            "SparseResultantIntermediateTermBudget",
+            cost.matrix_rows,
+            cost.matrix_cols,
+            cost.coefficient_height_growth_bits.as_usize_saturating(),
+        ));
+    }
+    if cost.max_total_degree > plan.route_budget.max_total_degree {
+        return Err(sparse_resultant_guard_failure(
+            plan,
+            "SparseResultantTotalDegreeBudget",
+            cost.matrix_rows,
+            cost.matrix_cols,
+            cost.coefficient_height_growth_bits.as_usize_saturating(),
+        ));
+    }
+    if cost
+        .coefficient_height_growth_bits
+        .exceeds_usize(plan.route_budget.max_coefficient_height_bits)
+    {
+        return Err(sparse_resultant_guard_failure(
+            plan,
+            "SparseResultantCoefficientHeightBudget",
+            cost.matrix_rows,
+            cost.matrix_cols,
+            cost.coefficient_height_growth_bits.as_usize_saturating(),
+        ));
+    }
+    if cost.route_work_units > plan.route_budget.max_work_units {
+        return Err(sparse_resultant_guard_failure(
+            plan,
+            "SparseResultantPairWorkBudget",
+            cost.matrix_rows,
+            cost.matrix_cols,
+            cost.coefficient_height_growth_bits.as_usize_saturating(),
+        ));
+    }
+    Ok(())
+}
+
+fn guard_sparse_resultant_output(
+    plan: &KernelExecutionPlan,
+    relation: &SparsePolynomialQ,
+    cost: &ResultantPairCost,
+) -> Result<(), SolverError> {
+    if poly_monomial_count(relation) > plan.route_budget.max_output_terms {
+        return Err(sparse_resultant_guard_failure(
+            plan,
+            "SparseResultantOutputTermBudget",
+            cost.matrix_rows,
+            cost.matrix_cols,
+            poly_coefficient_height_bits(relation),
+        ));
+    }
+    if poly_total_degree(relation) as usize > plan.route_budget.max_total_degree {
+        return Err(sparse_resultant_guard_failure(
+            plan,
+            "SparseResultantOutputDegreeBudget",
+            cost.matrix_rows,
+            cost.matrix_cols,
+            poly_coefficient_height_bits(relation),
+        ));
+    }
+    if poly_coefficient_height_bits(relation) > plan.route_budget.max_coefficient_height_bits {
+        return Err(sparse_resultant_guard_failure(
+            plan,
+            "SparseResultantOutputCoefficientHeightBudget",
+            cost.matrix_rows,
+            cost.matrix_cols,
+            poly_coefficient_height_bits(relation),
+        ));
+    }
+    Ok(())
 }
 
 fn selected_keep_variables(
@@ -813,6 +1377,7 @@ fn sparse_resultant_certificate_hash(
         plan.plan_hash.0.to_vec(),
         trace.trace_hash.0.to_vec(),
         trace.output_support_hash.0.to_vec(),
+        trace.swell_preflight.preflight_hash.0.to_vec(),
     ];
     for cert in &trace.certificates {
         chunks.push(resultant_certificate_hash(cert).0.to_vec());
@@ -821,7 +1386,12 @@ fn sparse_resultant_certificate_hash(
 }
 
 fn resultant_certificate_hash(cert: &SparseResultantCertificate) -> Hash {
-    let mut chunks = vec![cert.template_hash.0.to_vec(), cert.relation_hash.0.to_vec()];
+    let mut chunks = vec![
+        cert.template_hash.0.to_vec(),
+        cert.relation_hash.0.to_vec(),
+        format!("{:?}", cert.backend).into_bytes(),
+        cert.exact_verification_hash.0.to_vec(),
+    ];
     for trace in &cert.modular_traces {
         chunks.push(trace.prime.to_be_bytes().to_vec());
         chunks.push(trace.relation_mod_hash.0.to_vec());
@@ -897,6 +1467,57 @@ fn implementation_bug(message: &str) -> SolverError {
     }
 }
 
+fn sparse_resultant_guard_failure(
+    plan: &KernelExecutionPlan,
+    stage: &str,
+    rows: usize,
+    cols: usize,
+    coefficient_height_bits: usize,
+) -> SolverError {
+    let route_trace_hash =
+        sparse_resultant_route_failure_trace_hash(plan, stage, rows, cols, coefficient_height_bits);
+    SolverError {
+        target: None,
+        kind: SolverErrorKind::Failure(FailureKind::FiniteResourceFailure {
+            stage: StageId(format!(
+                "{stage}|route_trace_hash={route_trace_hash:?}|plan_hash={:?}|budget_hash={:?}|estimate_hash={:?}",
+                plan.plan_hash,
+                plan.route_budget.budget_hash,
+                plan.algebraic_work_estimate.estimate_hash
+            )),
+            block_id: Some(plan.block_id),
+            matrix_rows: Some(rows),
+            matrix_cols: Some(cols),
+            matrix_density: None,
+            quotient_rank_estimate: Some(rows.min(cols)),
+            coefficient_height_bits: Some(coefficient_height_bits),
+            memory_bytes: None,
+        }),
+    }
+}
+
+fn sparse_resultant_route_failure_trace_hash(
+    plan: &KernelExecutionPlan,
+    stage: &str,
+    rows: usize,
+    cols: usize,
+    coefficient_height_bits: usize,
+) -> Hash {
+    hash_sequence(
+        "sparse-resultant-route-failure-trace",
+        &[
+            stage.as_bytes().to_vec(),
+            plan.block_id.0.to_be_bytes().to_vec(),
+            plan.plan_hash.0.to_vec(),
+            plan.route_budget.budget_hash.0.to_vec(),
+            plan.algebraic_work_estimate.estimate_hash.0.to_vec(),
+            rows.to_be_bytes().to_vec(),
+            cols.to_be_bytes().to_vec(),
+            coefficient_height_bits.to_be_bytes().to_vec(),
+        ],
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeSet;
@@ -907,18 +1528,18 @@ mod tests {
     use crate::planner::kernel_plan::CertificateRoute;
     use crate::preprocess::compression::CompressionState;
     use crate::problem::canonicalize::canonicalize_system;
-    use crate::problem::context::new_context;
+    use crate::problem::context::{new_context, SolverContext};
     use crate::problem::input::make_problem;
     use crate::problem::validate::validate_input;
     use crate::result::cost_trace::ProjectionCostTrace;
-    use crate::result::status::SolverStatus;
+    use crate::result::status::{FailureKind, SolverStatus};
     use crate::solver::options::SolverOptions;
     use crate::types::hash::hash_sequence;
     use crate::types::ids::{BlockId, PackageId, VariableId};
     use crate::types::monomial::normalize_monomial;
     use crate::types::polynomial::{
-        constant_poly, normalize_poly, poly_sub, poly_variables, variable_poly, SparsePolynomialQ,
-        TermQ,
+        constant_poly, normalize_poly, poly_scale, poly_sub, poly_variables, variable_poly,
+        SparsePolynomialQ, TermQ,
     };
     use crate::types::rational::int_q;
     use crate::verify::certificates::KernelCertificate;
@@ -1084,6 +1705,238 @@ mod tests {
         assert!(selectable_resultant_pair(&relations, y, 4).is_none());
     }
 
+    #[test]
+    fn acr_p3_probe_records_swell_preflight_and_binds_it_to_plan_hash() {
+        let t = VariableId(0);
+        let y = VariableId(1);
+        let base_relations = vec![
+            poly_sub(&variable_poly(y), &variable_poly(t)),
+            poly_sub(&variable_poly(y), &constant_poly(int_q(1))),
+        ];
+        let scaled_relations = vec![
+            poly_sub(&variable_poly(y), &poly_scale(&variable_poly(t), &int_q(2))),
+            poly_sub(&variable_poly(y), &constant_poly(int_q(1))),
+        ];
+
+        let base_probe = probe_sparse_resultant_plan(&base_relations, &[y], &[t], 4).unwrap();
+        let scaled_probe = probe_sparse_resultant_plan(&scaled_relations, &[y], &[t], 4).unwrap();
+
+        assert_eq!(base_probe.matrix_rows, scaled_probe.matrix_rows);
+        assert_eq!(base_probe.matrix_cols, scaled_probe.matrix_cols);
+        assert_eq!(
+            base_probe.swell_preflight.input_term_count_per_pair,
+            vec![4]
+        );
+        assert_eq!(base_probe.swell_preflight.keep_variable_count, 1);
+        assert_ne!(
+            base_probe.swell_preflight.preflight_hash,
+            scaled_probe.swell_preflight.preflight_hash
+        );
+        assert_ne!(
+            base_probe.template_trace_hash,
+            scaled_probe.template_trace_hash
+        );
+    }
+
+    #[test]
+    fn acr_p3_pair_selection_ranks_huge_intermediate_behind_safe_pair() {
+        let y = VariableId(20);
+        let t = VariableId(0);
+        let keep_variables = (0..12).map(VariableId).collect::<Vec<_>>();
+        let relations = vec![
+            dense_linear_polynomial(y, &keep_variables, 0),
+            dense_linear_polynomial(y, &keep_variables, 511),
+            poly_sub(&variable_poly(y), &variable_poly(t)),
+            poly_sub(&variable_poly(y), &constant_poly(int_q(1))),
+        ];
+
+        let pair = selectable_resultant_pair(&relations, y, 4).unwrap();
+
+        assert_eq!((pair.left, pair.right), (2, 3));
+        assert!(
+            pair.footprint.predicted_intermediate_terms
+                < resultant_pair_cost(
+                    &ResultantInput {
+                        polynomials: vec![relations[0].clone(), relations[1].clone()],
+                        eliminate: y,
+                        keep_variables: selected_keep_variables(&relations[0], &relations[1], y),
+                        max_matrix_dim: 4,
+                    },
+                    2,
+                    2
+                )
+                .predicted_intermediate_terms
+        );
+    }
+
+    #[test]
+    fn acr_p3_larger_matrix_tiny_sparse_resultant_is_feasible_with_exact_verification() {
+        let t = VariableId(0);
+        let y = VariableId(1);
+        let y_cubed = monomial_polynomial(&[(y, 3)]);
+        let relations = vec![
+            poly_sub(&y_cubed, &variable_poly(t)),
+            poly_sub(&y_cubed, &constant_poly(int_q(1))),
+        ];
+        let compressed = compressed_system(vec![t, y], t, relations);
+        let block = test_block(&compressed, [t, y], [t]);
+        let mut solver_ctx = new_context(SolverOptions::default());
+        let mut kctx = KernelContext {
+            block,
+            system: compressed,
+            child_messages: Vec::new(),
+        };
+        let kernel = SparseResultantProjectionKernel;
+        let admission = kernel.admit(&kctx.block, &kctx);
+        let plan = kernel.plan(&admission, &kctx, &solver_ctx).unwrap();
+
+        let message = kernel.execute(&plan, &mut kctx, &mut solver_ctx).unwrap();
+
+        assert_eq!(message.kernel_kind, KernelKind::SparseResultantProjection);
+        assert!(kernel.replay(&message, &kctx).accepted);
+    }
+
+    #[test]
+    fn acr_p4_runtime_output_guard_returns_route_local_finite_resource_failure() {
+        let t = VariableId(0);
+        let y = VariableId(1);
+        let relations = vec![
+            poly_sub(&variable_poly(y), &variable_poly(t)),
+            poly_sub(&variable_poly(y), &constant_poly(int_q(1))),
+        ];
+        let compressed = compressed_system(vec![t, y], t, relations);
+        let block = test_block(&compressed, [t, y], [t]);
+        let solver_ctx = new_context(SolverOptions::default());
+        let mut kctx = KernelContext {
+            block,
+            system: compressed,
+            child_messages: Vec::new(),
+        };
+        let kernel = SparseResultantProjectionKernel;
+        let admission = kernel.admit(&kctx.block, &kctx);
+        let mut plan = kernel.plan(&admission, &kctx, &solver_ctx).unwrap();
+        plan.route_budget.max_output_terms = 1;
+        plan.route_budget.budget_hash =
+            crate::planner::algebraic_cost::route_budget_hash(&plan.route_budget);
+        plan.plan_hash = hash_kernel_execution_plan(&plan);
+
+        let err = kernel
+            .execute(&plan, &mut kctx, &mut new_context(SolverOptions::default()))
+            .unwrap_err();
+
+        assert_eq!(err.public_status(), SolverStatus::FiniteResourceFailure);
+        let SolverErrorKind::Failure(FailureKind::FiniteResourceFailure { stage, .. }) = err.kind
+        else {
+            panic!("expected finite resource failure");
+        };
+        assert!(stage.0.starts_with("SparseResultantOutputTermBudget"));
+        assert!(stage.0.contains("route_trace_hash="));
+        assert!(stage.0.contains("plan_hash="));
+    }
+
+    #[test]
+    fn acr_p4_runtime_pair_guards_cover_declared_budget_classes() {
+        let cases: Vec<(&str, Box<dyn Fn(&mut KernelExecutionPlan)>)> = vec![
+            (
+                "SparseResultantPairInputTermBudget",
+                Box::new(|plan| plan.route_budget.max_input_terms_per_pair = 1),
+            ),
+            (
+                "SparseResultantIntermediateTermBudget",
+                Box::new(|plan| plan.route_budget.max_intermediate_terms = 1),
+            ),
+            (
+                "SparseResultantKeepVariableBudget",
+                Box::new(|plan| plan.route_budget.max_keep_variables = 0),
+            ),
+            (
+                "SparseResultantTotalDegreeBudget",
+                Box::new(|plan| plan.route_budget.max_total_degree = 1),
+            ),
+            (
+                "SparseResultantCoefficientHeightBudget",
+                Box::new(|plan| plan.route_budget.max_coefficient_height_bits = 1),
+            ),
+            (
+                "SparseResultantChainStepBudget",
+                Box::new(|plan| plan.route_budget.max_elapsed_steps = 0),
+            ),
+            (
+                "SparseResultantPairWorkBudget",
+                Box::new(|plan| plan.route_budget.max_work_units = SaturatingCount::ONE),
+            ),
+        ];
+
+        for (expected_stage, mutate) in cases {
+            let (mut kctx, solver_ctx, mut plan) = sparse_resultant_test_context();
+            mutate(&mut plan);
+            refresh_plan_budget_hashes(&mut plan);
+
+            let err = SparseResultantProjectionKernel
+                .execute(
+                    &plan,
+                    &mut kctx,
+                    &mut new_context(solver_ctx.options.clone()),
+                )
+                .unwrap_err();
+
+            assert_eq!(err.public_status(), SolverStatus::FiniteResourceFailure);
+            let SolverErrorKind::Failure(FailureKind::FiniteResourceFailure { stage, .. }) =
+                err.kind
+            else {
+                panic!("expected finite resource failure");
+            };
+            assert!(
+                stage.0.starts_with(expected_stage),
+                "expected {expected_stage}, got {}",
+                stage.0
+            );
+            assert!(stage.0.contains("route_trace_hash="));
+        }
+    }
+
+    #[test]
+    fn acr_p4_huge_intermediate_guard_stops_before_next_resultant_step() {
+        let t = VariableId(0);
+        let y = VariableId(1);
+        let z = VariableId(2);
+        let relations = vec![
+            poly_sub(
+                &variable_poly(y),
+                &poly_sub(&variable_poly(z), &variable_poly(t)),
+            ),
+            poly_sub(&variable_poly(y), &constant_poly(int_q(1))),
+            poly_sub(&variable_poly(z), &variable_poly(t)),
+        ];
+        let compressed = compressed_system(vec![t, y, z], t, relations);
+        let block = test_block(&compressed, [t, y, z], [t]);
+        let mut kctx = KernelContext {
+            block,
+            system: compressed,
+            child_messages: Vec::new(),
+        };
+        let kernel = SparseResultantProjectionKernel;
+        let admission = kernel.admit(&kctx.block, &kctx);
+        let mut plan = kernel
+            .plan(&admission, &kctx, &new_context(SolverOptions::default()))
+            .unwrap();
+        assert!(plan.eliminated_variables.len() >= 2);
+        plan.route_budget.max_output_terms = 1;
+        refresh_plan_budget_hashes(&mut plan);
+
+        let err = kernel
+            .execute(&plan, &mut kctx, &mut new_context(SolverOptions::default()))
+            .unwrap_err();
+
+        assert_eq!(err.public_status(), SolverStatus::FiniteResourceFailure);
+        let SolverErrorKind::Failure(FailureKind::FiniteResourceFailure { stage, .. }) = err.kind
+        else {
+            panic!("expected finite resource failure");
+        };
+        assert!(stage.0.starts_with("SparseResultantOutputTermBudget"));
+        assert!(stage.0.contains("route_trace_hash="));
+    }
+
     fn compressed_system(
         variables: Vec<VariableId>,
         target: VariableId,
@@ -1143,6 +1996,33 @@ mod tests {
         message
     }
 
+    fn sparse_resultant_test_context() -> (KernelContext, SolverContext, KernelExecutionPlan) {
+        let t = VariableId(0);
+        let y = VariableId(1);
+        let relations = vec![
+            poly_sub(&variable_poly(y), &variable_poly(t)),
+            poly_sub(&variable_poly(y), &constant_poly(int_q(1))),
+        ];
+        let compressed = compressed_system(vec![t, y], t, relations);
+        let block = test_block(&compressed, [t, y], [t]);
+        let solver_ctx = new_context(SolverOptions::default());
+        let kctx = KernelContext {
+            block,
+            system: compressed,
+            child_messages: Vec::new(),
+        };
+        let kernel = SparseResultantProjectionKernel;
+        let admission = kernel.admit(&kctx.block, &kctx);
+        let plan = kernel.plan(&admission, &kctx, &solver_ctx).unwrap();
+        (kctx, solver_ctx, plan)
+    }
+
+    fn refresh_plan_budget_hashes(plan: &mut KernelExecutionPlan) {
+        plan.route_budget.budget_hash =
+            crate::planner::algebraic_cost::route_budget_hash(&plan.route_budget);
+        plan.plan_hash = hash_kernel_execution_plan(plan);
+    }
+
     fn dense_linear_polynomial(
         eliminate: VariableId,
         keep_variables: &[VariableId],
@@ -1165,6 +2045,16 @@ mod tests {
             .collect::<Vec<_>>();
         normalize_poly(SparsePolynomialQ {
             terms,
+            hash: hash_sequence("poly", &[]),
+        })
+    }
+
+    fn monomial_polynomial(exponents: &[(VariableId, u32)]) -> SparsePolynomialQ {
+        normalize_poly(SparsePolynomialQ {
+            terms: vec![TermQ {
+                coeff: int_q(1),
+                monomial: normalize_monomial(exponents.to_vec()),
+            }],
             hash: hash_sequence("poly", &[]),
         })
     }

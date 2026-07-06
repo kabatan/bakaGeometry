@@ -1,0 +1,21 @@
+schema_version: guardian_review_summary_v1
+phase: ACR-P3-P4
+result: PASS
+reviewer: guardian_boundary_reviewer
+scope:
+  - ACR-P3
+  - ACR-P4
+passed_findings:
+  - selected_chain_probe_simulation_present
+  - per_selected_pair_preflight_fields_hash_bound
+  - runtime_route_guards_present
+  - route_failure_trace_hash_present
+  - later_declared_route_continuation_evidenced
+  - determinant_cap_and_exact_linear_subresultant_backend_evidenced
+claim_boundary:
+  max_claim: CANDIDATE_COVER_PIPELINE_PRESENT_BUT_ALGEBRAIC_COST_INCOMPLETE
+  forbidden_claims:
+    - CANDIDATE_COVER_CORE_READY
+    - SOURCE_FAITHFUL_TO_V4_CANDIDATE_COVER_LAYER
+    - SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC
+    - RGDTPK_Q_V4_ACCEPTANCE_COMPLETE

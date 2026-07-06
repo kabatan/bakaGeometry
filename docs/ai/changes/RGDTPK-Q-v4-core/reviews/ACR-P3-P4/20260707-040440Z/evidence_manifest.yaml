@@ -1,0 +1,15 @@
+schema_version: guardian_review_evidence_manifest_v1
+phase: ACR-P3-P4
+review_result: FAIL_FIXABLE
+inputs:
+  - docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_COMPLETION_REPAIR_PLAN.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_ACCEPTANCE_MATRIX.yaml
+  - docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_P3_P4_MECH_EVIDENCE.md
+  - geosolver-core/src/algebra/resultant.rs
+  - geosolver-core/src/kernels/sparse_resultant.rs
+  - geosolver-core/src/planner/cost_model.rs
+archived_files:
+  - prompt.md
+  - response.md
+  - review_summary.yaml
+  - evidence_manifest.yaml

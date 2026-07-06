@@ -1,0 +1,16 @@
+schema_version: guardian_review_summary_v1
+phase: ACR-P3-P4
+result: FAIL_FIXABLE
+reviewer: guardian_boundary_reviewer
+blocking_findings:
+  - probe_did_not_simulate_selected_chain
+  - per_pair_preflight_fields_incomplete
+  - route_trace_and_later_route_evidence_missing
+  - p4_guard_coverage_incomplete
+claim_boundary:
+  max_claim: CANDIDATE_COVER_PIPELINE_PRESENT_BUT_ALGEBRAIC_COST_INCOMPLETE
+  forbidden_claims:
+    - ACR_P3_PASS
+    - ACR_P4_PASS
+    - CANDIDATE_COVER_CORE_READY
+    - SOURCE_FAITHFUL_TO_V4_CANDIDATE_COVER_LAYER

@@ -933,17 +933,33 @@ fn implementation_bug(message: &str) -> SolverError {
 mod tests {
     use super::*;
     use crate::compose::message::{MessageRepresentation, ProjectionMessage, ProjectionStrength};
+    use crate::graph::hypergraph::build_relation_variable_hypergraph;
+    use crate::graph::influence::build_target_influence_graph;
+    use crate::graph::projection_dag::build_target_projection_dag;
+    use crate::graph::separators::CostModel;
+    use crate::graph::tree_decomposition::build_target_rooted_decomposition;
+    use crate::graph::weighted_primal::build_weighted_primal_graph;
     use crate::kernels::traits::KernelKind;
-    use crate::planner::algebraic_cost::{AlgebraicWorkEstimate, RouteBudget, SaturatingCount};
+    use crate::planner::algebraic_cost::{
+        algebraic_work_estimate_hash, AlgebraicWorkEstimate, RouteBudget, SaturatingCount,
+    };
+    use crate::planner::kernel_plan::KernelPlan;
     use crate::planner::kernel_plan::{
         hash_kernel_execution_plan, planned_failure_behavior, resource_bounds_hash,
         support_plan_hash, CertificateRoute, KernelSupportPlan, LocalNonfinitePolicy,
         PlanWorkClassification, ResourceBounds,
     };
+    use crate::planner::planner::plan_all_blocks;
+    use crate::preprocess::compression::CompressionState;
     use crate::preprocess::compression::CompressionTrace;
+    use crate::problem::canonicalize::canonicalize_system;
+    use crate::problem::context::new_context;
+    use crate::problem::input::make_problem;
+    use crate::problem::validate::validate_input;
     use crate::result::cost_trace::ProjectionCostTrace;
-    use crate::types::ids::{BlockId, KernelPlanId, PackageId, RelationId};
-    use crate::types::polynomial::{constant_poly, poly_add, variable_poly};
+    use crate::solver::options::SolverOptions;
+    use crate::types::ids::{BlockId, KernelPlanId, PackageId, RelationId, VariableId};
+    use crate::types::polynomial::{constant_poly, poly_add, poly_sub, variable_poly};
     use crate::types::rational::int_q;
     use crate::verify::certificates::KernelCertificate;
 
@@ -970,6 +986,64 @@ mod tests {
 
         let err = enforce_route_budget_postflight(&plan, &message).unwrap_err();
         assert_eq!(err.public_status(), SolverStatus::FiniteResourceFailure);
+    }
+
+    #[test]
+    fn acr_p4_declared_ladder_continues_after_sparse_resultant_guard_failure() {
+        let (compressed, dag) = continuation_case();
+        let block = dag.blocks[0].clone();
+        let mut ctx = new_context(SolverOptions::default());
+        let planned = plan_all_blocks(&dag, &compressed, &mut ctx)
+            .unwrap()
+            .remove(0);
+        let sparse = planned
+            .declared_ladder
+            .iter()
+            .find(|entry| entry.kernel_kind == KernelKind::SparseResultantProjection)
+            .cloned()
+            .expect("sparse resultant route should be declared");
+        let mut sparse_guard_fail = sparse;
+        sparse_guard_fail
+            .algebraic_work_estimate
+            .predicted_output_terms = Some(SaturatingCount::ONE);
+        sparse_guard_fail.algebraic_work_estimate.estimate_hash =
+            algebraic_work_estimate_hash(&sparse_guard_fail.algebraic_work_estimate);
+        sparse_guard_fail.route_budget.max_output_terms = 1;
+        sparse_guard_fail.route_budget.budget_hash =
+            crate::planner::algebraic_cost::route_budget_hash(&sparse_guard_fail.route_budget);
+        sparse_guard_fail.plan_hash = hash_kernel_execution_plan(&sparse_guard_fail);
+        let mut ladder = vec![sparse_guard_fail];
+        ladder.extend(
+            planned
+                .declared_ladder
+                .into_iter()
+                .filter(|entry| entry.kernel_kind != KernelKind::SparseResultantProjection),
+        );
+        let plan = KernelPlan::new(
+            planned.block_id,
+            ladder,
+            planned.admissions,
+            planned.cost_estimates,
+        )
+        .unwrap();
+
+        let message =
+            execute_block_with_declared_ladder(&block, &plan, Vec::new(), &compressed, &mut ctx)
+                .unwrap();
+
+        assert_ne!(message.kernel_kind, KernelKind::SparseResultantProjection);
+        assert!(ctx.diagnostics.iter().any(|record| {
+            record.name == "BlockProjectionFailureTrace"
+                && record.details.get("kernel_kind")
+                    == Some(&"SparseResultantProjection".to_owned())
+                && record.details.get("status") == Some(&"FiniteResourceFailure".to_owned())
+                && record.details.get("allowed_to_continue") == Some(&"true".to_owned())
+                && record
+                    .details
+                    .get("error_kind")
+                    .map(|kind| kind.contains("route_trace_hash="))
+                    .unwrap_or(false)
+        }));
     }
 
     fn budget_test_plan() -> KernelExecutionPlan {
@@ -1034,6 +1108,30 @@ mod tests {
             ),
             PlanWorkClassification::PurePlan,
         )
+    }
+
+    fn continuation_case() -> (
+        crate::preprocess::compression::CompressedSystemQ,
+        crate::graph::projection_dag::TargetProjectionDAG,
+    ) {
+        let t = VariableId(0);
+        let y = VariableId(1);
+        let relations = vec![
+            poly_sub(&variable_poly(y), &variable_poly(t)),
+            poly_sub(&variable_poly(y), &constant_poly(int_q(1))),
+            poly_sub(&variable_poly(t), &constant_poly(int_q(2))),
+        ];
+        let canonical = canonicalize_system(
+            validate_input(make_problem(vec![t, y], t, relations, Vec::new())).unwrap(),
+        )
+        .unwrap();
+        let compressed = CompressionState::from_system(canonical).to_compressed_system();
+        let h = build_relation_variable_hypergraph(&compressed);
+        let influence = build_target_influence_graph(&h, t);
+        let g = build_weighted_primal_graph(&compressed, &influence);
+        let tree = build_target_rooted_decomposition(&g, t, &CostModel::default());
+        let dag = build_target_projection_dag(&compressed, &influence, &tree).unwrap();
+        (compressed, dag)
     }
 
     fn budget_test_message(plan: &KernelExecutionPlan) -> ProjectionMessage {

@@ -240,12 +240,6 @@ fn estimate_kernel_algebraic_work(
         KernelKind::SpecializationInterpolation => 5,
         KernelKind::UniversalTargetElimination => 10,
     };
-    let predicted_work_units = SaturatingCount::from_usize(
-        matrix_work
-            .saturating_add(rank_work)
-            .saturating_add(structural_terms)
-            .saturating_mul(route_multiplier),
-    );
     let predicted_intermediate_terms = match kind {
         KernelKind::SparseResultantProjection => Some(sparse_resultant_growth_estimate(
             block,
@@ -260,6 +254,29 @@ fn estimate_kernel_algebraic_work(
                 .saturating_mul(max_keep_variable_count.max(1)),
         )),
         _ => None,
+    };
+    let sparse_resultant_route_work_units = if kind == KernelKind::SparseResultantProjection {
+        sparse_resultant_route_work_estimate(block, &relation_polys)
+    } else {
+        None
+    };
+    let structural_work = SaturatingCount::from_usize(
+        matrix_work
+            .saturating_add(rank_work)
+            .saturating_add(structural_terms)
+            .saturating_mul(route_multiplier),
+    );
+    let predicted_work_units = match (kind, predicted_intermediate_terms) {
+        (KernelKind::SparseResultantProjection, Some(intermediate_terms)) => intermediate_terms
+            .saturating_mul(SaturatingCount::from_usize(matrix_work.max(1)))
+            .saturating_add(SaturatingCount::from_usize(
+                input_height_bits
+                    .saturating_mul(matrix_rows.max(matrix_cols).max(1))
+                    .saturating_add(total_input_terms),
+            ))
+            .max(sparse_resultant_route_work_units.unwrap_or_default())
+            .max(structural_work),
+        _ => structural_work,
     };
     AlgebraicWorkEstimate::new(
         local_variable_count,
@@ -351,10 +368,26 @@ fn sparse_resultant_growth_estimate(
     pair_growth.max(matrix_growth)
 }
 
+fn sparse_resultant_route_work_estimate(
+    block: &ProjectionBlock,
+    relation_polys: &[SparsePolynomialQ],
+) -> Option<SaturatingCount> {
+    let eliminated = block
+        .local_variables
+        .difference(&block.exported_variables)
+        .copied()
+        .collect::<Vec<_>>();
+    sparse_pair_footprints(relation_polys, &eliminated)
+        .into_iter()
+        .map(|footprint| footprint.route_work_units)
+        .max()
+}
+
 #[derive(Debug, Clone, Copy)]
 struct SparsePairFootprint {
     keep_variable_count: usize,
     predicted_intermediate_terms: SaturatingCount,
+    route_work_units: SaturatingCount,
 }
 
 fn sparse_pair_footprints(
@@ -376,15 +409,28 @@ fn sparse_pair_footprints(
                 let left_terms = poly_monomial_count(&relation_polys[i]).max(1);
                 let right_terms = poly_monomial_count(&relation_polys[j]).max(1);
                 let template_dim = left_degree.saturating_add(right_degree).max(1);
+                let matrix_area = template_dim.saturating_mul(template_dim).max(1);
                 let predicted_intermediate_terms = SaturatingCount::from_usize(left_terms)
                     .saturating_mul(SaturatingCount::from_usize(right_terms))
-                    .saturating_mul(SaturatingCount::from_usize(
-                        template_dim.saturating_mul(template_dim),
-                    ))
+                    .saturating_mul(SaturatingCount::from_usize(matrix_area))
                     .saturating_mul(SaturatingCount::from_usize(keep.len().max(1)));
+                let input_height_bits = max_poly_coefficient_height_bits(&[
+                    relation_polys[i].clone(),
+                    relation_polys[j].clone(),
+                ])
+                .max(1);
+                let coefficient_height_growth_bits = SaturatingCount::from_usize(input_height_bits)
+                    .saturating_mul(SaturatingCount::from_usize(template_dim.max(1)))
+                    .saturating_add(SaturatingCount::from_usize(
+                        left_terms.saturating_add(right_terms),
+                    ));
+                let route_work_units = predicted_intermediate_terms
+                    .saturating_mul(SaturatingCount::from_usize(matrix_area))
+                    .saturating_add(coefficient_height_growth_bits);
                 out.push(SparsePairFootprint {
                     keep_variable_count: keep.len(),
                     predicted_intermediate_terms,
+                    route_work_units,
                 });
             }
         }

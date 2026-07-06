@@ -11,9 +11,14 @@ use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::VariableId;
 use crate::types::monomial::{monomial_to_bytes, normalize_monomial, Monomial};
 use crate::types::polynomial::{
-    max_poly_coefficient_height_bits, normalize_poly, poly_add, poly_mul, poly_sub, poly_variables,
-    zero_poly, SparsePolynomialQ, TermQ,
+    constant_poly, max_poly_coefficient_height_bits, normalize_poly, poly_add, poly_mul,
+    poly_scale, poly_sub, poly_variables, zero_poly, SparsePolynomialQ, TermQ,
 };
+use crate::types::rational::int_q;
+
+const SYMBOLIC_DETERMINANT_MAX_DIM: usize = 6;
+const SYMBOLIC_DETERMINANT_MAX_ENTRY_TERMS: usize = 32;
+const SYMBOLIC_DETERMINANT_MAX_TOTAL_ENTRY_TERMS: usize = 512;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MonomialSupport {
@@ -65,6 +70,12 @@ pub enum ResultantProofStatus {
     CandidateOnlyRequiresExactMembership,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ResultantBackendKind {
+    LinearSubresultant,
+    SmallEntrySymbolicDeterminant,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ResultantRelation {
     pub relation: SparsePolynomialQ,
@@ -77,6 +88,8 @@ pub struct SparseResultantCertificate {
     pub input: ResultantInput,
     pub template_hash: Hash,
     pub relation_hash: Hash,
+    pub backend: ResultantBackendKind,
+    pub exact_verification_hash: Hash,
     pub modular_traces: Vec<ResultantModularTrace>,
 }
 
@@ -171,16 +184,14 @@ pub fn compute_resultant_relation(
     template: &ResultantTemplate,
     options: ModularOptions,
 ) -> Result<ResultantRelation, SolverError> {
-    let relation = sylvester_resultant(
-        &template.input.polynomials[0],
-        &template.input.polynomials[1],
-        template.input.eliminate,
-    )?;
+    let (relation, backend) = compute_exact_resultant_relation(template)?;
     let modular_traces = modular_relation_traces(&template.input.polynomials, &relation, options);
     let certificate = SparseResultantCertificate {
         input: template.input.clone(),
         template_hash: template.template_hash,
         relation_hash: relation.hash,
+        backend,
+        exact_verification_hash: resultant_exact_verification_hash(template, &relation, backend),
         modular_traces,
     };
     Ok(ResultantRelation {
@@ -197,14 +208,18 @@ pub fn verify_resultant_certificate(cert: &SparseResultantCertificate) -> bool {
     if template.template_hash != cert.template_hash {
         return false;
     }
-    let Ok(recomputed) = sylvester_resultant(
-        &cert.input.polynomials[0],
-        &cert.input.polynomials[1],
-        cert.input.eliminate,
-    ) else {
+    let Ok((recomputed, backend)) = compute_exact_resultant_relation(&template) else {
         return false;
     };
     if recomputed.hash != cert.relation_hash {
+        return false;
+    }
+    if backend != cert.backend {
+        return false;
+    }
+    if cert.exact_verification_hash
+        != resultant_exact_verification_hash(&template, &recomputed, backend)
+    {
         return false;
     }
     cert.modular_traces.iter().all(|trace| {
@@ -213,6 +228,21 @@ pub fn verify_resultant_certificate(cert: &SparseResultantCertificate) -> bool {
             reduced.hash == trace.relation_mod_hash
         }
     })
+}
+
+fn compute_exact_resultant_relation(
+    template: &ResultantTemplate,
+) -> Result<(SparsePolynomialQ, ResultantBackendKind), SolverError> {
+    let left = &template.input.polynomials[0];
+    let right = &template.input.polynomials[1];
+    let eliminate = template.input.eliminate;
+    if let Some(relation) = linear_subresultant_relation(left, right, eliminate) {
+        return Ok((relation, ResultantBackendKind::LinearSubresultant));
+    }
+    Ok((
+        sylvester_resultant(left, right, eliminate)?,
+        ResultantBackendKind::SmallEntrySymbolicDeterminant,
+    ))
 }
 
 fn trace_prime_is_valid_for_poly(poly: &SparsePolynomialQ, prime: Prime) -> bool {
@@ -321,6 +351,58 @@ fn coefficients_by_eliminate_degree(
         .collect()
 }
 
+fn linear_subresultant_relation(
+    left: &SparsePolynomialQ,
+    right: &SparsePolynomialQ,
+    eliminate: VariableId,
+) -> Option<SparsePolynomialQ> {
+    let left_degree = degree_in_variable(left, eliminate);
+    let right_degree = degree_in_variable(right, eliminate);
+    if left_degree == 1 {
+        return linear_first_resultant(left, right, eliminate, right_degree);
+    }
+    if right_degree == 1 {
+        let mut relation = linear_first_resultant(right, left, eliminate, left_degree)?;
+        if left_degree % 2 == 1 {
+            relation = poly_scale(&relation, &int_q(-1));
+        }
+        return Some(relation);
+    }
+    None
+}
+
+fn linear_first_resultant(
+    linear: &SparsePolynomialQ,
+    other: &SparsePolynomialQ,
+    eliminate: VariableId,
+    other_degree: u32,
+) -> Option<SparsePolynomialQ> {
+    let linear_coeffs = coefficients_by_eliminate_degree(linear, eliminate);
+    let leading = linear_coeffs.get(&1)?;
+    let constant = linear_coeffs.get(&0).cloned().unwrap_or_else(zero_poly);
+    let negative_constant = poly_scale(&constant, &int_q(-1));
+    let other_coeffs = coefficients_by_eliminate_degree(other, eliminate);
+    let mut acc = zero_poly();
+    for (exp, coeff) in other_coeffs {
+        if exp > other_degree {
+            return None;
+        }
+        let numerator_power = poly_pow_local(&negative_constant, exp);
+        let leading_power = poly_pow_local(leading, other_degree - exp);
+        let term = poly_mul(&poly_mul(&coeff, &numerator_power), &leading_power);
+        acc = poly_add(&acc, &term);
+    }
+    Some(clear_eliminate_variable(&acc, eliminate))
+}
+
+fn poly_pow_local(base: &SparsePolynomialQ, exp: u32) -> SparsePolynomialQ {
+    let mut result = constant_poly(int_q(1));
+    for _ in 0..exp {
+        result = poly_mul(&result, base);
+    }
+    result
+}
+
 fn sylvester_resultant(
     a: &SparsePolynomialQ,
     b: &SparsePolynomialQ,
@@ -346,6 +428,7 @@ fn sylvester_resultant(
         fill_sylvester_row(&mut matrix[deg_b as usize + row], row, deg_b, &coeff_b);
     }
 
+    guard_symbolic_determinant(&matrix)?;
     Ok(clear_eliminate_variable(
         &det_poly_matrix(&matrix),
         eliminate,
@@ -400,6 +483,39 @@ fn det_poly_matrix(matrix: &[Vec<SparsePolynomialQ>]) -> SparsePolynomialQ {
     acc
 }
 
+fn guard_symbolic_determinant(matrix: &[Vec<SparsePolynomialQ>]) -> Result<(), SolverError> {
+    let dim = matrix.len();
+    let max_entry_terms = matrix
+        .iter()
+        .flat_map(|row| row.iter())
+        .map(|poly| poly.terms.len())
+        .max()
+        .unwrap_or(0);
+    let total_entry_terms = matrix
+        .iter()
+        .flat_map(|row| row.iter())
+        .map(|poly| poly.terms.len())
+        .sum::<usize>();
+    if dim > SYMBOLIC_DETERMINANT_MAX_DIM
+        || max_entry_terms > SYMBOLIC_DETERMINANT_MAX_ENTRY_TERMS
+        || total_entry_terms > SYMBOLIC_DETERMINANT_MAX_TOTAL_ENTRY_TERMS
+    {
+        let coefficient_height_bits = matrix
+            .iter()
+            .flat_map(|row| row.iter())
+            .map(|poly| max_poly_coefficient_height_bits(std::slice::from_ref(poly)))
+            .max()
+            .unwrap_or(0);
+        return Err(finite_resource_failure(
+            "SparseResultantSymbolicDeterminantCap",
+            dim,
+            dim,
+            coefficient_height_bits,
+        ));
+    }
+    Ok(())
+}
+
 fn clear_eliminate_variable(poly: &SparsePolynomialQ, eliminate: VariableId) -> SparsePolynomialQ {
     normalize_poly(SparsePolynomialQ {
         terms: poly
@@ -433,6 +549,23 @@ fn modular_relation_traces(
         seed = prime.saturating_add(1);
     }
     traces
+}
+
+fn resultant_exact_verification_hash(
+    template: &ResultantTemplate,
+    relation: &SparsePolynomialQ,
+    backend: ResultantBackendKind,
+) -> Hash {
+    let mut chunks = vec![
+        template.template_hash.0.to_vec(),
+        relation.hash.0.to_vec(),
+        format!("{backend:?}").into_bytes(),
+        template.input.eliminate.0.to_be_bytes().to_vec(),
+    ];
+    for input in &template.input.polynomials {
+        chunks.push(input.hash.0.to_vec());
+    }
+    hash_sequence("resultant-exact-verification", &chunks)
 }
 
 fn hash_template(input: &ResultantInput, supports: &[MonomialSupport], dim: usize) -> Hash {
@@ -484,7 +617,11 @@ fn algorithmic_hard_case(stage: &str, reason: &str) -> SolverError {
 #[cfg(test)]
 mod tests {
     use crate::result::status::SolverStatus;
-    use crate::types::polynomial::{constant_poly, poly_scale, poly_sub, variable_poly};
+    use crate::types::monomial::normalize_monomial;
+    use crate::types::polynomial::{
+        constant_poly, normalize_poly, poly_scale, poly_sub, variable_poly, SparsePolynomialQ,
+        TermQ,
+    };
     use crate::types::rational::{int_q, new_q};
 
     use super::*;
@@ -514,6 +651,53 @@ mod tests {
             poly_sub(&variable_poly(x), &constant_poly(int_q(1)))
         );
         assert!(verify_resultant_certificate(&relation.certificate));
+    }
+
+    #[test]
+    fn acr_p4_linear_subresultant_backend_handles_large_entries_exactly() {
+        let x = VariableId(1);
+        let z = VariableId(2);
+        let y = VariableId(3);
+        let left_coeff = dense_keep_polynomial(&[x, z], 80, 0);
+        let right_coeff = dense_keep_polynomial(&[x, z], 80, 97);
+        let f = poly_sub(&variable_poly(y), &left_coeff);
+        let g = poly_sub(&variable_poly(y), &right_coeff);
+        let input = ResultantInput {
+            polynomials: vec![f, g],
+            eliminate: y,
+            keep_variables: vec![x, z],
+            max_matrix_dim: 4,
+        };
+
+        let template = build_sparse_resultant_template(input).unwrap();
+        let relation = compute_resultant_relation(&template, ModularOptions::default()).unwrap();
+
+        assert_eq!(
+            relation.certificate.backend,
+            ResultantBackendKind::LinearSubresultant
+        );
+        assert!(relation.relation.terms.len() > 32);
+        assert!(verify_resultant_certificate(&relation.certificate));
+    }
+
+    #[test]
+    fn acr_p4_recursive_determinant_rejects_large_polynomial_entries() {
+        let x = VariableId(1);
+        let z = VariableId(2);
+        let y = VariableId(3);
+        let y_squared = monomial_polynomial(&[(y, 2)]);
+        let left = poly_sub(&y_squared, &dense_keep_polynomial(&[x, z], 40, 0));
+        let right = poly_sub(&y_squared, &dense_keep_polynomial(&[x, z], 40, 113));
+        let input = ResultantInput {
+            polynomials: vec![left, right],
+            eliminate: y,
+            keep_variables: vec![x, z],
+            max_matrix_dim: 4,
+        };
+        let template = build_sparse_resultant_template(input).unwrap();
+        let err = compute_resultant_relation(&template, ModularOptions::default()).unwrap_err();
+
+        assert_eq!(err.public_status(), SolverStatus::FiniteResourceFailure);
     }
 
     #[test]
@@ -650,5 +834,42 @@ mod tests {
         relation.certificate.modular_traces[0].prime = 9;
 
         assert!(!verify_resultant_certificate(&relation.certificate));
+    }
+
+    fn monomial_polynomial(exponents: &[(VariableId, u32)]) -> SparsePolynomialQ {
+        normalize_poly(SparsePolynomialQ {
+            terms: vec![TermQ {
+                coeff: int_q(1),
+                monomial: normalize_monomial(exponents.to_vec()),
+            }],
+            hash: hash_sequence("poly", &[]),
+        })
+    }
+
+    fn dense_keep_polynomial(
+        keep_variables: &[VariableId],
+        term_count: usize,
+        offset: usize,
+    ) -> SparsePolynomialQ {
+        let terms = (0..term_count)
+            .map(|idx| {
+                let mut exponents = Vec::new();
+                if let Some(first) = keep_variables.first() {
+                    exponents.push((*first, (idx + offset + 1) as u32));
+                }
+                if let Some(second) = keep_variables.get(1) {
+                    let exponent = ((idx + offset) % 5 + 1) as u32;
+                    exponents.push((*second, exponent));
+                }
+                TermQ {
+                    coeff: int_q((idx + 1) as i64),
+                    monomial: normalize_monomial(exponents),
+                }
+            })
+            .collect::<Vec<_>>();
+        normalize_poly(SparsePolynomialQ {
+            terms,
+            hash: hash_sequence("poly", &[]),
+        })
     }
 }
