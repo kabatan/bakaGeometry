@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::graph::projection_dag::ProjectionBlock;
+use crate::planner::cost_model::RouteCostClass;
+use crate::planner::relation_schedule::estimate_dense_relation_search_schedule;
 use crate::preprocess::compression::{
     max_coefficient_height_bits, max_total_degree, total_monomial_count, CompressedSystemQ,
 };
@@ -38,6 +40,23 @@ pub struct HeightEstimate {
     pub input_height_bits: usize,
     pub projected_height_bits: usize,
     pub estimate_hash: Hash,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AlgebraicBlockMetrics {
+    pub relation_arity_max: usize,
+    pub relation_degree_max: usize,
+    pub relation_monomial_count: usize,
+    pub coefficient_height_bits: usize,
+    pub target_distance_hint: Option<usize>,
+    pub affine_relation_count: usize,
+    pub definitional_relation_count: usize,
+    pub estimated_dense_trs_cost_class: RouteCostClass,
+    pub estimated_dense_trs_hash: Hash,
+    pub quotient_action_rank_estimate: usize,
+    pub sparse_template_rows: usize,
+    pub sparse_template_cols: usize,
+    pub metrics_hash: Hash,
 }
 
 pub fn structural_metrics(
@@ -135,6 +154,101 @@ pub fn estimate_coefficient_growth(block: &ProjectionBlock) -> HeightEstimate {
         input_height_bits,
         projected_height_bits,
         estimate_hash,
+    }
+}
+
+pub fn algebraic_block_metrics(
+    block: &ProjectionBlock,
+    system: &CompressedSystemQ,
+) -> AlgebraicBlockMetrics {
+    let relations = system
+        .relations
+        .iter()
+        .filter(|relation| block.relation_ids.contains(&relation.id))
+        .cloned()
+        .collect::<Vec<_>>();
+    let relation_polys = relations
+        .iter()
+        .map(|relation| relation.polynomial.clone())
+        .collect::<Vec<_>>();
+    let eliminated_variables = block
+        .local_variables
+        .difference(&block.exported_variables)
+        .copied()
+        .collect::<Vec<_>>();
+    let exported_variables = block.exported_variables.iter().copied().collect::<Vec<_>>();
+    let dense_preflight = estimate_dense_relation_search_schedule(
+        &relation_polys,
+        &eliminated_variables,
+        &exported_variables,
+        &crate::solver::options::SolverOptions::default(),
+    );
+    let estimated_dense_trs_cost_class = if !dense_preflight.materialization_allowed {
+        RouteCostClass::CostProhibited
+    } else {
+        dense_preflight
+            .stage_estimates
+            .iter()
+            .map(|stage| stage.stage_cost_class)
+            .max()
+            .unwrap_or(RouteCostClass::Feasible)
+    };
+    let rank = estimate_local_quotient_rank(block);
+    let template = estimate_sparse_template_size(block);
+    let relation_arity_max = relation_polys
+        .iter()
+        .map(crate::types::polynomial::poly_variables)
+        .map(|vars| vars.len())
+        .max()
+        .unwrap_or(0);
+    let relation_degree_max = max_total_degree(&relations);
+    let relation_monomial_count = total_monomial_count(&relations);
+    let coefficient_height_bits = max_coefficient_height_bits(&relations);
+    let target_distance_hint = if block.local_variables.contains(&system.target) {
+        Some(0)
+    } else if block.exported_variables.contains(&system.target) {
+        Some(1)
+    } else {
+        None
+    };
+    let affine_relation_count = relation_polys
+        .iter()
+        .filter(|relation| crate::types::polynomial::poly_total_degree(relation) <= 1)
+        .count();
+    let definitional_relation_count = relation_polys
+        .iter()
+        .filter(|relation| {
+            crate::types::polynomial::poly_total_degree(relation) <= 1 && relation.terms.len() <= 2
+        })
+        .count();
+    let metrics_hash = hash_sequence(
+        "algebraic-block-metrics",
+        &[
+            block.block_hash.0.to_vec(),
+            relation_arity_max.to_be_bytes().to_vec(),
+            relation_degree_max.to_be_bytes().to_vec(),
+            relation_monomial_count.to_be_bytes().to_vec(),
+            coefficient_height_bits.to_be_bytes().to_vec(),
+            format!("{estimated_dense_trs_cost_class:?}").into_bytes(),
+            dense_preflight.preflight_hash.0.to_vec(),
+            rank.estimate_hash.0.to_vec(),
+            template.estimate_hash.0.to_vec(),
+        ],
+    );
+    AlgebraicBlockMetrics {
+        relation_arity_max,
+        relation_degree_max,
+        relation_monomial_count,
+        coefficient_height_bits,
+        target_distance_hint,
+        affine_relation_count,
+        definitional_relation_count,
+        estimated_dense_trs_cost_class,
+        estimated_dense_trs_hash: dense_preflight.preflight_hash,
+        quotient_action_rank_estimate: rank.estimated_rank,
+        sparse_template_rows: template.row_count,
+        sparse_template_cols: template.column_count,
+        metrics_hash,
     }
 }
 

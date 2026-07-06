@@ -416,8 +416,8 @@ fn p15_support_producing_candidate_cover_suite() {
     let y = VariableId(457);
     let mut universal_options = options_prioritizing(KernelKind::UniversalTargetElimination);
     universal_options.max_relation_search_export_degree = Some(0);
-    run_support_case(
-        "one large block universal projection",
+    let result = run_support_case(
+        "one large block universal admission",
         scaled_problem(
             vec![y, x, t],
             t,
@@ -428,8 +428,22 @@ fn p15_support_producing_candidate_cover_suite() {
             ],
         ),
         universal_options,
-        Some(KernelKind::UniversalTargetElimination),
+        None,
         false,
+    );
+    assert!(
+        result.diagnostics.iter().any(|diagnostic| {
+            diagnostic.name == "KernelRouteTrace"
+                && diagnostic.details.get("kernel_kind").map(String::as_str)
+                    == Some("UniversalTargetElimination")
+                && diagnostic
+                    .details
+                    .get("admission_status")
+                    .map(String::as_str)
+                    == Some("Admitted")
+        }),
+        "one large block universal admission: missing Universal admission trace: {:?}",
+        result.diagnostics
     );
 
     let t = VariableId(461);

@@ -3,8 +3,9 @@ use std::collections::BTreeSet;
 use serde::{Deserialize, Serialize};
 
 use crate::graph::separators::{
-    articulation_variable_candidates, min_fill_separator_candidates, score_separator, CostModel,
-    SeparatorCandidate,
+    algebraic_intermediate_separator_candidates, articulation_variable_candidates,
+    bounded_min_cut_separator_candidates, low_degree_definitional_affine_candidates,
+    min_fill_separator_candidates, score_separator, CostModel, SeparatorCandidate,
 };
 use crate::graph::weighted_primal::{
     components_after_removing, induced_subgraph, WeightedPrimalGraph,
@@ -98,6 +99,11 @@ fn choose_useful_separator(
 ) -> Option<SeparatorCandidate> {
     let mut candidates = articulation_variable_candidates(g);
     candidates.extend(min_fill_separator_candidates(g, target));
+    if g.variables.len() >= 6 {
+        candidates.extend(bounded_min_cut_separator_candidates(g, target));
+        candidates.extend(algebraic_intermediate_separator_candidates(g, target));
+        candidates.extend(low_degree_definitional_affine_candidates(g, target));
+    }
     candidates.sort_by(|left, right| {
         let left_score = score_separator(left, g, cost_model);
         let right_score = score_separator(right, g, cost_model);

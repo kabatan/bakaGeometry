@@ -21,6 +21,7 @@ pub struct CostModelWeights {
 pub struct KernelCostEstimate {
     pub block_id: crate::types::ids::BlockId,
     pub kernel_kind: KernelKind,
+    pub cost_class: RouteCostClass,
     pub matrix_rows: usize,
     pub matrix_cols: usize,
     pub quotient_rank_estimate: usize,
@@ -28,6 +29,14 @@ pub struct KernelCostEstimate {
     pub certificate_cost_units: usize,
     pub deterministic_score: usize,
     pub estimate_hash: Hash,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum RouteCostClass {
+    PreferredCompact,
+    Feasible,
+    ExpensiveButAllowed,
+    CostProhibited,
 }
 
 impl Default for CostModelWeights {
@@ -53,6 +62,7 @@ pub fn estimate_kernel_cost(
     let coefficient_height_bits = probes.coefficient_growth.projected_height_bits;
     let certificate_cost_units = certificate_cost(kernel);
     let penalty = kernel_order_penalty(kernel);
+    let cost_class = route_cost_class(kernel, base_rows, base_cols, quotient_rank_estimate);
     let deterministic_score = base_rows
         .saturating_mul(base_cols)
         .saturating_add(quotient_rank_estimate)
@@ -68,12 +78,14 @@ pub fn estimate_kernel_cost(
             base_cols.to_be_bytes().to_vec(),
             quotient_rank_estimate.to_be_bytes().to_vec(),
             coefficient_height_bits.to_be_bytes().to_vec(),
+            format!("{cost_class:?}").into_bytes(),
             deterministic_score.to_be_bytes().to_vec(),
         ],
     );
     KernelCostEstimate {
         block_id: block.block_id,
         kernel_kind: kernel,
+        cost_class,
         matrix_rows: base_rows,
         matrix_cols: base_cols,
         quotient_rank_estimate,
@@ -86,15 +98,35 @@ pub fn estimate_kernel_cost(
 
 pub fn compare_cost(a: &KernelCostEstimate, b: &KernelCostEstimate) -> Ordering {
     (
+        a.cost_class,
         a.deterministic_score,
         planner_kernel_order(a.kernel_kind),
         a.estimate_hash,
     )
         .cmp(&(
+            b.cost_class,
             b.deterministic_score,
             planner_kernel_order(b.kernel_kind),
             b.estimate_hash,
         ))
+}
+
+fn route_cost_class(
+    kind: KernelKind,
+    matrix_rows: usize,
+    matrix_cols: usize,
+    quotient_rank_estimate: usize,
+) -> RouteCostClass {
+    match kind {
+        KernelKind::TargetUnivariate | KernelKind::LinearAffine => RouteCostClass::PreferredCompact,
+        KernelKind::UniversalTargetElimination => RouteCostClass::ExpensiveButAllowed,
+        _ if matrix_rows.saturating_mul(matrix_cols) > 1_000_000
+            || quotient_rank_estimate > 50_000 =>
+        {
+            RouteCostClass::ExpensiveButAllowed
+        }
+        _ => RouteCostClass::Feasible,
+    }
 }
 
 pub fn planner_kernel_order(kind: KernelKind) -> usize {

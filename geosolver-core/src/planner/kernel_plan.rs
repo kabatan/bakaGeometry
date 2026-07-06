@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::kernels::traits::KernelKind;
-use crate::planner::admission::KernelAdmission;
+use crate::planner::admission::{KernelAdmission, KernelAdmissionStatus};
 use crate::planner::cost_model::KernelCostEstimate;
 use crate::planner::relation_schedule::{
     hash_dense_relation_search_schedule, DenseRelationSearchSchedule,
@@ -110,7 +110,10 @@ pub struct UniversalStrategyPlanStep {
 pub enum UniversalStrategy {
     TargetRelationSearchEscalated,
     SparseResultantIfSquareOrOverdetermined,
+    TargetActionKrylovIfQuotientCertifiable,
     SpecializeProjectInterpolateVerify,
+    RegularChainIfTriangular,
+    NormTraceIfTower,
     LocalGroebnerEliminationToKeepZ,
 }
 
@@ -161,6 +164,7 @@ impl KernelPlan {
         let Some(selected_first) = declared_ladder.first().map(|plan| plan.kernel_kind) else {
             return Err(implementation_bug("declared ladder is empty"));
         };
+        reject_hidden_admission_invariant_breaks(&admissions)?;
         let mut plan = Self {
             block_id,
             declared_ladder,
@@ -172,6 +176,25 @@ impl KernelPlan {
         plan.plan_hash = hash_kernel_plan(&plan);
         Ok(plan)
     }
+}
+
+fn reject_hidden_admission_invariant_breaks(
+    admissions: &[KernelAdmission],
+) -> Result<(), SolverError> {
+    for admission in admissions {
+        if let KernelAdmissionStatus::PlanProbeFailed { reason, .. } = &admission.status {
+            if reason.contains("status=ImplementationBug")
+                || reason.starts_with("route-local panic")
+            {
+                let message = format!(
+                    "planner admission for {:?} hit a non-continuable invariant failure: {reason}",
+                    admission.kind
+                );
+                return Err(implementation_bug(&message));
+            }
+        }
+    }
+    Ok(())
 }
 
 impl KernelExecutionPlan {

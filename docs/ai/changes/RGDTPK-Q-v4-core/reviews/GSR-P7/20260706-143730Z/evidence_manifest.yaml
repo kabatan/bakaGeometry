@@ -1,0 +1,60 @@
+review_id: GSR-P7-20260706-143730Z
+workspace: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+change: RGDTPK-Q-v4-generic-success-route-core-repair-v2
+claim_ceiling: GENERIC_SUCCESS_ROUTE_PLANNER_READY
+commands:
+  - command: cargo fmt --manifest-path geosolver-core/Cargo.toml --check
+    cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+    result: pass
+  - command: cargo check --manifest-path geosolver-core/Cargo.toml
+    cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+    result: pass
+  - command: cargo test --manifest-path geosolver-core/Cargo.toml --test gpsr_generic_planner_success_route
+    cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+    result: pass
+    observed: 5 passed
+  - command: cargo test --manifest-path geosolver-core/Cargo.toml --test generic_success_route_planner
+    cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+    result: pass
+    observed: 3 passed
+  - command: cargo test --manifest-path geosolver-core/Cargo.toml --test fcr_p10_acceptance_suite
+    cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+    result: pass
+    observed: 12 passed
+  - command: cargo test --manifest-path geosolver-core/Cargo.toml --test fcr_p11_red_team_suite
+    cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+    result: pass
+    observed: 10 passed
+  - command: cargo test --manifest-path geosolver-core/Cargo.toml --test p15_acceptance_stress
+    cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+    result: pass
+    observed: 6 passed
+  - command: cargo test --manifest-path geosolver-core/Cargo.toml
+    cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+    result: pass
+    observed: 217 library tests plus all integration/doc-test suites passed
+reviewers:
+  spec_verifier_final_rerun:
+    result: pass
+    notes: plan/context-bound Universal source binding and direct failed-prefix tamper coverage are spec-consistent
+  quality_reviewer_final_rerun:
+    result: pass
+    notes: prior allowed-status, hidden-invariant, and Universal-prefix findings are closed
+  guardian_boundary_reviewer_final_rerun:
+    result: pass
+    notes: final bounded closure may state only GENERIC_SUCCESS_ROUTE_PLANNER_READY
+static_scans:
+  - command: rg -n -i "mixtilinear|circle solver|triangle solver|tangent solver|expected_answer|golden|fixture|problem_id|coordinate solution enumeration|full coordinate RUR|\bQE\b|\bCAD\b|unimplemented!|todo!|placeholder" geosolver-core/src geosolver-core/tests
+    classification: only invariant names, prohibition strings, and test names; no production dispatch
+  - command: rg -n -i "mixtilinear|incircle|circumcircle|tangent|triangle|olympiad|fixture|official|expected_answer|problem_id" geosolver-core/src geosolver-core/tests
+    classification: only anti-dispatch invariant fields/tests; no concrete geometry dispatch
+  - command: rg -n -i "full coordinate RUR|coordinate solution enumeration|\bQE\b|\bCAD\b|hidden fallback|unimplemented!|todo!|placeholder" geosolver-core/src geosolver-core/tests
+    classification: only prohibition strings, evidence hash names, and nonplaceholder test name
+artifacts:
+  - docs/ai/changes/RGDTPK-Q-v4-core/GENERIC_SUCCESS_ROUTE_BASE_SPEC.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/GENERIC_SUCCESS_ROUTE_PLAN.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/GENERIC_PLANNER_ACCEPTANCE_MATRIX.yaml
+  - docs/ai/changes/RGDTPK-Q-v4-core/GENERIC_SUCCESS_ROUTE_ACCEPTANCE_RESULTS.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/GENERIC_SUCCESS_ROUTE_STATIC_SCAN.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/GENERIC_SUCCESS_ROUTE_CLOSURE.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/GENERIC_SUCCESS_ROUTE_REVIEW_SUMMARY.md

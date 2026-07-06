@@ -23,7 +23,7 @@ use crate::compose::message::{hash_projection_message, ProjectionMessage};
 use crate::compose::message::{MessageRepresentation, ProjectionStrength};
 use crate::kernels::target_univariate::target_only_support_from_polynomials;
 use crate::kernels::traits::{KernelContext, KernelKind};
-use crate::planner::kernel_plan::CertificateRoute;
+use crate::planner::kernel_plan::{CertificateRoute, UniversalStrategy};
 use crate::preprocess::compression::{affine_parts_in_variable, substitute_rational_and_clear};
 use crate::result::status::{FailureKind, SolverError, SolverErrorKind};
 use crate::types::hash::{hash_sequence, Hash};
@@ -130,6 +130,7 @@ fn verify_payload_exact(
     ctx: &KernelContext,
 ) -> Result<(), SolverError> {
     verify_payload_for_outputs(
+        cert,
         &cert.payload,
         cert.certificate_route,
         &message.relation_generators,
@@ -242,6 +243,7 @@ pub(crate) fn payload_source_hashes(payload: &KernelCertificatePayload) -> Optio
 }
 
 fn verify_payload_for_outputs(
+    cert: &KernelCertificate,
     payload: &KernelCertificatePayload,
     route: CertificateRoute,
     output_relations: &[SparsePolynomialQ],
@@ -374,8 +376,10 @@ fn verify_payload_for_outputs(
             if output_relations != proof.output_relations {
                 return Err(implementation_bug("universal output mismatch"));
             }
+            verify_universal_strategy_trace(proof, cert, ctx)?;
             if let Some(inner) = &proof.inner_payload {
                 verify_payload_for_outputs(
+                    cert,
                     inner,
                     route_for_payload(inner).ok_or_else(|| {
                         implementation_bug("universal inner payload route is unknown")
@@ -409,6 +413,223 @@ fn verify_payload_for_outputs(
         _ => Err(implementation_bug(
             "kernel certificate payload does not match certificate route",
         )),
+    }
+}
+
+fn verify_universal_strategy_trace(
+    proof: &crate::verify::certificates::UniversalProjectionCertificate,
+    cert: &KernelCertificate,
+    ctx: &KernelContext,
+) -> Result<(), SolverError> {
+    let expected = [
+        UniversalStrategy::TargetRelationSearchEscalated,
+        UniversalStrategy::SparseResultantIfSquareOrOverdetermined,
+        UniversalStrategy::TargetActionKrylovIfQuotientCertifiable,
+        UniversalStrategy::SpecializeProjectInterpolateVerify,
+        UniversalStrategy::RegularChainIfTriangular,
+        UniversalStrategy::NormTraceIfTower,
+        UniversalStrategy::LocalGroebnerEliminationToKeepZ,
+    ];
+    if proof.attempted_strategies != expected {
+        return Err(implementation_bug(
+            "universal attempted strategy sequence is not the fixed generic sequence",
+        ));
+    }
+    if !proof.attempted_strategies.contains(&proof.chosen_strategy) {
+        return Err(implementation_bug(
+            "universal chosen strategy is absent from attempted sequence",
+        ));
+    }
+    let expected_chosen = if let Some(inner) = &proof.inner_payload {
+        universal_strategy_for_inner_payload(inner).ok_or_else(|| {
+            implementation_bug("universal inner payload has no declared strategy mapping")
+        })?
+    } else if !proof.output_memberships.is_empty() {
+        UniversalStrategy::LocalGroebnerEliminationToKeepZ
+    } else {
+        return Err(certificate_gap(
+            proof.stage_certificate_hash,
+            "universal strategy trace has no chosen proof payload",
+        ));
+    };
+    if proof.chosen_strategy != expected_chosen {
+        return Err(implementation_bug(
+            "universal chosen strategy does not match wrapped proof payload",
+        ));
+    }
+    let chosen_index = proof
+        .attempted_strategies
+        .iter()
+        .position(|strategy| *strategy == proof.chosen_strategy)
+        .unwrap_or(proof.attempted_strategies.len());
+    if proof.failed_strategy_hashes.len() > chosen_index {
+        return Err(implementation_bug(
+            "universal failed strategy trace exceeds chosen strategy position",
+        ));
+    }
+    verify_universal_source_hash_binding(proof, cert, ctx)?;
+    let expected_stage_hashes = expected_universal_stage_hashes(proof, cert, ctx);
+    if proof.stage_hash != expected_stage_hashes[chosen_index] {
+        return Err(implementation_bug(
+            "universal chosen stage hash does not match replayed stage plan",
+        ));
+    }
+    if proof.failed_strategy_hashes != expected_stage_hashes[..chosen_index] {
+        return Err(implementation_bug(
+            "universal failed strategy hashes do not match replayed attempted stage prefix",
+        ));
+    }
+    Ok(())
+}
+
+fn verify_universal_source_hash_binding(
+    proof: &crate::verify::certificates::UniversalProjectionCertificate,
+    cert: &KernelCertificate,
+    ctx: &KernelContext,
+) -> Result<(), SolverError> {
+    let mut proof_hashes = proof
+        .source_relations
+        .iter()
+        .map(|relation| relation.hash)
+        .collect::<Vec<_>>();
+    let mut expected_hashes = expected_universal_payload_source_hashes(cert, ctx);
+    proof_hashes.sort();
+    expected_hashes.sort();
+    if proof_hashes != expected_hashes {
+        return Err(implementation_bug(
+            "universal payload source relations do not exactly match plan-bound certificate sources",
+        ));
+    }
+    Ok(())
+}
+
+fn expected_universal_payload_source_hashes(
+    cert: &KernelCertificate,
+    ctx: &KernelContext,
+) -> Vec<Hash> {
+    cert.source_relation_hashes
+        .iter()
+        .map(|source_hash| {
+            ctx.system
+                .relations
+                .iter()
+                .find(|relation| relation.hash == *source_hash)
+                .map(|relation| relation.polynomial.hash)
+                .or_else(|| {
+                    ctx.child_messages
+                        .iter()
+                        .flat_map(|message| message.relation_generators.iter())
+                        .find(|relation| relation.hash == *source_hash)
+                        .map(|relation| relation.hash)
+                })
+                .unwrap_or(*source_hash)
+        })
+        .collect()
+}
+
+fn expected_universal_stage_hashes(
+    proof: &crate::verify::certificates::UniversalProjectionCertificate,
+    cert: &KernelCertificate,
+    ctx: &KernelContext,
+) -> Vec<Hash> {
+    let relation_count = cert.source_relation_hashes.len();
+    let has_relations = relation_count > 0;
+    let square_or_overdetermined =
+        has_relations && relation_count >= cert.exported_variables.len().max(1);
+    let has_non_target_separator = cert
+        .exported_variables
+        .iter()
+        .any(|var| *var != ctx.system.target);
+    proof
+        .attempted_strategies
+        .iter()
+        .enumerate()
+        .map(|(index, strategy)| {
+            let (enabled, skip_reason) = match strategy {
+                UniversalStrategy::TargetRelationSearchEscalated => (
+                    has_relations,
+                    universal_skip_reason(has_relations, "no local relations"),
+                ),
+                UniversalStrategy::SparseResultantIfSquareOrOverdetermined => (
+                    square_or_overdetermined,
+                    universal_skip_reason(square_or_overdetermined, "not square or overdetermined"),
+                ),
+                UniversalStrategy::TargetActionKrylovIfQuotientCertifiable => (
+                    has_relations,
+                    universal_skip_reason(has_relations, "no relations for target action quotient"),
+                ),
+                UniversalStrategy::SpecializeProjectInterpolateVerify => (
+                    has_non_target_separator,
+                    universal_skip_reason(
+                        has_non_target_separator,
+                        "no non-target exported separator",
+                    ),
+                ),
+                UniversalStrategy::RegularChainIfTriangular => (
+                    has_relations,
+                    universal_skip_reason(
+                        has_relations,
+                        "no relations for regular-chain detection",
+                    ),
+                ),
+                UniversalStrategy::NormTraceIfTower => (
+                    has_relations,
+                    universal_skip_reason(
+                        has_relations,
+                        "no relations for norm/trace tower detection",
+                    ),
+                ),
+                UniversalStrategy::LocalGroebnerEliminationToKeepZ => (
+                    has_relations,
+                    universal_skip_reason(
+                        has_relations,
+                        "no relations available for local elimination",
+                    ),
+                ),
+            };
+            hash_sequence(
+                "universal-stage-plan",
+                &[
+                    cert.plan_hash.0.to_vec(),
+                    format!("{strategy:?}").into_bytes(),
+                    index.to_be_bytes().to_vec(),
+                    vec![enabled as u8],
+                    skip_reason.unwrap_or("").as_bytes().to_vec(),
+                ],
+            )
+        })
+        .collect()
+}
+
+fn universal_skip_reason(enabled: bool, reason: &'static str) -> Option<&'static str> {
+    if enabled {
+        None
+    } else {
+        Some(reason)
+    }
+}
+
+fn universal_strategy_for_inner_payload(
+    payload: &KernelCertificatePayload,
+) -> Option<UniversalStrategy> {
+    match payload {
+        KernelCertificatePayload::Membership(_) => {
+            Some(UniversalStrategy::TargetRelationSearchEscalated)
+        }
+        KernelCertificatePayload::SparseResultant(_) => {
+            Some(UniversalStrategy::SparseResultantIfSquareOrOverdetermined)
+        }
+        KernelCertificatePayload::TargetAction(_) => {
+            Some(UniversalStrategy::TargetActionKrylovIfQuotientCertifiable)
+        }
+        KernelCertificatePayload::SpecializationInterpolation(_) => {
+            Some(UniversalStrategy::SpecializeProjectInterpolateVerify)
+        }
+        KernelCertificatePayload::RegularChain(_) => {
+            Some(UniversalStrategy::RegularChainIfTriangular)
+        }
+        KernelCertificatePayload::NormTrace(_) => Some(UniversalStrategy::NormTraceIfTower),
+        _ => None,
     }
 }
 

@@ -24,7 +24,6 @@ pub fn build_declared_ladder(
         compare_cost(a_cost, b_cost)
     });
 
-    let universal_is_preferred = preferred_order.contains(&KernelKind::UniversalTargetElimination);
     if !preferred_order.is_empty() {
         let mut prioritized = Vec::new();
         for preferred in preferred_order {
@@ -36,14 +35,12 @@ pub fn build_declared_ladder(
         plans = prioritized;
     }
 
-    if !universal_is_preferred {
-        if let Some(index) = plans
-            .iter()
-            .position(|plan| plan.kernel_kind == KernelKind::UniversalTargetElimination)
-        {
-            let universal = plans.remove(index);
-            plans.push(universal);
-        }
+    if let Some(index) = plans
+        .iter()
+        .position(|plan| plan.kernel_kind == KernelKind::UniversalTargetElimination)
+    {
+        let universal = plans.remove(index);
+        plans.push(universal);
     }
     plans
 }

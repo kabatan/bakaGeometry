@@ -30,11 +30,12 @@ pub fn plan_all_blocks(
         }
         let probes = run_cost_probes(block, system, ctx);
         let admissions = collect_kernel_admissions(block, system, &probes, ctx);
-        record_dense_relation_search_admission_diagnostics(block, system, &admissions, ctx);
         let cost_estimates = admissions
             .iter()
             .map(|admission| estimate_kernel_cost(block, admission.kind, &probes))
             .collect::<Vec<_>>();
+        record_kernel_route_admission_diagnostics(block, system, &admissions, &cost_estimates, ctx);
+        record_dense_relation_search_admission_diagnostics(block, system, &admissions, ctx);
         let ladder =
             build_declared_ladder(&admissions, &cost_estimates, &ctx.options.kernel_priority);
         if ladder.is_empty() {
@@ -55,16 +56,178 @@ pub fn plan_all_blocks(
     Ok(plans)
 }
 
+fn record_kernel_route_admission_diagnostics(
+    block: &crate::graph::projection_dag::ProjectionBlock,
+    system: &CompressedSystemQ,
+    admissions: &[KernelAdmission],
+    cost_estimates: &[crate::planner::cost_model::KernelCostEstimate],
+    ctx: &mut SolverContext,
+) {
+    for admission in admissions {
+        let cost = cost_estimates
+            .iter()
+            .find(|cost| cost.kernel_kind == admission.kind);
+        let mut diagnostic = DiagnosticRecord::new(
+            "KernelRouteTrace",
+            format!(
+                "kernel={:?} block_id={} admission_status={}",
+                admission.kind,
+                admission.block_id.0,
+                admission_status_name(&admission.status)
+            ),
+            Some(StageId("PlanProjectionMessages".to_owned())),
+        );
+        diagnostic
+            .details
+            .insert("kernel_kind".to_owned(), format!("{:?}", admission.kind));
+        diagnostic
+            .details
+            .insert("block_id".to_owned(), admission.block_id.0.to_string());
+        diagnostic.details.insert(
+            "admission_status".to_owned(),
+            admission_status_name(&admission.status).to_owned(),
+        );
+        diagnostic.details.insert(
+            "admission_hash".to_owned(),
+            format!("{:?}", admission.admission_hash),
+        );
+        diagnostic.details.insert(
+            "exported_variables".to_owned(),
+            admission.exported_variables.len().to_string(),
+        );
+        diagnostic.details.insert(
+            "eliminated_variables".to_owned(),
+            admission.eliminated_variables.len().to_string(),
+        );
+        if let Some(plan) = &admission.execution_plan {
+            diagnostic
+                .details
+                .insert("plan_hash".to_owned(), format!("{:?}", plan.plan_hash));
+        }
+        if let Some(cost) = cost {
+            diagnostic
+                .details
+                .insert("cost_class".to_owned(), format!("{:?}", cost.cost_class));
+            diagnostic
+                .details
+                .insert("estimated_rows".to_owned(), cost.matrix_rows.to_string());
+            diagnostic
+                .details
+                .insert("estimated_cols".to_owned(), cost.matrix_cols.to_string());
+            diagnostic.details.insert(
+                "estimated_rank".to_owned(),
+                cost.quotient_rank_estimate.to_string(),
+            );
+            diagnostic.details.insert(
+                "cost_estimate_hash".to_owned(),
+                format!("{:?}", cost.estimate_hash),
+            );
+        }
+        match &admission.status {
+            KernelAdmissionStatus::Declined { reason } => {
+                diagnostic
+                    .details
+                    .insert("decline_reason".to_owned(), reason.clone());
+            }
+            KernelAdmissionStatus::CostProhibited {
+                reason,
+                estimate_hash,
+            } => {
+                diagnostic
+                    .details
+                    .insert("decline_reason".to_owned(), reason.clone());
+                diagnostic.details.insert(
+                    "preflight_estimate_hash".to_owned(),
+                    format!("{:?}", estimate_hash),
+                );
+                diagnostic
+                    .details
+                    .insert("cost_class".to_owned(), "CostProhibited".to_owned());
+            }
+            KernelAdmissionStatus::PlanProbeFailed {
+                reason,
+                constructed_object_hash,
+            } => {
+                diagnostic
+                    .details
+                    .insert("decline_reason".to_owned(), reason.clone());
+                diagnostic.details.insert(
+                    "constructed_object_hash".to_owned(),
+                    format!("{:?}", constructed_object_hash),
+                );
+            }
+            KernelAdmissionStatus::Admitted => {}
+        }
+        if admission.kind == KernelKind::TargetRelationSearch {
+            insert_dense_preflight_details(block, system, ctx, &mut diagnostic);
+        }
+        ctx.diagnostics.push(diagnostic);
+    }
+}
+
+fn admission_status_name(status: &KernelAdmissionStatus) -> &'static str {
+    match status {
+        KernelAdmissionStatus::Admitted => "Admitted",
+        KernelAdmissionStatus::Declined { .. } => "Declined",
+        KernelAdmissionStatus::CostProhibited { .. } => "CostProhibited",
+        KernelAdmissionStatus::PlanProbeFailed { .. } => "PlanProbeFailed",
+    }
+}
+
+fn insert_dense_preflight_details(
+    block: &crate::graph::projection_dag::ProjectionBlock,
+    system: &CompressedSystemQ,
+    ctx: &SolverContext,
+    diagnostic: &mut DiagnosticRecord,
+) {
+    let relation_polys = block
+        .relation_ids
+        .iter()
+        .filter_map(|id| system.relations.iter().find(|relation| relation.id == *id))
+        .map(|relation| relation.polynomial.clone())
+        .collect::<Vec<_>>();
+    let eliminated_variables = block
+        .local_variables
+        .difference(&block.exported_variables)
+        .copied()
+        .collect::<Vec<_>>();
+    let exported_variables = block.exported_variables.iter().copied().collect::<Vec<_>>();
+    let preflight = estimate_dense_relation_search_schedule(
+        &relation_polys,
+        &eliminated_variables,
+        &exported_variables,
+        &ctx.options,
+    );
+    diagnostic.details.insert(
+        "preflight_estimate_hash".to_owned(),
+        format!("{:?}", preflight.preflight_hash),
+    );
+    diagnostic.details.insert(
+        "planned_stage_count".to_owned(),
+        preflight.planned_stage_count.display_value(),
+    );
+    diagnostic.details.insert(
+        "materialization_allowed".to_owned(),
+        preflight.materialization_allowed.to_string(),
+    );
+    if let Some(reason) = preflight.first_prohibition_reason() {
+        diagnostic
+            .details
+            .insert("preflight_decline_reason".to_owned(), reason.to_owned());
+    }
+}
+
 fn record_dense_relation_search_admission_diagnostics(
     block: &crate::graph::projection_dag::ProjectionBlock,
     system: &CompressedSystemQ,
     admissions: &[KernelAdmission],
     ctx: &mut SolverContext,
 ) {
-    let Some(KernelAdmissionStatus::Declined { reason }) = admissions
+    let Some(reason) = admissions
         .iter()
         .find(|admission| admission.kind == KernelKind::TargetRelationSearch)
         .map(|admission| &admission.status)
+        .and_then(cost_prohibited_or_declined_reason)
     else {
         return;
     };
@@ -150,6 +313,14 @@ fn record_dense_relation_search_admission_diagnostics(
             .insert("first_prohibited_stage".to_owned(), stage.to_string());
     }
     ctx.diagnostics.push(diagnostic);
+}
+
+fn cost_prohibited_or_declined_reason(status: &KernelAdmissionStatus) -> Option<&str> {
+    match status {
+        KernelAdmissionStatus::Declined { reason } => Some(reason),
+        KernelAdmissionStatus::CostProhibited { reason, .. } => Some(reason),
+        _ => None,
+    }
 }
 
 fn postorder_key(

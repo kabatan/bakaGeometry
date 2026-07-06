@@ -551,7 +551,7 @@ mod tests {
     use crate::kernels::traits::KernelKind;
     use crate::kernels::traits::TargetProjectionKernel;
     use crate::kernels::universal_elimination::UniversalTargetEliminationKernel;
-    use crate::planner::kernel_plan::CertificateRoute;
+    use crate::planner::kernel_plan::{CertificateRoute, UniversalStrategy};
     use crate::preprocess::compression::{pre_kernel_compress, CompressionState};
     use crate::problem::canonicalize::canonicalize_system;
     use crate::problem::context::new_context;
@@ -1273,6 +1273,17 @@ mod tests {
         let payload = KernelCertificatePayload::Universal(UniversalProjectionCertificate {
             stage_hash: hash_sequence("forged-universal-stage", &[]),
             stage_certificate_hash: hash_sequence("forged-universal-stage-cert", &[]),
+            attempted_strategies: vec![
+                UniversalStrategy::TargetRelationSearchEscalated,
+                UniversalStrategy::SparseResultantIfSquareOrOverdetermined,
+                UniversalStrategy::TargetActionKrylovIfQuotientCertifiable,
+                UniversalStrategy::SpecializeProjectInterpolateVerify,
+                UniversalStrategy::RegularChainIfTriangular,
+                UniversalStrategy::NormTraceIfTower,
+                UniversalStrategy::LocalGroebnerEliminationToKeepZ,
+            ],
+            chosen_strategy: UniversalStrategy::LocalGroebnerEliminationToKeepZ,
+            failed_strategy_hashes: Vec::new(),
             output_relations: vec![forged_source.clone()],
             inner_payload: Some(Box::new(KernelCertificatePayload::TargetOnlySupport(
                 TargetOnlySupportCertificate {

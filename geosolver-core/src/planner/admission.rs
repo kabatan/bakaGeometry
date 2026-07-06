@@ -1,5 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use std::panic::{catch_unwind, AssertUnwindSafe};
+
 use serde::{Deserialize, Serialize};
 
 use crate::graph::projection_dag::ProjectionBlock;
@@ -41,7 +43,17 @@ pub struct KernelAdmission {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum KernelAdmissionStatus {
     Admitted,
-    Declined { reason: String },
+    Declined {
+        reason: String,
+    },
+    CostProhibited {
+        reason: String,
+        estimate_hash: Hash,
+    },
+    PlanProbeFailed {
+        reason: String,
+        constructed_object_hash: Hash,
+    },
 }
 
 impl KernelAdmission {
@@ -79,15 +91,13 @@ pub fn collect_kernel_admissions(
         .into_iter()
         .enumerate()
         .map(|(index, kind)| {
-            build_kernel_admission(
-                KernelPlanId(index as u32),
-                kind,
-                block,
-                system,
-                &relation_map,
-                probes,
-                ctx,
-            )
+            let plan_id = KernelPlanId(index as u32);
+            match catch_unwind(AssertUnwindSafe(|| {
+                build_kernel_admission(plan_id, kind, block, system, &relation_map, probes, ctx)
+            })) {
+                Ok(admission) => admission,
+                Err(payload) => route_panic_admission(kind, block, panic_message(payload)),
+            }
         })
         .collect()
 }
@@ -171,7 +181,10 @@ fn build_kernel_admission(
                     &ctx.options,
                 );
                 if !preflight.materialization_allowed {
-                    declined(&dense_relation_search_decline_reason(&preflight))
+                    cost_prohibited(
+                        &dense_relation_search_decline_reason(&preflight),
+                        preflight.preflight_hash,
+                    )
                 } else {
                     let schedule = build_dense_relation_search_schedule(
                         &relation_polys,
@@ -199,16 +212,14 @@ fn build_kernel_admission(
         KernelKind::UniversalTargetElimination => {
             match plan_universal_elimination(block, system, ctx, plan_id) {
                 Ok(plan) => (KernelAdmissionStatus::Admitted, Some(plan)),
-                Err(_) => {
-                    declined("no authorized local relations for universal projection planning")
-                }
+                Err(err) => route_plan_error("universal projection planning", block, &err),
             }
         }
         KernelKind::LinearAffine => {
             if let Some(order) = find_triangular_affine_order(block, system) {
                 match plan_linear_affine(block, system, &order, ctx) {
                     Ok(plan) => (KernelAdmissionStatus::Admitted, Some(plan)),
-                    Err(_) => declined("safe affine order exists but planning failed"),
+                    Err(err) => route_plan_error("linear affine planning", block, &err),
                 }
             } else {
                 declined("no complete safe triangular affine elimination order")
@@ -217,35 +228,31 @@ fn build_kernel_admission(
         KernelKind::SparseResultantProjection => {
             match plan_sparse_resultant(block, system, ctx, plan_id) {
                 Ok(plan) => (KernelAdmissionStatus::Admitted, Some(plan)),
-                Err(_) => declined("not sparse enough for a finite resultant template"),
+                Err(err) => route_plan_error("sparse resultant planning", block, &err),
             }
         }
         KernelKind::TargetActionKrylov => {
             match plan_target_action_krylov(block, system, ctx, plan_id) {
                 Ok(plan) => (KernelAdmissionStatus::Admitted, Some(plan)),
-                Err(_) => declined(
-                    "target-action-krylov verified characteristic coverage plan is not applicable",
-                ),
+                Err(err) => route_plan_error("target action Krylov planning", block, &err),
             }
         }
         KernelKind::NormTraceProjection => {
             match plan_norm_trace_projection(block, system, ctx, plan_id) {
                 Ok(plan) => (KernelAdmissionStatus::Admitted, Some(plan)),
-                Err(_) => declined("no explicit algebraic tower norm/trace projection plan"),
+                Err(err) => route_plan_error("norm/trace projection planning", block, &err),
             }
         }
         KernelKind::RegularChainProjection => {
             match plan_regular_chain_projection(block, system, ctx, plan_id) {
                 Ok(plan) => (KernelAdmissionStatus::Admitted, Some(plan)),
-                Err(_) => declined("no triangular regular-chain projection plan"),
+                Err(err) => route_plan_error("regular-chain projection planning", block, &err),
             }
         }
         KernelKind::SpecializationInterpolation => {
             match plan_specialization_interpolation(block, system, ctx, plan_id) {
                 Ok(plan) => (KernelAdmissionStatus::Admitted, Some(plan)),
-                Err(_) => declined(
-                    "specialization-interpolation exact verification plan is not applicable",
-                ),
+                Err(err) => route_plan_error("specialization-interpolation planning", block, &err),
             }
         }
     };
@@ -306,6 +313,102 @@ fn declined(reason: &str) -> (KernelAdmissionStatus, Option<KernelExecutionPlan>
         },
         None,
     )
+}
+
+fn cost_prohibited(
+    reason: &str,
+    estimate_hash: Hash,
+) -> (KernelAdmissionStatus, Option<KernelExecutionPlan>) {
+    (
+        KernelAdmissionStatus::CostProhibited {
+            reason: reason.to_owned(),
+            estimate_hash,
+        },
+        None,
+    )
+}
+
+fn plan_probe_failed(
+    reason: &str,
+    constructed_object_hash: Hash,
+) -> (KernelAdmissionStatus, Option<KernelExecutionPlan>) {
+    (
+        KernelAdmissionStatus::PlanProbeFailed {
+            reason: reason.to_owned(),
+            constructed_object_hash,
+        },
+        None,
+    )
+}
+
+fn route_plan_error(
+    label: &str,
+    block: &ProjectionBlock,
+    err: &crate::result::status::SolverError,
+) -> (KernelAdmissionStatus, Option<KernelExecutionPlan>) {
+    let class = if err.public_status() == SolverStatus::ImplementationBug {
+        "route-local invariant failure"
+    } else {
+        "route-local planning failure"
+    };
+    plan_probe_failed(
+        &format!(
+            "{label} {class}; status={:?}; error={:?}",
+            err.public_status(),
+            err.kind
+        ),
+        hash_sequence(
+            "route-plan-probe-failed",
+            &[
+                label.as_bytes().to_vec(),
+                block.block_hash.0.to_vec(),
+                format!("{:?}", err.public_status()).into_bytes(),
+                format!("{:?}", err.kind).into_bytes(),
+            ],
+        ),
+    )
+}
+
+fn route_panic_admission(
+    kind: KernelKind,
+    block: &ProjectionBlock,
+    panic_message: String,
+) -> KernelAdmission {
+    let exported_variables = sorted_set(&block.exported_variables);
+    let eliminated_variables = block
+        .local_variables
+        .difference(&block.exported_variables)
+        .copied()
+        .collect::<Vec<_>>();
+    let constructed_object_hash = hash_sequence(
+        "route-admission-panic",
+        &[
+            format!("{kind:?}").into_bytes(),
+            block.block_hash.0.to_vec(),
+            panic_message.as_bytes().to_vec(),
+        ],
+    );
+    finish_admission(
+        kind,
+        block.block_id,
+        exported_variables,
+        eliminated_variables,
+        KernelAdmissionStatus::PlanProbeFailed {
+            reason: format!("route-local panic during admission: {panic_message}"),
+            constructed_object_hash,
+        },
+        None,
+    )
+}
+
+fn panic_message(payload: Box<dyn std::any::Any + Send>) -> String {
+    if let Some(message) = payload.downcast_ref::<&str>() {
+        (*message).to_owned()
+    } else if let Some(message) = payload.downcast_ref::<String>() {
+        message.clone()
+    } else {
+        "non-string panic payload".to_owned()
+    }
 }
 
 fn finish_admission(

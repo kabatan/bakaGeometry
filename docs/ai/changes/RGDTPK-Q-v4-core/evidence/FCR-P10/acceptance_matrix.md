@@ -16,7 +16,7 @@ category. It has been moved to the final nonfinite semantics gate because the pu
 | A5 | fcr_p10_a5_public_specialization_interpolation_style_multiseparator | api::solve_target | CertifiedCandidateCover | SpecializationInterpolation |
 | A6 | fcr_p10_a6_public_guarded_rational_affine_preprocessing_to_support | api::solve_target | CertifiedCandidateCover | guarded compression through final support |
 | A7 | fcr_p10_a7_public_target_independent_component_with_feasibility_obligation | api::solve_target | CertifiedCandidateCover | feasibility-obligation path |
-| A8 | fcr_p10_a8_public_one_large_block_no_useful_separator | api::solve_target | CertifiedCandidateCover | UniversalTargetElimination |
+| A8 | fcr_p10_a8_public_one_large_block_no_useful_separator | api::solve_target | CertifiedCandidateCover | UniversalTargetElimination admitted in route trace |
 | A9 | fcr_p10_a9_public_regular_chain_style_projection | api::solve_target | CertifiedCandidateCover | RegularChainProjection |
 | A10 | fcr_p10_a10_public_norm_trace_two_step_tower | api::solve_target | CertifiedCandidateCover | NormTraceProjection |
 | A11 | fcr_p10_a11_public_nonreal_support_empty_candidate_cover | api::solve_target | CertifiedCandidateCover with empty roots/candidates | support retained despite no real roots |
@@ -35,7 +35,7 @@ Shared assertions for support-producing cases:
 - verification trace checks at least one relation
 
 Additional remediated assertions:
-- required named-kernel cases assert the executed ProjectionMessage.kernel_kind directly;
+- required named-kernel cases assert the executed ProjectionMessage.kernel_kind directly, except A8 which asserts UniversalTargetElimination remains admitted because the current declared ladder keeps Universal last and may succeed earlier through a compact exact route;
 - public replay accepts every support-producing result;
 - relationless structural DAG blocks do not produce projection messages, while their child messages remain hash-bound in final DAG replay evidence.
 - resource-bounded B1 failure retains a nonempty cost trace with matrix rows or columns, the requested public target, and TargetRelationSearch kernel identity.

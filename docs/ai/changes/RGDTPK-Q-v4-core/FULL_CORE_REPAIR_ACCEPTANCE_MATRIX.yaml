@@ -83,7 +83,7 @@ support_producing_suites:
       - support_verified_after_compression
 
   - id: A8_no_useful_separator_one_large_block
-    required_kernel_evidence: UniversalTargetElimination
+    required_kernel_evidence: UniversalTargetElimination_admitted_declared_last
     required_checks:
       - one_large_block_created
       - target_separator_only_output

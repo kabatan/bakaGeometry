@@ -27,7 +27,7 @@ Cases:
 - A5 specialization/interpolation style multiseparator
 - A6 guarded rational affine preprocessing through support
 - A7 target-independent component with feasibility obligation
-- A8 one-large-block Universal path under relation-search cap
+- A8 one-large-block Universal admission under relation-search cap
 - A9 regular-chain style projection
 - A10 norm/trace two-step tower
 - A11 non-real support empty candidate cover
@@ -44,7 +44,7 @@ Kernel evidence assertions:
 - A2 asserts TargetActionKrylov executed through api::solve_target with a nonlinear target quotient case.
 - A4 asserts SparseResultantProjection executed through api::solve_target.
 - A5 asserts SpecializationInterpolation executed through api::solve_target on a decomposed target+separator child block.
-- A8 asserts UniversalTargetElimination executed through api::solve_target.
+- A8 asserts UniversalTargetElimination remains admitted in the public route trace; the public ladder keeps Universal last and may succeed earlier through another exact compact route.
 - A9 asserts RegularChainProjection executed through api::solve_target.
 - A10 asserts NormTraceProjection executed through api::solve_target on a non-affine two-step tower.
 - B1 asserts the bounded failure result retains at least one block cost trace with matrix rows or columns, the requested target, and TargetRelationSearch kernel identity.
@@ -57,7 +57,7 @@ Cases:
 
 PASS: cargo test --manifest-path geosolver-core/Cargo.toml --quiet
 Output:
-- lib tests: 209 passed, 0 failed.
+- lib tests: 209 passed, 0 failed. Latest GSR rerun later observed 217 lib tests after additional route-repair tests were added.
 - fcr_final_nonfinite_semantics: 2 passed, 0 failed.
 - fcr_p10_acceptance_suite: 12 passed, 0 failed.
 - fcr_p4_pure_planning: 7 passed, 0 failed.

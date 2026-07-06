@@ -2,6 +2,7 @@ use std::collections::BTreeSet;
 
 use serde::{Deserialize, Serialize};
 
+use crate::planner::cost_model::RouteCostClass;
 use crate::solver::options::SolverOptions;
 use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::VariableId;
@@ -136,11 +137,15 @@ pub struct RelationSearchStageEstimate {
     pub export_degree: usize,
     pub multiplier_total_degree: usize,
     pub export_cols: SaturatingCount,
+    pub estimated_export_cols: SaturatingCount,
     pub multiplier_col_counts: Vec<SaturatingCount>,
     pub total_multiplier_cols: SaturatingCount,
+    pub estimated_multiplier_cols: SaturatingCount,
     pub estimated_matrix_cols: SaturatingCount,
     pub estimated_rows_upper_bound: SaturatingCount,
+    pub estimated_row_monomials_upper_bound: SaturatingCount,
     pub estimated_memory_bytes_upper_bound: SaturatingCount,
+    pub stage_cost_class: RouteCostClass,
     pub feasible: bool,
     pub prohibition_reason: Option<String>,
     pub estimate_hash: Hash,
@@ -159,21 +164,24 @@ pub struct DenseRelationSearchPreflight {
     pub caps: RelationSearchPlanningCaps,
     pub stage_estimates: Vec<RelationSearchStageEstimate>,
     pub materialization_allowed: bool,
+    pub cost_prohibited_reason: Option<String>,
     pub preflight_hash: Hash,
 }
 
 impl DenseRelationSearchPreflight {
     pub fn first_prohibition_reason(&self) -> Option<&str> {
-        self.stage_estimates
-            .iter()
-            .find_map(|stage| stage.prohibition_reason.as_deref())
-            .or_else(|| {
-                if !self.materialization_allowed {
-                    Some("stage count exceeds dense TargetRelationSearch materialization cap")
-                } else {
-                    None
-                }
-            })
+        self.cost_prohibited_reason.as_deref().or_else(|| {
+            self.stage_estimates
+                .iter()
+                .find_map(|stage| stage.prohibition_reason.as_deref())
+                .or_else(|| {
+                    if !self.materialization_allowed {
+                        Some("stage count exceeds dense TargetRelationSearch materialization cap")
+                    } else {
+                        None
+                    }
+                })
+        })
     }
 }
 
@@ -293,6 +301,28 @@ pub fn estimate_dense_relation_search_schedule(
         && !too_many_stages
         && stage_estimates.len() == planned_stage_count_usize
         && stage_estimates.iter().all(|stage| stage.feasible);
+    let cost_prohibited_reason = if materialization_allowed {
+        None
+    } else {
+        stage_estimates
+            .iter()
+            .find_map(|stage| stage.prohibition_reason.clone())
+            .or_else(|| {
+                if too_many_stages {
+                    Some(
+                        "stage count exceeds dense TargetRelationSearch materialization cap"
+                            .to_owned(),
+                    )
+                } else if no_stages {
+                    Some("dense TargetRelationSearch has no planned stages".to_owned())
+                } else {
+                    Some(
+                        "dense TargetRelationSearch preflight did not admit materialization"
+                            .to_owned(),
+                    )
+                }
+            })
+    };
     let mut preflight = DenseRelationSearchPreflight {
         eliminated_variables,
         exported_variables,
@@ -305,6 +335,7 @@ pub fn estimate_dense_relation_search_schedule(
         caps,
         stage_estimates,
         materialization_allowed,
+        cost_prohibited_reason,
         preflight_hash: hash_sequence("dense-trs-preflight", &[]),
     };
     preflight.preflight_hash = hash_dense_relation_search_preflight(&preflight);
@@ -349,6 +380,11 @@ pub fn build_dense_relation_search_schedule(
     let mut stages = Vec::new();
     if preflight.materialization_allowed {
         for stage_estimate in &preflight.stage_estimates {
+            if stage_estimate.stage_cost_class == RouteCostClass::CostProhibited
+                || !stage_estimate.feasible
+            {
+                break;
+            }
             let bound = RelationSearchBound {
                 export_degree: stage_estimate.export_degree,
                 multiplier_total_degree: stage_estimate.multiplier_total_degree,
@@ -520,15 +556,29 @@ fn estimate_relation_search_stage(
         ));
     }
     let feasible = reasons.is_empty();
+    let stage_cost_class = if !feasible {
+        RouteCostClass::CostProhibited
+    } else if estimated_memory_bytes_upper_bound.exceeds_u64(caps.max_estimated_memory_bytes / 2)
+        || estimated_matrix_cols.exceeds_usize(caps.max_matrix_cols / 2)
+        || estimated_rows_upper_bound.exceeds_usize(caps.max_matrix_rows / 2)
+    {
+        RouteCostClass::ExpensiveButAllowed
+    } else {
+        RouteCostClass::Feasible
+    };
     let mut estimate = RelationSearchStageEstimate {
         export_degree,
         multiplier_total_degree,
         export_cols,
+        estimated_export_cols: export_cols,
         multiplier_col_counts,
         total_multiplier_cols,
+        estimated_multiplier_cols: total_multiplier_cols,
         estimated_matrix_cols,
         estimated_rows_upper_bound,
+        estimated_row_monomials_upper_bound: estimated_rows_upper_bound,
         estimated_memory_bytes_upper_bound,
+        stage_cost_class,
         feasible,
         prohibition_reason: if feasible {
             None
@@ -570,8 +620,15 @@ fn build_support_descriptors(
     descriptors
 }
 
-fn monomial_count_total_degree_leq(variable_count: usize, max_degree: usize) -> SaturatingCount {
+pub fn monomial_count_total_degree_leq_saturating(
+    variable_count: usize,
+    max_degree: usize,
+) -> SaturatingCount {
     binomial_saturating(variable_count.saturating_add(max_degree), max_degree)
+}
+
+fn monomial_count_total_degree_leq(variable_count: usize, max_degree: usize) -> SaturatingCount {
+    monomial_count_total_degree_leq_saturating(variable_count, max_degree)
 }
 
 fn binomial_saturating(n: usize, k: usize) -> SaturatingCount {
@@ -604,6 +661,12 @@ fn hash_dense_relation_search_preflight(preflight: &DenseRelationSearchPreflight
             .to_vec(),
         (preflight.materialization_allowed as u8)
             .to_be_bytes()
+            .to_vec(),
+        preflight
+            .cost_prohibited_reason
+            .as_deref()
+            .unwrap_or("")
+            .as_bytes()
             .to_vec(),
         preflight.caps.max_export_cols.to_be_bytes().to_vec(),
         preflight
@@ -644,10 +707,14 @@ fn hash_stage_estimate(estimate: &RelationSearchStageEstimate) -> Hash {
         estimate.export_degree.to_be_bytes().to_vec(),
         estimate.multiplier_total_degree.to_be_bytes().to_vec(),
         count_to_bytes(estimate.export_cols),
+        count_to_bytes(estimate.estimated_export_cols),
         count_to_bytes(estimate.total_multiplier_cols),
+        count_to_bytes(estimate.estimated_multiplier_cols),
         count_to_bytes(estimate.estimated_matrix_cols),
         count_to_bytes(estimate.estimated_rows_upper_bound),
+        count_to_bytes(estimate.estimated_row_monomials_upper_bound),
         count_to_bytes(estimate.estimated_memory_bytes_upper_bound),
+        format!("{:?}", estimate.stage_cost_class).into_bytes(),
         (estimate.feasible as u8).to_be_bytes().to_vec(),
     ];
     for count in &estimate.multiplier_col_counts {

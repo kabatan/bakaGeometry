@@ -158,8 +158,9 @@ pub fn admit_target_relation_search(
     if !preflight.materialization_allowed {
         return finish_admission(
             block,
-            KernelAdmissionStatus::Declined {
+            KernelAdmissionStatus::CostProhibited {
                 reason: dense_relation_search_decline_reason(&preflight),
+                estimate_hash: preflight.preflight_hash,
             },
             None,
         );
@@ -285,6 +286,24 @@ pub fn execute_target_relation_search(
         .collect::<BTreeSet<_>>();
     let mut traces = Vec::new();
     for stage in &schedule.stages {
+        let Some(stage_estimate) = preflight
+            .stage_estimates
+            .iter()
+            .find(|estimate| estimate.export_degree == stage.export_degree)
+        else {
+            return Err(implementation_bug(
+                "target relation search stage lacks reproducible preflight estimate",
+            ));
+        };
+        if !stage_estimate.feasible
+            || stage_estimate.stage_cost_class
+                == crate::planner::cost_model::RouteCostClass::CostProhibited
+        {
+            return Err(algorithmic_hard_case(
+                ctx,
+                &dense_relation_search_decline_reason(&preflight),
+            ));
+        }
         let bound = RelationSearchBound {
             export_degree: stage.export_degree,
             multiplier_total_degree: stage.multiplier_total_degree,

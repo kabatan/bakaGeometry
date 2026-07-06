@@ -8,7 +8,9 @@ use crate::algebra::normal_form::MembershipCertificate;
 use crate::algebra::quotient::ProductionQuotientHandleInput;
 use crate::algebra::regular_chain::{ProjectionGenerators, RegularChainDAG};
 use crate::algebra::resultant::SparseResultantCertificate;
-use crate::planner::kernel_plan::{AffineEliminationStep, CertificateRoute, KernelExecutionPlan};
+use crate::planner::kernel_plan::{
+    AffineEliminationStep, CertificateRoute, KernelExecutionPlan, UniversalStrategy,
+};
 use crate::types::hash::Hash;
 use crate::types::ids::RelationId;
 use crate::types::ids::VariableId;
@@ -162,6 +164,9 @@ pub struct SpecializationInterpolationProjectionCertificate {
 pub struct UniversalProjectionCertificate {
     pub stage_hash: Hash,
     pub stage_certificate_hash: Hash,
+    pub attempted_strategies: Vec<UniversalStrategy>,
+    pub chosen_strategy: UniversalStrategy,
+    pub failed_strategy_hashes: Vec<Hash>,
     pub output_relations: Vec<SparsePolynomialQ>,
     pub inner_payload: Option<Box<KernelCertificatePayload>>,
     pub output_memberships: Vec<MembershipCertificate>,

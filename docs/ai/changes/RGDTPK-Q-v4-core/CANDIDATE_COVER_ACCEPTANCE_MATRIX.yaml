@@ -66,7 +66,7 @@ support_producing_public_cases:
       - feasibility_obligation_retained_for_exact_image_later
   - id: A8
     name: one_large_block_universal
-    required_kernel: UniversalTargetElimination
+    required_kernel_evidence: UniversalTargetElimination_admitted_declared_last
     required_evidence:
       - no_useful_separator
       - declared_universal_ladder

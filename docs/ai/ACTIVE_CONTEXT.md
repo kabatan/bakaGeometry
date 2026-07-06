@@ -2,39 +2,37 @@
 
 Active change: `docs/ai/changes/RGDTPK-Q-v4-core/`
 
-Current instruction pack: `generic_planner_success_route_repair_pack_v1`.
+Current instruction pack: `generic_success_route_core_repair_pack_v2`.
 
 Active claim ceiling for this repair:
 
 ```text
-PLANNER_SUCCESS_ROUTE_READY
-DENSE_TRS_ADMISSION_SAFE
+GENERIC_SUCCESS_ROUTE_PLANNER_READY
 ```
 
 Candidate-cover means every true finite target value is contained in `roots(S)`. It does not mean
 `roots(S)` equals the exact target image. Extra real roots are allowed and must not be treated as a
 candidate-cover failure.
 
-This repair is generic planner success-route work only. It must not use the prior timeout input as a
+This repair is generic success-route core work only. It must not use the prior timeout input as a
 fixture, gate, benchmark, expected-answer target, or implementation branch.
 
 Read first:
 
-1. `GENERIC_PLANNER_SUCCESS_ROUTE_BASE_SPEC.md`
-2. `GENERIC_PLANNER_SUCCESS_ROUTE_PLAN.md`
+1. `GENERIC_SUCCESS_ROUTE_BASE_SPEC.md`
+2. `GENERIC_SUCCESS_ROUTE_PLAN.md`
 3. `GENERIC_PLANNER_ACCEPTANCE_MATRIX.yaml`
-4. `GENERIC_PLANNER_CURRENT_DEFECT_AUDIT.md`
-5. `GENERIC_PLANNER_PATCH_NOTES.md`
-6. `GENERIC_PLANNER_AGENT_RESET.md`
-7. `GENERIC_PLANNER_QUICK_GUARDIAN_PROMPT.md`
-8. `GENERIC_PLANNER_SUCCESS_ROUTE_REVIEWER_PROMPTS.md`
-9. `GENERIC_PLANNER_MATERIALIZATION_AUDIT.md`
-10. `GENERIC_PLANNER_SUCCESS_ROUTE_RESULTS.md`
-11. `GENERIC_PLANNER_REPLAY_AND_TRACE_RESULTS.md`
-12. `GENERIC_PLANNER_CLOSURE.md`
-13. `BASE_SPEC.md`
-14. `PLAN.md`
-15. `SOURCE_MAP.md`
+4. `GENERIC_SUCCESS_ROUTE_CURRENT_DEFECT_AUDIT.md`
+5. `GENERIC_SUCCESS_ROUTE_AGENT_RESET.md`
+6. `GENERIC_SUCCESS_ROUTE_QUICK_GUARDIAN_PROMPT.md`
+7. `GENERIC_SUCCESS_ROUTE_REVIEWER_PROMPTS.md`
+8. `GENERIC_SUCCESS_ROUTE_ACCEPTANCE_RESULTS.md`
+9. `GENERIC_SUCCESS_ROUTE_STATIC_SCAN.md`
+10. `GENERIC_SUCCESS_ROUTE_CLOSURE.md`
+11. `GENERIC_SUCCESS_ROUTE_REVIEW_SUMMARY.md`
+12. `BASE_SPEC.md`
+13. `PLAN.md`
+14. `SOURCE_MAP.md`
 
 Related diagnostic reports:
 

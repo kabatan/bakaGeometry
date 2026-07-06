@@ -13,7 +13,7 @@ use crate::graph::separators::CostModel;
 use crate::graph::tree_decomposition::{build_target_rooted_decomposition, DecompositionTree};
 use crate::graph::weighted_primal::{build_weighted_primal_graph, WeightedPrimalGraph};
 use crate::kernels::traits::KernelContext;
-use crate::planner::kernel_plan::KernelPlan;
+use crate::planner::kernel_plan::{KernelExecutionPlan, KernelPlan};
 use crate::planner::planner::plan_all_blocks;
 use crate::preprocess::compression::{
     max_coefficient_height_bits, pre_kernel_compress, CompressedSystemQ,
@@ -24,11 +24,13 @@ use crate::problem::input::RationalTargetProblem;
 use crate::problem::validate::{validate_input, ValidatedProblem};
 use crate::result::cost_trace::{GlobalCostTrace, ProjectionCostTrace, VerificationCostTrace};
 use crate::result::output::projection_trace_from_solver_error;
-use crate::result::status::{AlgebraicReason, FailureKind, SolverError, SolverErrorKind, StageId};
+use crate::result::status::{
+    AlgebraicReason, FailureKind, SolverError, SolverErrorKind, SolverStatus, StageId,
+};
 use crate::roots::decode::{decode_candidates, TargetCandidate};
 use crate::roots::isolate::{isolate_real_roots, RealRootRecord, RootIsolationOptions};
 use crate::roots::squarefree::squarefree_support;
-use crate::types::hash::Hash;
+use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::{BlockId, VariableId};
 use crate::types::polynomial::{
     max_poly_coefficient_height_bits, poly_monomial_count, poly_total_degree, SparsePolynomialQ,
@@ -505,7 +507,7 @@ fn execute_block_with_declared_ladder(
     ctx: &mut SolverContext,
 ) -> Result<ProjectionMessage, SolverError> {
     let kernels = crate::kernels::all_kernels();
-    let mut last_allowed_error = None;
+    let mut route_failures = Vec::new();
     for execution_plan in &plan.declared_ladder {
         let Some(kernel) = kernels
             .iter()
@@ -519,28 +521,149 @@ fn execute_block_with_declared_ladder(
             child_messages: child_messages.clone(),
         };
         match kernel.execute(execution_plan, &mut kctx, ctx) {
-            Ok(message) => {
-                verify_projection_message(&message, &kctx)?;
-                return Ok(message);
+            Ok(message) => match verify_projection_message(&message, &kctx) {
+                Ok(()) => return Ok(message),
+                Err(err) => {
+                    let allowed = is_declared_route_failure_allowed(execution_plan, &err);
+                    record_block_projection_failure_trace(
+                        block,
+                        execution_plan,
+                        &err,
+                        allowed,
+                        ctx,
+                    );
+                    if allowed {
+                        route_failures.push((
+                            execution_plan.kernel_kind,
+                            execution_plan.plan_hash,
+                            err,
+                        ));
+                    } else {
+                        return Err(err);
+                    }
+                }
+            },
+            Err(err) => {
+                let allowed = is_declared_route_failure_allowed(execution_plan, &err);
+                record_block_projection_failure_trace(block, execution_plan, &err, allowed, ctx);
+                if allowed {
+                    route_failures.push((
+                        execution_plan.kernel_kind,
+                        execution_plan.plan_hash,
+                        err,
+                    ));
+                } else {
+                    return Err(err);
+                }
             }
-            Err(err)
-                if execution_plan
-                    .failure_behavior
-                    .allowed_statuses
-                    .contains(&err.public_status()) =>
-            {
-                last_allowed_error = Some(err);
-            }
-            Err(err) => return Err(err),
         }
     }
-    Err(last_allowed_error.unwrap_or_else(|| {
-        algorithmic_hard_case(
-            Some(compressed.target),
-            block.block_hash,
-            "declared production kernel ladder produced no projection message",
-        )
-    }))
+    Err(aggregate_ladder_failure(
+        compressed.target,
+        block.block_hash,
+        &route_failures,
+    ))
+}
+
+fn aggregate_ladder_failure(
+    target: VariableId,
+    block_hash: Hash,
+    route_failures: &[(crate::kernels::traits::KernelKind, Hash, SolverError)],
+) -> SolverError {
+    if route_failures.is_empty() {
+        return algorithmic_hard_case(
+            Some(target),
+            block_hash,
+            "declared production kernel ladder produced no projection message and no route failure",
+        );
+    }
+    if let Some((_, _, err)) = route_failures.iter().find(|(_, _, err)| {
+        err.public_status() == crate::result::status::SolverStatus::FiniteResourceFailure
+    }) {
+        return err.clone();
+    }
+    let failure_hash = hash_sequence(
+        "declared-ladder-aggregate-failure",
+        &route_failures
+            .iter()
+            .flat_map(|(kind, plan_hash, err)| {
+                [
+                    format!("{kind:?}").into_bytes(),
+                    plan_hash.0.to_vec(),
+                    format!("{:?}", err.public_status()).into_bytes(),
+                    format!("{:?}", err.kind).into_bytes(),
+                ]
+            })
+            .collect::<Vec<_>>(),
+    );
+    let summary = route_failures
+        .iter()
+        .map(|(kind, plan_hash, err)| {
+            format!("{kind:?}:{:?}:plan={plan_hash:?}", err.public_status())
+        })
+        .collect::<Vec<_>>()
+        .join("|");
+    algorithmic_hard_case(
+        Some(target),
+        block_hash,
+        &format!(
+            "declared production kernel ladder exhausted all routes; failure_hash={failure_hash:?}; failures={summary}"
+        ),
+    )
+}
+
+fn is_declared_route_failure_allowed(
+    execution_plan: &KernelExecutionPlan,
+    err: &SolverError,
+) -> bool {
+    let status = err.public_status();
+    status != SolverStatus::ImplementationBug
+        && execution_plan
+            .failure_behavior
+            .allowed_statuses
+            .contains(&status)
+}
+
+fn record_block_projection_failure_trace(
+    block: &ProjectionBlock,
+    execution_plan: &crate::planner::kernel_plan::KernelExecutionPlan,
+    err: &SolverError,
+    allowed_to_continue: bool,
+    ctx: &mut SolverContext,
+) {
+    let mut diagnostic = crate::result::diagnostics::DiagnosticRecord::new(
+        "BlockProjectionFailureTrace",
+        format!(
+            "block_id={} kernel={:?} status={:?} allowed_to_continue={}",
+            block.block_id.0,
+            execution_plan.kernel_kind,
+            err.public_status(),
+            allowed_to_continue
+        ),
+        Some(StageId("ExecuteLocalProjectionKernels".to_owned())),
+    );
+    diagnostic
+        .details
+        .insert("block_id".to_owned(), block.block_id.0.to_string());
+    diagnostic.details.insert(
+        "kernel_kind".to_owned(),
+        format!("{:?}", execution_plan.kernel_kind),
+    );
+    diagnostic.details.insert(
+        "plan_hash".to_owned(),
+        format!("{:?}", execution_plan.plan_hash),
+    );
+    diagnostic
+        .details
+        .insert("status".to_owned(), format!("{:?}", err.public_status()));
+    diagnostic.details.insert(
+        "allowed_to_continue".to_owned(),
+        allowed_to_continue.to_string(),
+    );
+    diagnostic
+        .details
+        .insert("error_kind".to_owned(), format!("{:?}", err.kind));
+    ctx.diagnostics.push(diagnostic);
 }
 
 fn execution_order(dag: &TargetProjectionDAG) -> Vec<ProjectionBlock> {

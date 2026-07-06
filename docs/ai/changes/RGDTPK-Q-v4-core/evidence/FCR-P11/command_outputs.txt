@@ -12,7 +12,7 @@ Cases:
 - fcr_p11_red_team_02_two_separator_public_composition
 - fcr_p11_red_team_03_sparse_resultant_higher_degree_eliminant
 - fcr_p11_red_team_04_guarded_rational_affine_nonconstant_denominator
-- fcr_p11_red_team_05_one_large_block_universal_path
+- fcr_p11_red_team_05_one_large_block_universal_admission
 - fcr_p11_red_team_06_target_independent_feasibility_component
 - fcr_p11_red_team_07_positive_nonfinite_kept_out_of_candidate_cover_claim
 - fcr_p11_red_team_08_target_free_without_positive_witness_is_not_nonfinite
@@ -21,6 +21,7 @@ Cases:
 Freshness remediation:
 - case 08 uses a two-variable product/quadratic input `xy = t`, `x^2 + y^2 = 3` under bounded
   `TargetRelationSearch`, rather than the P10 B1 `x^2 = t` shape.
+- case 05 now asserts UniversalTargetElimination admission in the public route trace rather than executed kernel identity, because the GSR declared ladder keeps Universal last.
 
 PASS: cargo test --manifest-path geosolver-core/Cargo.toml --test fcr_p10_acceptance_suite -- --nocapture
 Output: 12 passed, 0 failed.

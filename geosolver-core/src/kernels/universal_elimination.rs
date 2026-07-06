@@ -9,6 +9,15 @@ use crate::algebra::elimination::{
 use crate::algebra::groebner::GroebnerOptions;
 use crate::compose::message::{MessageRepresentation, ProjectionMessage, ProjectionStrength};
 use crate::graph::projection_dag::ProjectionBlock;
+use crate::kernels::action_krylov::{
+    execute_target_action_krylov, plan_target_action_krylov_with_messages,
+};
+use crate::kernels::norm_trace_projection::{
+    execute_norm_trace_projection, plan_norm_trace_projection,
+};
+use crate::kernels::regular_chain_projection::{
+    execute_regular_chain_projection, plan_regular_chain_projection,
+};
 use crate::kernels::sparse_resultant::{
     execute_sparse_resultant, plan_sparse_resultant_with_messages,
 };
@@ -316,10 +325,16 @@ fn execute_universal_elimination_with_solver_ctx(
             stage_trace_hashes.push(stage.stage_hash);
             continue;
         }
-        match execute_universal_stage_with_solver_ctx(&stage, ctx, solver_ctx, plan) {
+        match execute_universal_stage_with_solver_ctx(
+            &stage,
+            ctx,
+            solver_ctx,
+            plan,
+            &stage_trace_hashes,
+        ) {
             Ok(message) => return Ok(message),
             Err(err) if is_continuable_stage_failure(&err) => {
-                stage_trace_hashes.push(stage_error_hash(&stage, &err));
+                stage_trace_hashes.push(stage.stage_hash);
             }
             Err(err) => return Err(err),
         }
@@ -341,6 +356,7 @@ pub fn execute_universal_stage(
         ctx,
         &mut SolverContext::new(Default::default()),
         &shadow,
+        &[],
     )
 }
 
@@ -349,6 +365,7 @@ fn execute_universal_stage_with_solver_ctx(
     ctx: &mut KernelContext,
     solver_ctx: &mut SolverContext,
     parent_plan: &KernelExecutionPlan,
+    failed_strategy_hashes: &[Hash],
 ) -> Result<ProjectionMessage, SolverError> {
     if !stage.enabled {
         return Err(algorithmic_hard_case(
@@ -382,6 +399,7 @@ fn execute_universal_stage_with_solver_ctx(
                 message,
                 ProjectionStrength::CandidateCoverStrong,
                 parent_plan,
+                failed_strategy_hashes,
             )
         }
         UniversalStrategy::SparseResultantIfSquareOrOverdetermined => {
@@ -406,6 +424,32 @@ fn execute_universal_stage_with_solver_ctx(
                 message,
                 ProjectionStrength::CandidateCoverStrong,
                 parent_plan,
+                failed_strategy_hashes,
+            )
+        }
+        UniversalStrategy::TargetActionKrylovIfQuotientCertifiable => {
+            let subplan = plan_target_action_krylov_with_messages(
+                &ctx.block,
+                &ctx.system,
+                &ctx.child_messages,
+                solver_ctx,
+                KernelPlanId(stage.parent_plan_id.0.saturating_add(150)),
+            )
+            .map_err(|_| {
+                algorithmic_hard_case(
+                    ctx,
+                    "target-action Krylov stage not applicable",
+                    &[stage.stage_hash],
+                )
+            })?;
+            let message = execute_target_action_krylov(&subplan, ctx, solver_ctx)?;
+            wrap_stage_message(
+                stage,
+                ctx,
+                message,
+                ProjectionStrength::CandidateCoverStrong,
+                parent_plan,
+                failed_strategy_hashes,
             )
         }
         UniversalStrategy::SpecializeProjectInterpolateVerify => {
@@ -430,6 +474,51 @@ fn execute_universal_stage_with_solver_ctx(
                 message,
                 ProjectionStrength::CandidateCoverStrong,
                 parent_plan,
+                failed_strategy_hashes,
+            )
+        }
+        UniversalStrategy::RegularChainIfTriangular => {
+            let subplan = plan_regular_chain_projection(
+                &ctx.block,
+                &ctx.system,
+                solver_ctx,
+                KernelPlanId(stage.parent_plan_id.0.saturating_add(250)),
+            )
+            .map_err(|_| {
+                algorithmic_hard_case(
+                    ctx,
+                    "regular-chain stage not applicable",
+                    &[stage.stage_hash],
+                )
+            })?;
+            let message = execute_regular_chain_projection(&subplan, ctx)?;
+            wrap_stage_message(
+                stage,
+                ctx,
+                message,
+                ProjectionStrength::CandidateCoverStrong,
+                parent_plan,
+                failed_strategy_hashes,
+            )
+        }
+        UniversalStrategy::NormTraceIfTower => {
+            let subplan = plan_norm_trace_projection(
+                &ctx.block,
+                &ctx.system,
+                solver_ctx,
+                KernelPlanId(stage.parent_plan_id.0.saturating_add(300)),
+            )
+            .map_err(|_| {
+                algorithmic_hard_case(ctx, "norm-trace stage not applicable", &[stage.stage_hash])
+            })?;
+            let message = execute_norm_trace_projection(&subplan, ctx)?;
+            wrap_stage_message(
+                stage,
+                ctx,
+                message,
+                ProjectionStrength::CandidateCoverStrong,
+                parent_plan,
+                failed_strategy_hashes,
             )
         }
         UniversalStrategy::LocalGroebnerEliminationToKeepZ => {
@@ -506,6 +595,9 @@ fn execute_universal_stage_with_solver_ctx(
                         "universal-local-groebner-certificate",
                         &[stage.stage_hash.0.to_vec()],
                     ),
+                    attempted_strategies: attempted_universal_strategies(parent_plan),
+                    chosen_strategy: stage.strategy,
+                    failed_strategy_hashes: failed_strategy_hashes.to_vec(),
                     output_relations: result
                         .generators
                         .iter()
@@ -606,6 +698,7 @@ fn wrap_stage_message(
     message: ProjectionMessage,
     strength: ProjectionStrength,
     parent_plan: &KernelExecutionPlan,
+    failed_strategy_hashes: &[Hash],
 ) -> Result<ProjectionMessage, SolverError> {
     let exported = stage
         .exported_variables
@@ -654,6 +747,9 @@ fn wrap_stage_message(
         KernelCertificatePayload::Universal(UniversalProjectionCertificate {
             stage_hash: stage.stage_hash,
             stage_certificate_hash,
+            attempted_strategies: attempted_universal_strategies(parent_plan),
+            chosen_strategy: stage.strategy,
+            failed_strategy_hashes: failed_strategy_hashes.to_vec(),
             output_relations: relation_generators,
             inner_payload: Some(Box::new(inner_payload)),
             output_memberships: Vec::new(),
@@ -682,6 +778,7 @@ fn build_universal_message(
                     .iter()
                     .map(|relation| relation.hash.0.to_vec()),
             )
+            .chain(std::iter::once(format!("{payload:?}").into_bytes()))
             .collect::<Vec<_>>(),
     );
     let certificate = KernelCertificate::from_execution_plan_with_payload(
@@ -707,6 +804,15 @@ fn build_universal_message(
     };
     message.package_hash = projection_message_hash(&message);
     message
+}
+
+fn attempted_universal_strategies(parent_plan: &KernelExecutionPlan) -> Vec<UniversalStrategy> {
+    parent_plan
+        .support_plan
+        .universal_strategy_sequence
+        .iter()
+        .map(|step| step.strategy)
+        .collect()
 }
 
 fn validate_universal_plan_binding(
@@ -797,7 +903,10 @@ fn validate_fixed_strategy_sequence(
     let expected = [
         UniversalStrategy::TargetRelationSearchEscalated,
         UniversalStrategy::SparseResultantIfSquareOrOverdetermined,
+        UniversalStrategy::TargetActionKrylovIfQuotientCertifiable,
         UniversalStrategy::SpecializeProjectInterpolateVerify,
+        UniversalStrategy::RegularChainIfTriangular,
+        UniversalStrategy::NormTraceIfTower,
         UniversalStrategy::LocalGroebnerEliminationToKeepZ,
     ];
     if steps.len() != expected.len()
@@ -952,9 +1061,33 @@ fn fixed_universal_strategy_sequence(
             empty_skip(square_or_overdetermined, "not square or overdetermined"),
         ),
         universal_strategy_step(
+            UniversalStrategy::TargetActionKrylovIfQuotientCertifiable,
+            !relations.is_empty(),
+            empty_skip(
+                !relations.is_empty(),
+                "no relations for target action quotient",
+            ),
+        ),
+        universal_strategy_step(
             UniversalStrategy::SpecializeProjectInterpolateVerify,
             has_non_target_separator,
             empty_skip(has_non_target_separator, "no non-target exported separator"),
+        ),
+        universal_strategy_step(
+            UniversalStrategy::RegularChainIfTriangular,
+            !relations.is_empty(),
+            empty_skip(
+                !relations.is_empty(),
+                "no relations for regular-chain detection",
+            ),
+        ),
+        universal_strategy_step(
+            UniversalStrategy::NormTraceIfTower,
+            !relations.is_empty(),
+            empty_skip(
+                !relations.is_empty(),
+                "no relations for norm/trace tower detection",
+            ),
         ),
         universal_strategy_step(
             UniversalStrategy::LocalGroebnerEliminationToKeepZ,
@@ -1058,17 +1191,6 @@ fn universal_stage_hash(stage: &UniversalStagePlan) -> Hash {
     )
 }
 
-fn stage_error_hash(stage: &UniversalStagePlan, err: &SolverError) -> Hash {
-    hash_sequence(
-        "universal-stage-error",
-        &[
-            stage.stage_hash.0.to_vec(),
-            format!("{:?}", err.public_status()).into_bytes(),
-            format!("{:?}", err.kind).into_bytes(),
-        ],
-    )
-}
-
 fn projection_message_hash(message: &ProjectionMessage) -> Hash {
     let mut chunks = vec![
         message.package_id.0.to_be_bytes().to_vec(),
@@ -1137,6 +1259,7 @@ fn is_continuable_stage_failure(err: &SolverError) -> bool {
     matches!(
         err.kind,
         SolverErrorKind::Failure(FailureKind::AlgorithmicHardCase { .. })
+            | SolverErrorKind::Failure(FailureKind::FiniteResourceFailure { .. })
             | SolverErrorKind::Failure(FailureKind::CertificateDesignGap { .. })
     )
 }
@@ -1542,7 +1665,10 @@ mod tests {
             vec![
                 UniversalStrategy::TargetRelationSearchEscalated,
                 UniversalStrategy::SparseResultantIfSquareOrOverdetermined,
+                UniversalStrategy::TargetActionKrylovIfQuotientCertifiable,
                 UniversalStrategy::SpecializeProjectInterpolateVerify,
+                UniversalStrategy::RegularChainIfTriangular,
+                UniversalStrategy::NormTraceIfTower,
                 UniversalStrategy::LocalGroebnerEliminationToKeepZ,
             ]
         );
@@ -1693,14 +1819,25 @@ mod tests {
         let kernel = UniversalTargetEliminationKernel;
         let admission = kernel.admit(&kctx.block, &kctx);
         let plan = kernel.plan(&admission, &kctx, &solver_ctx).unwrap();
-        let stage = build_stage_plans(&plan)
-            .unwrap()
-            .into_iter()
-            .find(|stage| stage.strategy == UniversalStrategy::LocalGroebnerEliminationToKeepZ)
+        let stages = build_stage_plans(&plan).unwrap();
+        let stage_index = stages
+            .iter()
+            .position(|stage| stage.strategy == UniversalStrategy::LocalGroebnerEliminationToKeepZ)
             .expect("Universal plan must contain local Groebner stage");
-        let message =
-            execute_universal_stage_with_solver_ctx(&stage, &mut kctx, &mut solver_ctx, &plan)
-                .unwrap();
+        let failed_strategy_hashes = stages
+            .iter()
+            .take(stage_index)
+            .map(|stage| stage.stage_hash)
+            .collect::<Vec<_>>();
+        let stage = stages[stage_index].clone();
+        let message = execute_universal_stage_with_solver_ctx(
+            &stage,
+            &mut kctx,
+            &mut solver_ctx,
+            &plan,
+            &failed_strategy_hashes,
+        )
+        .unwrap();
         (message, kctx)
     }
 }

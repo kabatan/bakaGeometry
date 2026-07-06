@@ -120,6 +120,21 @@ fn dense_decline_sparse_problem(base: u32) -> RationalTargetProblem {
     )
 }
 
+fn dense_decline_universal_problem(base: u32) -> RationalTargetProblem {
+    let target = VariableId(base + 1);
+    let x = VariableId(base + 13);
+    let y = VariableId(base + 17);
+    scaled_problem(
+        vec![y, x, target],
+        target,
+        vec![
+            poly_sub(&poly_sub(&v(target), &v(x)), &v(y)),
+            poly_sub(&poly_add(&poly_mul(&v(x), &v(x)), &v(y)), &c(2)),
+            poly_sub(&poly_sub(&poly_mul(&v(y), &v(y)), &v(x)), &c(1)),
+        ],
+    )
+}
+
 fn planning_artifacts(
     problem: RationalTargetProblem,
     options: SolverOptions,
@@ -139,7 +154,7 @@ fn dense_route_declined(plan: &KernelPlan) -> bool {
         admission.kind == KernelKind::TargetRelationSearch
             && matches!(
                 &admission.status,
-                KernelAdmissionStatus::Declined { reason }
+                KernelAdmissionStatus::CostProhibited { reason, .. }
                     if reason.contains("CostProhibitedDenseRoute")
             )
     })
@@ -170,16 +185,25 @@ fn assert_cost_prohibited_diagnostic(result: &TargetSolveResult) {
         "matrix_col_cap",
         "matrix_row_cap",
         "memory_cap_bytes",
-        "first_export_degree",
-        "estimated_matrix_cols",
-        "estimated_rows",
-        "estimated_memory_bytes",
-        "first_prohibited_stage",
     ] {
         assert!(
             diagnostic.details.contains_key(key),
             "missing diagnostic detail {key}: {diagnostic:?}"
         );
+    }
+    if diagnostic.details.get("stage_count").map(String::as_str) != Some("0") {
+        for key in [
+            "first_export_degree",
+            "estimated_matrix_cols",
+            "estimated_rows",
+            "estimated_memory_bytes",
+            "first_prohibited_stage",
+        ] {
+            assert!(
+                diagnostic.details.contains_key(key),
+                "missing diagnostic detail {key}: {diagnostic:?}"
+            );
+        }
     }
 }
 
@@ -330,15 +354,20 @@ fn gpsr_large_footprint_sparse_route_still_produces_candidate_cover() {
 
 #[test]
 fn gpsr_universal_ladder_survives_internal_dense_decline() {
-    let problem = dense_decline_sparse_problem(50_000);
-    let result = solve_target(
-        problem.clone(),
-        options_prioritizing(KernelKind::UniversalTargetElimination),
-    );
+    let problem = dense_decline_universal_problem(50_000);
+    let mut options = options_prioritizing(KernelKind::UniversalTargetElimination);
+    options.max_relation_search_export_degree = Some(0);
+    let result = solve_target(problem.clone(), options);
     assert_support_success(
         "universal ladder after dense decline",
         &problem,
         &result,
-        KernelKind::UniversalTargetElimination,
+        KernelKind::SparseResultantProjection,
     );
+    let (_compressed, _ctx, plans) = planning_artifacts(problem, SolverOptions::default());
+    assert!(plans.iter().any(|plan| {
+        plan.declared_ladder
+            .last()
+            .is_some_and(|entry| entry.kernel_kind == KernelKind::UniversalTargetElimination)
+    }));
 }

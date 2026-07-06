@@ -71,7 +71,9 @@ pub fn eliminate_separators_from_message_relations(
             };
             execute_target_relation_search(&plan, &mut kctx, ctx)
         }
-        KernelAdmissionStatus::Declined { reason } => Err(algorithmic_hard_case(
+        KernelAdmissionStatus::Declined { reason }
+        | KernelAdmissionStatus::CostProhibited { reason, .. }
+        | KernelAdmissionStatus::PlanProbeFailed { reason, .. } => Err(algorithmic_hard_case(
             target,
             block.block_hash,
             &format!("separator target-direct kernel declined: {reason}"),

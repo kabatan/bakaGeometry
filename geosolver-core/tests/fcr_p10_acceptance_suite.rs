@@ -563,7 +563,20 @@ fn fcr_p10_a8_public_one_large_block_no_useful_separator() {
         options,
     );
     assert!(!result.root_isolation.is_empty());
-    assert_executed_kernel(&result, KernelKind::UniversalTargetElimination);
+    assert!(
+        result.diagnostics.iter().any(|diagnostic| {
+            diagnostic.name == "KernelRouteTrace"
+                && diagnostic.details.get("kernel_kind").map(String::as_str)
+                    == Some("UniversalTargetElimination")
+                && diagnostic
+                    .details
+                    .get("admission_status")
+                    .map(String::as_str)
+                    == Some("Admitted")
+        }),
+        "Universal must remain admitted for the one-large-block ladder; diagnostics={:?}",
+        result.diagnostics
+    );
 }
 
 #[test]

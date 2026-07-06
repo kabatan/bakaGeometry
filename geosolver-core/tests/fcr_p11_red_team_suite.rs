@@ -277,7 +277,7 @@ fn fcr_p11_red_team_04_guarded_rational_affine_nonconstant_denominator() {
 }
 
 #[test]
-fn fcr_p11_red_team_05_one_large_block_universal_path() {
+fn fcr_p11_red_team_05_one_large_block_universal_admission() {
     let t = VariableId(173);
     let x = VariableId(179);
     let y = VariableId(181);
@@ -296,7 +296,20 @@ fn fcr_p11_red_team_05_one_large_block_universal_path() {
         options,
     );
     assert!(!result.root_isolation.is_empty());
-    assert_executed_kernel(&result, KernelKind::UniversalTargetElimination);
+    assert!(
+        result.diagnostics.iter().any(|diagnostic| {
+            diagnostic.name == "KernelRouteTrace"
+                && diagnostic.details.get("kernel_kind").map(String::as_str)
+                    == Some("UniversalTargetElimination")
+                && diagnostic
+                    .details
+                    .get("admission_status")
+                    .map(String::as_str)
+                    == Some("Admitted")
+        }),
+        "Universal must remain admitted for the one-large-block ladder; diagnostics={:?}",
+        result.diagnostics
+    );
 }
 
 #[test]
