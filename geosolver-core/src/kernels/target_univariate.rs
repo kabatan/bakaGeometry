@@ -14,7 +14,7 @@ use crate::preprocess::compression::CompressedSystemQ;
 use crate::problem::canonicalize::CanonicalRelationQ;
 use crate::problem::context::SolverContext;
 use crate::result::cost_trace::ProjectionCostTrace;
-use crate::result::status::{FailureKind, SolverError, SolverErrorKind};
+use crate::result::status::{FailureKind, SolverError, SolverErrorKind, StageId};
 use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::{KernelPlanId, PackageId, VariableId};
 use crate::types::monomial::normalize_monomial;
@@ -166,8 +166,12 @@ pub fn admit_target_univariate_with_messages(
 pub fn execute_target_univariate(
     plan: &KernelExecutionPlan,
     ctx: &mut KernelContext,
-    _solver_ctx: &mut SolverContext,
+    solver_ctx: &mut SolverContext,
 ) -> Result<ProjectionMessage, SolverError> {
+    crate::problem::context::check_resource(
+        solver_ctx,
+        StageId("TargetUnivariate::execute_start".to_owned()),
+    )?;
     if plan.kernel_kind != KernelKind::TargetUnivariate {
         return Err(implementation_bug(
             "target-univariate execute received wrong plan kind",
@@ -186,8 +190,22 @@ pub fn execute_target_univariate(
         .iter()
         .map(|input| input.polynomial.clone())
         .collect::<Vec<_>>();
+    crate::problem::context::check_resource_work(
+        solver_ctx,
+        StageId("TargetUnivariate::inputs_materialized".to_owned()),
+        relations
+            .iter()
+            .map(|relation| relation.terms.len())
+            .sum::<usize>()
+            .max(1) as u128,
+    )?;
     let support = target_only_support_from_polynomials(&relations, target)
         .ok_or_else(|| implementation_bug("target-univariate admission invalid"))?;
+    crate::problem::context::check_resource_work(
+        solver_ctx,
+        StageId("TargetUnivariate::support_selected".to_owned()),
+        support.terms.len().max(1) as u128,
+    )?;
     let certificate_hash = hash_sequence(
         "target-univariate-certificate",
         &[

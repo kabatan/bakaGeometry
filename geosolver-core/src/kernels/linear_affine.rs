@@ -222,8 +222,12 @@ pub fn plan_linear_affine(
 pub fn execute_linear_affine(
     plan: &KernelExecutionPlan,
     ctx: &mut KernelContext,
-    _solver_ctx: &mut SolverContext,
+    solver_ctx: &mut SolverContext,
 ) -> Result<ProjectionMessage, SolverError> {
+    crate::problem::context::check_resource(
+        solver_ctx,
+        StageId("LinearAffine::execute_start".to_owned()),
+    )?;
     if plan.kernel_kind != KernelKind::LinearAffine {
         return Err(implementation_bug(
             "linear-affine execute received wrong plan kind",
@@ -243,7 +247,11 @@ pub fn execute_linear_affine(
         .iter()
         .map(|relation| relation.polynomial.clone())
         .collect::<Vec<_>>();
-    for step in &order.steps {
+    for (step_index, step) in order.steps.iter().enumerate() {
+        crate::problem::context::check_resource(
+            solver_ctx,
+            StageId(format!("LinearAffine::step::{step_index}")),
+        )?;
         let Some(relation) = relations
             .iter()
             .find(|relation| relation.id == step.source_relation_id)

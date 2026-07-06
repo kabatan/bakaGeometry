@@ -54,9 +54,9 @@ impl TargetProjectionKernel for RegularChainProjectionKernel {
         &self,
         plan: &KernelExecutionPlan,
         ctx: &mut KernelContext,
-        _solver_ctx: &mut SolverContext,
+        solver_ctx: &mut SolverContext,
     ) -> Result<ProjectionMessage, SolverError> {
-        execute_regular_chain_projection(plan, ctx)
+        execute_regular_chain_projection(plan, ctx, solver_ctx)
     }
 
     fn replay(&self, message: &ProjectionMessage, ctx: &KernelContext) -> ReplayResult {
@@ -216,18 +216,42 @@ pub fn plan_regular_chain_projection_from_admission(
 pub fn execute_regular_chain_projection(
     plan: &KernelExecutionPlan,
     ctx: &mut KernelContext,
+    solver_ctx: &mut SolverContext,
 ) -> Result<ProjectionMessage, SolverError> {
+    crate::problem::context::check_resource(
+        solver_ctx,
+        StageId("RegularChainProjection::execute_start".to_owned()),
+    )?;
     validate_regular_chain_plan_binding(plan, ctx)?;
     let inputs = planned_relation_inputs(plan, ctx)?;
     let relations = inputs
         .iter()
         .map(|input| input.polynomial.clone())
         .collect::<Vec<_>>();
+    crate::problem::context::check_resource_work(
+        solver_ctx,
+        StageId("RegularChainProjection::inputs_materialized".to_owned()),
+        relations
+            .iter()
+            .map(poly_monomial_count)
+            .sum::<usize>()
+            .max(1) as u128,
+    )?;
     let trace = build_regular_chain_trace(
         &relations,
         &ctx.system.guards,
         &sorted_set(&ctx.block.local_variables),
         &plan.exported_variables,
+    )?;
+    crate::problem::context::check_resource_work(
+        solver_ctx,
+        StageId("RegularChainProjection::trace_built".to_owned()),
+        trace
+            .dag
+            .chains
+            .len()
+            .max(1)
+            .saturating_mul(trace.generators.len().max(1)) as u128,
     )?;
     let Some(template) = &plan.support_plan.template_plan else {
         return Err(implementation_bug("regular-chain plan lacks template plan"));

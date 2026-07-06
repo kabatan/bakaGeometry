@@ -24,7 +24,7 @@ use crate::preprocess::compression::CompressedSystemQ;
 use crate::problem::canonicalize::CanonicalRelationQ;
 use crate::problem::context::SolverContext;
 use crate::result::cost_trace::ProjectionCostTrace;
-use crate::result::status::{FailureKind, SolverError, SolverErrorKind, SolverStatus};
+use crate::result::status::{FailureKind, SolverError, SolverErrorKind, SolverStatus, StageId};
 use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::{KernelPlanId, PackageId, RelationId, VariableId};
 use crate::types::matrix::{SparseMatrixQ, VectorQ};
@@ -368,8 +368,12 @@ pub fn plan_target_action_krylov_from_admission(
 pub fn execute_target_action_krylov(
     plan: &KernelExecutionPlan,
     ctx: &mut KernelContext,
-    _solver_ctx: &mut SolverContext,
+    solver_ctx: &mut SolverContext,
 ) -> Result<ProjectionMessage, SolverError> {
+    crate::problem::context::check_resource(
+        solver_ctx,
+        StageId("TargetActionKrylov::execute_start".to_owned()),
+    )?;
     validate_target_action_plan_binding(plan, ctx)?;
     let inputs = planned_relation_inputs(plan, ctx)?;
     let selected = select_target_action_selection(&inputs, ctx.system.target)
@@ -379,6 +383,14 @@ pub fn execute_target_action_krylov(
         &selected,
         ctx.system.target,
         BasisHandleId(plan.plan_id.0 as u64),
+    )?;
+    crate::problem::context::check_resource_work(
+        solver_ctx,
+        StageId("TargetActionKrylov::trace_built".to_owned()),
+        trace
+            .matrix_rows
+            .max(1)
+            .saturating_mul(trace.matrix_cols.max(1)) as u128,
     )?;
     let Some(template) = &plan.support_plan.template_plan else {
         return Err(implementation_bug(

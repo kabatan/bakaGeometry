@@ -1,0 +1,32 @@
+phase: ACR-P5
+review_status: PASS
+reviewer: guardian_boundary_reviewer
+scope:
+  - ACR-P5 declared-ladder bounded execution
+  - route budget enforcement
+  - non-monopolizing execution
+  - aggregate attempted-route summaries
+blockers: []
+passed_checks:
+  - "Declared ladder only includes hash-current, nonzero route budgets."
+  - "Pipeline records route start, success, allowed failure, budget stop, elapsed/work, and attempt hash."
+  - "Cooperative in-flight route budget checks consume elapsed steps and work units during kernel execution."
+  - "Allowed route-local budget stops continue to later routes."
+  - "No-failure aggregate path preserves all_attempts."
+  - "Near-public P5 stresses pass and include preflight and in-flight budget yield cases."
+verification:
+  cargo_fmt_check: PASS
+  acr_p3_tests: "3 passed"
+  acr_p4_tests: "6 passed"
+  acr_p5_tests: "3 passed"
+  cargo_check: PASS
+  cargo_test_lib: "237 passed"
+  forbidden_marker_scan: "no matches"
+  git_diff_check: PASS
+forbidden_claims:
+  - CANDIDATE_COVER_CORE_READY
+  - SOURCE_FAITHFUL_TO_V4_CANDIDATE_COVER_LAYER
+  - SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC
+  - RGDTPK_Q_V4_ACCEPTANCE_COMPLETE
+r_ids_verified: []
+next_action: "Commit ACR-P5 work, then proceed only to the next scoped ACR phase under its own gate."

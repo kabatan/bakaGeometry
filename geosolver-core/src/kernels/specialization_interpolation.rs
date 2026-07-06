@@ -279,12 +279,25 @@ pub fn execute_specialization_interpolation(
     ctx: &mut KernelContext,
     solver_ctx: &mut SolverContext,
 ) -> Result<ProjectionMessage, SolverError> {
+    crate::problem::context::check_resource(
+        solver_ctx,
+        StageId("SpecializationInterpolation::execute_start".to_owned()),
+    )?;
     validate_specialization_plan_binding(plan, ctx)?;
     let inputs = planned_relation_inputs(plan, ctx)?;
     let relation_polys = inputs
         .iter()
         .map(|input| input.polynomial.clone())
         .collect::<Vec<_>>();
+    crate::problem::context::check_resource_work(
+        solver_ctx,
+        StageId("SpecializationInterpolation::inputs_materialized".to_owned()),
+        relation_polys
+            .iter()
+            .map(poly_monomial_count)
+            .sum::<usize>()
+            .max(1) as u128,
+    )?;
     let trace = build_specialization_interpolation_trace(
         &relation_polys,
         &plan.eliminated_variables,
@@ -428,6 +441,11 @@ fn build_specialization_interpolation_trace(
         choose_multiseparator_specialization_points(&separators, &coefficient_support, 101);
     let mut samples = Vec::new();
     for point in &points {
+        crate::problem::context::check_resource_work(
+            solver_ctx,
+            StageId("SpecializationInterpolation::sample_point".to_owned()),
+            coefficient_support.len().max(1) as u128,
+        )?;
         let relation =
             execute_inner_target_only_kernel(relations, eliminated, target, point, solver_ctx)?;
         samples.push(SpecializedRelation {
@@ -435,11 +453,24 @@ fn build_specialization_interpolation_trace(
             relation,
         });
     }
+    crate::problem::context::check_resource_work(
+        solver_ctx,
+        StageId("SpecializationInterpolation::samples_collected".to_owned()),
+        samples
+            .len()
+            .max(1)
+            .saturating_mul(coefficient_support.len().max(1)) as u128,
+    )?;
     let relation = interpolate_sparse_coefficients_with_support(
         &samples,
         &separators,
         &coefficient_support,
         solver_ctx.options.max_coefficient_height_bits,
+    )?;
+    crate::problem::context::check_resource_work(
+        solver_ctx,
+        StageId("SpecializationInterpolation::interpolated_relation".to_owned()),
+        relation.terms.len().max(1) as u128,
     )?;
     let interpolation_certificate =
         build_interpolation_certificate(&relation, samples.clone(), separators.clone());
@@ -454,6 +485,11 @@ fn build_specialization_interpolation_trace(
         exported,
         EliminationStrategy::LocalGroebner(GroebnerOptions::default()),
         solver_ctx,
+    )?;
+    crate::problem::context::check_resource_work(
+        solver_ctx,
+        StageId("SpecializationInterpolation::exact_elimination_verification".to_owned()),
+        elimination_result.generators.len().max(1) as u128,
     )?;
     if !verify_interpolated_relation_by_elimination(
         &relation,
@@ -553,6 +589,10 @@ fn execute_inner_target_only_kernel(
     point: &SpecializationPoint,
     solver_ctx: &mut SolverContext,
 ) -> Result<SparsePolynomialQ, SolverError> {
+    crate::problem::context::check_resource(
+        solver_ctx,
+        StageId("SpecializationInterpolation::inner_target_only_start".to_owned()),
+    )?;
     let specialized = specialize_polynomials(relations, point);
     let mut variables = eliminated.to_vec();
     variables.push(target);

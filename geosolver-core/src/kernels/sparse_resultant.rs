@@ -326,6 +326,10 @@ pub fn execute_sparse_resultant(
     ctx: &mut KernelContext,
     solver_ctx: &mut SolverContext,
 ) -> Result<ProjectionMessage, SolverError> {
+    crate::problem::context::check_resource(
+        solver_ctx,
+        StageId("SparseResultant::execute_start".to_owned()),
+    )?;
     validate_sparse_resultant_plan_binding(plan, ctx)?;
     let inputs = planned_relation_inputs(plan, ctx)?;
     let relation_polys = inputs
@@ -343,6 +347,7 @@ pub fn execute_sparse_resultant(
         &plan.exported_variables,
         max_dim,
         plan,
+        solver_ctx,
     )?;
     let probe = probe_sparse_resultant_plan(
         &relation_polys,
@@ -509,6 +514,7 @@ fn build_sparse_resultant_trace(
     exported: &[VariableId],
     max_dim: usize,
     plan: &KernelExecutionPlan,
+    solver_ctx: &mut SolverContext,
 ) -> Result<SparseResultantTrace, SolverError> {
     let exported_set = exported.iter().copied().collect::<BTreeSet<_>>();
     let mut current = relations.to_vec();
@@ -522,6 +528,11 @@ fn build_sparse_resultant_trace(
         let Some(pair) = selectable_resultant_pair(&current, *eliminate, max_dim) else {
             continue;
         };
+        crate::problem::context::check_resource_work(
+            solver_ctx,
+            StageId(format!("SparseResultant::chain_step::{step}")),
+            pair.footprint.route_work_units.0,
+        )?;
         guard_sparse_resultant_pair(plan, step, &pair.footprint)?;
         accumulated_work = accumulated_work.saturating_add(pair.footprint.route_work_units);
         if accumulated_work > plan.route_budget.max_work_units {

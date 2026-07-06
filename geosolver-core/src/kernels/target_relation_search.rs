@@ -237,6 +237,10 @@ pub fn execute_target_relation_search(
     ctx: &mut KernelContext,
     solver_ctx: &mut SolverContext,
 ) -> Result<ProjectionMessage, SolverError> {
+    crate::problem::context::check_resource(
+        solver_ctx,
+        StageId("TargetRelationSearch::execute_start".to_owned()),
+    )?;
     validate_relation_search_plan_binding(plan, ctx)?;
     let relations = planned_relations(plan, ctx)?;
     if relations.is_empty() {
@@ -286,6 +290,13 @@ pub fn execute_target_relation_search(
         .collect::<BTreeSet<_>>();
     let mut traces = Vec::new();
     for stage in &schedule.stages {
+        crate::problem::context::check_resource(
+            solver_ctx,
+            StageId(format!(
+                "TargetRelationSearch::stage::export_degree={}",
+                stage.export_degree
+            )),
+        )?;
         let Some(stage_estimate) = preflight
             .stage_estimates
             .iter()
@@ -328,6 +339,11 @@ pub fn execute_target_relation_search(
             row_monomials,
         );
         let matrix = matrix_builder.matrix.clone();
+        crate::problem::context::check_resource_work(
+            solver_ctx,
+            StageId("TargetRelationSearch::matrix_materialized".to_owned()),
+            matrix.rows.max(1).saturating_mul(matrix.cols.max(1)) as u128,
+        )?;
         let coefficient_height_before_bits = max_poly_coefficient_height_bits(&relation_polys);
         enforce_matrix_limits(
             plan,
@@ -354,6 +370,10 @@ pub fn execute_target_relation_search(
             &relation_polys,
             &exported,
         )? {
+            crate::problem::context::check_resource(
+                solver_ctx,
+                StageId("TargetRelationSearch::verified_candidate".to_owned()),
+            )?;
             let relation = verified.relation;
             let multipliers = verified.multipliers;
             let certificate_hash = target_relation_search_certificate_hash(

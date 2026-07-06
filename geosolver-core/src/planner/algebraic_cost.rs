@@ -200,9 +200,21 @@ impl RouteBudget {
             .predicted_work_units
             .saturating_mul(SaturatingCount::from_usize(4))
             .saturating_add(SaturatingCount::from_usize(1024));
+        let structural_steps = estimate
+            .local_variable_count
+            .saturating_add(estimate.local_relation_count)
+            .saturating_add(estimate.exported_variable_count)
+            .saturating_add(estimate.matrix_rows.unwrap_or(1))
+            .saturating_add(estimate.matrix_cols.unwrap_or(1))
+            .saturating_add(estimate.quotient_rank_estimate.unwrap_or(1));
+        let max_elapsed_steps = estimate
+            .predicted_work_units
+            .as_usize_saturating()
+            .max(structural_steps)
+            .max(8);
         Self::new(
             max_work_units,
-            estimate.local_variable_count.max(1),
+            max_elapsed_steps,
             terms.max(1),
             intermediate,
             output,

@@ -11,6 +11,7 @@ pub fn build_declared_ladder(
     let mut plans = admissions
         .iter()
         .filter_map(|admission| admission.execution_plan.clone())
+        .filter(has_enforceable_route_budget)
         .collect::<Vec<_>>();
     plans.sort_by(|a, b| {
         let a_cost = costs
@@ -43,4 +44,17 @@ pub fn build_declared_ladder(
         plans.push(universal);
     }
     plans
+}
+
+fn has_enforceable_route_budget(plan: &KernelExecutionPlan) -> bool {
+    plan.algebraic_work_estimate.is_hash_current()
+        && plan.route_budget.is_hash_current()
+        && plan.route_budget.max_work_units.0 > 0
+        && plan.route_budget.max_elapsed_steps > 0
+        && plan.route_budget.max_input_terms_per_pair > 0
+        && plan.route_budget.max_intermediate_terms > 0
+        && plan.route_budget.max_output_terms > 0
+        && plan.route_budget.max_keep_variables > 0
+        && plan.route_budget.max_total_degree > 0
+        && plan.route_budget.max_coefficient_height_bits > 0
 }

@@ -1,0 +1,20 @@
+phase: ACR-P5
+review_status: FAIL_FIXABLE
+reviewer: guardian_boundary_reviewer
+scope:
+  - ACR-P5 re-review after cooperative in-flight route budget fix
+blockers:
+  - id: ACR-P5-F3
+    severity: medium
+    finding: "Missing-kernel/no-failure aggregate path omitted attempted route summaries."
+closed_findings:
+  - ACR-P5-F1
+  - ACR-P5-F2
+  - ACR-P5-F4
+required_next_action: "Include all_attempts in no-failure aggregate path, record a summary for skipped missing-kernel attempts, add focused test, rerun verification and re-review."
+forbidden_claims:
+  - CANDIDATE_COVER_CORE_READY
+  - SOURCE_FAITHFUL_TO_V4_CANDIDATE_COVER_LAYER
+  - SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC
+  - RGDTPK_Q_V4_ACCEPTANCE_COMPLETE
+r_ids_verified: []

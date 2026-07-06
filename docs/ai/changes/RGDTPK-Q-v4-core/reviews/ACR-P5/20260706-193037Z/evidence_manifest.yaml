@@ -1,0 +1,16 @@
+phase: ACR-P5
+archive_kind: guardian_boundary_review
+status: FAIL_FIXABLE
+files_reviewed:
+  - docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_COMPLETION_REPAIR_PLAN.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_COMPLETION_REVIEWER_PROMPTS.md
+  - geosolver-core/src/planner/ladder.rs
+  - geosolver-core/src/solver/pipeline.rs
+  - docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_P5_MECH_EVIDENCE.md
+evidence_basis:
+  - "Existing implementation recorded route attempts and preflight budget stops."
+  - "Existing implementation did not meter in-flight kernel execution."
+  - "Existing near-public stress exercised preflight yield only."
+limitations:
+  - "This archive records the pre-remediation FAIL and is historical after the subsequent P5 fix."
+  - "No R-ID is VERIFIED by this review."

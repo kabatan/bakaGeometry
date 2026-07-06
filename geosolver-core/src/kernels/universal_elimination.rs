@@ -309,6 +309,10 @@ fn execute_universal_elimination_with_solver_ctx(
     ctx: &mut KernelContext,
     solver_ctx: &mut SolverContext,
 ) -> Result<ProjectionMessage, SolverError> {
+    crate::problem::context::check_resource(
+        solver_ctx,
+        StageId("UniversalTargetElimination::execute_start".to_owned()),
+    )?;
     validate_universal_plan_binding(plan, ctx)?;
     let inputs = planned_relation_inputs(plan, ctx)?;
     if inputs.is_empty() {
@@ -320,7 +324,14 @@ fn execute_universal_elimination_with_solver_ctx(
     }
     let stages = build_stage_plans(plan)?;
     let mut stage_trace_hashes = Vec::new();
-    for stage in stages {
+    for (stage_index, stage) in stages.into_iter().enumerate() {
+        crate::problem::context::check_resource(
+            solver_ctx,
+            StageId(format!(
+                "UniversalTargetElimination::stage::{stage_index}::{:?}",
+                stage.strategy
+            )),
+        )?;
         if !stage.enabled {
             stage_trace_hashes.push(stage.stage_hash);
             continue;
@@ -491,7 +502,7 @@ fn execute_universal_stage_with_solver_ctx(
                     &[stage.stage_hash],
                 )
             })?;
-            let message = execute_regular_chain_projection(&subplan, ctx)?;
+            let message = execute_regular_chain_projection(&subplan, ctx, solver_ctx)?;
             wrap_stage_message(
                 stage,
                 ctx,
@@ -511,7 +522,7 @@ fn execute_universal_stage_with_solver_ctx(
             .map_err(|_| {
                 algorithmic_hard_case(ctx, "norm-trace stage not applicable", &[stage.stage_hash])
             })?;
-            let message = execute_norm_trace_projection(&subplan, ctx)?;
+            let message = execute_norm_trace_projection(&subplan, ctx, solver_ctx)?;
             wrap_stage_message(
                 stage,
                 ctx,

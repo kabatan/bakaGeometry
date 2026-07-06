@@ -1,0 +1,27 @@
+phase: ACR-P5
+review_status: FAIL_FIXABLE
+reviewer: guardian_boundary_reviewer
+scope:
+  - ACR-P5 declared ladder bounded execution
+  - route budget enforcement
+  - non-monopolizing execution
+blockers:
+  - id: ACR-P5-F1
+    severity: high
+    finding: "Budget enforcement is only pre/post `kernel.execute`; an executing kernel can monopolize the ladder."
+  - id: ACR-P5-F2
+    severity: high
+    finding: "`max_elapsed_steps` is not consumed during route execution."
+  - id: ACR-P5-F3
+    severity: medium
+    finding: "Aggregate no-message/no-failure path can omit attempted route summaries."
+  - id: ACR-P5-F4
+    severity: medium
+    finding: "Existing near-public stress covers preflight yield but not in-flight interruption."
+required_next_action: "Implement cooperative in-flight route budget checkpoints, add near-public in-flight yield stress, rerun verification, and request re-review."
+forbidden_claims:
+  - CANDIDATE_COVER_CORE_READY
+  - SOURCE_FAITHFUL_TO_V4_CANDIDATE_COVER_LAYER
+  - SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC
+  - RGDTPK_Q_V4_ACCEPTANCE_COMPLETE
+r_ids_verified: []
