@@ -1,11 +1,18 @@
 use crate::graph::projection_dag::{validate_projection_dag, TargetProjectionDAG};
-use crate::planner::admission::collect_kernel_admissions;
+use crate::kernels::traits::KernelKind;
+use crate::planner::admission::{
+    collect_kernel_admissions, KernelAdmission, KernelAdmissionStatus,
+};
 use crate::planner::cost_model::estimate_kernel_cost;
 use crate::planner::kernel_plan::KernelPlan;
 use crate::planner::ladder::build_declared_ladder;
 use crate::planner::probes::run_cost_probes;
+use crate::planner::relation_schedule::{
+    dense_relation_search_decline_reason, estimate_dense_relation_search_schedule,
+};
 use crate::preprocess::compression::CompressedSystemQ;
 use crate::problem::context::SolverContext;
+use crate::result::diagnostics::DiagnosticRecord;
 use crate::result::status::{AlgebraicReason, FailureKind, SolverError, SolverErrorKind, StageId};
 
 pub fn plan_all_blocks(
@@ -23,6 +30,7 @@ pub fn plan_all_blocks(
         }
         let probes = run_cost_probes(block, system, ctx);
         let admissions = collect_kernel_admissions(block, system, &probes, ctx);
+        record_dense_relation_search_admission_diagnostics(block, system, &admissions, ctx);
         let cost_estimates = admissions
             .iter()
             .map(|admission| estimate_kernel_cost(block, admission.kind, &probes))
@@ -45,6 +53,103 @@ pub fn plan_all_blocks(
         plans.push(plan);
     }
     Ok(plans)
+}
+
+fn record_dense_relation_search_admission_diagnostics(
+    block: &crate::graph::projection_dag::ProjectionBlock,
+    system: &CompressedSystemQ,
+    admissions: &[KernelAdmission],
+    ctx: &mut SolverContext,
+) {
+    let Some(KernelAdmissionStatus::Declined { reason }) = admissions
+        .iter()
+        .find(|admission| admission.kind == KernelKind::TargetRelationSearch)
+        .map(|admission| &admission.status)
+    else {
+        return;
+    };
+    if !reason.contains("CostProhibitedDenseRoute") {
+        return;
+    }
+    let relation_polys = block
+        .relation_ids
+        .iter()
+        .filter_map(|id| system.relations.iter().find(|relation| relation.id == *id))
+        .map(|relation| relation.polynomial.clone())
+        .collect::<Vec<_>>();
+    let eliminated_variables = block
+        .local_variables
+        .difference(&block.exported_variables)
+        .copied()
+        .collect::<Vec<_>>();
+    let exported_variables = block.exported_variables.iter().copied().collect::<Vec<_>>();
+    let preflight = estimate_dense_relation_search_schedule(
+        &relation_polys,
+        &eliminated_variables,
+        &exported_variables,
+        &ctx.options,
+    );
+    let mut diagnostic = DiagnosticRecord::new(
+        "CostProhibitedDenseRoute",
+        dense_relation_search_decline_reason(&preflight),
+        Some(StageId("PlanProjectionMessages".to_owned())),
+    );
+    diagnostic
+        .details
+        .insert("kernel".to_owned(), "TargetRelationSearch".to_owned());
+    diagnostic
+        .details
+        .insert("route".to_owned(), "DenseTotalDegree".to_owned());
+    diagnostic
+        .details
+        .insert("decision".to_owned(), "CostProhibitedDenseRoute".to_owned());
+    diagnostic
+        .details
+        .insert("block_id".to_owned(), block.block_id.0.to_string());
+    diagnostic.details.insert(
+        "stage_count".to_owned(),
+        preflight.planned_stage_count.display_value(),
+    );
+    diagnostic.details.insert(
+        "materialized_stage_cap".to_owned(),
+        preflight.caps.max_materialized_stages.to_string(),
+    );
+    diagnostic.details.insert(
+        "matrix_col_cap".to_owned(),
+        preflight.caps.max_matrix_cols.to_string(),
+    );
+    diagnostic.details.insert(
+        "matrix_row_cap".to_owned(),
+        preflight.caps.max_matrix_rows.to_string(),
+    );
+    diagnostic.details.insert(
+        "memory_cap_bytes".to_owned(),
+        preflight.caps.max_estimated_memory_bytes.to_string(),
+    );
+    if let Some(stage) = preflight.stage_estimates.first() {
+        diagnostic.details.insert(
+            "first_export_degree".to_owned(),
+            stage.export_degree.to_string(),
+        );
+        diagnostic.details.insert(
+            "estimated_matrix_cols".to_owned(),
+            stage.estimated_matrix_cols.display_value(),
+        );
+        diagnostic.details.insert(
+            "estimated_rows".to_owned(),
+            stage.estimated_rows_upper_bound.display_value(),
+        );
+        diagnostic.details.insert(
+            "estimated_memory_bytes".to_owned(),
+            stage.estimated_memory_bytes_upper_bound.display_value(),
+        );
+    }
+    if let Some(stage) = preflight.first_prohibited_stage {
+        diagnostic
+            .details
+            .insert("first_prohibited_stage".to_owned(), stage.to_string());
+    }
+    ctx.diagnostics.push(diagnostic);
 }
 
 fn postorder_key(

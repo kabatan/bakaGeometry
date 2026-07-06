@@ -17,6 +17,11 @@ use crate::planner::kernel_plan::{
     CertificateRoute, KernelExecutionPlan, KernelSupportPlan, LocalNonfinitePolicy, ResourceBounds,
 };
 use crate::planner::relation_schedule::{
+    build_dense_relation_search_schedule as planner_build_dense_relation_search_schedule,
+    dense_relation_search_decline_reason, estimate_dense_relation_search_schedule,
+    hash_dense_relation_search_schedule as planner_hash_dense_relation_search_schedule,
+    hash_relation_search_stage as planner_hash_relation_search_stage,
+    relation_search_default_export_degree_cap as planner_relation_search_default_export_degree_cap,
     DenseRelationSearchSchedule, RelationSearchBound, RelationSearchStage,
 };
 use crate::problem::canonicalize::CanonicalRelationQ;
@@ -144,6 +149,21 @@ pub fn admit_target_relation_search(
         .collect::<Vec<_>>();
     let exported_variables =
         sorted_variables(&block.exported_variables.iter().copied().collect::<Vec<_>>());
+    let preflight = estimate_dense_relation_search_schedule(
+        &relation_polys,
+        &eliminated_variables,
+        &exported_variables,
+        &solver_ctx.options,
+    );
+    if !preflight.materialization_allowed {
+        return finish_admission(
+            block,
+            KernelAdmissionStatus::Declined {
+                reason: dense_relation_search_decline_reason(&preflight),
+            },
+            None,
+        );
+    }
     let schedule = build_dense_relation_search_schedule(
         &relation_polys,
         &eliminated_variables,
@@ -233,6 +253,18 @@ pub fn execute_target_relation_search(
             "target relation search plan lacks dense schedule",
         ));
     };
+    let preflight = estimate_dense_relation_search_schedule(
+        &relation_polys,
+        &plan.eliminated_variables,
+        &plan.exported_variables,
+        &solver_ctx.options,
+    );
+    if !preflight.materialization_allowed {
+        return Err(algorithmic_hard_case(
+            ctx,
+            &dense_relation_search_decline_reason(&preflight),
+        ));
+    }
     let recomputed = build_dense_relation_search_schedule(
         &relation_polys,
         &plan.eliminated_variables,
@@ -383,18 +415,7 @@ pub fn relation_search_default_export_degree_cap(
     eliminated: &[VariableId],
     exported: &[VariableId],
 ) -> usize {
-    let d_max = j
-        .iter()
-        .map(|relation| poly_total_degree(relation) as usize)
-        .max()
-        .unwrap_or(0);
-    let z_seed = relation_search_z_seed(j, exported);
-    z_seed.max(
-        2_usize
-            .saturating_mul(d_max)
-            .saturating_add(eliminated.len())
-            .saturating_add(exported.len()),
-    )
+    planner_relation_search_default_export_degree_cap(j, eliminated, exported)
 }
 
 pub fn build_dense_relation_search_schedule(
@@ -403,104 +424,15 @@ pub fn build_dense_relation_search_schedule(
     exported: &[VariableId],
     options: &SolverOptions,
 ) -> DenseRelationSearchSchedule {
-    let eliminated_variables = sorted_variables(eliminated);
-    let exported_variables = sorted_variables(exported);
-    let z_seed = relation_search_z_seed(j, &exported_variables);
-    let d_max = j
-        .iter()
-        .map(|relation| poly_total_degree(relation) as usize)
-        .max()
-        .unwrap_or(0);
-    let default_cap =
-        relation_search_default_export_degree_cap(j, &eliminated_variables, &exported_variables);
-    let e_cap = options
-        .max_relation_search_export_degree
-        .unwrap_or(default_cap);
-    let mut stages = Vec::new();
-    for e in z_seed..=e_cap {
-        let bound = RelationSearchBound {
-            export_degree: e,
-            multiplier_total_degree: e.saturating_add(d_max),
-        };
-        let export_support = build_export_monomial_support(&exported_variables, &bound);
-        let multiplier_supports =
-            build_multiplier_supports(j, &eliminated_variables, &exported_variables, &bound);
-        let row_monomials = build_row_monomial_support(j, &export_support, &multiplier_supports);
-        let export_support_hash = hash_monomials("rgq042-export-support", &export_support);
-        let multiplier_support_hashes = multiplier_supports
-            .iter()
-            .map(|support| hash_monomials("rgq042-multiplier-support", support))
-            .collect::<Vec<_>>();
-        let row_monomial_hash = hash_monomials("rgq042-row-monomials", &row_monomials);
-        let matrix_rows = row_monomials.len();
-        let matrix_cols = export_support.len()
-            + multiplier_supports
-                .iter()
-                .map(|support| support.len())
-                .sum::<usize>();
-        let mut stage = RelationSearchStage {
-            export_degree: e,
-            multiplier_total_degree: bound.multiplier_total_degree,
-            export_support_hash,
-            multiplier_support_hashes,
-            row_monomial_hash,
-            row_monomial_count: matrix_rows,
-            matrix_rows,
-            matrix_cols,
-            stage_hash: hash_sequence("rgq042-relation-search-stage", &[]),
-        };
-        stage.stage_hash = hash_relation_search_stage(&stage);
-        stages.push(stage);
-    }
-    let mut schedule = DenseRelationSearchSchedule {
-        eliminated_variables,
-        exported_variables,
-        z_seed,
-        e_cap,
-        d_max,
-        stages,
-        schedule_hash: hash_sequence("rgq042-dense-relation-search-schedule", &[]),
-    };
-    schedule.schedule_hash = hash_dense_relation_search_schedule(&schedule);
-    schedule
+    planner_build_dense_relation_search_schedule(j, eliminated, exported, options)
 }
 
 pub fn hash_dense_relation_search_schedule(schedule: &DenseRelationSearchSchedule) -> Hash {
-    let mut chunks = vec![
-        schedule.z_seed.to_be_bytes().to_vec(),
-        schedule.e_cap.to_be_bytes().to_vec(),
-        schedule.d_max.to_be_bytes().to_vec(),
-    ];
-    for variable in &schedule.eliminated_variables {
-        chunks.push(variable.0.to_be_bytes().to_vec());
-    }
-    chunks.push(Vec::new());
-    for variable in &schedule.exported_variables {
-        chunks.push(variable.0.to_be_bytes().to_vec());
-    }
-    chunks.push(Vec::new());
-    for stage in &schedule.stages {
-        chunks.push(stage.stage_hash.0.to_vec());
-        chunks.push(hash_relation_search_stage(stage).0.to_vec());
-    }
-    hash_sequence("rgq042-dense-relation-search-schedule", &chunks)
+    planner_hash_dense_relation_search_schedule(schedule)
 }
 
 pub fn hash_relation_search_stage(stage: &RelationSearchStage) -> Hash {
-    let mut chunks = vec![
-        stage.export_degree.to_be_bytes().to_vec(),
-        stage.multiplier_total_degree.to_be_bytes().to_vec(),
-        stage.export_support_hash.0.to_vec(),
-    ];
-    for hash in &stage.multiplier_support_hashes {
-        chunks.push(hash.0.to_vec());
-    }
-    chunks.push(Vec::new());
-    chunks.push(stage.row_monomial_hash.0.to_vec());
-    chunks.push(stage.row_monomial_count.to_be_bytes().to_vec());
-    chunks.push(stage.matrix_rows.to_be_bytes().to_vec());
-    chunks.push(stage.matrix_cols.to_be_bytes().to_vec());
-    hash_sequence("rgq042-relation-search-stage", &chunks)
+    planner_hash_relation_search_stage(stage)
 }
 
 pub fn build_export_monomial_support(
@@ -527,23 +459,6 @@ pub fn build_multiplier_supports(
             monomials_total_degree_leq(&variables, multiplier_degree)
         })
         .collect()
-}
-
-fn relation_search_z_seed(j: &[SparsePolynomialQ], exported: &[VariableId]) -> usize {
-    let exported_set = exported.iter().copied().collect::<BTreeSet<_>>();
-    j.iter()
-        .flat_map(|relation| relation.terms.iter())
-        .map(|term| {
-            term.monomial
-                .exponents
-                .iter()
-                .filter(|(var, _)| exported_set.contains(var))
-                .map(|(_, exp)| *exp as usize)
-                .sum::<usize>()
-        })
-        .max()
-        .unwrap_or(0)
-        .max(1)
 }
 
 fn build_row_monomial_support(

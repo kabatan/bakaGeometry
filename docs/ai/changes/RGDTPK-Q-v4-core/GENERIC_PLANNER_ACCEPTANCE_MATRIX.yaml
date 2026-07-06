@@ -1,0 +1,70 @@
+schema_version: generic-planner-success-route-v1
+claim_target:
+  allowed_after_repair:
+    - PLANNER_SUCCESS_ROUTE_READY
+    - DENSE_TRS_ADMISSION_SAFE
+  allowed_only_if_full_existing_candidate_cover_suite_rerun:
+    - CANDIDATE_COVER_CORE_READY
+    - SOURCE_FAITHFUL_TO_V4_CANDIDATE_COVER_LAYER
+  forbidden_from_this_repair_alone:
+    - BENCHMARK_SUPERIORITY
+    - EXACT_IMAGE_CORE_READY
+    - SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC
+    - RGDTPK_Q_V4_ACCEPTANCE_COMPLETE
+
+forbidden_case_specific_content:
+  must_not_include:
+    - mixtilinear
+    - mixtilinear_candidate_cover_problem
+    - expected_cos_value
+    - geometry_family_dispatch
+    - problem_id_dispatch
+    - exact_polynomial_hash_from_reported_problem
+
+required_tests:
+  - id: G1
+    name: dense_relation_search_preflight_no_materialization
+    required_behavior:
+      - closed_form_estimate_only
+      - no_vec_monomial_allocation
+      - returns_under_short_time
+      - decision_cost_prohibited_when_caps_exceeded
+  - id: G2
+    name: admission_isolation_after_dense_trs_decline
+    required_behavior:
+      - target_relation_search_declined_or_cost_prohibited
+      - later_kernel_admissions_collected
+      - universal_admitted_for_relation_block
+      - no_solve_level_failure_during_admission
+  - id: G3
+    name: generic_large_footprint_compact_quotient_success
+    required_status: CertifiedCandidateCover
+    required_path: api_or_near_public_pipeline
+    forbidden_behavior:
+      - exact_image_filtering_required
+      - expected_answer_dispatch
+      - geometry_name_dispatch
+      - dense_trs_materialization
+  - id: G4
+    name: generic_large_footprint_sparse_or_specialization_success
+    required_status: CertifiedCandidateCover
+    required_path: api_or_near_public_pipeline
+    required_evidence:
+      - support_verified_exact_Q
+      - replay_accepts
+      - dense_trs_not_executable_due_to_preflight
+      - compact_route_used
+  - id: G5
+    name: universal_ladder_preserved_after_dense_route_prohibited
+    required_behavior:
+      - universal_in_ladder
+      - universal_not_hidden_fallback
+      - no_nonfinite_from_dense_exhaustion
+
+review_requirements:
+  - scan_for_forbidden_case_specific_content
+  - inspect_admission_code_for_early_return
+  - inspect_relation_schedule_for_preflight_before_materialization
+  - inspect_universal_for_internal_preflight
+  - verify_support_producing_generic_stress
+  - verify_trace_records_cost_prohibited_dense_route

@@ -16,7 +16,10 @@ use crate::planner::kernel_plan::{
     CertificateRoute, KernelExecutionPlan, KernelSupportPlan, LocalNonfinitePolicy, ResourceBounds,
 };
 use crate::planner::probes::ProbeResults;
-use crate::planner::relation_schedule::build_dense_relation_search_schedule;
+use crate::planner::relation_schedule::{
+    build_dense_relation_search_schedule, dense_relation_search_decline_reason,
+    estimate_dense_relation_search_schedule,
+};
 use crate::preprocess::compression::CompressedSystemQ;
 use crate::problem::context::SolverContext;
 use crate::result::status::SolverStatus;
@@ -161,26 +164,36 @@ fn build_kernel_admission(
             if relation_polys.is_empty() {
                 declined("no authorized local relations for dense relation search")
             } else {
-                let schedule = build_dense_relation_search_schedule(
+                let preflight = estimate_dense_relation_search_schedule(
                     &relation_polys,
                     &eliminated_variables,
                     &exported_variables,
                     &ctx.options,
                 );
-                let degree_bound = schedule.e_cap;
-                admitted_with_plan(
-                    plan_id,
-                    kind,
-                    block,
-                    source_relation_ids,
-                    relation_hashes,
-                    exported_variables.clone(),
-                    eliminated_variables.clone(),
-                    basic_support_plan(Some(schedule), probes, degree_bound),
-                    resource_bounds(ctx, Some(degree_bound), probes),
-                    CertificateRoute::DenseRelationSearchMembership,
-                    LocalNonfinitePolicy::NotApplicable,
-                )
+                if !preflight.materialization_allowed {
+                    declined(&dense_relation_search_decline_reason(&preflight))
+                } else {
+                    let schedule = build_dense_relation_search_schedule(
+                        &relation_polys,
+                        &eliminated_variables,
+                        &exported_variables,
+                        &ctx.options,
+                    );
+                    let degree_bound = schedule.e_cap;
+                    admitted_with_plan(
+                        plan_id,
+                        kind,
+                        block,
+                        source_relation_ids,
+                        relation_hashes,
+                        exported_variables.clone(),
+                        eliminated_variables.clone(),
+                        basic_support_plan(Some(schedule), probes, degree_bound),
+                        resource_bounds(ctx, Some(degree_bound), probes),
+                        CertificateRoute::DenseRelationSearchMembership,
+                        LocalNonfinitePolicy::NotApplicable,
+                    )
+                }
             }
         }
         KernelKind::UniversalTargetElimination => {
