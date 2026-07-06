@@ -40,5 +40,8 @@ Related diagnostic reports:
   Its concrete input is not an acceptance item for this repair.
 - `MIXTILINEAR_POST_GPSR_TIMEOUT_ROOT_CAUSE_REPORT.md` records the post-GPSR timeout diagnosis for
   the user-supplied external diagnostic input. It is not an acceptance item or permanent fixture.
+- `MIXTILINEAR_POST_GSR_CORE_REPAIR_TIMEOUT_REPORT.md` records the post-GSR core repair timeout
+  diagnosis for the same user-supplied external diagnostic input. It is not an acceptance item or
+  permanent fixture.
 
 Authority note: this file is navigation only. It does not add, remove, or weaken requirements.
