@@ -11,104 +11,104 @@ review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3ba
 evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
 evidence_files:
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_BASE_SPEC.md
-  sha256: 1f73bd7a26b2566b08f53d31b14785110466e8ae6170b6769d1af17d50a36047
-  purpose: "FCR-P7 source: generic-or-non-production advanced kernel requirements"
+  sha256: b805dc0f07a3c502f7dcbc2c2ec38280736954a0b30169c91787838f30c67fb3
+  purpose: 'FCR-P7 source: generic-or-non-production advanced kernel requirements'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_PLAN.md
-  sha256: b836599108c1db4a4e828e672780e5074049045fe5fa590e94252cdc91850bb9
-  purpose: "FCR-P7 source: SparseResultant/Specialization/RegularChain/NormTrace plan"
+  sha256: 9b44ea140ab881e7dc96f6d7175dbfcbebea43afd2f7fbc1e742169020bd68fc
+  purpose: 'FCR-P7 source: SparseResultant/Specialization/RegularChain/NormTrace plan'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_SOURCE_SPEC_COMPLIANCE_MAP.md
-  sha256: 892b75221a3f724ab864e0214e3a0559e99331cda0b8fba4976f5a21372f08ec
-  purpose: "FCR-P7 source: claim limits"
+  sha256: ebe1906059c2ef6b3fcb9479a9b4a18aef1de170f5214b35d2d1caa6b157908d
+  purpose: 'FCR-P7 source: claim limits'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_REVIEWER_PROMPTS.md
-  sha256: 28075ea55b02213c4b38f5304735f87b163ab7eddb15121eefe072878a1f387b
-  purpose: "FCR-P7 source: reviewer fail/pass prompt"
+  sha256: 5ad91032c2938967e070bab7f29cabcda95f77c689513f60c715f1167257529d
+  purpose: 'FCR-P7 source: reviewer fail/pass prompt'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_CLEANUP_POLICY.md
-  sha256: 38c70a493c7a6d5ae34cbd1d4f58be63a10575f1eab38d98952fbf373f16e6dd
-  purpose: "FCR-P7 source: cleanup and quarantine policy"
+  sha256: ff9f2d59bc6c159a41ae04a3838f7a08e71b399f7c9f48c27aaeeaf92d75a4a6
+  purpose: 'FCR-P7 source: cleanup and quarantine policy'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_CLEANUP_REPORT.md
-  sha256: e3772c2a79e80404ca9ceb666ee9b313133ba38bcb6ba4b46826898350b86f5f
-  purpose: "FCR-P7 code-adjacent report: advanced kernels are test/support only"
+  sha256: 1e4c88d7c934f989049f02d85cbeff2dd4b725dfb48af6c2056a27bfd555869f
+  purpose: 'FCR-P7 code-adjacent report: advanced kernels are test/support only'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/BASE_SPEC.md
   sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
-  purpose: "FCR-P7 source: approved base spec and MECH-007"
+  purpose: 'FCR-P7 source: approved base spec and MECH-007'
 - path: geosolver-core/src/kernels/mod.rs
-  sha256: f771225e79c218917cdd5de6450d35405899f0bfa1a1cf81e39eb0e071e53f30
-  purpose: "FCR-P7 code: production all_kernels excludes advanced projection kernels"
+  sha256: edae36aff2441e9c55fec9f089b749c1cbda31eff9e0d0aa81a505dcbc48b016
+  purpose: 'FCR-P7 code: production all_kernels excludes advanced projection kernels'
 - path: geosolver-core/src/planner/admission.rs
-  sha256: 0e1933bb4e92baae6a753a10cbc53b30f3e4243110e97500e2751c53dc7a5cdb
-  purpose: "FCR-P7 code: production planner list excludes advanced projection kernels"
+  sha256: 47725a7868a7ca872c7a8fa933c49ef061d8803feacea347ece65b2def89e054
+  purpose: 'FCR-P7 code: production planner list excludes advanced projection kernels'
 - path: geosolver-core/src/kernels/sparse_resultant.rs
-  sha256: f802e2f2039aaf0b912e33114b4ddc8fb8fe0ae6feb4c3087725dc19ade87303
-  purpose: "FCR-P7 inspected test/support advanced kernel"
+  sha256: 0697ec0d25fded46615b33701c7fa70c198ba1feb57d17b5476f0c526109e5e5
+  purpose: FCR-P7 inspected test/support advanced kernel
 - path: geosolver-core/src/kernels/specialization_interpolation.rs
-  sha256: 68c5b7a988cf3c5db1f89f297081f8d5ad3af9c0ae8fa865a4b92f9263ea3405
-  purpose: "FCR-P7 inspected test/support advanced kernel"
+  sha256: 5f653308790d72928aa9c3de995ea6c55ac2544384076457fcc6d7e88c3f57c7
+  purpose: FCR-P7 inspected test/support advanced kernel
 - path: geosolver-core/src/kernels/regular_chain_projection.rs
-  sha256: d07069d452c2474136521de9f3e66f5a6fdbcf04c704955a970ebb4d5f1585c8
-  purpose: "FCR-P7 inspected test/support advanced kernel"
+  sha256: 4cb017544ee07fe8538188ce25c6437c3dd270bb586bc9bf66caa2df4645bf59
+  purpose: FCR-P7 inspected test/support advanced kernel
 - path: geosolver-core/src/kernels/norm_trace_projection.rs
-  sha256: dfaf02509f624688e534a3ac81c0ada41868990670a98d04367ef0bd31564f89
-  purpose: "FCR-P7 inspected test/support advanced kernel"
+  sha256: 8f1a7633f7c973562336d10e051bca93e275595b64c6fe44326e92d8c221d7b6
+  purpose: FCR-P7 inspected test/support advanced kernel
 - path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P7/commands.txt
-  sha256: d664faa729fb888da199cce09616921b7810716392d73626cf967826cf7aca0c
-  purpose: "FCR-P7 evidence: commands run"
+  sha256: 02aa4e42ad0faa4ed68c3302787e3200a19247f7651705ac99cb49580e67b834
+  purpose: 'FCR-P7 evidence: commands run'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P7/command_outputs.txt
-  sha256: 02b20030f273827491283b409e433ff188c95e7ca583af453c73dfb27d78cd77
-  purpose: "FCR-P7 evidence: command outputs and summaries"
+  sha256: 19ba1e93c553a4ec30fe20fc5443a69bcbd248c2ec5a44e9e26c21fed8d9bb51
+  purpose: 'FCR-P7 evidence: command outputs and summaries'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P7/advanced_kernel_claim_static_scan.txt
-  sha256: c1bfd2844702e7b3320a7b3c4cf7768d3b51cc5b77f4cbbfc9eee58e06fee480
-  purpose: "FCR-P7 evidence: advanced-kernel completion-claim static scan"
+  sha256: 5c1404c9d8617ddcfca1196c104186ddbaa78ba0b58e523eb61e7155a699c856
+  purpose: 'FCR-P7 evidence: advanced-kernel completion-claim static scan'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P7/guardian_boundary_reviewer_pass.md
-  sha256: 43b44293f950719da87ab76b7eb0cbc266d5b8f599acc351bed15e6b570132c2
-  purpose: "FCR-P7 evidence: guardian PASS response"
+  sha256: a2327f5b7507930a72e08ad558106e1a5445bdec3737d09433615620143da312
+  purpose: 'FCR-P7 evidence: guardian PASS response'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P7/20260705-173716Z/prompt.md
-  sha256: 323a1bae75e51840be940db844ce98c94862277c90c1dfb1c580dbe9ca138525
-  purpose: "FCR-P7 archived reviewer prompt"
+  sha256: b8722f2db173ee903551232d49ae4218205947fca05a38a6cb0914af1414e979
+  purpose: FCR-P7 archived reviewer prompt
 - path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P7/20260705-173716Z/response.md
-  sha256: 43b44293f950719da87ab76b7eb0cbc266d5b8f599acc351bed15e6b570132c2
-  purpose: "FCR-P7 archived reviewer response"
+  sha256: a2327f5b7507930a72e08ad558106e1a5445bdec3737d09433615620143da312
+  purpose: FCR-P7 archived reviewer response
 command_outputs:
 - command: cargo fmt
-  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry/geosolver-core
   exit_code: 0
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P7/command_outputs.txt
-  output_sha256: 02b20030f273827491283b409e433ff188c95e7ca583af453c73dfb27d78cd77
+  output_sha256: 19ba1e93c553a4ec30fe20fc5443a69bcbd248c2ec5a44e9e26c21fed8d9bb51
   finished_at_utc: 20260705-173716Z
 - command: cargo test --lib fcr_p7_
-  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry/geosolver-core
   exit_code: 0
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P7/command_outputs.txt
-  output_sha256: 02b20030f273827491283b409e433ff188c95e7ca583af453c73dfb27d78cd77
+  output_sha256: 19ba1e93c553a4ec30fe20fc5443a69bcbd248c2ec5a44e9e26c21fed8d9bb51
   finished_at_utc: 20260705-173716Z
 - command: cargo test
-  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry/geosolver-core
   exit_code: 0
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P7/command_outputs.txt
-  output_sha256: 02b20030f273827491283b409e433ff188c95e7ca583af453c73dfb27d78cd77
+  output_sha256: 19ba1e93c553a4ec30fe20fc5443a69bcbd248c2ec5a44e9e26c21fed8d9bb51
   finished_at_utc: 20260705-173716Z
 - command: cargo check
-  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry/geosolver-core
   exit_code: 0
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P7/command_outputs.txt
-  output_sha256: 02b20030f273827491283b409e433ff188c95e7ca583af453c73dfb27d78cd77
+  output_sha256: 19ba1e93c553a4ec30fe20fc5443a69bcbd248c2ec5a44e9e26c21fed8d9bb51
   finished_at_utc: 20260705-173716Z
 - command: git diff --check
-  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
   exit_code: 0
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P7/command_outputs.txt
-  output_sha256: 02b20030f273827491283b409e433ff188c95e7ca583af453c73dfb27d78cd77
+  output_sha256: 19ba1e93c553a4ec30fe20fc5443a69bcbd248c2ec5a44e9e26c21fed8d9bb51
   finished_at_utc: 20260705-173716Z
 - command: static FCR-P7 advanced-kernel completion-claim scan
-  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
   exit_code: 0
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P7/advanced_kernel_claim_static_scan.txt
-  output_sha256: c1bfd2844702e7b3320a7b3c4cf7768d3b51cc5b77f4cbbfc9eee58e06fee480
+  output_sha256: 5c1404c9d8617ddcfca1196c104186ddbaa78ba0b58e523eb61e7155a699c856
   finished_at_utc: 20260705-173716Z
 - command: guardian_boundary_reviewer FCR-P7
-  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
   exit_code: 0
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P7/guardian_boundary_reviewer_pass.md
-  output_sha256: 43b44293f950719da87ab76b7eb0cbc266d5b8f599acc351bed15e6b570132c2
+  output_sha256: a2327f5b7507930a72e08ad558106e1a5445bdec3737d09433615620143da312
   finished_at_utc: 20260705-173716Z
 static_scans:
 - scan_id: fcr-p7-production-registry-excludes-advanced
@@ -130,10 +130,14 @@ function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_PRODUC
 related_reviews:
 - docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P7/guardian_boundary_reviewer_pass.md
 known_limitations:
-- FCR-P7 does not prove SparseResultant, SpecializationInterpolation, RegularChain, or NormTrace implement v4 generic production contracts.
-- The reviewed advanced kernels remain test/support evidence only and do not authorize production readiness.
-- FULL_CORE_CLEANUP_REPORT.md has broader wording about Universal production generalization outside this FCR-P7 review; do not treat that as authorized by this phase.
-- FCR-P7 does not authorize P13, candidate-cover readiness, exact-image readiness, source fidelity, or acceptance completion.
+- FCR-P7 does not prove SparseResultant, SpecializationInterpolation, RegularChain,
+  or NormTrace implement v4 generic production contracts.
+- The reviewed advanced kernels remain test/support evidence only and do not authorize
+  production readiness.
+- FULL_CORE_CLEANUP_REPORT.md has broader wording about Universal production generalization
+  outside this FCR-P7 review; do not treat that as authorized by this phase.
+- FCR-P7 does not authorize P13, candidate-cover readiness, exact-image readiness,
+  source fidelity, or acceptance completion.
 - No R-ID is marked VERIFIED.
 algorithmic_claims_made:
 - PARTIAL_MECHANISM_READY:MECH-007

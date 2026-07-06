@@ -1,0 +1,35 @@
+P16 static scan classifications
+
+Command:
+rg -n --sort path --path-separator / "Unsupported|unsupported" geosolver-core/src
+
+Result:
+0 matches.
+
+Command:
+rg -n --sort path --path-separator / "circle|triangle|tangent|distance|area|incircle|circumcircle|orthic|mixtilinear|fixture|expected|answer|problem_id|official" geosolver-core/src
+
+Result:
+142 classified matches. Reviewed classification: terminology, metric names, expected-hash local
+variables, invariant flag names, and tests. No production geometry-family dispatch, fixture
+dispatch, problem-id dispatch, expected-answer dispatch, or official-solution dispatch.
+
+Command:
+rg -n --sort path --path-separator / "todo!|unimplemented!|placeholder|dummy|fake|stub" geosolver-core/src
+
+Result:
+0 matches.
+
+Command:
+rg -n --sort path --path-separator / "CAD|QE|RCF|coordinate solution|coordinate roots|full coordinate RUR|RUR" geosolver-core/src
+
+Result:
+3 classified matches. Reviewed classification: rejection/error text requiring quotient/action
+paths not to expose coordinate roots or full coordinate RUR. No QE/CAD/RCF or full-coordinate
+fallback path.
+
+Command:
+rg -n --sort path --path-separator / "ACCEPTANCE_COMPLETE.*candidate-cover solver core implementation" geosolver-core docs/ai/changes/RGDTPK-Q-v4-core/CLOSURE.md
+
+Result:
+0 matches.

@@ -12,9 +12,9 @@ review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3ba
 evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
 schema_mirror_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
 commit: 09f3d3e6b7c7226562b2a9ea460eb495422baed4+fcr-p1-worktree
-prompt_sha256: cadcaa860f02b1849e3e3324d3ad317292ee49f4744c6a11669332cd9eff9b18
-response_sha256: 785a4f269b70f0b220280d2700d655bd3ad4ed2cd1e23e12d33cf9b39b42b594
-evidence_manifest_sha256: 73f8e674aa66f209e1520fac64dd62b3bd7300021d642cc71c65d2db0bce7b64
+prompt_sha256: ab064e0e353050b5418bab9c2e85779a99dcdacf60e1ae087d9b88c7127925e7
+response_sha256: 0615e40e28eb25049107007cc415920848ab8e5ba1aa2b869b7e9fe04778f9e9
+evidence_manifest_sha256: 29b54e558cf487d613a15d9b1d84f5d02d6efd8d435304ea58c239e066acc220
 prompt_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P1/20260705-155416Z/prompt.md
 response_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P1/20260705-155416Z/response.md
 evidence_manifest_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P1/20260705-155416Z/evidence_manifest.yaml
@@ -75,7 +75,10 @@ commands_inspected:
 function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_PRODUCTION_AUDIT.md
 algorithmic_sufficiency:
   verdict: sufficient
-  rationale: FCR-P1 is a repair-driving production audit phase; the audit lists public functions, mandatory production paths, concrete trait-dispatch rows, known limitations, certificate strength, plan-time execution, and required repair actions without claiming production readiness.
+  rationale: FCR-P1 is a repair-driving production audit phase; the audit lists public
+    functions, mandatory production paths, concrete trait-dispatch rows, known limitations,
+    certificate strength, plan-time execution, and required repair actions without
+    claiming production readiness.
 forbidden_pattern_scan:
   heavy_fallback: pass
   narrow_slice_escape: pass
@@ -93,7 +96,8 @@ forbidden_pattern_scan:
   appendix_override_bypass: pass
   stress_fixture_dispatch: pass
 not_applicable_justifications:
-  status_mapping_checks[0]: FCR-P1 is an audit phase and does not change SolverStatus mapping.
+  status_mapping_checks[0]: FCR-P1 is an audit phase and does not change SolverStatus
+    mapping.
   suite_partition_checks[0]: FCR-P1 is not an acceptance-suite phase.
   semantic_deletion_challenges: No semantic deletion occurs in FCR-P1.
 raw_response_consistency:
@@ -105,46 +109,61 @@ phase_specific_checks:
 - check_id: fcr-p1-audit-coverage
   required_by: FCR-P1
   verdict: pass
-  evidence: "Public function/method rows: 371; production path rows: 57; production_function_list rows: 371."
-  reviewer_rationale: The audit covers the current P1-P12G production roots and includes separate production path findings.
+  evidence: 'Public function/method rows: 371; production path rows: 57; production_function_list
+    rows: 371.'
+  reviewer_rationale: The audit covers the current P1-P12G production roots and includes
+    separate production path findings.
 - check_id: fcr-p1-concrete-trait-dispatch
   required_by: FCR-P1
   verdict: pass
-  evidence: "TargetProjectionKernel trait-dispatch rows: 45; concrete rows: 45; wildcard trait rows: 0; required mandatory kernel plan paths missing: 0."
-  reviewer_rationale: The prior wildcard blocker is closed by exact file paths and source_line values.
+  evidence: 'TargetProjectionKernel trait-dispatch rows: 45; concrete rows: 45; wildcard
+    trait rows: 0; required mandatory kernel plan paths missing: 0.'
+  reviewer_rationale: The prior wildcard blocker is closed by exact file paths and
+    source_line values.
 - check_id: fcr-p1-repair-actions
   required_by: FCR-P1
   verdict: pass
-  evidence: "High/fatal rows with keep: 0; plan-time final relation rows with keep: 0; invalid certificate_binding rows: 0."
-  reviewer_rationale: Partial production slices remain actionable for FCR-P2+ instead of being accepted as documented limitations.
+  evidence: 'High/fatal rows with keep: 0; plan-time final relation rows with keep:
+    0; invalid certificate_binding rows: 0.'
+  reviewer_rationale: Partial production slices remain actionable for FCR-P2+ instead
+    of being accepted as documented limitations.
 - check_id: fcr-p1-certificate-downgrades
   required_by: FCR-010/FCR-012/FCR-P1
   verdict: pass
-  evidence: "replay_run_certificate exact rows: 0; final_support exact rows: 0; replay is marked missing and final_support remains decorative/missing."
-  reviewer_rationale: Known replay and nonfinite-proof gaps are recorded without readiness overclaim.
+  evidence: 'replay_run_certificate exact rows: 0; final_support exact rows: 0; replay
+    is marked missing and final_support remains decorative/missing.'
+  reviewer_rationale: Known replay and nonfinite-proof gaps are recorded without readiness
+    overclaim.
 appendix_override_checks:
 - appendix_section: Appendix A sections 0-34
   controlling_requirement: FCR-P1
   verdict: pass
-  evidence: FCR-P1 audit records current implementation limitations and repair actions rather than using prior Appendix/P12G PASS state as authority.
-  reviewer_rationale: FCR-P1 preserves stricter full-core repair obligations and does not weaken missing or incorrect implementation requirements.
+  evidence: FCR-P1 audit records current implementation limitations and repair actions
+    rather than using prior Appendix/P12G PASS state as authority.
+  reviewer_rationale: FCR-P1 preserves stricter full-core repair obligations and does
+    not weaken missing or incorrect implementation requirements.
 status_mapping_checks:
 - error_or_internal_condition: Audit only; no runtime SolverStatus mapping change
   mapped_solver_status: not_applicable
   verdict: not_applicable
-  evidence: FCR-P1 creates audit artifacts only and changes no runtime status mapping code.
+  evidence: FCR-P1 creates audit artifacts only and changes no runtime status mapping
+    code.
   reviewer_rationale: Status mapping remains a later repair concern.
 suite_partition_checks:
 - suite_name: not_applicable
   verdict: not_applicable
-  evidence: FCR-P1 is a repair audit phase, not candidate-cover or exact-image suite execution.
-  reviewer_rationale: Candidate-cover and exact-image acceptance remain blocked for later phases.
+  evidence: FCR-P1 is a repair audit phase, not candidate-cover or exact-image suite
+    execution.
+  reviewer_rationale: Candidate-cover and exact-image acceptance remain blocked for
+    later phases.
 semantic_deletion_challenges: []
 tamper_challenges: []
 unresolved_risks:
 - FCR-P1 does not implement any production repair.
-- Rows marked decorative or missing certificate binding still block readiness until later FCR implementation phases.
-- CANDIDATE_COVER_CORE_READY, exact-image readiness, source-fidelity, and acceptance completion remain forbidden.
+- Rows marked decorative or missing certificate binding still block readiness until
+  later FCR implementation phases.
+- CANDIDATE_COVER_CORE_READY, exact-image readiness, source-fidelity, and acceptance
+  completion remain forbidden.
 - No R-ID is marked VERIFIED.
 blocking_findings: []
 required_fixes: []

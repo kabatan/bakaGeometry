@@ -1,6 +1,6 @@
 # P15 Notes - Acceptance Stress And Anti-Drift
 
-Status: evidence prepared; P15 reviewer pass is required before P15 is closed.
+Status: PASS after spec, boundary, and quality reviewer remediation.
 
 P15 adds `geosolver-core/tests/p15_acceptance_stress.rs` with the RGQ-061 three-suite
 partition:

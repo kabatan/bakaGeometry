@@ -1,0 +1,57 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: P15
+commit: f1f44f4947847e8f08470009fdbb48383819bbdd+p16-archive-normalization
+algorithm_spec_source_sha256: 2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed
+failure_source_sha256: df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: b2d6655c3926c0528d86284cb91f35db319a5efe6d2fe068f568c32f779c8b70
+review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
+evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P15/commands.txt
+  sha256: 9bf28c24bf6d5040ff3476e4bc3bb3d62dafd0c513babf5c0226995d5c496937
+  purpose: phase evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P15/command_outputs.txt
+  sha256: 1d459b328bbf7b0b1a278bcef3187a2c0aed8004be443836bb836f89a638583d
+  purpose: phase evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P15/function_implementation_table.yaml
+  sha256: b78544ac403aa0e842d156e83da4a361779219c2a575adc6342881c2303adcbf
+  purpose: phase evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P15/static_scans.txt
+  sha256: 8e6ca63700ece4fcafe2335f276f6c3572fc44ad4c75a8ecc1e8e2dc70ba2fcf
+  purpose: phase evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P15/reviewer_results.md
+  sha256: 93b2b4fb1575b526fde5efa9cadf15573dc046cb2a8b1c7dd4f01096b94f6f7a
+  purpose: phase evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P15/20260706-084500Z/prompt.md
+  sha256: bd47e70fe843c829cfbb132288b4016e8984524728a0dd98a041d0fae10e6a01
+  purpose: phase evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P15/20260706-084500Z/response.md
+  sha256: 729c46d0ad23c622d57cd72fe2ffc6725c82b64c00d7ce561de7fdbcf3ca7fbc
+  purpose: phase evidence
+command_outputs:
+- command: cargo test --manifest-path geosolver-core/Cargo.toml --test p15_acceptance_stress
+    -- --nocapture
+  cwd: C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P15/command_outputs.txt
+  output_sha256: 1d459b328bbf7b0b1a278bcef3187a2c0aed8004be443836bb836f89a638583d
+  finished_at_utc: 20260706-090000Z
+static_scans:
+- scan_id: P15-static-scans
+  command: phase static scans recorded in evidence
+  forbidden_pattern: phase forbidden patterns
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P15/static_scans.txt
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P15/function_implementation_table.yaml
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P15/20260706-084500Z/prompt.md
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P15/20260706-084500Z/response.md
+known_limitations: []
+algorithmic_claims_made:
+- CANDIDATE_COVER_CORE_READY
+claim_ceiling_after_phase: CANDIDATE_COVER_CORE_READY
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

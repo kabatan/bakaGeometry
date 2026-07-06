@@ -12,9 +12,9 @@ review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3ba
 evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
 schema_mirror_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
 commit: 014619c1411f23d4262038507ad60de0d501c956+fcr-p5-worktree
-prompt_sha256: 833e23d3ca40daf1dc576322433c27c1714296cc22ed2e242d13d5afa89e354d
-response_sha256: 370b90b83019d068851695d3e76d95f4f9c384f43f36d1ce26dc074c5f7e52fa
-evidence_manifest_sha256: e01bf70e46a916b6242a88edb066d101bc7c2bb9d31d84de8dc7d9c385d37920
+prompt_sha256: c58533b07e5e52ed6eb1f9ec63960b8052a3df73ed72b29ba385141144d968a6
+response_sha256: 55814865845270546a8c7bc9915d20f070a2e09e2e7036b274171ae8cad0179f
+evidence_manifest_sha256: 27d707883ca34620197d447dd909e398a2c78716e0eff47e23bb616779d68f8d
 prompt_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P5/20260705-171108Z/prompt.md
 response_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P5/20260705-171108Z/response.md
 evidence_manifest_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P5/20260705-171108Z/evidence_manifest.yaml
@@ -61,7 +61,10 @@ commands_inspected:
 function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_PRODUCTION_AUDIT.md
 algorithmic_sufficiency:
   verdict: sufficient
-  rationale: FCR-P5 adds a production TargetActionKrylov generic quotient path built from authorized relations, Groebner standard monomials, exact target-action columns, certified membership, and full-basis Krylov coverage, while keeping the claim ceiling limited.
+  rationale: FCR-P5 adds a production TargetActionKrylov generic quotient path built
+    from authorized relations, Groebner standard monomials, exact target-action columns,
+    certified membership, and full-basis Krylov coverage, while keeping the claim
+    ceiling limited.
 forbidden_pattern_scan:
   heavy_fallback: pass
   narrow_slice_escape: pass
@@ -80,9 +83,12 @@ forbidden_pattern_scan:
   stress_fixture_dispatch: pass
 not_applicable_justifications:
   status_mapping_checks[0]: FCR-P5 does not add or remap public SolverStatus values.
-  suite_partition_checks[0]: FCR-P5 is TargetActionKrylov generic quotient work, not the FCR-P15 acceptance-suite partition.
-  nonfinite_without_positive_proof: FCR-P5 does not change nonfinite certification behavior.
-  target_relation_schedule_discretion: FCR-P5 does not modify TargetRelationSearch scheduling.
+  suite_partition_checks[0]: FCR-P5 is TargetActionKrylov generic quotient work, not
+    the FCR-P15 acceptance-suite partition.
+  nonfinite_without_positive_proof: FCR-P5 does not change nonfinite certification
+    behavior.
+  target_relation_schedule_discretion: FCR-P5 does not modify TargetRelationSearch
+    scheduling.
 raw_response_consistency:
   raw_response_contains_blocker: false
   raw_response_contains_required_fix: false
@@ -92,34 +98,42 @@ phase_specific_checks:
 - check_id: fcr-p5-generic-quotient-selection
   required_by: FCR-P5
   verdict: pass
-  evidence: Static scan and reviewer response identify the GenericQuotient selection and execution path in action_krylov.rs.
+  evidence: Static scan and reviewer response identify the GenericQuotient selection
+    and execution path in action_krylov.rs.
   reviewer_rationale: Production selection is not limited to TargetOnly and AliasUnivariate.
 - check_id: fcr-p5-standard-basis-from-authorized-relations
   required_by: FCR-P5
   verdict: pass
-  evidence: quotient.rs builds the quotient input from authorized relations through Groebner standard monomials and revalidates supplied bases.
-  reviewer_rationale: The path is not hard-coded to fixture support or injected quotient bases.
+  evidence: quotient.rs builds the quotient input from authorized relations through
+    Groebner standard monomials and revalidates supplied bases.
+  reviewer_rationale: The path is not hard-coded to fixture support or injected quotient
+    bases.
 - check_id: fcr-p5-certified-action-columns
   required_by: FCR-P5
   verdict: pass
-  evidence: groebner.rs certified reduction and quotient.rs action-column construction produce membership certificates checked against authorized relations.
+  evidence: groebner.rs certified reduction and quotient.rs action-column construction
+    produce membership certificates checked against authorized relations.
   reviewer_rationale: Each target-action column is exact and replay-verifiable.
 - check_id: fcr-p5-full-basis-coverage
   required_by: FCR-P5
   verdict: pass
-  evidence: Krylov coverage uses all quotient basis unit vectors and tests reject undercoverage/non-characteristic substitutions.
+  evidence: Krylov coverage uses all quotient basis unit vectors and tests reject
+    undercoverage/non-characteristic substitutions.
   reviewer_rationale: The implementation is not a single-vector undercoverage shortcut.
 - check_id: fcr-p5-required-tests
   required_by: FCR-P5
   verdict: pass
-  evidence: cargo test --lib kernels::action_krylov::tests passed, including fcr_action_multivariate_quotient_no_target_relation, fcr_action_target_is_nonlinear_expression, and fcr_action_rejects_injected_basis_or_column.
+  evidence: cargo test --lib kernels::action_krylov::tests passed, including fcr_action_multivariate_quotient_no_target_relation,
+    fcr_action_target_is_nonlinear_expression, and fcr_action_rejects_injected_basis_or_column.
   reviewer_rationale: Required non-slice and tamper tests are present and passing.
 appendix_override_checks:
 - appendix_section: Appendix A sections 25 and FCR overlay FCR-006
   controlling_requirement: FCR-P5
   verdict: pass
-  evidence: TargetActionKrylov now has a generic quotient path with certified normal-form action columns and no coordinate-root/RUR export.
-  reviewer_rationale: The FCR-P5 overlay is respected without broadening readiness claims.
+  evidence: TargetActionKrylov now has a generic quotient path with certified normal-form
+    action columns and no coordinate-root/RUR export.
+  reviewer_rationale: The FCR-P5 overlay is respected without broadening readiness
+    claims.
 status_mapping_checks:
 - error_or_internal_condition: not_applicable_for_fcr_p5
   mapped_solver_status: not_applicable
@@ -130,13 +144,17 @@ suite_partition_checks:
 - suite_name: not_applicable
   verdict: not_applicable
   evidence: FCR-P5 adds TargetActionKrylov tests, not the acceptance-suite partition.
-  reviewer_rationale: Full support/exact-image/failure suite partitioning remains later FCR work.
+  reviewer_rationale: Full support/exact-image/failure suite partitioning remains
+    later FCR work.
 semantic_deletion_challenges: []
 tamper_challenges: []
 unresolved_risks:
-- FULL_CORE_SOURCE_SPEC_COMPLIANCE_MAP.md still contains conservative or stale TargetAction rows to reconcile before broader source-fidelity or completion claims.
-- algebra/f4.rs remains explicitly non-production; FCR-P5 passes through Groebner-backed quotient construction, not an F4 readiness claim.
-- FCR-P5 does not authorize P13, exact-image readiness, candidate-cover readiness, source fidelity, or acceptance completion.
+- FULL_CORE_SOURCE_SPEC_COMPLIANCE_MAP.md still contains conservative or stale TargetAction
+  rows to reconcile before broader source-fidelity or completion claims.
+- algebra/f4.rs remains explicitly non-production; FCR-P5 passes through Groebner-backed
+  quotient construction, not an F4 readiness claim.
+- FCR-P5 does not authorize P13, exact-image readiness, candidate-cover readiness,
+  source fidelity, or acceptance completion.
 - No R-ID is marked VERIFIED.
 blocking_findings: []
 required_fixes: []

@@ -1,6 +1,6 @@
 # P13 Notes - Exact Image Semantics
 
-Status: evidence prepared; P13 reviewer pass is still required before any exact-image readiness claim.
+Status: PASS after spec, boundary, and quality reviewer remediation.
 
 Implemented finite exact-image mode by inserting `classify_real_target_image` after exact root
 isolation and candidate decode. In candidate-cover mode the solver still returns

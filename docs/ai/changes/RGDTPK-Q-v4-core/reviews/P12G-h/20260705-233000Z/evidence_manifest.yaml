@@ -29,7 +29,7 @@ evidence_files:
   sha256: 6d620e5ac1dc761cc55e9ede2e2455917c21c311e38ec60514e670f022530300
   purpose: 'P12G-h review evidence: stress_matrix.yaml'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/P12G_READINESS.md
-  sha256: 2db0f65322db554fe1ca342a654f890f57cae47925809e40f18ea845e0744e62
+  sha256: ed0dae8e962b830b81bda4861b452f56e5bd3741c95acfdf70bb4c6d5fb72ad3
   purpose: 'P12G-h review evidence: P12G_READINESS.md'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/P13_P14_READINESS_AFTER_P12G.md
   sha256: 9c4a7afb5724d42544c8097d5ce5c9c6907ebea3b3b2121d31413be2bee09b71

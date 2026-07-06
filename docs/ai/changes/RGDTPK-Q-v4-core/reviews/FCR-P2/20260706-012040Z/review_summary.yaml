@@ -12,9 +12,9 @@ review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3ba
 evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
 schema_mirror_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
 commit: 5b1dd0278c8b7e4ff5e22e40e894b2a6a763d4bc+fcr-p2-worktree
-prompt_sha256: 47de50cdbf32add15c52eb762d23ef631a53da49a48f46a510c6e998fc2ab823
-response_sha256: a4632417b264a15caed2e35e255ce89c98af334644a4a016461fc55c7f92a9ef
-evidence_manifest_sha256: efa60bf7c4ea085fdb023251fffd0d24cd04d55a9bcdc0bfafc99d6c206ebb09
+prompt_sha256: 6c89ce326fb909be007110a05a95ce695f365689ac545c99c81153d3149d8a93
+response_sha256: ff43103596bed9a7058fcd8601b2f3b242a382753b466950e847863e03dffaad
+evidence_manifest_sha256: d1ea5bc95c24c4725ff3903b6ee092daab824d1d53f8a8fa226045b2a6703e1d
 prompt_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P2/20260706-012040Z/prompt.md
 response_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P2/20260706-012040Z/response.md
 evidence_manifest_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P2/20260706-012040Z/evidence_manifest.yaml
@@ -75,7 +75,9 @@ commands_inspected:
 function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_PRODUCTION_AUDIT.md
 algorithmic_sufficiency:
   verdict: sufficient
-  rationale: FCR-P2 is a quarantine/removal phase; invalid partial production exposures were made test-only or production-declined, leaving only explicitly scoped base kernels reachable without claiming the full candidate-cover core.
+  rationale: FCR-P2 is a quarantine/removal phase; invalid partial production exposures
+    were made test-only or production-declined, leaving only explicitly scoped base
+    kernels reachable without claiming the full candidate-cover core.
 forbidden_pattern_scan:
   heavy_fallback: pass
   narrow_slice_escape: pass
@@ -93,9 +95,12 @@ forbidden_pattern_scan:
   appendix_override_bypass: pass
   stress_fixture_dispatch: pass
 not_applicable_justifications:
-  status_mapping_checks[0]: FCR-P2 does not add new runtime status mapping; it only quarantines invalid production exposure.
+  status_mapping_checks[0]: FCR-P2 does not add new runtime status mapping; it only
+    quarantines invalid production exposure.
   suite_partition_checks[0]: FCR-P2 is not an acceptance-suite execution phase.
-  semantic_deletion_challenges: FCR-P2 semantically deletes only invalid production exposure by quarantining it behind test cfg or production declines; the deletion log records each moved path.
+  semantic_deletion_challenges: FCR-P2 semantically deletes only invalid production
+    exposure by quarantining it behind test cfg or production declines; the deletion
+    log records each moved path.
 raw_response_consistency:
   raw_response_contains_blocker: false
   raw_response_contains_required_fix: false
@@ -105,51 +110,68 @@ phase_specific_checks:
 - check_id: fcr-p2-public-kernel-module-quarantine
   required_by: FCR-P2
   verdict: pass
-  evidence: action_krylov, norm_trace_projection, regular_chain_projection, sparse_resultant, specialization_interpolation, target_relation_search, and universal_elimination are #[cfg(test)] in kernels/mod.rs.
-  reviewer_rationale: The prior blocker is fixed; high-risk partial kernels are no longer public production modules.
+  evidence: action_krylov, norm_trace_projection, regular_chain_projection, sparse_resultant,
+    specialization_interpolation, target_relation_search, and universal_elimination
+    are
+  reviewer_rationale: The prior blocker is fixed; high-risk partial kernels are no
+    longer public production modules.
 - check_id: fcr-p2-production-registry-base-only
   required_by: FCR-P2
   verdict: pass
-  evidence: production all_kernels exposes only TargetUnivariateKernel and LinearAffineKernel; kernel_by_kind is #[cfg(test)].
-  reviewer_rationale: Production dispatch cannot select quarantined advanced kernels through the kernel registry.
+  evidence: production all_kernels exposes only TargetUnivariateKernel and LinearAffineKernel;
+    kernel_by_kind is
+  reviewer_rationale: Production dispatch cannot select quarantined advanced kernels
+    through the kernel registry.
 - check_id: fcr-p2-planner-admission-quarantine
   required_by: FCR-P2
   verdict: pass
-  evidence: all_planner_kernel_kinds returns only base kernels under cfg(not(test)), and advanced kinds decline under production admission.
-  reviewer_rationale: Planner-level reachability no longer admits partial advanced kernels as production success paths.
+  evidence: all_planner_kernel_kinds returns only base kernels under cfg(not(test)),
+    and advanced kinds decline under production admission.
+  reviewer_rationale: Planner-level reachability no longer admits partial advanced
+    kernels as production success paths.
 - check_id: fcr-p2-synthetic-and-helper-only-paths-quarantined
   required_by: FCR-010/FCR-012/FCR-P2
   verdict: pass
-  evidence: verify::replay and synthetic_for_tests are #[cfg(test)]; compose::separator_elimination and the compose fallback are #[cfg(test)].
-  reviewer_rationale: Synthetic replay and helper-only support construction are not reachable from production final claims in FCR-P2.
+  evidence: verify::replay and synthetic_for_tests are
+  reviewer_rationale: Synthetic replay and helper-only support construction are not
+    reachable from production final claims in FCR-P2.
 - check_id: fcr-p2-production-safe-schedule-split
   required_by: FCR-P2
   verdict: pass
-  evidence: relation schedule metadata was moved to geosolver-core/src/planner/relation_schedule.rs so planner types do not depend on the test-only target_relation_search module.
-  reviewer_rationale: The quarantine preserves production metadata needed by plans without exposing the partial kernel implementation.
+  evidence: relation schedule metadata was moved to geosolver-core/src/planner/relation_schedule.rs
+    so planner types do not depend on the test-only target_relation_search module.
+  reviewer_rationale: The quarantine preserves production metadata needed by plans
+    without exposing the partial kernel implementation.
 appendix_override_checks:
 - appendix_section: Appendix A sections 0-34
   controlling_requirement: FCR-P2
   verdict: pass
-  evidence: FCR-P2 removes invalid production exposure instead of relying on prior P1-P12G closure as proof.
-  reviewer_rationale: Stricter full-core repair obligations remain controlling and no exact-image or candidate-cover readiness claim is made.
+  evidence: FCR-P2 removes invalid production exposure instead of relying on prior
+    P1-P12G closure as proof.
+  reviewer_rationale: Stricter full-core repair obligations remain controlling and
+    no exact-image or candidate-cover readiness claim is made.
 status_mapping_checks:
 - error_or_internal_condition: Quarantined partial implementation reached from production
   mapped_solver_status: not_applicable
   verdict: not_applicable
-  evidence: FCR-P2 removes or declines those paths before execution; later phases define bounded runtime statuses for the repaired pipeline.
+  evidence: FCR-P2 removes or declines those paths before execution; later phases
+    define bounded runtime statuses for the repaired pipeline.
   reviewer_rationale: No new status mapping is needed for the quarantine phase.
 suite_partition_checks:
 - suite_name: not_applicable
   verdict: not_applicable
-  evidence: FCR-P2 is a production-exposure quarantine phase, not a support-producing or exact-image suite.
-  reviewer_rationale: Candidate-cover and exact-image acceptance suites remain blocked for later FCR phases.
+  evidence: FCR-P2 is a production-exposure quarantine phase, not a support-producing
+    or exact-image suite.
+  reviewer_rationale: Candidate-cover and exact-image acceptance suites remain blocked
+    for later FCR phases.
 semantic_deletion_challenges: []
 tamper_challenges: []
 unresolved_risks:
 - FCR-P2 does not complete the public candidate-cover pipeline.
-- Advanced kernels and real DAG/block replay remain quarantined or incomplete until later FCR phases.
-- CANDIDATE_COVER_CORE_READY, exact-image readiness, source-fidelity, and acceptance completion remain forbidden.
+- Advanced kernels and real DAG/block replay remain quarantined or incomplete until
+  later FCR phases.
+- CANDIDATE_COVER_CORE_READY, exact-image readiness, source-fidelity, and acceptance
+  completion remain forbidden.
 - No R-ID is marked VERIFIED.
 blocking_findings: []
 required_fixes: []

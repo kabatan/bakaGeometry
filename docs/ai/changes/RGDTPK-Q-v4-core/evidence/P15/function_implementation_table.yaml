@@ -1,5 +1,5 @@
 phase: P15
-status: evidence_prepared_review_pending
+status: reviewer_passed
 claim_boundary: >
   P15 supplies generalized acceptance stress, anti-fallback, anti-decoration, exact-image
   semantics, and failure/nonfinite semantics evidence. P15 does not close P16 final closure,
@@ -33,7 +33,7 @@ functions:
     evidence:
       - "invalid input maps to InvalidInput without support"
       - "resource-bounded TargetRelationSearch returns hard/resource/certificate status, not nonfinite"
-      - "positive nonfinite finalizes as CertifiedNonFiniteTargetImage but without core replay certificate"
+      - "positive nonfinite finalizes as CertifiedNonFiniteTargetImage with a structured NonFiniteCertificate; P16 replay binding adds final tamper evidence"
       - "exact-image nonfinite with unproved semantic obligations returns CertificateDesignGap"
   - spec: "relation-search schedule reproducibility"
     implementation: "geosolver-core/tests/p15_acceptance_stress.rs::p15_relation_search_schedule_reproducibility_suite"

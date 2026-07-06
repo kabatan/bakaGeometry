@@ -52,14 +52,19 @@ commands_inspected:
 - cargo fmt --manifest-path geosolver-core/Cargo.toml --check
 - cargo test --manifest-path geosolver-core/Cargo.toml p9_ -- --nocapture
 - cargo test --manifest-path geosolver-core/Cargo.toml
-- rg forbidden P9 shortcut names and fallback APIs in regular_chain_projection.rs, norm_trace_projection.rs, and planner/admission.rs
-- rg P9 remediation anchors in regular_chain.rs, regular_chain_projection.rs, norm_trace.rs, and norm_trace_projection.rs
+- rg forbidden P9 shortcut names and fallback APIs in regular_chain_projection.rs,
+  norm_trace_projection.rs, and planner/admission.rs
+- rg P9 remediation anchors in regular_chain.rs, regular_chain_projection.rs, norm_trace.rs,
+  and norm_trace_projection.rs
 - git diff --check
 - guardian_boundary_reviewer P9 review after remediation
 function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P9/function_implementation_table.yaml
 algorithmic_sufficiency:
   verdict: sufficient
-  rationale: Reviewer inspected the P9 code paths, ledger boundaries, and evidence and found RegularChainProjection and NormTraceProjection sufficient for the admitted algebraically detected structures, including guard/component preservation and multi-step tower exact norm verification.
+  rationale: Reviewer inspected the P9 code paths, ledger boundaries, and evidence
+    and found RegularChainProjection and NormTraceProjection sufficient for the admitted
+    algebraically detected structures, including guard/component preservation and
+    multi-step tower exact norm verification.
 forbidden_pattern_scan:
   heavy_fallback: pass
   narrow_slice_escape: pass
@@ -77,10 +82,15 @@ forbidden_pattern_scan:
   appendix_override_bypass: pass
   stress_fixture_dispatch: pass
 not_applicable_justifications:
-  forbidden_pattern_scan.target_relation_schedule_discretion: Dense target-relation search scheduling belongs to P8a; P9 handles regular-chain and norm/trace kernels only.
-  forbidden_pattern_scan.weak_action_krylov_coverage: ActionKrylov coverage belongs to P8c and is not altered by P9.
-  forbidden_pattern_scan.nonfinite_without_positive_proof: P9 does not certify nonfinite target image status.
-  suite_partition_checks[0]: P15-only acceptance suite partition is not active in P9; no candidate-cover core, exact-image core, or final acceptance claim is made.
+  forbidden_pattern_scan.target_relation_schedule_discretion: Dense target-relation
+    search scheduling belongs to P8a; P9 handles regular-chain and norm/trace kernels
+    only.
+  forbidden_pattern_scan.weak_action_krylov_coverage: ActionKrylov coverage belongs
+    to P8c and is not altered by P9.
+  forbidden_pattern_scan.nonfinite_without_positive_proof: P9 does not certify nonfinite
+    target image status.
+  suite_partition_checks[0]: P15-only acceptance suite partition is not active in
+    P9; no candidate-cover core, exact-image core, or final acceptance claim is made.
 raw_response_consistency:
   raw_response_contains_blocker: false
   raw_response_contains_required_fix: false
@@ -90,60 +100,88 @@ phase_specific_checks:
 - check_id: p9-regular-chain-guard-component-semantics
   required_by: RGQ-023
   verdict: pass
-  evidence: Reviewer found regular_chain_projection.rs passes CompressedSystemQ guards into the trace and binds DAG, component, projection, guard, and output hashes; regular_chain.rs now carries component chains and guards.
-  reviewer_rationale: The prior guard/component overclaim blocker is fixed for admitted algebraic regular-chain structures.
+  evidence: Reviewer found regular_chain_projection.rs passes CompressedSystemQ guards
+    into the trace and binds DAG, component, projection, guard, and output hashes;
+    regular_chain.rs now carries component chains and guards.
+  reviewer_rationale: The prior guard/component overclaim blocker is fixed for admitted
+    algebraic regular-chain structures.
 - check_id: p9-norm-trace-multistep-exact-verification
   required_by: RGQ-024
   verdict: pass
-  evidence: Reviewer found TowerPlanDescription and ordered TowerStep usage, multi-step tower elimination, and exact norm relation recomputation in norm_trace.rs and norm_trace_projection.rs.
-  reviewer_rationale: The prior single-variable tower overclaim blocker is fixed for admitted algebraic tower structures.
+  evidence: Reviewer found TowerPlanDescription and ordered TowerStep usage, multi-step
+    tower elimination, and exact norm relation recomputation in norm_trace.rs and
+    norm_trace_projection.rs.
+  reviewer_rationale: The prior single-variable tower overclaim blocker is fixed for
+    admitted algebraic tower structures.
 - check_id: p9-planner-admission-connected
   required_by: RGQ-033
   verdict: pass
-  evidence: Reviewer found planner/admission.rs routes both P9 kernels through their plan builders without hidden fallback.
-  reviewer_rationale: Planner dispatch is algebraic and hash-bound rather than geometry-name or placeholder dispatch.
+  evidence: Reviewer found planner/admission.rs routes both P9 kernels through their
+    plan builders without hidden fallback.
+  reviewer_rationale: Planner dispatch is algebraic and hash-bound rather than geometry-name
+    or placeholder dispatch.
 appendix_override_checks:
 - appendix_section: Appendix A section 21
   controlling_requirement: RGQ-023
   verdict: pass
-  evidence: P9 regular-chain execution projects component chains to exported variables, preserves guards, and combines component relations through declared semantics before emitting TriangularChain output.
-  reviewer_rationale: Implementation follows the regular-chain component/guard/projection semantics expected by Appendix A section 21 within admitted scope.
+  evidence: P9 regular-chain execution projects component chains to exported variables,
+    preserves guards, and combines component relations through declared semantics
+    before emitting TriangularChain output.
+  reviewer_rationale: Implementation follows the regular-chain component/guard/projection
+    semantics expected by Appendix A section 21 within admitted scope.
 - appendix_section: Appendix A section 22
   controlling_requirement: RGQ-024
   verdict: pass
-  evidence: P9 norm/trace execution detects tower plans by algebraic form, computes norm relations through the tower plan, verifies by exact recomputation, and emits exported-only NormTraceTower output.
-  reviewer_rationale: Implementation follows the algebraic tower and exact norm verification path expected by Appendix A section 22 within admitted scope.
+  evidence: P9 norm/trace execution detects tower plans by algebraic form, computes
+    norm relations through the tower plan, verifies by exact recomputation, and emits
+    exported-only NormTraceTower output.
+  reviewer_rationale: Implementation follows the algebraic tower and exact norm verification
+    path expected by Appendix A section 22 within admitted scope.
 status_mapping_checks:
-- error_or_internal_condition: RegularChainProjection or NormTraceProjection plan hash, authorization hash, support hash, certificate route, or source hash coverage mismatch
+- error_or_internal_condition: RegularChainProjection or NormTraceProjection plan
+    hash, authorization hash, support hash, certificate route, or source hash coverage
+    mismatch
   mapped_solver_status: ImplementationBug
   verdict: pass
-  evidence: Reviewer found plan/source binding validation in P9 kernel plan and execute paths, with focused tamper tests in command output evidence.
+  evidence: Reviewer found plan/source binding validation in P9 kernel plan and execute
+    paths, with focused tamper tests in command output evidence.
   reviewer_rationale: Tamper and replay mismatches fail before producing a ProjectionMessage.
-- error_or_internal_condition: Algebraic structure outside admitted regular-chain or explicit tower scope
-  mapped_solver_status: Declined admission, AlgorithmicHardCase, or CertificateDesignGap according to the failed kernel precondition
+- error_or_internal_condition: Algebraic structure outside admitted regular-chain
+    or explicit tower scope
+  mapped_solver_status: Declined admission, AlgorithmicHardCase, or CertificateDesignGap
+    according to the failed kernel precondition
   verdict: pass
-  evidence: P9 notes and function table state that unsupported structures are declined and do not trigger hidden fallback or geometry dispatch.
-  reviewer_rationale: P9 is not overclaiming unsupported structures as solved by narrow helpers.
+  evidence: P9 notes and function table state that unsupported structures are declined
+    and do not trigger hidden fallback or geometry dispatch.
+  reviewer_rationale: P9 is not overclaiming unsupported structures as solved by narrow
+    helpers.
 suite_partition_checks:
 - suite_name: not_applicable
   verdict: not_applicable
   evidence: P15 acceptance suite partition is not active in P9.
-  reviewer_rationale: P9 closes only remaining MECH-007 and makes no candidate-cover core, exact-image core, or final acceptance claim.
+  reviewer_rationale: P9 closes only remaining MECH-007 and makes no candidate-cover
+    core, exact-image core, or final acceptance claim.
 semantic_deletion_challenges: []
 tamper_challenges:
 - challenge_id: p9-regular-chain-guard-binding
   target: RegularChainProjection compressed-system guard binding
   verdict: pass
-  evidence: p9_regular_chain_guard_binding_is_operational verifies execution mismatch after guard deletion and certificate-hash change after guard mutation.
+  evidence: p9_regular_chain_guard_binding_is_operational verifies execution mismatch
+    after guard deletion and certificate-hash change after guard mutation.
   reviewer_rationale: Guard semantics are not dropped from the P9 support trace.
 - challenge_id: p9-norm-trace-source-and-form-binding
   target: NormTraceProjection source hash and algebraic tower form binding
   verdict: pass
-  evidence: p9_norm_trace_detection_uses_algebraic_form_and_rejects_tamper and p9_norm_trace_multistep_tower_exports_verified_support pass in focused P9 tests.
-  reviewer_rationale: Norm/trace output is tied to algebraic form and exact recomputation rather than fixture or geometry dispatch.
+  evidence: p9_norm_trace_detection_uses_algebraic_form_and_rejects_tamper and p9_norm_trace_multistep_tower_exports_verified_support
+    pass in focused P9 tests.
+  reviewer_rationale: Norm/trace output is tied to algebraic form and exact recomputation
+    rather than fixture or geometry dispatch.
 unresolved_risks:
-- P9 is limited to admitted algebraically detected regular-chain and norm/trace structures; final support composition remains P10.
-- P9 does not assess replay/certificate closure beyond its kernel certificates, root isolation/decode, exact-image semantics, public orchestration, performance readiness, or final acceptance.
+- P9 is limited to admitted algebraically detected regular-chain and norm/trace structures;
+  final support composition remains P10.
+- P9 does not assess replay/certificate closure beyond its kernel certificates, root
+  isolation/decode, exact-image semantics, public orchestration, performance readiness,
+  or final acceptance.
 blocking_findings: []
 required_fixes: []
 pass_conditions:

@@ -1,0 +1,48 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: FCR-P11
+commit: f1f44f4947847e8f08470009fdbb48383819bbdd+p16-archive-normalization
+algorithm_spec_source_sha256: 2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed
+failure_source_sha256: df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: b2d6655c3926c0528d86284cb91f35db319a5efe6d2fe068f568c32f779c8b70
+review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
+evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P11/commands.txt
+  sha256: 852c77f60ecd1e81463b07f7f164d87d709fcb8f29db06be0176ea8efb31c7e3
+  purpose: phase evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P11/command_outputs.txt
+  sha256: 723175750d016f51a1683c334ec86dc1319cc0f258a16ee7bb694275c6f05455
+  purpose: phase evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P11/reviewer_results.md
+  sha256: fe34ef625b484d66625ac0adce458cfcbc0cd57abb2cdc50ab860052717207d3
+  purpose: phase evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P11/20260706-055251Z/prompt.md
+  sha256: 20fa4fffff4de0fca6e3a42c1841c54f2864d67622819e864e5ecb8d5b3998be
+  purpose: phase evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P11/20260706-055251Z/response.md
+  sha256: 29b5df36a6374801361f8fcc08de0610ecc6890b7eda21f608645e00e5709127
+  purpose: phase evidence
+command_outputs:
+- command: cargo test --manifest-path geosolver-core/Cargo.toml --test fcr_p11_red_team_suite
+    -- --nocapture
+  cwd: C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P11/command_outputs.txt
+  output_sha256: 723175750d016f51a1683c334ec86dc1319cc0f258a16ee7bb694275c6f05455
+  finished_at_utc: 20260706-090000Z
+static_scans: []
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P11/commands.txt
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P11/20260706-055251Z/prompt.md
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P11/20260706-055251Z/response.md
+known_limitations:
+- Final public replay-bound nonfinite readiness remains excluded from candidate-cover
+  readiness.
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-011
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-011
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

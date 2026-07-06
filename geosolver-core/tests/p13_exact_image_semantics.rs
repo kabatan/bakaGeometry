@@ -5,6 +5,7 @@ use geosolver_core::problem::input::{make_problem, RationalTargetProblem};
 use geosolver_core::problem::semantic::{register_slack_encoding, RealConstraintKind};
 use geosolver_core::result::status::SolverStatus;
 use geosolver_core::solver::options::SolverOptions;
+use geosolver_core::types::hash::hash_sequence;
 use geosolver_core::types::ids::{RelationId, VariableId};
 use geosolver_core::types::interval::interval_contains_q;
 use geosolver_core::types::polynomial::{
@@ -109,6 +110,14 @@ fn p13_exact_image_filters_spurious_slack_root_with_certificates() {
     ));
     assert!(replay_run_certificate(&result, &problem).accepted);
 
+    let mut classification_tamper = result.clone();
+    classification_tamper
+        .exact_image_certificate
+        .as_mut()
+        .expect("P13 certificate")
+        .classification_hash = hash_sequence("p13-classification-tamper", &[]);
+    assert!(!replay_run_certificate(&classification_tamper, &problem).accepted);
+
     let classification = result
         .exact_image_certificate
         .as_ref()
@@ -192,7 +201,7 @@ fn p13_branch_choice_semantics_affect_exact_classification() {
         RealConstraintKind::BranchChoice,
     );
 
-    let result = solve_target(problem, exact_options());
+    let result = solve_target(problem.clone(), exact_options());
 
     assert_eq!(
         result.status,
@@ -224,12 +233,14 @@ fn p13_exact_image_nonfinite_requires_real_nonfinite_certificate() {
         Vec::new(),
     );
 
-    let result = solve_target(problem, exact_options());
+    let result = solve_target(problem.clone(), exact_options());
 
     assert_eq!(result.status, SolverStatus::CertifiedNonFiniteTargetImage);
     assert!(result.support_polynomial.is_none());
     assert!(result.certificate.is_none());
     assert!(result.exact_image_certificate.is_none());
+    assert!(result.nonfinite_certificate.is_some());
+    assert!(replay_run_certificate(&result, &problem).accepted);
     assert!(result.diagnostics.iter().any(|diagnostic| {
         diagnostic.name == "CertifiedNonFiniteTargetImage"
             && diagnostic
@@ -256,7 +267,7 @@ fn p13_exact_image_nonfinite_with_semantics_returns_gap_without_real_semantic_pr
         )],
     );
 
-    let result = solve_target(problem, exact_options());
+    let result = solve_target(problem.clone(), exact_options());
 
     assert_eq!(
         result.status,
@@ -283,7 +294,7 @@ fn p13_exact_image_nonfinite_with_guard_or_saturation_returns_gap_without_real_p
         Vec::new(),
     );
 
-    let result = solve_target(problem, exact_options());
+    let result = solve_target(problem.clone(), exact_options());
 
     assert_eq!(
         result.status,

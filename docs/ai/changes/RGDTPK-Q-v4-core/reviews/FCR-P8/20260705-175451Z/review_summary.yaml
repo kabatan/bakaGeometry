@@ -12,9 +12,9 @@ review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3ba
 evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
 schema_mirror_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
 commit: 8a937400273ea6340095f3f6ac33dfac22833aab+fcr-p8-worktree
-prompt_sha256: 59f99e360c495fdb59d5e46be175f4215c4abdf89c45380e2f740610da986251
-response_sha256: a24bf037294a48762807866cf1bc4d6ac7a46fa3b58b83e9bb46be927dd628bf
-evidence_manifest_sha256: d1e0ebd3123ddcb8a5dc5bc4b126fa954d3ac7c1607c53577458021503dc20a5
+prompt_sha256: a03bfce9fbc7c085f9f023b914cd26f254c9e08acb6a2f0d9c9f433f150e529c
+response_sha256: 937c929c1aa7cd94ac8cf9c1b6231d3b8d3a59025e4651db8d1211bac3e1d05e
+evidence_manifest_sha256: b0a765e9a3b5de7d73ebfcff2c0529a9ac5debda2ccd6fe06cffd349ca47e747
 prompt_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P8/20260705-175451Z/prompt.md
 response_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P8/20260705-175451Z/response.md
 evidence_manifest_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P8/20260705-175451Z/evidence_manifest.yaml
@@ -28,7 +28,8 @@ reviewed_mechs:
 - MECH-011
 source_sections_checked:
 - FULL_CORE_REPAIR_BASE_SPEC.md FCR-010 real DAG/block replay is mandatory
-- FULL_CORE_REPAIR_BASE_SPEC.md FCR-011 candidate cover and finite candidate narrowing binding requirements
+- FULL_CORE_REPAIR_BASE_SPEC.md FCR-011 candidate cover and finite candidate narrowing
+  binding requirements
 - FULL_CORE_REPAIR_PLAN.md FCR-P8
 - FULL_CORE_REPAIR_REVIEWER_PROMPTS.md FCR-P8
 - BASE_SPEC.md MECH-010 certificates, verification, and replay
@@ -62,7 +63,10 @@ commands_inspected:
 function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_PRODUCTION_AUDIT.md
 algorithmic_sufficiency:
   verdict: sufficient
-  rationale: FCR-P8 replaces the production replay path with actual TargetProjectionDAG reconstruction, actual block replay, and CoreRunCertificate final DAG replay evidence binding, with public pipeline replay acceptance and required tamper rejection coverage.
+  rationale: FCR-P8 replaces the production replay path with actual TargetProjectionDAG
+    reconstruction, actual block replay, and CoreRunCertificate final DAG replay evidence
+    binding, with public pipeline replay acceptance and required tamper rejection
+    coverage.
 forbidden_pattern_scan:
   heavy_fallback: pass
   narrow_slice_escape: pass
@@ -81,9 +85,12 @@ forbidden_pattern_scan:
   stress_fixture_dispatch: pass
 not_applicable_justifications:
   status_mapping_checks[0]: FCR-P8 did not add or remap public SolverStatus values.
-  suite_partition_checks[0]: FCR-P8 is replay/certificate finalization work, not the FCR-P15 acceptance-suite partition.
-  unsupported_for_well_formed_input: FCR-P8 does not add a new unsupported path for well-formed inputs.
-  target_relation_schedule_discretion: FCR-P8 does not modify TargetRelationSearch scheduling.
+  suite_partition_checks[0]: FCR-P8 is replay/certificate finalization work, not the
+    FCR-P15 acceptance-suite partition.
+  unsupported_for_well_formed_input: FCR-P8 does not add a new unsupported path for
+    well-formed inputs.
+  target_relation_schedule_discretion: FCR-P8 does not modify TargetRelationSearch
+    scheduling.
   weak_action_krylov_coverage: FCR-P8 does not modify ActionKrylov coverage.
   non_spec_status: FCR-P8 does not add public non-spec statuses.
 raw_response_consistency:
@@ -96,33 +103,49 @@ phase_specific_checks:
   required_by: FCR-P8
   verdict: pass
   evidence: verify/mod.rs exposes pub mod replay and pub use replay without cfg(test).
-  reviewer_rationale: replay_run_certificate is production-exported, not only a test helper.
+  reviewer_rationale: replay_run_certificate is production-exported, not only a test
+    helper.
 - check_id: fcr-p8-actual-dag-replay-main-path
   required_by: FCR-P8
   verdict: pass
-  evidence: replay_run_certificate reconstructs the actual TargetProjectionDAG from the compressed system, compares cert.target_projection_dag_hash to actual_dag.dag_hash, derives dependencies from actual child edges, and calls verify_projection_messages_with_actual_blocks over actual_dag.blocks.
-  reviewer_rationale: The accepted replay path no longer constructs a synthetic all-relations block.
+  evidence: replay_run_certificate reconstructs the actual TargetProjectionDAG from
+    the compressed system, compares cert.target_projection_dag_hash to actual_dag.dag_hash,
+    derives dependencies from actual child edges, and calls verify_projection_messages_with_actual_blocks
+    over actual_dag.blocks.
+  reviewer_rationale: The accepted replay path no longer constructs a synthetic all-relations
+    block.
 - check_id: fcr-p8-core-certificate-binds-dag-evidence
   required_by: FCR-P8
   verdict: pass
-  evidence: FinalDagReplayEvidence records DAG hash, message/block IDs, source hashes, child dependencies, block authorization hashes, block relation ids/hashes, child edges, edge authorization hashes, support certificate hash, root isolation hash, and decoded candidate hash; replay recomputes and requires full evidence equality.
-  reviewer_rationale: CoreRunCertificate binds actual DAG/block authorization evidence through both evidence hash and stored evidence.
+  evidence: FinalDagReplayEvidence records DAG hash, message/block IDs, source hashes,
+    child dependencies, block authorization hashes, block relation ids/hashes, child
+    edges, edge authorization hashes, support certificate hash, root isolation hash,
+    and decoded candidate hash; replay recomputes and requires full evidence equality.
+  reviewer_rationale: CoreRunCertificate binds actual DAG/block authorization evidence
+    through both evidence hash and stored evidence.
 - check_id: fcr-p8-public-pipeline-replay
   required_by: FCR-P8
   verdict: pass
-  evidence: p3_public_pipeline_integration asserts final_dag_replay_evidence is present and replay_run_certificate accepts the public pipeline result against the original problem.
+  evidence: p3_public_pipeline_integration asserts final_dag_replay_evidence is present
+    and replay_run_certificate accepts the public pipeline result against the original
+    problem.
   reviewer_rationale: Actual replay is exercised on the public candidate-cover path.
 - check_id: fcr-p8-required-tamper-coverage
   required_by: FCR-P8
   verdict: pass
-  evidence: Tests cover relation outside actual block, child not on DAG edge, plan/package/support/root/candidate tamper, candidate omission/duplication, duplicate message rejection, and block relation authorization evidence tamper.
-  reviewer_rationale: Mandatory tamper cases are represented and fresh after the last code change.
+  evidence: Tests cover relation outside actual block, child not on DAG edge, plan/package/support/root/candidate
+    tamper, candidate omission/duplication, duplicate message rejection, and block
+    relation authorization evidence tamper.
+  reviewer_rationale: Mandatory tamper cases are represented and fresh after the last
+    code change.
 appendix_override_checks:
 - appendix_section: Appendix A MECH-010 replay and certificate binding
   controlling_requirement: FCR-P8
   verdict: pass
-  evidence: Replay is actual-DAG based and certificate evidence binds source, plan, message, support, root, candidate, and block authorization hashes.
-  reviewer_rationale: The phase respects the FCR-010 overlay without claiming final source fidelity or exact-image readiness.
+  evidence: Replay is actual-DAG based and certificate evidence binds source, plan,
+    message, support, root, candidate, and block authorization hashes.
+  reviewer_rationale: The phase respects the FCR-010 overlay without claiming final
+    source fidelity or exact-image readiness.
 status_mapping_checks:
 - error_or_internal_condition: not_applicable_for_fcr_p8
   mapped_solver_status: not_applicable
@@ -132,14 +155,19 @@ status_mapping_checks:
 suite_partition_checks:
 - suite_name: not_applicable
   verdict: not_applicable
-  evidence: FCR-P8 adds replay/certificate and tamper tests, not the acceptance-suite partition.
-  reviewer_rationale: Full support/exact-image/failure suite partitioning remains later FCR work.
+  evidence: FCR-P8 adds replay/certificate and tamper tests, not the acceptance-suite
+    partition.
+  reviewer_rationale: Full support/exact-image/failure suite partitioning remains
+    later FCR work.
 semantic_deletion_challenges: []
 tamper_challenges: []
 unresolved_risks:
-- Synthetic all-relations references remain in cfg(test) negative/helper tests, not production replay.
-- final claim checks still intentionally block broader final/P14-style claims; this PASS is only for FCR-P8 replay and certificate finalization.
-- FCR-P8 does not authorize P13, final source fidelity, exact-image readiness, acceptance completion, full production readiness, or any R-ID VERIFIED status.
+- Synthetic all-relations references remain in cfg(test) negative/helper tests, not
+  production replay.
+- final claim checks still intentionally block broader final/P14-style claims; this
+  PASS is only for FCR-P8 replay and certificate finalization.
+- FCR-P8 does not authorize P13, final source fidelity, exact-image readiness, acceptance
+  completion, full production readiness, or any R-ID VERIFIED status.
 blocking_findings: []
 required_fixes: []
 pass_conditions:

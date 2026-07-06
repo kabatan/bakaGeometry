@@ -60,7 +60,9 @@ commands_inspected:
 function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8c/function_implementation_table.yaml
 algorithmic_sufficiency:
   verdict: sufficient
-  rationale: Reviewer inspected P8c source, ledger boundaries, and evidence and found TargetActionKrylov admission/planning/execution/replay sufficient for the narrow certifiable target-only finite quotient/action path using only VerifiedCharacteristicSupportCoverage.
+  rationale: Reviewer inspected P8c source, ledger boundaries, and evidence and found
+    TargetActionKrylov admission/planning/execution/replay sufficient for the narrow
+    certifiable target-only finite quotient/action path using only VerifiedCharacteristicSupportCoverage.
 forbidden_pattern_scan:
   heavy_fallback: pass
   narrow_slice_escape: pass
@@ -78,9 +80,14 @@ forbidden_pattern_scan:
   appendix_override_bypass: pass
   stress_fixture_dispatch: pass
 not_applicable_justifications:
-  forbidden_pattern_scan.target_relation_schedule_discretion: TargetRelationSearch schedule determinism belongs to P8a; P8c uses quotient/action characteristic coverage and does not alter RGQ-042.
-  appendix_override_checks[0]: P8c does not implement Universal/final-support local elimination; RGQ-041 and nonfinite final-support overrides remain owned by later phases.
-  suite_partition_checks[0]: P15-only acceptance suite partition is not active in P8c; no acceptance, candidate-cover completion, or exact-image claim is made.
+  forbidden_pattern_scan.target_relation_schedule_discretion: TargetRelationSearch
+    schedule determinism belongs to P8a; P8c uses quotient/action characteristic coverage
+    and does not alter RGQ-042.
+  appendix_override_checks[0]: P8c does not implement Universal/final-support local
+    elimination; RGQ-041 and nonfinite final-support overrides remain owned by later
+    phases.
+  suite_partition_checks[0]: P15-only acceptance suite partition is not active in
+    P8c; no acceptance, candidate-cover completion, or exact-image claim is made.
 raw_response_consistency:
   raw_response_contains_blocker: false
   raw_response_contains_required_fix: false
@@ -90,59 +97,86 @@ phase_specific_checks:
 - check_id: p8c-production-handle-boundary
   required_by: RGQ-021
   verdict: pass
-  evidence: Reviewer found P8c uses ProductionProvenancedTargetQuotientHandle and not debug explicit handles in action_krylov.rs.
-  reviewer_rationale: Production path is type-bound to the provenanced quotient/action primitive and does not accept debug explicit handles.
+  evidence: Reviewer found P8c uses ProductionProvenancedTargetQuotientHandle and
+    not debug explicit handles in action_krylov.rs.
+  reviewer_rationale: Production path is type-bound to the provenanced quotient/action
+    primitive and does not accept debug explicit handles.
 - check_id: p8c-only-verified-characteristic-coverage
   required_by: RGQ-044
   verdict: pass
-  evidence: Reviewer found CoverageKind has only VerifiedCharacteristicSupportCoverage and P8c uses CertificateRoute::VerifiedCharacteristicSupportCoverage.
-  reviewer_rationale: No weaker Krylov, block-Wiedemann, trace-power, or unchecked S(M_T)=0 proof is support-producing.
+  evidence: Reviewer found CoverageKind has only VerifiedCharacteristicSupportCoverage
+    and P8c uses CertificateRoute::VerifiedCharacteristicSupportCoverage.
+  reviewer_rationale: No weaker Krylov, block-Wiedemann, trace-power, or unchecked
+    S(M_T)=0 proof is support-producing.
 - check_id: p8c-characteristic-polynomial-output
   required_by: RGQ-044
   verdict: pass
-  evidence: Reviewer found the emitted relation is built from the exact characteristic polynomial after exact Cayley-Hamilton verification.
-  reviewer_rationale: The primitive computes characteristic_polynomial, verifies Cayley-Hamilton, and P8c emits that relation only after verification.
+  evidence: Reviewer found the emitted relation is built from the exact characteristic
+    polynomial after exact Cayley-Hamilton verification.
+  reviewer_rationale: The primitive computes characteristic_polynomial, verifies Cayley-Hamilton,
+    and P8c emits that relation only after verification.
 - check_id: p8c-undercoverage-regression
   required_by: RGQ-054
   verdict: pass
-  evidence: p8c_undercovered_single_vector_recurrence_cannot_escape_as_support and algebra::krylov::single_vector_krylov_undercoverage_is_rejected are present and pass.
-  reviewer_rationale: The regression demonstrates a single-vector recurrence misses an eigenvalue and cannot produce a relation unless full characteristic coverage is constructed.
+  evidence: p8c_undercovered_single_vector_recurrence_cannot_escape_as_support and
+    algebra::krylov::single_vector_krylov_undercoverage_is_rejected are present and
+    pass.
+  reviewer_rationale: The regression demonstrates a single-vector recurrence misses
+    an eigenvalue and cannot produce a relation unless full characteristic coverage
+    is constructed.
 - check_id: p8c-no-coordinate-export
   required_by: RGQ-021
   verdict: pass
-  evidence: p8c_quotient_handle_rejects_coordinate_root_or_rur_export is present and passes.
-  reviewer_rationale: Production quotient handles must expose no coordinate roots or full coordinate RUR before P8c can return a support relation.
+  evidence: p8c_quotient_handle_rejects_coordinate_root_or_rur_export is present and
+    passes.
+  reviewer_rationale: Production quotient handles must expose no coordinate roots
+    or full coordinate RUR before P8c can return a support relation.
 appendix_override_checks:
 - appendix_section: Appendix A section 19.4
   controlling_requirement: RGQ-044
   verdict: pass
-  evidence: P8c accepts only VerifiedCharacteristicSupportCoverage despite Appendix A section 19.4 listing weaker possible coverage approaches.
-  reviewer_rationale: The hardening override in RGQ-044/RGQ-054 controls; P8c does not accept single-vector, block-Wiedemann, trace-only, or unchecked annihilator coverage.
+  evidence: P8c accepts only VerifiedCharacteristicSupportCoverage despite Appendix
+    A section 19.4 listing weaker possible coverage approaches.
+  reviewer_rationale: The hardening override in RGQ-044/RGQ-054 controls; P8c does
+    not accept single-vector, block-Wiedemann, trace-only, or unchecked annihilator
+    coverage.
 status_mapping_checks:
-- error_or_internal_condition: no certifiable target-action quotient; coordinate root/RUR export flag; undercovered single-vector recurrence; plan/source/auth/child tamper
-  mapped_solver_status: KernelAdmissionStatus::Declined for non-applicable admission; InvalidInput for coordinate-exporting quotient input; CertificateDesignGap for undercoverage; ImplementationBug for tamper/binding mismatch
+- error_or_internal_condition: no certifiable target-action quotient; coordinate root/RUR
+    export flag; undercovered single-vector recurrence; plan/source/auth/child tamper
+  mapped_solver_status: KernelAdmissionStatus::Declined for non-applicable admission;
+    InvalidInput for coordinate-exporting quotient input; CertificateDesignGap for
+    undercoverage; ImplementationBug for tamper/binding mismatch
   verdict: pass
-  evidence: P8c tests and action_krylov.rs validation paths cover no-coordinate export rejection, undercoverage rejection, and auth/source tamper rejection.
-  reviewer_rationale: P8c does not route failures to Unsupported or CertifiedNonFiniteTargetImage and does not emit candidate relations on missing coverage.
+  evidence: P8c tests and action_krylov.rs validation paths cover no-coordinate export
+    rejection, undercoverage rejection, and auth/source tamper rejection.
+  reviewer_rationale: P8c does not route failures to Unsupported or CertifiedNonFiniteTargetImage
+    and does not emit candidate relations on missing coverage.
 suite_partition_checks:
 - suite_name: not_applicable
   verdict: not_applicable
   evidence: P15 acceptance suite partition is not active in P8c.
-  reviewer_rationale: P8c closes only MECH-014 and makes no full candidate-cover, exact-image, or final failure semantics claim.
+  reviewer_rationale: P8c closes only MECH-014 and makes no full candidate-cover,
+    exact-image, or final failure semantics claim.
 semantic_deletion_challenges: []
 tamper_challenges:
 - challenge_id: p8c-auth-source-tamper
   target: TargetActionKrylovKernel authorization and source hash binding
   verdict: pass
   evidence: p8c_action_krylov_rejects_auth_and_source_hash_tamper passes.
-  reviewer_rationale: Authorization and source hash tampering are rejected before ProjectionMessage success.
+  reviewer_rationale: Authorization and source hash tampering are rejected before
+    ProjectionMessage success.
 - challenge_id: p8c-plan-child-route
-  target: TargetActionKrylovKernel plan hash, certificate route, and child message hash binding
+  target: TargetActionKrylovKernel plan hash, certificate route, and child message
+    hash binding
   verdict: pass
-  evidence: validate_target_action_plan_binding checks plan hash, certificate route, block authorization, and exact planned child message hash set.
-  reviewer_rationale: The execution path materially checks planner and child-message boundaries before constructing output.
+  evidence: validate_target_action_plan_binding checks plan hash, certificate route,
+    block authorization, and exact planned child message hash set.
+  reviewer_rationale: The execution path materially checks planner and child-message
+    boundaries before constructing output.
 unresolved_risks:
-- P8c currently supports the narrow certifiable target-only finite quotient/action path; generic quotient-basis construction for arbitrary local ideals remains outside the claim.
+- P8c currently supports the narrow certifiable target-only finite quotient/action
+  path; generic quotient-basis construction for arbitrary local ideals remains outside
+  the claim.
 blocking_findings: []
 required_fixes: []
 pass_conditions:

@@ -14,7 +14,7 @@ schema_mirror_sha256: e69c92eeb226b48fc1921d4b75daf7f6a78bdb4aa6a69a4a38a1679acc
 commit: d958d1a26266414f67ee6c4251c648a8558375ca+p12g-worktree
 prompt_sha256: 2932f36c37a5f06d07dcbe7ffafe319258d8a9a4e42c2ca211581e98f436162d
 response_sha256: 0a8dd5415e9b4b204dea1244c6130fcb2082c172d69ebf260efc70b4f8bd7be7
-evidence_manifest_sha256: fce5c48a47f01a6058ee2f64dad826bd85e4f7a87faf5e74f93dcdb36f639e88
+evidence_manifest_sha256: c85dbe7dcb81e5d8dd63281f61ba8691a2f519fde65d5266c9e0b3a8edbecf67
 prompt_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P12G-h/20260705-233000Z/prompt.md
 response_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P12G-h/20260705-233000Z/response.md
 evidence_manifest_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P12G-h/20260705-233000Z/evidence_manifest.yaml

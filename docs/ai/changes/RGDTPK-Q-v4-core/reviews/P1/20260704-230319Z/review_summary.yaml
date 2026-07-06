@@ -1,136 +1,146 @@
-schema_version: "rgdtpk-review-v2.2"
-phase_id: "P1"
-phase_kind: "data_model"
-review_status: "PASS"
+schema_version: rgdtpk-review-v2.2
+phase_id: P1
+phase_kind: data_model
+review_status: PASS
 phase_closable: true
-claim_ceiling_after_phase: "SCAFFOLD_READY"
-base_spec_sha256: "dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c"
-plan_sha256: "e78cfebc3cce75fbe632c1d0384f59eee7168a27c81d7326c1f02362584b26bc"
-source_map_sha256: "c3fc89dd76d1bf68684ad5359f6e2c4accf28e8db87c0e725b36aba21a2362a2"
-review_archive_schema_sha256: "53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad"
-review_summary_schema_sha256: "ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0"
-evidence_manifest_schema_sha256: "70fd1c72382f5ab847e3eb2eb40f135abb628f46c2a1e5ebf006acdba81c8e0f"
-schema_mirror_sha256: "ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0"
-commit: "unborn-master-no-commit"
-prompt_sha256: "299871d85f8e13d2ab27903467cd5453a852cf01ac56e97dcf85ba47a4026e6f"
-response_sha256: "1d43cc11af7f24e056b97c8a648648efa2d4a5ec01a725eb0f42e89276415538"
-evidence_manifest_sha256: "277d8d482545d49a911c7ec06776873a05fc6c029b58c4a48c2deea194165c4b"
-prompt_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P1/20260704-230319Z/prompt.md"
-response_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P1/20260704-230319Z/response.md"
-evidence_manifest_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P1/20260704-230319Z/evidence_manifest.yaml"
-reviewer_identity: "guardian_boundary_reviewer"
+claim_ceiling_after_phase: SCAFFOLD_READY
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: e78cfebc3cce75fbe632c1d0384f59eee7168a27c81d7326c1f02362584b26bc
+source_map_sha256: c3fc89dd76d1bf68684ad5359f6e2c4accf28e8db87c0e725b36aba21a2362a2
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0
+evidence_manifest_schema_sha256: 70fd1c72382f5ab847e3eb2eb40f135abb628f46c2a1e5ebf006acdba81c8e0f
+schema_mirror_sha256: ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0
+commit: unborn-master-no-commit
+prompt_sha256: 299871d85f8e13d2ab27903467cd5453a852cf01ac56e97dcf85ba47a4026e6f
+response_sha256: 1d43cc11af7f24e056b97c8a648648efa2d4a5ec01a725eb0f42e89276415538
+evidence_manifest_sha256: 277d8d482545d49a911c7ec06776873a05fc6c029b58c4a48c2deea194165c4b
+prompt_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P1/20260704-230319Z/prompt.md
+response_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P1/20260704-230319Z/response.md
+evidence_manifest_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P1/20260704-230319Z/evidence_manifest.yaml
+reviewer_identity: guardian_boundary_reviewer
 reviewed_rids:
-  - "RGQ-007"
-  - "RGQ-008"
-  - "RGQ-009"
-  - "RGQ-010"
-  - "RGQ-058"
-  - "RGQ-059"
+- RGQ-007
+- RGQ-008
+- RGQ-009
+- RGQ-010
+- RGQ-058
+- RGQ-059
 reviewed_mechs:
-  - "MECH-001"
+- MECH-001
 source_sections_checked:
-  - "Appendix A section 5.1-5.3"
-  - "Appendix A section 6"
-  - "Appendix A section 7"
-  - "Appendix A section 8"
-  - "PLAN.md P1"
+- Appendix A section 5.1-5.3
+- Appendix A section 6
+- Appendix A section 7
+- Appendix A section 8
+- PLAN.md P1
 files_inspected:
-  - "geosolver-core/Cargo.toml"
-  - "geosolver-core/src/lib.rs"
-  - "geosolver-core/src/api.rs"
-  - "geosolver-core/src/types/ids.rs"
-  - "geosolver-core/src/types/hash.rs"
-  - "geosolver-core/src/types/rational.rs"
-  - "geosolver-core/src/types/monomial.rs"
-  - "geosolver-core/src/types/polynomial.rs"
-  - "geosolver-core/src/types/univariate.rs"
-  - "geosolver-core/src/types/matrix.rs"
-  - "geosolver-core/src/types/interval.rs"
-  - "geosolver-core/src/result/status.rs"
-  - "geosolver-core/src/result/diagnostics.rs"
-  - "geosolver-core/src/solver/orchestrator.rs"
+- geosolver-core/Cargo.toml
+- geosolver-core/src/lib.rs
+- geosolver-core/src/api.rs
+- geosolver-core/src/types/ids.rs
+- geosolver-core/src/types/hash.rs
+- geosolver-core/src/types/rational.rs
+- geosolver-core/src/types/monomial.rs
+- geosolver-core/src/types/polynomial.rs
+- geosolver-core/src/types/univariate.rs
+- geosolver-core/src/types/matrix.rs
+- geosolver-core/src/types/interval.rs
+- geosolver-core/src/result/status.rs
+- geosolver-core/src/result/diagnostics.rs
+- geosolver-core/src/solver/orchestrator.rs
 evidence_inspected:
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P1/command_outputs.txt"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P1/function_implementation_table.yaml"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P1/required_files_check.txt"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P1/static_scan_forbidden_markers.txt"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P1/static_scan_status_words.txt"
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P1/command_outputs.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P1/function_implementation_table.yaml
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P1/required_files_check.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P1/static_scan_forbidden_markers.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P1/static_scan_status_words.txt
 commands_inspected:
-  - "cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check"
-  - "cargo test --manifest-path geosolver-core/Cargo.toml types -- --nocapture"
-  - "cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture"
-function_implementation_table: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P1/function_implementation_table.yaml"
+- cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+- cargo test --manifest-path geosolver-core/Cargo.toml types -- --nocapture
+- cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P1/function_implementation_table.yaml
 algorithmic_sufficiency:
-  verdict: "sufficient"
-  rationale: "Reviewer verified P1-scoped exact base type behavior and explicitly limited the claim to scaffold/exact-base-types."
+  verdict: sufficient
+  rationale: Reviewer verified P1-scoped exact base type behavior and explicitly limited
+    the claim to scaffold/exact-base-types.
 forbidden_pattern_scan:
-  heavy_fallback: "not_applicable"
-  narrow_slice_escape: "not_applicable"
-  hidden_fallback: "not_applicable"
-  decorative_certificate: "not_applicable"
-  placeholder_candidate: "pass"
-  geometry_dispatch: "pass"
-  unsupported_for_well_formed_input: "pass"
-  exact_image_overclaim: "pass"
-  target_relation_schedule_discretion: "not_applicable"
-  weak_action_krylov_coverage: "not_applicable"
-  nonfinite_without_positive_proof: "not_applicable"
-  non_spec_status: "pass"
-  required_function_deferred: "pass"
-  appendix_override_bypass: "pass"
-  stress_fixture_dispatch: "not_applicable"
+  heavy_fallback: not_applicable
+  narrow_slice_escape: not_applicable
+  hidden_fallback: not_applicable
+  decorative_certificate: not_applicable
+  placeholder_candidate: pass
+  geometry_dispatch: pass
+  unsupported_for_well_formed_input: pass
+  exact_image_overclaim: pass
+  target_relation_schedule_discretion: not_applicable
+  weak_action_krylov_coverage: not_applicable
+  nonfinite_without_positive_proof: not_applicable
+  non_spec_status: pass
+  required_function_deferred: pass
+  appendix_override_bypass: pass
+  stress_fixture_dispatch: not_applicable
 not_applicable_justifications:
-  "forbidden_pattern_scan.heavy_fallback": "P1 has no projection kernel execution path."
-  "forbidden_pattern_scan.narrow_slice_escape": "P1 has no solver acceptance path."
-  "forbidden_pattern_scan.hidden_fallback": "P1 has no planner or kernel ladder."
-  "forbidden_pattern_scan.decorative_certificate": "P1 only defines minimal certificate records for type wiring; verification behavior is later."
-  "forbidden_pattern_scan.target_relation_schedule_discretion": "TargetRelationSearch is not implemented in P1."
-  "forbidden_pattern_scan.weak_action_krylov_coverage": "ActionKrylov is not implemented in P1."
-  "forbidden_pattern_scan.nonfinite_without_positive_proof": "Nonfinite handling is not implemented in P1."
-  "forbidden_pattern_scan.stress_fixture_dispatch": "Acceptance stress suites are not implemented in P1."
-  "suite_partition_checks[0]": "P15 suite partition is not active in P1."
+  forbidden_pattern_scan.heavy_fallback: P1 has no projection kernel execution path.
+  forbidden_pattern_scan.narrow_slice_escape: P1 has no solver acceptance path.
+  forbidden_pattern_scan.hidden_fallback: P1 has no planner or kernel ladder.
+  forbidden_pattern_scan.decorative_certificate: P1 only defines minimal certificate
+    records for type wiring; verification behavior is later.
+  forbidden_pattern_scan.target_relation_schedule_discretion: TargetRelationSearch
+    is not implemented in P1.
+  forbidden_pattern_scan.weak_action_krylov_coverage: ActionKrylov is not implemented
+    in P1.
+  forbidden_pattern_scan.nonfinite_without_positive_proof: Nonfinite handling is not
+    implemented in P1.
+  forbidden_pattern_scan.stress_fixture_dispatch: Acceptance stress suites are not
+    implemented in P1.
+  suite_partition_checks[0]: P15 suite partition is not active in P1.
 raw_response_consistency:
   raw_response_contains_blocker: false
   raw_response_contains_required_fix: false
   summary_overrides_raw_response: false
   reviewer_declared_files_inspected: true
 phase_specific_checks:
-  - check_id: "p1-exact-base-types"
-    required_by: "RGQ-009"
-    verdict: "pass"
-    evidence: "Reviewer inspected exact base implementations and passing tests."
-    reviewer_rationale: "P1-scoped exact type behavior is sufficient."
-  - check_id: "p1-exact-rational-polynomial-arithmetic"
-    required_by: "RGQ-010"
-    verdict: "pass"
-    evidence: "Targeted types tests passed for rational normalization, polynomial normalization, univariate gcd/squarefree, hashes, and intervals."
-    reviewer_rationale: "No floating arithmetic or compile-only tests were found in P1 scope."
-  - check_id: "p1-status-closed-set"
-    required_by: "RGQ-058"
-    verdict: "pass"
-    evidence: "Reviewer confirmed public SolverStatus is the Appendix A closed set and temporary path maps to ImplementationBug plus diagnostic."
-    reviewer_rationale: "No non-spec public status exists."
+- check_id: p1-exact-base-types
+  required_by: RGQ-009
+  verdict: pass
+  evidence: Reviewer inspected exact base implementations and passing tests.
+  reviewer_rationale: P1-scoped exact type behavior is sufficient.
+- check_id: p1-exact-rational-polynomial-arithmetic
+  required_by: RGQ-010
+  verdict: pass
+  evidence: Targeted types tests passed for rational normalization, polynomial normalization,
+    univariate gcd/squarefree, hashes, and intervals.
+  reviewer_rationale: No floating arithmetic or compile-only tests were found in P1
+    scope.
+- check_id: p1-status-closed-set
+  required_by: RGQ-058
+  verdict: pass
+  evidence: Reviewer confirmed public SolverStatus is the Appendix A closed set and
+    temporary path maps to ImplementationBug plus diagnostic.
+  reviewer_rationale: No non-spec public status exists.
 appendix_override_checks:
-  - appendix_section: "Appendix A sections 5-8"
-    controlling_requirement: "RGQ-057"
-    verdict: "pass"
-    evidence: "P1 does not weaken Appendix A data model/API requirements."
-    reviewer_rationale: "No hardening override bypass is active in P1."
+- appendix_section: Appendix A sections 5-8
+  controlling_requirement: RGQ-057
+  verdict: pass
+  evidence: P1 does not weaken Appendix A data model/API requirements.
+  reviewer_rationale: No hardening override bypass is active in P1.
 status_mapping_checks:
-  - error_or_internal_condition: "TemporaryPipelineNotConnected"
-    mapped_solver_status: "ImplementationBug"
-    verdict: "pass"
-    evidence: "geosolver-core/src/result/status.rs maps TemporaryPipelineNotConnected to SolverStatus::ImplementationBug."
-    reviewer_rationale: "Matches RGQ-058 and Plan P1 temporary scaffold allowance."
+- error_or_internal_condition: TemporaryPipelineNotConnected
+  mapped_solver_status: ImplementationBug
+  verdict: pass
+  evidence: geosolver-core/src/result/status.rs maps TemporaryPipelineNotConnected
+    to SolverStatus::ImplementationBug.
+  reviewer_rationale: Matches RGQ-058 and Plan P1 temporary scaffold allowance.
 suite_partition_checks:
-  - suite_name: "not_applicable"
-    verdict: "not_applicable"
-    evidence: "No P15 suite exists in P1."
-    reviewer_rationale: "No acceptance claim is made."
+- suite_name: not_applicable
+  verdict: not_applicable
+  evidence: No P15 suite exists in P1.
+  reviewer_rationale: No acceptance claim is made.
 semantic_deletion_challenges: []
 tamper_challenges: []
 unresolved_risks:
-  - "TemporaryPipelineNotConnected path must be removed before P14 closes."
+- TemporaryPipelineNotConnected path must be removed before P14 closes.
 blocking_findings: []
 required_fixes: []
 pass_conditions:

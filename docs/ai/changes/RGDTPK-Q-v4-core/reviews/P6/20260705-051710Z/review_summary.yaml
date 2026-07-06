@@ -66,7 +66,9 @@ commands_inspected:
 function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P6/function_implementation_table.yaml
 algorithmic_sufficiency:
   verdict: sufficient
-  rationale: Reviewer inspected the P6 planner and RGQ-042 schedule code paths after remediation and passed deep ladder hash binding, deterministic planning, Universal fixed sequence, RGQ-055 reproducibility coverage, and primitive overclaim barriers.
+  rationale: Reviewer inspected the P6 planner and RGQ-042 schedule code paths after
+    remediation and passed deep ladder hash binding, deterministic planning, Universal
+    fixed sequence, RGQ-055 reproducibility coverage, and primitive overclaim barriers.
 forbidden_pattern_scan:
   heavy_fallback: pass
   narrow_slice_escape: pass
@@ -84,7 +86,8 @@ forbidden_pattern_scan:
   appendix_override_bypass: pass
   stress_fixture_dispatch: pass
 not_applicable_justifications:
-  suite_partition_checks[0]: P15 acceptance suite partition is not active in P6; no acceptance, candidate-cover, or exact-image claim is made.
+  suite_partition_checks[0]: P15 acceptance suite partition is not active in P6; no
+    acceptance, candidate-cover, or exact-image claim is made.
 raw_response_consistency:
   raw_response_contains_blocker: false
   raw_response_contains_required_fix: false
@@ -94,55 +97,71 @@ phase_specific_checks:
 - check_id: p6-deterministic-planner-declared-ladder
   required_by: RGQ-015 and MECH-005
   verdict: pass
-  evidence: plan_all_blocks builds deterministic KernelPlan values and p6_planning_is_deterministic_and_declares_universal_last passes.
-  reviewer_rationale: All nine kernels are considered and Universal is final in the declared ladder.
+  evidence: plan_all_blocks builds deterministic KernelPlan values and p6_planning_is_deterministic_and_declares_universal_last
+    passes.
+  reviewer_rationale: All nine kernels are considered and Universal is final in the
+    declared ladder.
 - check_id: p6-support-producing-plan-fields
   required_by: RGQ-039
   verdict: pass
-  evidence: KernelExecutionPlan stores exported variables, eliminated variables, support/template/rank plans, resource bounds, certificate route, and failure behavior.
+  evidence: KernelExecutionPlan stores exported variables, eliminated variables, support/template/rank
+    plans, resource bounds, certificate route, and failure behavior.
   reviewer_rationale: Admitted plans carry concrete data rather than feature labels.
 - check_id: p6-deep-ladder-hash-binding
   required_by: RGQ-015, RGQ-047, MECH-005, and MECH-016
   verdict: pass
-  evidence: hash_kernel_plan and hash_kernel_execution_plan recompute nested content; p6_declared_ladder_rejects_execution_plan_field_tampering passes.
-  reviewer_rationale: Stored stale child hashes cannot authorize tampered execution-plan content.
+  evidence: hash_kernel_plan and hash_kernel_execution_plan recompute nested content;
+    p6_declared_ladder_rejects_execution_plan_field_tampering passes.
+  reviewer_rationale: Stored stale child hashes cannot authorize tampered execution-plan
+    content.
 - check_id: p6-rgq042-rgq055-schedule-planning
   required_by: RGQ-042 and RGQ-055
   verdict: pass
-  evidence: build_dense_relation_search_schedule follows RGQ-042 e_cap formula and rgq055_schedule_reproducibility_covers_three_local_shapes passes.
-  reviewer_rationale: Dense schedule planning is deterministic and independently reproducible across three local shapes.
+  evidence: build_dense_relation_search_schedule follows RGQ-042 e_cap formula and
+    rgq055_schedule_reproducibility_covers_three_local_shapes passes.
+  reviewer_rationale: Dense schedule planning is deterministic and independently reproducible
+    across three local shapes.
 appendix_override_checks:
 - appendix_section: Appendix A section 20.3 and 20.4 Universal local elimination
   controlling_requirement: RGQ-041
   verdict: pass
   evidence: Universal plans use the fixed RGQ-041 strategy sequence and NoLocalCertifiedNonFinite.
-  reviewer_rationale: P6 does not permit hidden Universal strategies or local nonfinite certification.
+  reviewer_rationale: P6 does not permit hidden Universal strategies or local nonfinite
+    certification.
 status_mapping_checks:
-- error_or_internal_condition: Missing declared kernel, ladder hash mismatch, relation-search exhaustion, and Universal local failure
-  mapped_solver_status: ImplementationBug for tamper/missing ladder; AlgorithmicHardCase/FiniteResourceFailure/CertificateDesignGap for planned kernel failure; not CertifiedNonFiniteTargetImage
+- error_or_internal_condition: Missing declared kernel, ladder hash mismatch, relation-search
+    exhaustion, and Universal local failure
+  mapped_solver_status: ImplementationBug for tamper/missing ladder; AlgorithmicHardCase/FiniteResourceFailure/CertificateDesignGap
+    for planned kernel failure; not CertifiedNonFiniteTargetImage
   verdict: pass
-  evidence: require_declared_kernel_plan returns ImplementationBug for tamper/missing plans; PlannedFailureBehavior excludes CertifiedNonFiniteTargetImage for local Universal.
+  evidence: require_declared_kernel_plan returns ImplementationBug for tamper/missing
+    plans; PlannedFailureBehavior excludes CertifiedNonFiniteTargetImage for local
+    Universal.
   reviewer_rationale: Matches RGQ-041 and RGQ-051 polarity boundaries for P6 planning.
 suite_partition_checks:
 - suite_name: not_applicable
   verdict: not_applicable
   evidence: P15 acceptance suite partition is not active in P6.
-  reviewer_rationale: No candidate-cover, exact-image, or acceptance-complete claim is made.
+  reviewer_rationale: No candidate-cover, exact-image, or acceptance-complete claim
+    is made.
 semantic_deletion_challenges: []
 tamper_challenges:
 - challenge_id: p6-hidden-fallback-deleted-ladder-entry
   target: KernelPlan declared ladder
   verdict: pass
-  evidence: p6_hidden_fallback_is_rejected_when_kernel_absent_from_declared_ladder deletes TargetRelationSearch and verifies ImplementationBug.
+  evidence: p6_hidden_fallback_is_rejected_when_kernel_absent_from_declared_ladder
+    deletes TargetRelationSearch and verifies ImplementationBug.
   reviewer_rationale: Runtime cannot choose a kernel absent from the declared ladder.
 - challenge_id: p6-execution-plan-field-tamper
   target: KernelExecutionPlan nested fields
   verdict: pass
-  evidence: p6_declared_ladder_rejects_execution_plan_field_tampering mutates exported variables, support degree, resource bounds, and failure behavior.
+  evidence: p6_declared_ladder_rejects_execution_plan_field_tampering mutates exported
+    variables, support degree, resource bounds, and failure behavior.
   reviewer_rationale: Nested plan content is rehashed before execution.
 unresolved_risks:
 - P8a still owns RGQ-042 execution and exact membership verification.
-- P6 does not close MECH-013, candidate-cover, exact-image, replay, public orchestration, performance readiness, or final acceptance.
+- P6 does not close MECH-013, candidate-cover, exact-image, replay, public orchestration,
+  performance readiness, or final acceptance.
 blocking_findings: []
 required_fixes: []
 pass_conditions:

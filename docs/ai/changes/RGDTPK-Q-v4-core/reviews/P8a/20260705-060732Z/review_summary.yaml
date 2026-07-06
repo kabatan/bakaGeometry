@@ -58,7 +58,10 @@ commands_inspected:
 function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8a/function_implementation_table.yaml
 algorithmic_sufficiency:
   verdict: sufficient
-  rationale: Reviewer inspected P8a TargetRelationSearch dense schedule execution, the remediated RGQ-042 public API, exact Q identity verification, exhaustion/resource status boundaries, and focused support-producing tests; the PASS is bounded to P8a only.
+  rationale: Reviewer inspected P8a TargetRelationSearch dense schedule execution,
+    the remediated RGQ-042 public API, exact Q identity verification, exhaustion/resource
+    status boundaries, and focused support-producing tests; the PASS is bounded to
+    P8a only.
 forbidden_pattern_scan:
   heavy_fallback: pass
   narrow_slice_escape: pass
@@ -76,8 +79,10 @@ forbidden_pattern_scan:
   appendix_override_bypass: pass
   stress_fixture_dispatch: pass
 not_applicable_justifications:
-  appendix_override_checks[0]: P8a does not implement Universal/final-support local elimination; RGQ-041 Appendix override remains owned by later phases.
-  suite_partition_checks[0]: P15-only acceptance suite partition is not active in P8a; no acceptance, candidate-cover completion, or exact-image claim is made.
+  appendix_override_checks[0]: P8a does not implement Universal/final-support local
+    elimination; RGQ-041 Appendix override remains owned by later phases.
+  suite_partition_checks[0]: P15-only acceptance suite partition is not active in
+    P8a; no acceptance, candidate-cover completion, or exact-image claim is made.
 raw_response_consistency:
   raw_response_contains_blocker: false
   raw_response_contains_required_fix: false
@@ -87,50 +92,72 @@ phase_specific_checks:
 - check_id: p8a-target-relation-execute
   required_by: RGQ-019
   verdict: pass
-  evidence: TargetRelationSearchKernel admits/plans/executes TargetRelationSearch with execute_target_relation_search and focused support-producing P8a tests pass.
-  reviewer_rationale: Reviewer found no blocking issue in the remediated TargetRelationSearch execution path.
+  evidence: TargetRelationSearchKernel admits/plans/executes TargetRelationSearch
+    with execute_target_relation_search and focused support-producing P8a tests pass.
+  reviewer_rationale: Reviewer found no blocking issue in the remediated TargetRelationSearch
+    execution path.
 - check_id: p8a-dense-schedule-membership-builder
   required_by: RGQ-042
   verdict: pass
-  evidence: MembershipMatrixBuilder, build_membership_matrix_builder, build_export_monomial_support, build_multiplier_supports, and build_membership_matrix are present and shared by execute and public wrappers.
-  reviewer_rationale: Reviewer explicitly passed the missing public API remediation and shared matrix-building path.
+  evidence: MembershipMatrixBuilder, build_membership_matrix_builder, build_export_monomial_support,
+    build_multiplier_supports, and build_membership_matrix are present and shared
+    by execute and public wrappers.
+  reviewer_rationale: Reviewer explicitly passed the missing public API remediation
+    and shared matrix-building path.
 - check_id: p8a-modular-candidate-exact-q
   required_by: RGQ-043
   verdict: pass
-  evidence: solve_homogeneous_modular is candidate-only and candidates are accepted only through reconstruct_and_verify_relation plus verify_membership_exact exact Q identity.
-  reviewer_rationale: Reviewer confirmed exact Q identity remains required before return.
+  evidence: solve_homogeneous_modular is candidate-only and candidates are accepted
+    only through reconstruct_and_verify_relation plus verify_membership_exact exact
+    Q identity.
+  reviewer_rationale: Reviewer confirmed exact Q identity remains required before
+    return.
 - check_id: p8a-schedule-reproducibility-shapes
   required_by: RGQ-055
   verdict: pass
-  evidence: rgq055_schedule_reproducibility_covers_three_local_shapes and P8a support-producing tests cover multiple local shapes.
-  reviewer_rationale: Reviewer accepted the P8a dense schedule and support-producing coverage while leaving broader P8/P9 scope open.
+  evidence: rgq055_schedule_reproducibility_covers_three_local_shapes and P8a support-producing
+    tests cover multiple local shapes.
+  reviewer_rationale: Reviewer accepted the P8a dense schedule and support-producing
+    coverage while leaving broader P8/P9 scope open.
 appendix_override_checks:
 - appendix_section: Appendix A sections 20.3 and 20.4 Universal local elimination
   controlling_requirement: RGQ-041
   verdict: not_applicable
-  evidence: P8a implements TargetRelationSearch only and does not execute UniversalTargetElimination or certify nonfinite local images.
-  reviewer_rationale: Reviewer PASS scope explicitly excludes P8b, P8c, P8d, P9, final composition, exact-image semantics, and acceptance readiness.
+  evidence: P8a implements TargetRelationSearch only and does not execute UniversalTargetElimination
+    or certify nonfinite local images.
+  reviewer_rationale: Reviewer PASS scope explicitly excludes P8b, P8c, P8d, P9, final
+    composition, exact-image semantics, and acceptance readiness.
 status_mapping_checks:
-- error_or_internal_condition: TargetRelationSearch schedule exhaustion, matrix resource limits, and plan/source/schedule tamper
-  mapped_solver_status: AlgorithmicHardCase for exhaustion; FiniteResourceFailure for resource limits; ImplementationBug for tamper or nonreproducible plan; not CertifiedNonFiniteTargetImage
+- error_or_internal_condition: TargetRelationSearch schedule exhaustion, matrix resource
+    limits, and plan/source/schedule tamper
+  mapped_solver_status: AlgorithmicHardCase for exhaustion; FiniteResourceFailure
+    for resource limits; ImplementationBug for tamper or nonreproducible plan; not
+    CertifiedNonFiniteTargetImage
   verdict: pass
-  evidence: P8a notes, static scans, and tests cover exhaustion as hardcase and exact membership tamper rejection.
-  reviewer_rationale: Reviewer confirmed exhaustion/resource behavior remains hard/resource only, not nonfinite.
+  evidence: P8a notes, static scans, and tests cover exhaustion as hardcase and exact
+    membership tamper rejection.
+  reviewer_rationale: Reviewer confirmed exhaustion/resource behavior remains hard/resource
+    only, not nonfinite.
 suite_partition_checks:
 - suite_name: not_applicable
   verdict: not_applicable
   evidence: P15 acceptance suite partition is not active in P8a.
-  reviewer_rationale: No support-producing candidate-cover completion, exact-image, or failure-suite completion claim is made.
+  reviewer_rationale: No support-producing candidate-cover completion, exact-image,
+    or failure-suite completion claim is made.
 semantic_deletion_challenges: []
 tamper_challenges:
 - challenge_id: p8a-exact-membership-tampered-multiplier
   target: TargetRelationSearch exact Q identity verification
   verdict: pass
   evidence: p8a_exact_membership_verification_rejects_tampered_multiplier passes.
-  reviewer_rationale: Exact membership verification rejects a candidate whose multiplier identity has been tampered.
+  reviewer_rationale: Exact membership verification rejects a candidate whose multiplier
+    identity has been tampered.
 unresolved_risks:
-- P8a does not close P8 as an umbrella and does not claim P8b, P8c, P8d, P9, replay, final composition, exact-image semantics, public orchestration, performance readiness, or acceptance readiness.
-- SparseResultant, SpecializationInterpolation, ActionKrylov, NormTrace, RegularChain, and Universal execution remain owned by later phases.
+- P8a does not close P8 as an umbrella and does not claim P8b, P8c, P8d, P9, replay,
+  final composition, exact-image semantics, public orchestration, performance readiness,
+  or acceptance readiness.
+- SparseResultant, SpecializationInterpolation, ActionKrylov, NormTrace, RegularChain,
+  and Universal execution remain owned by later phases.
 - Replay and full certificate closure remain bounded by P11/P16.
 blocking_findings: []
 required_fixes: []

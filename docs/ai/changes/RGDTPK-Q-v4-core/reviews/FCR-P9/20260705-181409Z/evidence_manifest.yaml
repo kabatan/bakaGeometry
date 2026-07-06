@@ -11,133 +11,141 @@ review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3ba
 evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
 evidence_files:
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_BASE_SPEC.md
-  sha256: 1f73bd7a26b2566b08f53d31b14785110466e8ae6170b6769d1af17d50a36047
-  purpose: "FCR-P9 source: FCR-011 candidate-cover and root/candidate output discipline"
+  sha256: b805dc0f07a3c502f7dcbc2c2ec38280736954a0b30169c91787838f30c67fb3
+  purpose: 'FCR-P9 source: FCR-011 candidate-cover and root/candidate output discipline'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_PLAN.md
-  sha256: b836599108c1db4a4e828e672780e5074049045fe5fa590e94252cdc91850bb9
-  purpose: "FCR-P9 source: support composition, roots, candidates, and result construction plan"
+  sha256: 9b44ea140ab881e7dc96f6d7175dbfcbebea43afd2f7fbc1e742169020bd68fc
+  purpose: 'FCR-P9 source: support composition, roots, candidates, and result construction
+    plan'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/BASE_SPEC.md
   sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
-  purpose: "FCR-P9 source: MECH-009 composition/final support and MECH-011 root isolation/decode"
+  purpose: 'FCR-P9 source: MECH-009 composition/final support and MECH-011 root isolation/decode'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_SOURCE_SPEC_COMPLIANCE_MAP.md
-  sha256: 892b75221a3f724ab864e0214e3a0559e99331cda0b8fba4976f5a21372f08ec
-  purpose: "FCR-P9 source: claim limits"
+  sha256: ebe1906059c2ef6b3fcb9479a9b4a18aef1de170f5214b35d2d1caa6b157908d
+  purpose: 'FCR-P9 source: claim limits'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_REVIEWER_PROMPTS.md
-  sha256: 28075ea55b02213c4b38f5304735f87b163ab7eddb15121eefe072878a1f387b
-  purpose: "FCR-P9 source: reviewer pass/fail prompt"
+  sha256: 5ad91032c2938967e070bab7f29cabcda95f77c689513f60c715f1167257529d
+  purpose: 'FCR-P9 source: reviewer pass/fail prompt'
 - path: geosolver-core/src/compose/compose.rs
-  sha256: 61aed4fcdaf8dca8375425a6d0c7e00a7ac5a938e70f9ab7b95ff120d4db78e0
-  purpose: "FCR-P9 code: message-relation composition and separator evidence retention"
+  sha256: 065e58f35428fe5be6bc0d1586ce1db0cf053f3683d2394953cb1a3beb1db521
+  purpose: 'FCR-P9 code: message-relation composition and separator evidence retention'
 - path: geosolver-core/src/compose/mod.rs
-  sha256: 68f675726bffa4e67425b5efb7f920a3f90ef9e249675b82d0b2bee723d6b37d
-  purpose: "FCR-P9 code: production separator elimination module export"
+  sha256: 037cdee0ee58307eca90d818aa1c82d79ce3d19131f77e6739c2036f37833228
+  purpose: 'FCR-P9 code: production separator elimination module export'
 - path: geosolver-core/src/compose/separator_elimination.rs
-  sha256: aa60c133daf64aee3aa0c7f7634868ae3d4ccb5280d0fc3e6f877d795044ddd3
-  purpose: "FCR-P9 code: separator message verification by exact projection-message replay"
+  sha256: 52c13cef9cdf996bc2c442fcacb2e1339a7bf593cc1546d28b84884a1f284895
+  purpose: 'FCR-P9 code: separator message verification by exact projection-message
+    replay'
 - path: geosolver-core/src/compose/final_support.rs
-  sha256: b0adceccfaee26f800ba8ad4e06e67116360a81349930892738c9998d6da0495
-  purpose: "FCR-P9 code: ComposedProjection test construction updated for separator evidence field"
+  sha256: 2444afc782d539b10ea2075df12cca357bfd1de221b8223bb07a82b424e0b426
+  purpose: 'FCR-P9 code: ComposedProjection test construction updated for separator
+    evidence field'
 - path: geosolver-core/src/kernels/mod.rs
-  sha256: 810f89b65d1348d300f3b01e61e30c79add81aebb94c9658d5185b7019a7db5a
-  purpose: "FCR-P9 code: target_relation_search compiled for separator helper while production all_kernels quarantine remains"
+  sha256: edae36aff2441e9c55fec9f089b749c1cbda31eff9e0d0aa81a505dcbc48b016
+  purpose: 'FCR-P9 code: target_relation_search compiled for separator helper while
+    production all_kernels quarantine remains'
 - path: geosolver-core/src/solver/orchestrator.rs
-  sha256: a184856fc5846c7a1fef4d4e02252ed0aaf756a016ae8c1a21d3fffef88dabd6
-  purpose: "FCR-P9 code: public pipeline root/decode path and empty-cover diagnostic"
+  sha256: d1ace4c0138207c1f6c0855b3e870e53f6edc622f77e5371b4de3239d7ad2a63
+  purpose: 'FCR-P9 code: public pipeline root/decode path and empty-cover diagnostic'
 - path: geosolver-core/src/verify/replay.rs
-  sha256: c49e6a86f63e432c8785c09a36e0627ed7589afb055554bd3253227848ca3409
-  purpose: "FCR-P9 code: support replay recomposes using actual DAG"
+  sha256: 99ca4f0c260daa71c9d79a960df7c4e5ae257a39d0406775c6604778891a3394
+  purpose: 'FCR-P9 code: support replay recomposes using actual DAG'
 - path: geosolver-core/src/verify/verify_support.rs
-  sha256: 4c415c5944fb92068d2471f73588d528373cb6be61cec294f0733bb77132a7da
-  purpose: "FCR-P9 code: global support verifier replays separator evidence"
+  sha256: 4dbc9c6ae58365998148bd353b912e068b0604d3ee7b0d5e5edb7f51f03c4533
+  purpose: 'FCR-P9 code: global support verifier replays separator evidence'
 - path: geosolver-core/tests/p3_public_pipeline_integration.rs
-  sha256: fb38f7b9e09d9ae72910ef8dfa30922031d72c1a52fe6ce249c461fcdb5b1143
-  purpose: "FCR-P9 test: no-real-root public candidate cover and accepted replay"
+  sha256: 4f983ffd9c316fddda2d09e7e4ebd366351632d2dd289e33a2843044306abe35
+  purpose: 'FCR-P9 test: no-real-root public candidate cover and accepted replay'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P9/commands.txt
-  sha256: 8ea275b153ff67b205891622fffcb341597670bdf14ff8f984ef20f16ede8ac6
-  purpose: "FCR-P9 evidence: commands run"
+  sha256: 663d3492ff00457f734c55780bef249640ea5ab4dc7805cd5d50ea75fc90facd
+  purpose: 'FCR-P9 evidence: commands run'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P9/command_outputs.txt
-  sha256: 589f0a00297e3e441d40cc21be21da19b676c133f824b6f2fe1712cda87215db
-  purpose: "FCR-P9 evidence: command outputs and summaries"
+  sha256: a67abd9944648786f60c66b4f1561dbbe16c034a9e976515b2001730f65c2686
+  purpose: 'FCR-P9 evidence: command outputs and summaries'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P9/support_roots_static_scan.txt
-  sha256: ab3ff58473b10e619c841ef99cb6c736691f2dba6b1c85abfb84377d4d6d57a3
-  purpose: "FCR-P9 evidence: support/root/replay static scan"
+  sha256: ee39de236c71111459e08184042f19c1efb06c7e59d57ed8797df1b08745fea7
+  purpose: 'FCR-P9 evidence: support/root/replay static scan'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P9/guardian_boundary_reviewer_pass.md
-  sha256: c3e835aa49a44028b08a76c559af60d34f15082dd30ec8ed2124b278d9aa2b49
-  purpose: "FCR-P9 evidence: guardian PASS response"
+  sha256: d1ee882e3a98fd6ab14ccbde13029ac93e7944f314611ce120ebb9bf1991c8b8
+  purpose: 'FCR-P9 evidence: guardian PASS response'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P9/20260705-181409Z/prompt.md
-  sha256: 3c26c71e04c76470306f740ec4d6706c0b7341d6f7dba8f468420761803ad2db
-  purpose: "FCR-P9 archived reviewer prompt"
+  sha256: cb96f58f4220ab9623b54d04615f26c29b51637367a9faa5c0b24c96afae08db
+  purpose: FCR-P9 archived reviewer prompt
 - path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P9/20260705-181409Z/response.md
-  sha256: c3e835aa49a44028b08a76c559af60d34f15082dd30ec8ed2124b278d9aa2b49
-  purpose: "FCR-P9 archived reviewer response"
+  sha256: d1ee882e3a98fd6ab14ccbde13029ac93e7944f314611ce120ebb9bf1991c8b8
+  purpose: FCR-P9 archived reviewer response
 command_outputs:
 - command: cargo fmt
-  cwd: "C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry/geosolver-core"
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry/geosolver-core
   exit_code: 0
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P9/command_outputs.txt
-  output_sha256: 589f0a00297e3e441d40cc21be21da19b676c133f824b6f2fe1712cda87215db
+  output_sha256: a67abd9944648786f60c66b4f1561dbbe16c034a9e976515b2001730f65c2686
   finished_at_utc: 20260705-181409Z
 - command: cargo check
-  cwd: "C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry/geosolver-core"
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry/geosolver-core
   exit_code: 0
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P9/command_outputs.txt
-  output_sha256: 589f0a00297e3e441d40cc21be21da19b676c133f824b6f2fe1712cda87215db
+  output_sha256: a67abd9944648786f60c66b4f1561dbbe16c034a9e976515b2001730f65c2686
   finished_at_utc: 20260705-181409Z
 - command: cargo test fcr_p9_support_verifier_replays_separator_elimination_certificate
-  cwd: "C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry/geosolver-core"
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry/geosolver-core
   exit_code: 0
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P9/command_outputs.txt
-  output_sha256: 589f0a00297e3e441d40cc21be21da19b676c133f824b6f2fe1712cda87215db
+  output_sha256: a67abd9944648786f60c66b4f1561dbbe16c034a9e976515b2001730f65c2686
   finished_at_utc: 20260705-181409Z
 - command: cargo test --test p3_public_pipeline_integration
-  cwd: "C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry/geosolver-core"
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry/geosolver-core
   exit_code: 0
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P9/command_outputs.txt
-  output_sha256: 589f0a00297e3e441d40cc21be21da19b676c133f824b6f2fe1712cda87215db
+  output_sha256: a67abd9944648786f60c66b4f1561dbbe16c034a9e976515b2001730f65c2686
   finished_at_utc: 20260705-181409Z
 - command: cargo test
-  cwd: "C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry/geosolver-core"
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry/geosolver-core
   exit_code: 0
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P9/command_outputs.txt
-  output_sha256: 589f0a00297e3e441d40cc21be21da19b676c133f824b6f2fe1712cda87215db
+  output_sha256: a67abd9944648786f60c66b4f1561dbbe16c034a9e976515b2001730f65c2686
   finished_at_utc: 20260705-181409Z
 - command: git diff --check
-  cwd: "C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry"
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
   exit_code: 0
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P9/command_outputs.txt
-  output_sha256: 589f0a00297e3e441d40cc21be21da19b676c133f824b6f2fe1712cda87215db
+  output_sha256: a67abd9944648786f60c66b4f1561dbbe16c034a9e976515b2001730f65c2686
   finished_at_utc: 20260705-181409Z
 - command: static FCR-P9 support/root/replay scan
-  cwd: "C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry"
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
   exit_code: 0
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P9/support_roots_static_scan.txt
-  output_sha256: ab3ff58473b10e619c841ef99cb6c736691f2dba6b1c85abfb84377d4d6d57a3
+  output_sha256: ee39de236c71111459e08184042f19c1efb06c7e59d57ed8797df1b08745fea7
   finished_at_utc: 20260705-181409Z
 - command: guardian_boundary_reviewer FCR-P9
-  cwd: "C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry"
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
   exit_code: 0
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P9/guardian_boundary_reviewer_pass.md
-  output_sha256: c3e835aa49a44028b08a76c559af60d34f15082dd30ec8ed2124b278d9aa2b49
+  output_sha256: d1ee882e3a98fd6ab14ccbde13029ac93e7944f314611ce120ebb9bf1991c8b8
   finished_at_utc: 20260705-181409Z
 static_scans:
 - scan_id: fcr-p9-production-separator-helper-without-registry-claim
   command: rg target_relation_search module, all_kernels, all_planner_kernel_kinds
-  forbidden_pattern: TargetRelationSearch added to production completion registry or non-test planner kernel list
+  forbidden_pattern: TargetRelationSearch added to production completion registry
+    or non-test planner kernel list
   result: pass
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P9/support_roots_static_scan.txt
 - scan_id: fcr-p9-support-verifier-replays-separator-proof
   command: rg verify_separator_elimination_message, verify_separator_evidence, fcr_p9_support_verifier_replays_separator_elimination_certificate
-  forbidden_pattern: separator support route accepted without projection-message proof replay
+  forbidden_pattern: separator support route accepted without projection-message proof
+    replay
   result: pass
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P9/support_roots_static_scan.txt
 - scan_id: fcr-p9-replay-uses-actual-dag-composition
   command: rg compose_projection_messages in verify/replay.rs and absence of replay_composed_projection
-  forbidden_pattern: support replay accepts synthetic all-relations reconstruction instead of actual DAG composition
+  forbidden_pattern: support replay accepts synthetic all-relations reconstruction
+    instead of actual DAG composition
   result: pass
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P9/support_roots_static_scan.txt
 - scan_id: fcr-p9-public-empty-real-cover
   command: rg EmptyRealCandidateCover and fcr_p9_public_api_returns_empty_candidate_cover_for_support_with_no_real_roots
-  forbidden_pattern: no-real-root support maps to hard-case or omits certificate/replay evidence
+  forbidden_pattern: no-real-root support maps to hard-case or omits certificate/replay
+    evidence
   result: pass
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P9/support_roots_static_scan.txt
 function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_PRODUCTION_AUDIT.md
@@ -145,8 +153,11 @@ related_reviews:
 - docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P9/guardian_boundary_reviewer_pass.md
 known_limitations:
 - FCR-P9 closes support composition/root/decode result-construction evidence only.
-- TargetRelationSearch is production-compiled as an internal separator helper but remains outside production all_kernels and the non-test planner kernel list.
-- This phase does not authorize P13, final source fidelity, exact-image readiness, acceptance completion, candidate-cover core readiness, full production readiness, or any R-ID VERIFIED status.
+- TargetRelationSearch is production-compiled as an internal separator helper but
+  remains outside production all_kernels and the non-test planner kernel list.
+- This phase does not authorize P13, final source fidelity, exact-image readiness,
+  acceptance completion, candidate-cover core readiness, full production readiness,
+  or any R-ID VERIFIED status.
 algorithmic_claims_made:
 - PARTIAL_MECHANISM_READY:MECH-009
 - PARTIAL_MECHANISM_READY:MECH-011

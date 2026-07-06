@@ -1,0 +1,49 @@
+phase: P16
+status: reviewer_passed
+claim_boundary: >
+  P16 prepares final closure for RGDTPK_Q_V4_ACCEPTANCE_COMPLETE only. It does not claim
+  SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC, benchmark superiority, universal finite-system completeness,
+  geometry DSL support, natural-language or diagram support, or any R-ID VERIFIED status.
+functions:
+  - spec: "exact_image_certificate replay binding"
+    implementation: "geosolver-core/src/verify/run_certificate.rs::CoreRunCertificate::exact_image_certificate_hash"
+    status: implemented
+    evidence:
+      - "CoreRunCertificateInput accepts an optional FiberClassificationResult"
+      - "build_core_run_certificate records hash_fiber_classification_result"
+      - "hash_core_run_certificate includes exact_image_certificate_hash"
+      - "replay_run_certificate rejects mismatched or internally inconsistent exact-image classification hashes"
+      - "p13_exact_image_filters_spurious_slack_root_with_certificates tampers classification_hash and replay rejects it"
+  - spec: "nonfinite certificate replay binding"
+    implementation: "geosolver-core/src/result/output.rs::TargetSolveResult::nonfinite_certificate"
+    status: implemented
+    evidence:
+      - "public CertifiedNonFiniteTargetImage results carry a structured NonFiniteCertificate"
+      - "replay_hash for nonfinite results is bound to hash_nonfinite_certificate(cert)"
+      - "replay_run_certificate reconstructs canonicalization, compression, DAG, and composed projection for nonfinite results"
+      - "replay_run_certificate verifies hash_nonfinite_certificate and verify_nonfinite_certificate"
+      - "fcr_final_nonfinite_public_certified_nonfinite_requires_positive_proof accepts baseline replay and rejects nonfinite certificate hash tamper"
+      - "ordinary replay rejects non-nonfinite results that carry an injected nonfinite_certificate"
+  - spec: "formal review archive normalization"
+    implementation: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/*/*/{prompt.md,response.md,review_summary.yaml,evidence_manifest.yaml}"
+    status: implemented
+    evidence:
+      - "57 formal archives validate against review summary and evidence manifest schemas"
+      - "prompt/response/manifest hashes match actual files"
+      - "PASS-with-blocker and PASS-with-required-fix counts are zero"
+      - "P16 formal archive is added after final reviewer pass"
+  - spec: "final consistency audit"
+    implementation: "docs/ai/changes/RGDTPK-Q-v4-core/CONSISTENCY_AUDIT.md"
+    status: implemented
+    evidence:
+      - "source hashes verified"
+      - "schema mirrors byte-identical"
+      - "P15 suite partition and P16 claim ladder checked"
+      - "static scans and old-phrase scan recorded"
+  - spec: "closure packet"
+    implementation: "docs/ai/changes/RGDTPK-Q-v4-core/CLOSURE.md"
+    status: implemented
+    evidence:
+      - "R-ID and MECH evidence tables included"
+      - "support, exact-image, failure/nonfinite suite tables included"
+      - "verification, review archive, git state, residual risk, and exact final claim included"

@@ -11,40 +11,40 @@ review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3ba
 evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
 evidence_files:
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_BASE_SPEC.md
-  sha256: 1f73bd7a26b2566b08f53d31b14785110466e8ae6170b6769d1af17d50a36047
+  sha256: b805dc0f07a3c502f7dcbc2c2ec38280736954a0b30169c91787838f30c67fb3
   purpose: 'FCR-P0 import/admission evidence: FULL_CORE_REPAIR_BASE_SPEC.md'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_PLAN.md
-  sha256: b836599108c1db4a4e828e672780e5074049045fe5fa590e94252cdc91850bb9
+  sha256: 9b44ea140ab881e7dc96f6d7175dbfcbebea43afd2f7fbc1e742169020bd68fc
   purpose: 'FCR-P0 import/admission evidence: FULL_CORE_REPAIR_PLAN.md'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_QUICK_GUARDIAN_PROMPT.md
-  sha256: 4d95c84c51cd8f46ba05c1c5e58a16786234ab80cac3f035b7c2785951dfff18
+  sha256: c0bf08b279e86ba8e0af860968d832aaae9e953462f31d5b23598a9afafce7ec
   purpose: 'FCR-P0 import/admission evidence: FULL_CORE_REPAIR_QUICK_GUARDIAN_PROMPT.md'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_PACK_MANIFEST.sha256
-  sha256: 357e6eec0393d53cea956594bc2a894fd4f389967abc655ab04ed261ac20bd72
+  sha256: 7847af88b91b3c33fc992415944115dc81e6d2f35ed6698e3aa05a2d073e5947
   purpose: 'FCR-P0 import/admission evidence: FULL_CORE_REPAIR_PACK_MANIFEST.sha256'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_CURRENT_DEFECT_AUDIT.md
-  sha256: 4e4e589854bb44077e87b527ca2a793c44b4920606a0c4637131151dd1441e53
+  sha256: ae5744277be9fb99e1eeb1bd16e8a34b32a0abe56bf2b12dc30618321efee01e
   purpose: 'FCR-P0 import/admission evidence: FULL_CORE_REPAIR_CURRENT_DEFECT_AUDIT.md'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_SPEC_ALIGNMENT_AUDIT.md
-  sha256: 683463cee8a152839bdb9f45d794ace3c5cc3e8fddb48093d6953e1ef0f7ef53
+  sha256: c166ff3b8e0f5bacbad83ff717876b24b031dd50a351ca2199e93249aacb2439
   purpose: 'FCR-P0 import/admission evidence: FULL_CORE_REPAIR_SPEC_ALIGNMENT_AUDIT.md'
 - path: docs/ai/ACTIVE_CONTEXT.md
-  sha256: 5c812ad0f37802d9aaf70ef6dcfe5cd0fabd8f6a749cbaee7cd9fc225cec336a
+  sha256: 953dbb4a24720e54b1cc7d01ea5563623911a8872d1f83bbd3666ccb031eaa04
   purpose: 'FCR-P0 import/admission evidence: ACTIVE_CONTEXT.md'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/CLOSURE.md
-  sha256: f45d58dae3e5eb6022c264429cc6867e1677e0f1e8201db09a01a56d4eae4ecc
+  sha256: edda1af56a1e78c5ba8f8fd66ed67967bbae48daa20e1acac267303ceb3cb8eb
   purpose: 'FCR-P0 import/admission evidence: CLOSURE.md'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/P12G_READINESS.md
-  sha256: 8d97922bebd8e0b8b7f0e3ea610fb4e69f7efaba93d4cb686f41d42fa63ed856
+  sha256: ed0dae8e962b830b81bda4861b452f56e5bd3741c95acfdf70bb4c6d5fb72ad3
   purpose: 'FCR-P0 import/admission evidence: P12G_READINESS.md'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0/commands.txt
-  sha256: 5359ac73f0b7a3813449f52ce913a40bf66f10c6262289e446b93121f33e5d8e
+  sha256: 58d754b44c34bcf915dfa4dc7bbbb25fcbaac70144a606e8280def8484de3806
   purpose: 'FCR-P0 import/admission evidence: commands.txt'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0/command_outputs.txt
   sha256: e7b633fbcd2aa0dd245f7a25475e7a3e842f223193e4989223a96da51960a53a
   purpose: 'FCR-P0 import/admission evidence: command_outputs.txt'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0/claim_reset_matrix.yaml
-  sha256: fa4766daf64c1080aef0dac33c7123b7734d004a0f0467d074d11d338f0f7f37
+  sha256: c5082ef522bcc9053161b66b8f3d4c7d5e79102d7bbd8fb9a6b31e4dffb8e244
   purpose: 'FCR-P0 import/admission evidence: claim_reset_matrix.yaml'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P0/20260705-150932Z/prompt.md
   sha256: 31467573bf575d21471bd63dbec2628d9b82576a821672ba8473f611e9944116

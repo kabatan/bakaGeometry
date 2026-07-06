@@ -64,7 +64,10 @@ commands_inspected:
 function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P8d/function_implementation_table.yaml
 algorithmic_sufficiency:
   verdict: sufficient
-  rationale: Reviewer inspected P8d source, ledger boundaries, and evidence and found UniversalTargetElimination sufficient as a bounded local target/separator projection using the fixed hash-bound strategy sequence and explicit resource/certificate policies.
+  rationale: Reviewer inspected P8d source, ledger boundaries, and evidence and found
+    UniversalTargetElimination sufficient as a bounded local target/separator projection
+    using the fixed hash-bound strategy sequence and explicit resource/certificate
+    policies.
 forbidden_pattern_scan:
   heavy_fallback: pass
   narrow_slice_escape: pass
@@ -82,8 +85,11 @@ forbidden_pattern_scan:
   appendix_override_bypass: pass
   stress_fixture_dispatch: pass
 not_applicable_justifications:
-  forbidden_pattern_scan.weak_action_krylov_coverage: ActionKrylov coverage belongs to P8c; P8d uses Universal local target/separator elimination and does not alter quotient/action coverage.
-  suite_partition_checks[0]: P15-only acceptance suite partition is not active in P8d; no candidate-cover, exact-image, or final acceptance claim is made.
+  forbidden_pattern_scan.weak_action_krylov_coverage: ActionKrylov coverage belongs
+    to P8c; P8d uses Universal local target/separator elimination and does not alter
+    quotient/action coverage.
+  suite_partition_checks[0]: P15-only acceptance suite partition is not active in
+    P8d; no candidate-cover, exact-image, or final acceptance claim is made.
 raw_response_consistency:
   raw_response_contains_blocker: false
   raw_response_contains_required_fix: false
@@ -93,67 +99,92 @@ phase_specific_checks:
 - check_id: p8d-fixed-sequence-hash-bound
   required_by: RGQ-041
   verdict: pass
-  evidence: Reviewer found exact sequence TargetRelationSearchEscalated, SparseResultantIfSquareOrOverdetermined, SpecializeProjectInterpolateVerify, LocalGroebnerEliminationToKeepZ hash-bound in the execution plan.
-  reviewer_rationale: Runtime execution is limited to the UniversalStagePlan sequence and validate_universal_plan_binding checks support and plan hashes before execution.
+  evidence: Reviewer found exact sequence TargetRelationSearchEscalated, SparseResultantIfSquareOrOverdetermined,
+    SpecializeProjectInterpolateVerify, LocalGroebnerEliminationToKeepZ hash-bound
+    in the execution plan.
+  reviewer_rationale: Runtime execution is limited to the UniversalStagePlan sequence
+    and validate_universal_plan_binding checks support and plan hashes before execution.
 - check_id: p8d-local-target-separator-only
   required_by: RGQ-041
   verdict: pass
-  evidence: universal_elimination.rs validates exported-only generators and uses exported variables as keep variables for LocalGroebner.
-  reviewer_rationale: Returned ProjectionMessage generators must lie in Q[Z] and exact local elimination validation runs before emission.
+  evidence: universal_elimination.rs validates exported-only generators and uses exported
+    variables as keep variables for LocalGroebner.
+  reviewer_rationale: Returned ProjectionMessage generators must lie in Q[Z] and exact
+    local elimination validation runs before emission.
 - check_id: p8d-no-local-nonfinite
   required_by: RGQ-051
   verdict: pass
-  evidence: Reviewer found local Universal exhaustion is limited to AlgorithmicHardCase, FiniteResourceFailure, or CertificateDesignGap.
-  reviewer_rationale: The implementation does not return CertifiedNonFiniteTargetImage from local Universal.
+  evidence: Reviewer found local Universal exhaustion is limited to AlgorithmicHardCase,
+    FiniteResourceFailure, or CertificateDesignGap.
+  reviewer_rationale: The implementation does not return CertifiedNonFiniteTargetImage
+    from local Universal.
 - check_id: p8d-resource-bounded-local-groebner
   required_by: RGQ-056
   verdict: pass
-  evidence: verify_universal_no_coordinate_fallback checks explicit local elimination caps and trace dimensions; LocalGroebner is run with stage resource bounds.
-  reviewer_rationale: The route is bounded, local, authorization-bound, and not a global coordinate-first fallback.
+  evidence: verify_universal_no_coordinate_fallback checks explicit local elimination
+    caps and trace dimensions; LocalGroebner is run with stage resource bounds.
+  reviewer_rationale: The route is bounded, local, authorization-bound, and not a
+    global coordinate-first fallback.
 - check_id: p8d-nonproduction-f4-boundary
   required_by: P5R-RGQ-067
   verdict: pass
-  evidence: Reviewer found Universal uses honestly named LocalGroebner and algebra/elimination.rs rejects NonProductionGroebnerBatchForTests as CertificateDesignGap.
-  reviewer_rationale: P8d does not close Universal by pretending the non-production F4 helper is production F4.
+  evidence: Reviewer found Universal uses honestly named LocalGroebner and algebra/elimination.rs
+    rejects NonProductionGroebnerBatchForTests as CertificateDesignGap.
+  reviewer_rationale: P8d does not close Universal by pretending the non-production
+    F4 helper is production F4.
 appendix_override_checks:
 - appendix_section: Appendix A section 20.3
   controlling_requirement: RGQ-041
   verdict: pass
-  evidence: Local Universal failure does not become CertifiedNonFiniteTargetImage; exhaustion returns only hard/resource/certificate statuses.
-  reviewer_rationale: RGQ-041 controls Universal local behavior, with RGQ-051/RGQ-057 reinforcing the nonfinite polarity; P8d follows the stricter rule.
+  evidence: Local Universal failure does not become CertifiedNonFiniteTargetImage;
+    exhaustion returns only hard/resource/certificate statuses.
+  reviewer_rationale: RGQ-041 controls Universal local behavior, with RGQ-051/RGQ-057
+    reinforcing the nonfinite polarity; P8d follows the stricter rule.
 - appendix_section: Appendix A section 20.4
   controlling_requirement: RGQ-041
   verdict: pass
-  evidence: Universal internal strategies are exactly the fixed RGQ-041 sequence and no other strategy is present.
-  reviewer_rationale: P8d does not add runtime fallback strategies outside the predeclared plan.
+  evidence: Universal internal strategies are exactly the fixed RGQ-041 sequence and
+    no other strategy is present.
+  reviewer_rationale: P8d does not add runtime fallback strategies outside the predeclared
+    plan.
 status_mapping_checks:
-- error_or_internal_condition: Universal local sequence exhausts without certified exported relation
+- error_or_internal_condition: Universal local sequence exhausts without certified
+    exported relation
   mapped_solver_status: AlgorithmicHardCase, FiniteResourceFailure, or CertificateDesignGap
   verdict: pass
-  evidence: p8d_universal_exhaustion_uses_only_allowed_failure_statuses passes and reviewer inspected local nonfinite policy.
+  evidence: p8d_universal_exhaustion_uses_only_allowed_failure_statuses passes and
+    reviewer inspected local nonfinite policy.
   reviewer_rationale: Matches RGQ-051/RGQ-058 polarity and avoids local CertifiedNonFiniteTargetImage.
-- error_or_internal_condition: plan hash, authorization hash, child message hash, support hash, source hash coverage, certificate route, or fixed sequence mismatch
+- error_or_internal_condition: plan hash, authorization hash, child message hash,
+    support hash, source hash coverage, certificate route, or fixed sequence mismatch
   mapped_solver_status: ImplementationBug
   verdict: pass
-  evidence: P8d tamper tests pass and validate_universal_plan_binding checks the binding fields before execution.
-  reviewer_rationale: Tamper and replay mismatches fail before output rather than producing a ProjectionMessage.
+  evidence: P8d tamper tests pass and validate_universal_plan_binding checks the binding
+    fields before execution.
+  reviewer_rationale: Tamper and replay mismatches fail before output rather than
+    producing a ProjectionMessage.
 suite_partition_checks:
 - suite_name: not_applicable
   verdict: not_applicable
   evidence: P15 acceptance suite partition is not active in P8d.
-  reviewer_rationale: P8d closes only MECH-008 and makes no support-producing core, exact-image core, or final acceptance claim.
+  reviewer_rationale: P8d closes only MECH-008 and makes no support-producing core,
+    exact-image core, or final acceptance claim.
 semantic_deletion_challenges:
 - challenge_id: p8d-auth-deletion-boundary
   target: UniversalTargetElimination block authorization binding
   verdict: pass
-  evidence: p8d_universal_rejects_plan_auth_and_replay_tamper passes after altering block authorization hash.
-  reviewer_rationale: Altering the authorization boundary prevents Universal execution from producing output.
+  evidence: p8d_universal_rejects_plan_auth_and_replay_tamper passes after altering
+    block authorization hash.
+  reviewer_rationale: Altering the authorization boundary prevents Universal execution
+    from producing output.
 tamper_challenges:
 - challenge_id: p8d-plan-auth-replay-tamper
-  target: UniversalTargetElimination plan hash, block authorization, and replay package hash binding
+  target: UniversalTargetElimination plan hash, block authorization, and replay package
+    hash binding
   verdict: pass
   evidence: p8d_universal_rejects_plan_auth_and_replay_tamper passes.
-  reviewer_rationale: Plan hash and authorization tamper return ImplementationBug; replay rejects tampered package hash.
+  reviewer_rationale: Plan hash and authorization tamper return ImplementationBug;
+    replay rejects tampered package hash.
 - challenge_id: p8d-child-message-hash-binding
   target: UniversalTargetElimination child message hash binding
   verdict: pass
@@ -165,8 +196,10 @@ tamper_challenges:
   evidence: p8d_universal_requires_fixed_strategy_sequence_and_resource_caps passes.
   reviewer_rationale: Sequence mutation and missing cap are detected as ImplementationBug.
 unresolved_risks:
-- Source hash deletion/tamper is enforced in code, but the P8d focused test list does not show a dedicated source-deletion test.
-- P8d does not assess final composition, roots, exact-image semantics, public orchestration, or performance readiness.
+- Source hash deletion/tamper is enforced in code, but the P8d focused test list does
+  not show a dedicated source-deletion test.
+- P8d does not assess final composition, roots, exact-image semantics, public orchestration,
+  or performance readiness.
 blocking_findings: []
 required_fixes: []
 pass_conditions:

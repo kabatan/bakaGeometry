@@ -1,134 +1,165 @@
-schema_version: "rgdtpk-review-v2.2"
-phase_id: "P3e"
-phase_kind: "algorithmic"
-review_status: "PASS"
+schema_version: rgdtpk-review-v2.2
+phase_id: P3e
+phase_kind: algorithmic
+review_status: PASS
 phase_closable: true
-claim_ceiling_after_phase: "SCAFFOLD_READY"
-base_spec_sha256: "dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c"
-plan_sha256: "e78cfebc3cce75fbe632c1d0384f59eee7168a27c81d7326c1f02362584b26bc"
-source_map_sha256: "c3fc89dd76d1bf68684ad5359f6e2c4accf28e8db87c0e725b36aba21a2362a2"
-review_archive_schema_sha256: "53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad"
-review_summary_schema_sha256: "ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0"
-evidence_manifest_schema_sha256: "70fd1c72382f5ab847e3eb2eb40f135abb628f46c2a1e5ebf006acdba81c8e0f"
-schema_mirror_sha256: "ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0"
-commit: "unborn-master-no-commit"
-prompt_sha256: "a7cd8e09e16e885f21935c771a975de90e0b706727b132ce7ec1b8ce0d45db6a"
-response_sha256: "bb91615958956fe8d87603377c2ab2f9c780fe695cbec63266f93da9cf064072"
-evidence_manifest_sha256: "6522f33f1ada9d96312a3a7a5995445bd4e6cee6cc90b2ce1f3fc64cbbf7b1bb"
-prompt_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3e/20260705-012550Z/prompt.md"
-response_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3e/20260705-012550Z/response.md"
-evidence_manifest_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3e/20260705-012550Z/evidence_manifest.yaml"
-reviewer_identity: "guardian_boundary_reviewer"
-reviewed_rids: ["RGQ-021", "RGQ-044", "RGQ-054", "RGQ-058", "RGQ-059"]
-reviewed_mechs: ["MECH-014"]
+claim_ceiling_after_phase: SCAFFOLD_READY
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: e78cfebc3cce75fbe632c1d0384f59eee7168a27c81d7326c1f02362584b26bc
+source_map_sha256: c3fc89dd76d1bf68684ad5359f6e2c4accf28e8db87c0e725b36aba21a2362a2
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0
+evidence_manifest_schema_sha256: 70fd1c72382f5ab847e3eb2eb40f135abb628f46c2a1e5ebf006acdba81c8e0f
+schema_mirror_sha256: ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0
+commit: unborn-master-no-commit
+prompt_sha256: a7cd8e09e16e885f21935c771a975de90e0b706727b132ce7ec1b8ce0d45db6a
+response_sha256: bb91615958956fe8d87603377c2ab2f9c780fe695cbec63266f93da9cf064072
+evidence_manifest_sha256: 6522f33f1ada9d96312a3a7a5995445bd4e6cee6cc90b2ce1f3fc64cbbf7b1bb
+prompt_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3e/20260705-012550Z/prompt.md
+response_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3e/20260705-012550Z/response.md
+evidence_manifest_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3e/20260705-012550Z/evidence_manifest.yaml
+reviewer_identity: guardian_boundary_reviewer
+reviewed_rids:
+- RGQ-021
+- RGQ-044
+- RGQ-054
+- RGQ-058
+- RGQ-059
+reviewed_mechs:
+- MECH-014
 source_sections_checked:
-  - "RGQ-021"
-  - "RGQ-044"
-  - "RGQ-054"
-  - "Appendix A sections 10.14 and 10.15"
-  - "Appendix A section 19.4 hardening"
-  - "PLAN.md P3e"
+- RGQ-021
+- RGQ-044
+- RGQ-054
+- Appendix A sections 10.14 and 10.15
+- Appendix A section 19.4 hardening
+- PLAN.md P3e
 files_inspected:
-  - "docs/ai/changes/RGDTPK-Q-v4-core/BASE_SPEC.md"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/PLAN.md"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_ARCHIVE_SCHEMA.md"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_SUMMARY_SCHEMA.yaml"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/schemas/evidence_manifest.schema.yaml"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/REVIEWER_PROMPTS.md"
-  - "geosolver-core/src/algebra/quotient.rs"
-  - "geosolver-core/src/algebra/krylov.rs"
-  - "geosolver-core/src/types/univariate.rs"
-  - "geosolver-core/src/types/matrix.rs"
-  - "geosolver-core/src/result/status.rs"
+- docs/ai/changes/RGDTPK-Q-v4-core/BASE_SPEC.md
+- docs/ai/changes/RGDTPK-Q-v4-core/PLAN.md
+- docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_ARCHIVE_SCHEMA.md
+- docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_SUMMARY_SCHEMA.yaml
+- docs/ai/changes/RGDTPK-Q-v4-core/schemas/evidence_manifest.schema.yaml
+- docs/ai/changes/RGDTPK-Q-v4-core/REVIEWER_PROMPTS.md
+- geosolver-core/src/algebra/quotient.rs
+- geosolver-core/src/algebra/krylov.rs
+- geosolver-core/src/types/univariate.rs
+- geosolver-core/src/types/matrix.rs
+- geosolver-core/src/result/status.rs
 evidence_inspected:
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3e/commands.txt"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3e/command_outputs.txt"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3e/static_scans.txt"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3e/function_implementation_table.yaml"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3e/notes.md"
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3e/commands.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3e/command_outputs.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3e/static_scans.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3e/function_implementation_table.yaml
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3e/notes.md
 commands_inspected:
-  - "cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check"
-  - "cargo test --manifest-path geosolver-core/Cargo.toml algebra::quotient -- --nocapture"
-  - "cargo test --manifest-path geosolver-core/Cargo.toml algebra::krylov -- --nocapture"
-  - "cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture"
-  - "rg forbidden implementation markers in P3e-owned files"
-  - "rg coordinate export, weak coverage, certified-status, and floating-path patterns in P3e-owned files"
-  - "rg verified characteristic support, Cayley-Hamilton, target action matrix, and undercoverage markers in P3e-owned files"
-function_implementation_table: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3e/function_implementation_table.yaml"
+- cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+- cargo test --manifest-path geosolver-core/Cargo.toml algebra::quotient -- --nocapture
+- cargo test --manifest-path geosolver-core/Cargo.toml algebra::krylov -- --nocapture
+- cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture
+- rg forbidden implementation markers in P3e-owned files
+- rg coordinate export, weak coverage, certified-status, and floating-path patterns
+  in P3e-owned files
+- rg verified characteristic support, Cayley-Hamilton, target action matrix, and undercoverage
+  markers in P3e-owned files
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3e/function_implementation_table.yaml
 algorithmic_sufficiency:
-  verdict: "sufficient"
-  rationale: "Reviewer confirmed scoped P3e primitive-layer quotient/action and verified characteristic-support coverage functions are implemented with exact target-action columns, exact characteristic polynomial, exact Cayley-Hamilton verification, and weak Krylov undercoverage rejection."
+  verdict: sufficient
+  rationale: Reviewer confirmed scoped P3e primitive-layer quotient/action and verified
+    characteristic-support coverage functions are implemented with exact target-action
+    columns, exact characteristic polynomial, exact Cayley-Hamilton verification,
+    and weak Krylov undercoverage rejection.
 forbidden_pattern_scan:
-  heavy_fallback: "pass"
-  narrow_slice_escape: "pass"
-  hidden_fallback: "pass"
-  decorative_certificate: "pass"
-  placeholder_candidate: "not_applicable"
-  geometry_dispatch: "pass"
-  unsupported_for_well_formed_input: "pass"
-  exact_image_overclaim: "pass"
-  target_relation_schedule_discretion: "not_applicable"
-  weak_action_krylov_coverage: "pass"
-  nonfinite_without_positive_proof: "pass"
-  non_spec_status: "pass"
-  required_function_deferred: "pass"
-  appendix_override_bypass: "pass"
-  stress_fixture_dispatch: "pass"
+  heavy_fallback: pass
+  narrow_slice_escape: pass
+  hidden_fallback: pass
+  decorative_certificate: pass
+  placeholder_candidate: not_applicable
+  geometry_dispatch: pass
+  unsupported_for_well_formed_input: pass
+  exact_image_overclaim: pass
+  target_relation_schedule_discretion: not_applicable
+  weak_action_krylov_coverage: pass
+  nonfinite_without_positive_proof: pass
+  non_spec_status: pass
+  required_function_deferred: pass
+  appendix_override_bypass: pass
+  stress_fixture_dispatch: pass
 not_applicable_justifications:
-  "forbidden_pattern_scan.placeholder_candidate": "P3e produces algebraic characteristic-support primitives, not decoded target candidates."
-  "forbidden_pattern_scan.target_relation_schedule_discretion": "TargetRelationSearch scheduling belongs to P6/P8a, not P3e."
-  "appendix_override_checks[0]": "RGQ-044 and RGQ-054 are stricter than Appendix A section 19.4 and allow only VerifiedCharacteristicSupportCoverage."
-  "status_mapping_checks[0]": "P3e primitive APIs return SolverError for certificate gaps but do not add public SolverStatus variants."
-  "suite_partition_checks[0]": "P15 suite partition is not active in P3e."
+  forbidden_pattern_scan.placeholder_candidate: P3e produces algebraic characteristic-support
+    primitives, not decoded target candidates.
+  forbidden_pattern_scan.target_relation_schedule_discretion: TargetRelationSearch
+    scheduling belongs to P6/P8a, not P3e.
+  appendix_override_checks[0]: RGQ-044 and RGQ-054 are stricter than Appendix A section
+    19.4 and allow only VerifiedCharacteristicSupportCoverage.
+  status_mapping_checks[0]: P3e primitive APIs return SolverError for certificate
+    gaps but do not add public SolverStatus variants.
+  suite_partition_checks[0]: P15 suite partition is not active in P3e.
 raw_response_consistency:
   raw_response_contains_blocker: false
   raw_response_contains_required_fix: false
   summary_overrides_raw_response: false
   reviewer_declared_files_inspected: true
 phase_specific_checks:
-  - check_id: "p3e-quotient-handle-no-coordinate-export"
-    required_by: "Appendix A section 10.14 and RGQ-021"
-    verdict: "pass"
-    evidence: "TargetQuotientHandle exposes normal-form and variable-action APIs, with no coordinate roots or full coordinate RUR export API; handle construction rejects coordinate-exporting handles."
-    reviewer_rationale: "The primitive boundary stays target-relevant and does not expose coordinate solutions."
-  - check_id: "p3e-target-action-matrix-verification"
-    required_by: "RGQ-044 and RGQ-054"
-    verdict: "pass"
-    evidence: "Target action matrix columns are materialized through multiply_by_variable and checked against exact normal_form(T * basis_j)."
-    reviewer_rationale: "Coverage is based on exact quotient action verification rather than a trace-only or heuristic sequence."
-  - check_id: "p3e-characteristic-support-coverage-only"
-    required_by: "RGQ-044 and RGQ-054"
-    verdict: "pass"
-    evidence: "certify_krylov_coverage and verify_annihilator accept only VerifiedCharacteristicSupportCoverage equal to the exact characteristic polynomial."
-    reviewer_rationale: "Single-vector Krylov, block Wiedemann, trace powers, or unverified S(M_T)=0 cannot produce an accepted relation."
-  - check_id: "p3e-undercoverage-regression"
-    required_by: "PLAN.md P3e"
-    verdict: "pass"
-    evidence: "The regression where a single-vector Krylov sequence recovers T - 1 while the characteristic polynomial is T^2 - 3T + 2 is rejected with CertificateDesignGap."
-    reviewer_rationale: "The weak recurrence path remains candidate-only evidence and cannot close coverage."
+- check_id: p3e-quotient-handle-no-coordinate-export
+  required_by: Appendix A section 10.14 and RGQ-021
+  verdict: pass
+  evidence: TargetQuotientHandle exposes normal-form and variable-action APIs, with
+    no coordinate roots or full coordinate RUR export API; handle construction rejects
+    coordinate-exporting handles.
+  reviewer_rationale: The primitive boundary stays target-relevant and does not expose
+    coordinate solutions.
+- check_id: p3e-target-action-matrix-verification
+  required_by: RGQ-044 and RGQ-054
+  verdict: pass
+  evidence: Target action matrix columns are materialized through multiply_by_variable
+    and checked against exact normal_form(T * basis_j).
+  reviewer_rationale: Coverage is based on exact quotient action verification rather
+    than a trace-only or heuristic sequence.
+- check_id: p3e-characteristic-support-coverage-only
+  required_by: RGQ-044 and RGQ-054
+  verdict: pass
+  evidence: certify_krylov_coverage and verify_annihilator accept only VerifiedCharacteristicSupportCoverage
+    equal to the exact characteristic polynomial.
+  reviewer_rationale: Single-vector Krylov, block Wiedemann, trace powers, or unverified
+    S(M_T)=0 cannot produce an accepted relation.
+- check_id: p3e-undercoverage-regression
+  required_by: PLAN.md P3e
+  verdict: pass
+  evidence: The regression where a single-vector Krylov sequence recovers T - 1 while
+    the characteristic polynomial is T^2 - 3T + 2 is rejected with CertificateDesignGap.
+  reviewer_rationale: The weak recurrence path remains candidate-only evidence and
+    cannot close coverage.
 appendix_override_checks:
-  - appendix_section: "Appendix A sections 10.14, 10.15, and 19.4"
-    controlling_requirement: "RGQ-054"
-    verdict: "pass"
-    evidence: "Reviewer confirmed only VerifiedCharacteristicSupportCoverage can be accepted; weaker coverage approaches are rejected."
-    reviewer_rationale: "The hardening requirement overrides any broader Appendix wording in the strict direction."
+- appendix_section: Appendix A sections 10.14, 10.15, and 19.4
+  controlling_requirement: RGQ-054
+  verdict: pass
+  evidence: Reviewer confirmed only VerifiedCharacteristicSupportCoverage can be accepted;
+    weaker coverage approaches are rejected.
+  reviewer_rationale: The hardening requirement overrides any broader Appendix wording
+    in the strict direction.
 status_mapping_checks:
-  - error_or_internal_condition: "Weak or unverifiable Krylov coverage"
-    mapped_solver_status: "CertificateDesignGap"
-    verdict: "pass"
-    evidence: "The undercoverage regression rejects weak recurrence certification with CertificateDesignGap."
-    reviewer_rationale: "A missing coverage proof is not mapped to success or a non-spec status."
+- error_or_internal_condition: Weak or unverifiable Krylov coverage
+  mapped_solver_status: CertificateDesignGap
+  verdict: pass
+  evidence: The undercoverage regression rejects weak recurrence certification with
+    CertificateDesignGap.
+  reviewer_rationale: A missing coverage proof is not mapped to success or a non-spec
+    status.
 suite_partition_checks:
-  - suite_name: "not_applicable"
-    verdict: "not_applicable"
-    evidence: "No P15 acceptance suite is implemented or claimed in P3e."
-    reviewer_rationale: "P3e does not claim acceptance."
+- suite_name: not_applicable
+  verdict: not_applicable
+  evidence: No P15 acceptance suite is implemented or claimed in P3e.
+  reviewer_rationale: P3e does not claim acceptance.
 semantic_deletion_challenges: []
 tamper_challenges: []
 unresolved_risks:
-  - "P3e remains a primitive layer only; TargetActionKrylovKernel admission/execution, ProjectionMessage production, and MECH-014 closure remain owned by P8c."
-  - "Later P8c must preserve the characteristic-support-only rule when producing actual kernel messages."
-  - "Git cannot provide commit-bound evidence freshness until the repository has a commit; archive uses explicit unborn-master-no-commit worktree state."
+- P3e remains a primitive layer only; TargetActionKrylovKernel admission/execution,
+  ProjectionMessage production, and MECH-014 closure remain owned by P8c.
+- Later P8c must preserve the characteristic-support-only rule when producing actual
+  kernel messages.
+- Git cannot provide commit-bound evidence freshness until the repository has a commit;
+  archive uses explicit unborn-master-no-commit worktree state.
 blocking_findings: []
 required_fixes: []
 pass_conditions:

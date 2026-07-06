@@ -12,9 +12,9 @@ review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3ba
 evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
 schema_mirror_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
 commit: 191181a0c7f58237f490e72251baee6a445a7613+fcr-p9-worktree
-prompt_sha256: 3c26c71e04c76470306f740ec4d6706c0b7341d6f7dba8f468420761803ad2db
-response_sha256: c3e835aa49a44028b08a76c559af60d34f15082dd30ec8ed2124b278d9aa2b49
-evidence_manifest_sha256: 75df434322c580a0da2e9d794f2f4ad52909e21f173f29bdff9613c1ce6fb277
+prompt_sha256: cb96f58f4220ab9623b54d04615f26c29b51637367a9faa5c0b24c96afae08db
+response_sha256: d1ee882e3a98fd6ab14ccbde13029ac93e7944f314611ce120ebb9bf1991c8b8
+evidence_manifest_sha256: 89c69e7561a51c9984466a3c2d53407e248226cdac0c34c5f962d120f644ca6f
 prompt_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P9/20260705-181409Z/prompt.md
 response_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P9/20260705-181409Z/response.md
 evidence_manifest_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P9/20260705-181409Z/evidence_manifest.yaml
@@ -27,7 +27,8 @@ reviewed_mechs:
 - MECH-010
 - MECH-011
 source_sections_checked:
-- FULL_CORE_REPAIR_PLAN.md FCR-P9 support composition, root isolation, and result construction
+- FULL_CORE_REPAIR_PLAN.md FCR-P9 support composition, root isolation, and result
+  construction
 - FULL_CORE_REPAIR_REVIEWER_PROMPTS.md FCR-P9 reviewer prompt
 - FULL_CORE_REPAIR_BASE_SPEC.md FCR-011 candidate cover and finite candidate narrowing
 - BASE_SPEC.md MECH-009 composition and final support
@@ -68,7 +69,10 @@ commands_inspected:
 function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_PRODUCTION_AUDIT.md
 algorithmic_sufficiency:
   verdict: sufficient
-  rationale: FCR-P9 production composition now records and replays separator elimination evidence, support verification checks the exact separator projection proof, replay recomposes support from the actual DAG, and public candidate-cover construction runs squarefree/root/decode including the no-real-root empty-cover case.
+  rationale: FCR-P9 production composition now records and replays separator elimination
+    evidence, support verification checks the exact separator projection proof, replay
+    recomposes support from the actual DAG, and public candidate-cover construction
+    runs squarefree/root/decode including the no-real-root empty-cover case.
 forbidden_pattern_scan:
   heavy_fallback: pass
   narrow_slice_escape: pass
@@ -86,9 +90,11 @@ forbidden_pattern_scan:
   appendix_override_bypass: pass
   stress_fixture_dispatch: pass
 not_applicable_justifications:
-  unsupported_for_well_formed_input: FCR-P9 adds support/root result construction behavior and does not add a new unsupported path for well-formed input.
+  unsupported_for_well_formed_input: FCR-P9 adds support/root result construction
+    behavior and does not add a new unsupported path for well-formed input.
   weak_action_krylov_coverage: FCR-P9 does not modify ActionKrylov coverage.
-  suite_partition_checks[0]: FCR-P9 is implementation/replay evidence for support and roots, not the full FCR-P15 acceptance-suite partition.
+  suite_partition_checks[0]: FCR-P9 is implementation/replay evidence for support
+    and roots, not the full FCR-P15 acceptance-suite partition.
 raw_response_consistency:
   raw_response_contains_blocker: false
   raw_response_contains_required_fix: false
@@ -98,71 +104,97 @@ phase_specific_checks:
 - check_id: fcr-p9-message-ideal-separator-composition
   required_by: FCR-P9
   verdict: pass
-  evidence: compose_projection_messages collects projection message relation generators and invokes eliminate_separators_from_message_relations only when target-only roots are absent.
-  reviewer_rationale: Composition uses the composed message ideal rather than reconstructing the original coordinate system.
+  evidence: compose_projection_messages collects projection message relation generators
+    and invokes eliminate_separators_from_message_relations only when target-only
+    roots are absent.
+  reviewer_rationale: Composition uses the composed message ideal rather than reconstructing
+    the original coordinate system.
 - check_id: fcr-p9-global-support-replays-separator-proof
   required_by: FCR-P9
   verdict: pass
-  evidence: verify_global_support calls verify_separator_evidence, which checks separator package hashes, replays verify_projection_message on a reconstructed message-only separator context, and requires separator outputs in root_relations.
-  reviewer_rationale: Separator-derived supports are not accepted by multiplication alone; the separator membership proof must replay.
+  evidence: verify_global_support calls verify_separator_evidence, which checks separator
+    package hashes, replays verify_projection_message on a reconstructed message-only
+    separator context, and requires separator outputs in root_relations.
+  reviewer_rationale: Separator-derived supports are not accepted by multiplication
+    alone; the separator membership proof must replay.
 - check_id: fcr-p9-actual-dag-support-replay
   required_by: FCR-P9
   verdict: pass
-  evidence: verify/replay.rs recomposes support with compose_projection_messages over the actual TargetProjectionDAG and projection messages; the obsolete replay_composed_projection helper is removed.
-  reviewer_rationale: Certificate replay checks support through the same actual DAG composition route.
+  evidence: verify/replay.rs recomposes support with compose_projection_messages over
+    the actual TargetProjectionDAG and projection messages; the obsolete replay_composed_projection
+    helper is removed.
+  reviewer_rationale: Certificate replay checks support through the same actual DAG
+    composition route.
 - check_id: fcr-p9-public-root-decode-success-path
   required_by: FCR-P9
   verdict: pass
-  evidence: orchestrator runs verify_global_support then step_roots; step_roots runs squarefree_support, isolate_real_roots, and decode_candidates before CertifiedCandidateCover construction.
+  evidence: orchestrator runs verify_global_support then step_roots; step_roots runs
+    squarefree_support, isolate_real_roots, and decode_candidates before CertifiedCandidateCover
+    construction.
   reviewer_rationale: Public success does not skip root isolation or candidate decode.
 - check_id: fcr-p9-empty-real-root-cover
   required_by: FCR-P9
   verdict: pass
-  evidence: p3_public_pipeline_integration covers T^2+1 and asserts CertifiedCandidateCover, support, squarefree support, empty roots/candidates, certificate, diagnostic, and accepted replay.
-  reviewer_rationale: A support with no real roots remains a certified empty candidate cover rather than a hard-case.
+  evidence: p3_public_pipeline_integration covers T^2+1 and asserts CertifiedCandidateCover,
+    support, squarefree support, empty roots/candidates, certificate, diagnostic,
+    and accepted replay.
+  reviewer_rationale: A support with no real roots remains a certified empty candidate
+    cover rather than a hard-case.
 - check_id: fcr-p9-target-relation-helper-not-completion-registry
   required_by: FCR-P9
   verdict: pass
-  evidence: target_relation_search is production-compiled for separator helper use, while production all_kernels and non-test all_planner_kernel_kinds retain only TargetUnivariate and LinearAffine.
+  evidence: target_relation_search is production-compiled for separator helper use,
+    while production all_kernels and non-test all_planner_kernel_kinds retain only
+    TargetUnivariate and LinearAffine.
   reviewer_rationale: The P7 production completion registry quarantine remains intact.
 appendix_override_checks:
 - appendix_section: Appendix A MECH-009 composition and final support
   controlling_requirement: FCR-P9
   verdict: pass
-  evidence: Separator elimination uses only message relations, records separator evidence, and verify_global_support replays it.
-  reviewer_rationale: The phase respects MECH-009 without claiming final candidate-cover readiness.
+  evidence: Separator elimination uses only message relations, records separator evidence,
+    and verify_global_support replays it.
+  reviewer_rationale: The phase respects MECH-009 without claiming final candidate-cover
+    readiness.
 - appendix_section: Appendix A MECH-011 exact root isolation and decode
   controlling_requirement: FCR-P9
   verdict: pass
-  evidence: Public candidate-cover construction runs squarefree_support, exact isolation, and decode_candidates, with integration coverage for empty and non-empty roots.
+  evidence: Public candidate-cover construction runs squarefree_support, exact isolation,
+    and decode_candidates, with integration coverage for empty and non-empty roots.
   reviewer_rationale: Root/candidate outputs are concrete and hash-bound, not placeholders.
 status_mapping_checks:
 - error_or_internal_condition: support polynomial has no real roots
   mapped_solver_status: CertifiedCandidateCover
   verdict: pass
-  evidence: fcr_p9_public_api_returns_empty_candidate_cover_for_support_with_no_real_roots asserts CertifiedCandidateCover with empty roots and candidates.
+  evidence: fcr_p9_public_api_returns_empty_candidate_cover_for_support_with_no_real_roots
+    asserts CertifiedCandidateCover with empty roots and candidates.
   reviewer_rationale: No-real-root support is not converted to AlgorithmicHardCase.
 - error_or_internal_condition: separator proof tamper
   mapped_solver_status: ImplementationBug or verification rejection
   verdict: pass
-  evidence: fcr_p9_support_verifier_replays_separator_elimination_certificate tampers a separator membership multiplier and verify_global_support rejects it.
+  evidence: fcr_p9_support_verifier_replays_separator_elimination_certificate tampers
+    a separator membership multiplier and verify_global_support rejects it.
   reviewer_rationale: Exact proof failure does not silently pass.
 suite_partition_checks:
 - suite_name: not_applicable
   verdict: not_applicable
-  evidence: FCR-P9 adds implementation and targeted support/root tests, not the full acceptance-suite partition.
+  evidence: FCR-P9 adds implementation and targeted support/root tests, not the full
+    acceptance-suite partition.
   reviewer_rationale: Full suite partitioning remains later FCR work.
 semantic_deletion_challenges: []
 tamper_challenges:
 - challenge_id: fcr-p9-separator-membership-multiplier-tamper
   target: geosolver-core/src/compose/compose.rs
   verdict: pass
-  evidence: The FCR-P9 test tampers the separator membership multiplier, recomputes enclosing hashes, and verify_global_support returns an error.
+  evidence: The FCR-P9 test tampers the separator membership multiplier, recomputes
+    enclosing hashes, and verify_global_support returns an error.
   reviewer_rationale: This challenges proof replay beyond package-hash binding.
 unresolved_risks:
 - FCR-P9 does not prove full FCR-P10 acceptance-suite breadth.
-- TargetRelationSearch is production-compiled only for separator helper use and remains outside production kernel registry claims.
-- This phase does not authorize P13, final source fidelity, exact-image readiness, acceptance completion, candidate-cover core readiness, full production readiness, or any R-ID VERIFIED status.
+- TargetRelationSearch is production-compiled only for separator helper use and remains
+  outside production kernel registry claims.
+- This phase does not authorize P13, final source fidelity, exact-image readiness,
+  acceptance completion, candidate-cover core readiness, full production readiness,
+  or any R-ID VERIFIED status.
 blocking_findings: []
 required_fixes: []
 pass_conditions:

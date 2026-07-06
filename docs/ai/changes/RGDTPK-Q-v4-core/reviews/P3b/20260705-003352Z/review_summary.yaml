@@ -1,150 +1,177 @@
-schema_version: "rgdtpk-review-v2.2"
-phase_id: "P3b"
-phase_kind: "algorithmic"
-review_status: "PASS"
+schema_version: rgdtpk-review-v2.2
+phase_id: P3b
+phase_kind: algorithmic
+review_status: PASS
 phase_closable: true
-claim_ceiling_after_phase: "SCAFFOLD_READY"
-base_spec_sha256: "dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c"
-plan_sha256: "e78cfebc3cce75fbe632c1d0384f59eee7168a27c81d7326c1f02362584b26bc"
-source_map_sha256: "c3fc89dd76d1bf68684ad5359f6e2c4accf28e8db87c0e725b36aba21a2362a2"
-review_archive_schema_sha256: "53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad"
-review_summary_schema_sha256: "ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0"
-evidence_manifest_schema_sha256: "70fd1c72382f5ab847e3eb2eb40f135abb628f46c2a1e5ebf006acdba81c8e0f"
-schema_mirror_sha256: "ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0"
-commit: "unborn-master-no-commit"
-prompt_sha256: "9cca2c5ac4ef5da348a24772fd9923eee49e46bb4839dab053c8ba4ec36be07e"
-response_sha256: "ea2d1a07cf11b160399bf560b59fe8d2118299cba941654341d2ad106caff8d5"
-evidence_manifest_sha256: "fe4b5b4eec3a5969792b40c57dff3e36b3a33847d7496e5cbe35859b083a6836"
-prompt_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3b/20260705-003352Z/prompt.md"
-response_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3b/20260705-003352Z/response.md"
-evidence_manifest_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3b/20260705-003352Z/evidence_manifest.yaml"
-reviewer_identity: "guardian_boundary_reviewer"
-reviewed_rids: ["RGQ-010", "RGQ-019", "RGQ-020", "RGQ-025"]
-reviewed_mechs: ["MECH-001", "MECH-006"]
+claim_ceiling_after_phase: SCAFFOLD_READY
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: e78cfebc3cce75fbe632c1d0384f59eee7168a27c81d7326c1f02362584b26bc
+source_map_sha256: c3fc89dd76d1bf68684ad5359f6e2c4accf28e8db87c0e725b36aba21a2362a2
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0
+evidence_manifest_schema_sha256: 70fd1c72382f5ab847e3eb2eb40f135abb628f46c2a1e5ebf006acdba81c8e0f
+schema_mirror_sha256: ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0
+commit: unborn-master-no-commit
+prompt_sha256: 9cca2c5ac4ef5da348a24772fd9923eee49e46bb4839dab053c8ba4ec36be07e
+response_sha256: ea2d1a07cf11b160399bf560b59fe8d2118299cba941654341d2ad106caff8d5
+evidence_manifest_sha256: fe4b5b4eec3a5969792b40c57dff3e36b3a33847d7496e5cbe35859b083a6836
+prompt_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3b/20260705-003352Z/prompt.md
+response_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3b/20260705-003352Z/response.md
+evidence_manifest_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3b/20260705-003352Z/evidence_manifest.yaml
+reviewer_identity: guardian_boundary_reviewer
+reviewed_rids:
+- RGQ-010
+- RGQ-019
+- RGQ-020
+- RGQ-025
+reviewed_mechs:
+- MECH-001
+- MECH-006
 source_sections_checked:
-  - "Appendix A section 10.3"
-  - "Appendix A section 10.4"
-  - "Appendix A section 10.5"
-  - "Appendix A section 10.6"
-  - "Appendix A section 10.7"
-  - "PLAN.md P3b"
+- Appendix A section 10.3
+- Appendix A section 10.4
+- Appendix A section 10.5
+- Appendix A section 10.6
+- Appendix A section 10.7
+- PLAN.md P3b
 files_inspected:
-  - "docs/ai/changes/RGDTPK-Q-v4-core/BASE_SPEC.md"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/PLAN.md"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_ARCHIVE_SCHEMA.md"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_SUMMARY_SCHEMA.yaml"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/schemas/evidence_manifest.schema.yaml"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/REVIEWER_PROMPTS.md"
-  - "geosolver-core/src/algebra/modular.rs"
-  - "geosolver-core/src/algebra/crt.rs"
-  - "geosolver-core/src/algebra/rational_reconstruction.rs"
-  - "geosolver-core/src/algebra/sparse_matrix.rs"
-  - "geosolver-core/src/algebra/dense_matrix.rs"
-  - "geosolver-core/src/algebra/linear_solve.rs"
-  - "geosolver-core/src/types/matrix.rs"
-  - "geosolver-core/src/types/rational.rs"
+- docs/ai/changes/RGDTPK-Q-v4-core/BASE_SPEC.md
+- docs/ai/changes/RGDTPK-Q-v4-core/PLAN.md
+- docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_ARCHIVE_SCHEMA.md
+- docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_SUMMARY_SCHEMA.yaml
+- docs/ai/changes/RGDTPK-Q-v4-core/schemas/evidence_manifest.schema.yaml
+- docs/ai/changes/RGDTPK-Q-v4-core/REVIEWER_PROMPTS.md
+- geosolver-core/src/algebra/modular.rs
+- geosolver-core/src/algebra/crt.rs
+- geosolver-core/src/algebra/rational_reconstruction.rs
+- geosolver-core/src/algebra/sparse_matrix.rs
+- geosolver-core/src/algebra/dense_matrix.rs
+- geosolver-core/src/algebra/linear_solve.rs
+- geosolver-core/src/types/matrix.rs
+- geosolver-core/src/types/rational.rs
 evidence_inspected:
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3b/commands.txt"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3b/command_outputs.txt"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3b/static_scans.txt"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3b/function_implementation_table.yaml"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3b/notes.md"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3b/20260705-002359Z/review_summary.yaml"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3b/20260705-002359Z/evidence_manifest.yaml"
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3b/commands.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3b/command_outputs.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3b/static_scans.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3b/function_implementation_table.yaml
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3b/notes.md
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3b/20260705-002359Z/review_summary.yaml
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3b/20260705-002359Z/evidence_manifest.yaml
 commands_inspected:
-  - "cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check"
-  - "cargo test --manifest-path geosolver-core/Cargo.toml algebra::linear_solve -- --nocapture"
-  - "cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture"
-  - "rg forbidden implementation markers in geosolver-core/src"
-  - "rg geometry/fixture/expected-answer dispatch words in geosolver-core/src"
-  - "rg floating exact paths and modular proof overclaim patterns in geosolver-core/src/algebra"
-function_implementation_table: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3b/function_implementation_table.yaml"
+- cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+- cargo test --manifest-path geosolver-core/Cargo.toml algebra::linear_solve -- --nocapture
+- cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture
+- rg forbidden implementation markers in geosolver-core/src
+- rg geometry/fixture/expected-answer dispatch words in geosolver-core/src
+- rg floating exact paths and modular proof overclaim patterns in geosolver-core/src/algebra
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3b/function_implementation_table.yaml
 algorithmic_sufficiency:
-  verdict: "sufficient"
-  rationale: "Reviewer inspected P3b code and evidence and confirmed deterministic screened modular arithmetic, exact CRT/reconstruction helpers, finite-field matrix algorithms, rank-profile-stable modular solve traces, stable-suffix reconstruction, and no reconstruction before configured stability."
+  verdict: sufficient
+  rationale: Reviewer inspected P3b code and evidence and confirmed deterministic
+    screened modular arithmetic, exact CRT/reconstruction helpers, finite-field matrix
+    algorithms, rank-profile-stable modular solve traces, stable-suffix reconstruction,
+    and no reconstruction before configured stability.
 forbidden_pattern_scan:
-  heavy_fallback: "not_applicable"
-  narrow_slice_escape: "pass"
-  hidden_fallback: "pass"
-  decorative_certificate: "pass"
-  placeholder_candidate: "not_applicable"
-  geometry_dispatch: "pass"
-  unsupported_for_well_formed_input: "pass"
-  exact_image_overclaim: "pass"
-  target_relation_schedule_discretion: "not_applicable"
-  weak_action_krylov_coverage: "not_applicable"
-  nonfinite_without_positive_proof: "not_applicable"
-  non_spec_status: "pass"
-  required_function_deferred: "pass"
-  appendix_override_bypass: "pass"
-  stress_fixture_dispatch: "pass"
+  heavy_fallback: not_applicable
+  narrow_slice_escape: pass
+  hidden_fallback: pass
+  decorative_certificate: pass
+  placeholder_candidate: not_applicable
+  geometry_dispatch: pass
+  unsupported_for_well_formed_input: pass
+  exact_image_overclaim: pass
+  target_relation_schedule_discretion: not_applicable
+  weak_action_krylov_coverage: not_applicable
+  nonfinite_without_positive_proof: not_applicable
+  non_spec_status: pass
+  required_function_deferred: pass
+  appendix_override_bypass: pass
+  stress_fixture_dispatch: pass
 not_applicable_justifications:
-  "forbidden_pattern_scan.heavy_fallback": "P3b implements modular algebra primitives and has no projection kernel or fallback path."
-  "forbidden_pattern_scan.placeholder_candidate": "P3b returns algebraic modular candidates only and makes no decoded target candidate claim."
-  "forbidden_pattern_scan.target_relation_schedule_discretion": "TargetRelationSearch scheduling belongs to P6/P8a, not P3b."
-  "forbidden_pattern_scan.weak_action_krylov_coverage": "ActionKrylov belongs to P3e/P8c, not P3b."
-  "forbidden_pattern_scan.nonfinite_without_positive_proof": "Nonfinite certification belongs to P10/P13, not P3b."
-  "appendix_override_checks[0]": "RGQ-057 hardening overrides do not alter Appendix A sections 10.3 through 10.7 beyond preserving exactness and proof boundaries."
-  "status_mapping_checks[0]": "P3b does not introduce SolverError or public status mappings."
-  "suite_partition_checks[0]": "P15 suite partition is not active in P3b."
+  forbidden_pattern_scan.heavy_fallback: P3b implements modular algebra primitives
+    and has no projection kernel or fallback path.
+  forbidden_pattern_scan.placeholder_candidate: P3b returns algebraic modular candidates
+    only and makes no decoded target candidate claim.
+  forbidden_pattern_scan.target_relation_schedule_discretion: TargetRelationSearch
+    scheduling belongs to P6/P8a, not P3b.
+  forbidden_pattern_scan.weak_action_krylov_coverage: ActionKrylov belongs to P3e/P8c,
+    not P3b.
+  forbidden_pattern_scan.nonfinite_without_positive_proof: Nonfinite certification
+    belongs to P10/P13, not P3b.
+  appendix_override_checks[0]: RGQ-057 hardening overrides do not alter Appendix A
+    sections 10.3 through 10.7 beyond preserving exactness and proof boundaries.
+  status_mapping_checks[0]: P3b does not introduce SolverError or public status mappings.
+  suite_partition_checks[0]: P15 suite partition is not active in P3b.
 raw_response_consistency:
   raw_response_contains_blocker: false
   raw_response_contains_required_fix: false
   summary_overrides_raw_response: false
   reviewer_declared_files_inspected: true
 phase_specific_checks:
-  - check_id: "p3b-prime-screening"
-    required_by: "Appendix A sections 10.3 and 10.7"
-    verdict: "pass"
-    evidence: "Reviewer confirmed selected solve primes are screened against matrix coefficients and inhomogeneous RHS coefficients."
-    reviewer_rationale: "Prime selection no longer admits denominators or relevant coefficients that would invalidate modular reduction."
-  - check_id: "p3b-exact-modular-arithmetic"
-    required_by: "Appendix A sections 10.3 through 10.6"
-    verdict: "pass"
-    evidence: "Reviewer confirmed modular reduction, CRT, rational reconstruction, sparse/dense rank, and nullspace use exact integer/Fp arithmetic."
-    reviewer_rationale: "P3b contains no floating exact path."
-  - check_id: "p3b-rank-profile-stability"
-    required_by: "Appendix A section 10.7"
-    verdict: "pass"
-    evidence: "PrimeSolveTrace includes pivot_columns, loops compare pivot profiles, and tests cover same-rank/different-pivot behavior."
-    reviewer_rationale: "The solve layer stabilizes on pivot-column profile rather than rank alone."
-  - check_id: "p3b-stable-suffix-reconstruction"
-    required_by: "Appendix A section 10.7"
-    verdict: "pass"
-    evidence: "basis_samples and solution_samples are cleared on profile changes; tests cover inhomogeneous stable-suffix reconstruction."
-    reviewer_rationale: "CRT/reconstruction uses only the final stable rank-profile suffix."
-  - check_id: "p3b-no-reconstruction-before-configured-stability"
-    required_by: "Appendix A section 10.7"
-    verdict: "pass"
-    evidence: "solve_homogeneous_modular and solve_inhomogeneous_modular gate reconstruction on stability_achieved; tests assert no candidate when max_primes is exhausted before stability."
-    reviewer_rationale: "The fourth-review blocker is closed."
-  - check_id: "p3b-candidate-only-proof-boundary"
-    required_by: "RGQ-019 and RGQ-020"
-    verdict: "pass"
-    evidence: "Modular solve outputs use CandidateOnlyRequiresExactQCheck and do not certify Q relations."
-    reviewer_rationale: "P3b does not overclaim relation proof."
+- check_id: p3b-prime-screening
+  required_by: Appendix A sections 10.3 and 10.7
+  verdict: pass
+  evidence: Reviewer confirmed selected solve primes are screened against matrix coefficients
+    and inhomogeneous RHS coefficients.
+  reviewer_rationale: Prime selection no longer admits denominators or relevant coefficients
+    that would invalidate modular reduction.
+- check_id: p3b-exact-modular-arithmetic
+  required_by: Appendix A sections 10.3 through 10.6
+  verdict: pass
+  evidence: Reviewer confirmed modular reduction, CRT, rational reconstruction, sparse/dense
+    rank, and nullspace use exact integer/Fp arithmetic.
+  reviewer_rationale: P3b contains no floating exact path.
+- check_id: p3b-rank-profile-stability
+  required_by: Appendix A section 10.7
+  verdict: pass
+  evidence: PrimeSolveTrace includes pivot_columns, loops compare pivot profiles,
+    and tests cover same-rank/different-pivot behavior.
+  reviewer_rationale: The solve layer stabilizes on pivot-column profile rather than
+    rank alone.
+- check_id: p3b-stable-suffix-reconstruction
+  required_by: Appendix A section 10.7
+  verdict: pass
+  evidence: basis_samples and solution_samples are cleared on profile changes; tests
+    cover inhomogeneous stable-suffix reconstruction.
+  reviewer_rationale: CRT/reconstruction uses only the final stable rank-profile suffix.
+- check_id: p3b-no-reconstruction-before-configured-stability
+  required_by: Appendix A section 10.7
+  verdict: pass
+  evidence: solve_homogeneous_modular and solve_inhomogeneous_modular gate reconstruction
+    on stability_achieved; tests assert no candidate when max_primes is exhausted
+    before stability.
+  reviewer_rationale: The fourth-review blocker is closed.
+- check_id: p3b-candidate-only-proof-boundary
+  required_by: RGQ-019 and RGQ-020
+  verdict: pass
+  evidence: Modular solve outputs use CandidateOnlyRequiresExactQCheck and do not
+    certify Q relations.
+  reviewer_rationale: P3b does not overclaim relation proof.
 appendix_override_checks:
-  - appendix_section: "Appendix A sections 10.3 through 10.7"
-    controlling_requirement: "RGQ-057"
-    verdict: "not_applicable"
-    evidence: "No RGQ-057 override changes these P3b support primitives beyond preserving exactness and proof boundaries."
-    reviewer_rationale: "No weaker Appendix path is being used."
+- appendix_section: Appendix A sections 10.3 through 10.7
+  controlling_requirement: RGQ-057
+  verdict: not_applicable
+  evidence: No RGQ-057 override changes these P3b support primitives beyond preserving
+    exactness and proof boundaries.
+  reviewer_rationale: No weaker Appendix path is being used.
 status_mapping_checks:
-  - error_or_internal_condition: "No P3b status mapping introduced"
-    mapped_solver_status: "not_applicable"
-    verdict: "not_applicable"
-    evidence: "P3b returns algebra helper result structs, not public solver statuses."
-    reviewer_rationale: "Public status mapping remains outside this phase."
+- error_or_internal_condition: No P3b status mapping introduced
+  mapped_solver_status: not_applicable
+  verdict: not_applicable
+  evidence: P3b returns algebra helper result structs, not public solver statuses.
+  reviewer_rationale: Public status mapping remains outside this phase.
 suite_partition_checks:
-  - suite_name: "not_applicable"
-    verdict: "not_applicable"
-    evidence: "No P15 acceptance suite is implemented or claimed in P3b."
-    reviewer_rationale: "P3b does not claim acceptance."
+- suite_name: not_applicable
+  verdict: not_applicable
+  evidence: No P15 acceptance suite is implemented or claimed in P3b.
+  reviewer_rationale: P3b does not claim acceptance.
 semantic_deletion_challenges: []
 tamper_challenges: []
 unresolved_risks:
-  - "P3b only provides modular candidates and traces; exact Q relation certification remains a later caller/phase responsibility."
-  - "Git cannot provide commit-bound evidence freshness until the repository has a commit; archive uses explicit unborn-master-no-commit worktree state."
+- P3b only provides modular candidates and traces; exact Q relation certification
+  remains a later caller/phase responsibility.
+- Git cannot provide commit-bound evidence freshness until the repository has a commit;
+  archive uses explicit unborn-master-no-commit worktree state.
 blocking_findings: []
 required_fixes: []
 pass_conditions:

@@ -668,6 +668,14 @@ fn p15_failure_and_nonfinite_semantics_suite() {
     assert_eq!(result.status, SolverStatus::CertifiedNonFiniteTargetImage);
     assert!(result.support_polynomial.is_none());
     assert!(result.certificate.is_none());
+    assert!(result.nonfinite_certificate.is_some());
+    assert!(
+        replay_run_certificate(
+            &result,
+            &scaled_problem(vec![x, t], t, vec![poly_sub(&v(x.0), &c(3))])
+        )
+        .accepted
+    );
 
     let t = VariableId(593);
     let x = VariableId(599);

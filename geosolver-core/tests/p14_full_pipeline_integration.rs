@@ -251,6 +251,7 @@ fn p14_stage_trace_executes_appendix_29_pipeline_in_order() {
         &messages,
         Some(&support),
         &roots,
+        None,
         Some(&support_certificate),
     );
     let cost_trace = step_cost_trace(
@@ -443,6 +444,8 @@ fn p14_public_certified_nonfinite_is_finalized_without_panic() {
     assert!(result.decoded_candidates.is_empty());
     assert!(result.certificate.is_none());
     assert!(result.exact_image_certificate.is_none());
+    assert!(result.nonfinite_certificate.is_some());
+    assert!(replay_run_certificate(&result, &problem).accepted);
     assert!(result.diagnostics.iter().any(|diagnostic| {
         diagnostic.name == "CertifiedNonFiniteTargetImage"
             && diagnostic.message.contains("ZeroTargetElimination")

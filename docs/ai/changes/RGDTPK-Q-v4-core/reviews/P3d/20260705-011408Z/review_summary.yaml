@@ -1,135 +1,160 @@
-schema_version: "rgdtpk-review-v2.2"
-phase_id: "P3d"
-phase_kind: "algorithmic"
-review_status: "PASS"
+schema_version: rgdtpk-review-v2.2
+phase_id: P3d
+phase_kind: algorithmic
+review_status: PASS
 phase_closable: true
-claim_ceiling_after_phase: "SCAFFOLD_READY"
-base_spec_sha256: "dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c"
-plan_sha256: "e78cfebc3cce75fbe632c1d0384f59eee7168a27c81d7326c1f02362584b26bc"
-source_map_sha256: "c3fc89dd76d1bf68684ad5359f6e2c4accf28e8db87c0e725b36aba21a2362a2"
-review_archive_schema_sha256: "53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad"
-review_summary_schema_sha256: "ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0"
-evidence_manifest_schema_sha256: "70fd1c72382f5ab847e3eb2eb40f135abb628f46c2a1e5ebf006acdba81c8e0f"
-schema_mirror_sha256: "ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0"
-commit: "unborn-master-no-commit"
-prompt_sha256: "55dad91dbce6150669855d7c56f328cdc5a4b1126a33444ae857cab7684c144d"
-response_sha256: "3eeeb027c3e530d9effc7976c464df71c4491cd9d5bacffc8b057c60197b9301"
-evidence_manifest_sha256: "49d938a4c0086db21a2022d0d3dd338b6e3ecfb1dee820026b2203a763d7fe01"
-prompt_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3d/20260705-011408Z/prompt.md"
-response_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3d/20260705-011408Z/response.md"
-evidence_manifest_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3d/20260705-011408Z/evidence_manifest.yaml"
-reviewer_identity: "guardian_boundary_reviewer"
-reviewed_rids: ["RGQ-020", "RGQ-025", "RGQ-043", "RGQ-058", "RGQ-059"]
-reviewed_mechs: ["MECH-007"]
+claim_ceiling_after_phase: SCAFFOLD_READY
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: e78cfebc3cce75fbe632c1d0384f59eee7168a27c81d7326c1f02362584b26bc
+source_map_sha256: c3fc89dd76d1bf68684ad5359f6e2c4accf28e8db87c0e725b36aba21a2362a2
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0
+evidence_manifest_schema_sha256: 70fd1c72382f5ab847e3eb2eb40f135abb628f46c2a1e5ebf006acdba81c8e0f
+schema_mirror_sha256: ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0
+commit: unborn-master-no-commit
+prompt_sha256: 55dad91dbce6150669855d7c56f328cdc5a4b1126a33444ae857cab7684c144d
+response_sha256: 3eeeb027c3e530d9effc7976c464df71c4491cd9d5bacffc8b057c60197b9301
+evidence_manifest_sha256: 49d938a4c0086db21a2022d0d3dd338b6e3ecfb1dee820026b2203a763d7fe01
+prompt_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3d/20260705-011408Z/prompt.md
+response_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3d/20260705-011408Z/response.md
+evidence_manifest_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3d/20260705-011408Z/evidence_manifest.yaml
+reviewer_identity: guardian_boundary_reviewer
+reviewed_rids:
+- RGQ-020
+- RGQ-025
+- RGQ-043
+- RGQ-058
+- RGQ-059
+reviewed_mechs:
+- MECH-007
 source_sections_checked:
-  - "RGQ-020"
-  - "RGQ-025"
-  - "RGQ-043"
-  - "Appendix A sections 10.12 and 10.13"
-  - "PLAN.md P3d"
+- RGQ-020
+- RGQ-025
+- RGQ-043
+- Appendix A sections 10.12 and 10.13
+- PLAN.md P3d
 files_inspected:
-  - "docs/ai/changes/RGDTPK-Q-v4-core/BASE_SPEC.md"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/PLAN.md"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_ARCHIVE_SCHEMA.md"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_SUMMARY_SCHEMA.yaml"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/schemas/evidence_manifest.schema.yaml"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/REVIEWER_PROMPTS.md"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3d/20260705-005637Z/review_summary.yaml"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3d/20260705-010553Z/review_summary.yaml"
-  - "geosolver-core/src/algebra/resultant.rs"
-  - "geosolver-core/src/algebra/interpolation.rs"
-  - "geosolver-core/src/algebra/modular.rs"
-  - "geosolver-core/src/types/polynomial.rs"
-  - "geosolver-core/src/result/status.rs"
+- docs/ai/changes/RGDTPK-Q-v4-core/BASE_SPEC.md
+- docs/ai/changes/RGDTPK-Q-v4-core/PLAN.md
+- docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_ARCHIVE_SCHEMA.md
+- docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_SUMMARY_SCHEMA.yaml
+- docs/ai/changes/RGDTPK-Q-v4-core/schemas/evidence_manifest.schema.yaml
+- docs/ai/changes/RGDTPK-Q-v4-core/REVIEWER_PROMPTS.md
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3d/20260705-005637Z/review_summary.yaml
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3d/20260705-010553Z/review_summary.yaml
+- geosolver-core/src/algebra/resultant.rs
+- geosolver-core/src/algebra/interpolation.rs
+- geosolver-core/src/algebra/modular.rs
+- geosolver-core/src/types/polynomial.rs
+- geosolver-core/src/result/status.rs
 evidence_inspected:
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3d/commands.txt"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3d/command_outputs.txt"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3d/static_scans.txt"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3d/function_implementation_table.yaml"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3d/notes.md"
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3d/commands.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3d/command_outputs.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3d/static_scans.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3d/function_implementation_table.yaml
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3d/notes.md
 commands_inspected:
-  - "cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check"
-  - "cargo test --manifest-path geosolver-core/Cargo.toml algebra::resultant -- --nocapture"
-  - "cargo test --manifest-path geosolver-core/Cargo.toml algebra::interpolation -- --nocapture"
-  - "cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture"
-  - "rg forbidden implementation markers in P3d-owned files"
-  - "rg coordinate/global/status-overclaim patterns in P3d-owned files"
-  - "rg candidate-only, canonical keep, prime trace, and verifier markers in P3d-owned files"
-function_implementation_table: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3d/function_implementation_table.yaml"
+- cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+- cargo test --manifest-path geosolver-core/Cargo.toml algebra::resultant -- --nocapture
+- cargo test --manifest-path geosolver-core/Cargo.toml algebra::interpolation -- --nocapture
+- cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture
+- rg forbidden implementation markers in P3d-owned files
+- rg coordinate/global/status-overclaim patterns in P3d-owned files
+- rg candidate-only, canonical keep, prime trace, and verifier markers in P3d-owned
+  files
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3d/function_implementation_table.yaml
 algorithmic_sufficiency:
-  verdict: "sufficient"
-  rationale: "Reviewer confirmed scoped P3d algebra-level primitives are implemented, candidate-only, and include exact verification/tamper rejection for resultant and interpolation evidence within the phase boundary."
+  verdict: sufficient
+  rationale: Reviewer confirmed scoped P3d algebra-level primitives are implemented,
+    candidate-only, and include exact verification/tamper rejection for resultant
+    and interpolation evidence within the phase boundary.
 forbidden_pattern_scan:
-  heavy_fallback: "pass"
-  narrow_slice_escape: "pass"
-  hidden_fallback: "pass"
-  decorative_certificate: "pass"
-  placeholder_candidate: "not_applicable"
-  geometry_dispatch: "pass"
-  unsupported_for_well_formed_input: "pass"
-  exact_image_overclaim: "pass"
-  target_relation_schedule_discretion: "not_applicable"
-  weak_action_krylov_coverage: "not_applicable"
-  nonfinite_without_positive_proof: "pass"
-  non_spec_status: "pass"
-  required_function_deferred: "pass"
-  appendix_override_bypass: "pass"
-  stress_fixture_dispatch: "pass"
+  heavy_fallback: pass
+  narrow_slice_escape: pass
+  hidden_fallback: pass
+  decorative_certificate: pass
+  placeholder_candidate: not_applicable
+  geometry_dispatch: pass
+  unsupported_for_well_formed_input: pass
+  exact_image_overclaim: pass
+  target_relation_schedule_discretion: not_applicable
+  weak_action_krylov_coverage: not_applicable
+  nonfinite_without_positive_proof: pass
+  non_spec_status: pass
+  required_function_deferred: pass
+  appendix_override_bypass: pass
+  stress_fixture_dispatch: pass
 not_applicable_justifications:
-  "forbidden_pattern_scan.placeholder_candidate": "P3d produces algebraic relation candidates, not decoded target candidates."
-  "forbidden_pattern_scan.target_relation_schedule_discretion": "TargetRelationSearch scheduling belongs to P6/P8a, not P3d."
-  "forbidden_pattern_scan.weak_action_krylov_coverage": "ActionKrylov coverage belongs to P3e/P8c, not P3d."
-  "appendix_override_checks[0]": "RGQ-057 hardening does not weaken Appendix A sections 10.12 or 10.13; candidate-only and no-overclaim boundaries are preserved."
-  "status_mapping_checks[0]": "P3d does not introduce new public SolverStatus values; certificate verifiers return bool for primitive checks."
-  "suite_partition_checks[0]": "P15 suite partition is not active in P3d."
+  forbidden_pattern_scan.placeholder_candidate: P3d produces algebraic relation candidates,
+    not decoded target candidates.
+  forbidden_pattern_scan.target_relation_schedule_discretion: TargetRelationSearch
+    scheduling belongs to P6/P8a, not P3d.
+  forbidden_pattern_scan.weak_action_krylov_coverage: ActionKrylov coverage belongs
+    to P3e/P8c, not P3d.
+  appendix_override_checks[0]: RGQ-057 hardening does not weaken Appendix A sections
+    10.12 or 10.13; candidate-only and no-overclaim boundaries are preserved.
+  status_mapping_checks[0]: P3d does not introduce new public SolverStatus values;
+    certificate verifiers return bool for primitive checks.
+  suite_partition_checks[0]: P15 suite partition is not active in P3d.
 raw_response_consistency:
   raw_response_contains_blocker: false
   raw_response_contains_required_fix: false
   summary_overrides_raw_response: false
   reviewer_declared_files_inspected: true
 phase_specific_checks:
-  - check_id: "p3d-resultant-support-template"
-    required_by: "Appendix A section 10.12"
-    verdict: "pass"
-    evidence: "support_sets and build_sparse_resultant_template are implemented; template validation rejects malformed keep/eliminate boundaries and cap violations."
-    reviewer_rationale: "The local resultant template boundary is now deterministic and canonical."
-  - check_id: "p3d-resultant-candidate-and-certificate"
-    required_by: "RGQ-020 and RGQ-043"
-    verdict: "pass"
-    evidence: "compute_resultant_relation returns CandidateOnlyRequiresExactMembership; verify_resultant_certificate recomputes exact resultant evidence and rejects tampered hashes, non-prime moduli, and denominator-invalid primes."
-    reviewer_rationale: "Modular trace evidence is not treated as Q proof and tampering is rejected."
-  - check_id: "p3d-specialization-interpolation"
-    required_by: "RGQ-025 and Appendix A section 10.13"
-    verdict: "pass"
-    evidence: "choose_specialization_points, specialize_polynomials, interpolate_sparse_coefficients, and verify_interpolated_relation are implemented with exact sample verification."
-    reviewer_rationale: "Bad interpolation samples fail final verification."
-  - check_id: "p3d-candidate-only-boundary"
-    required_by: "RGQ-020, RGQ-025, and RGQ-043"
-    verdict: "pass"
-    evidence: "P3d outputs candidate-only statuses and static scans found no solver-level certified status production in P3d-owned files."
-    reviewer_rationale: "P3d does not overclaim final target support or exact image semantics."
+- check_id: p3d-resultant-support-template
+  required_by: Appendix A section 10.12
+  verdict: pass
+  evidence: support_sets and build_sparse_resultant_template are implemented; template
+    validation rejects malformed keep/eliminate boundaries and cap violations.
+  reviewer_rationale: The local resultant template boundary is now deterministic and
+    canonical.
+- check_id: p3d-resultant-candidate-and-certificate
+  required_by: RGQ-020 and RGQ-043
+  verdict: pass
+  evidence: compute_resultant_relation returns CandidateOnlyRequiresExactMembership;
+    verify_resultant_certificate recomputes exact resultant evidence and rejects tampered
+    hashes, non-prime moduli, and denominator-invalid primes.
+  reviewer_rationale: Modular trace evidence is not treated as Q proof and tampering
+    is rejected.
+- check_id: p3d-specialization-interpolation
+  required_by: RGQ-025 and Appendix A section 10.13
+  verdict: pass
+  evidence: choose_specialization_points, specialize_polynomials, interpolate_sparse_coefficients,
+    and verify_interpolated_relation are implemented with exact sample verification.
+  reviewer_rationale: Bad interpolation samples fail final verification.
+- check_id: p3d-candidate-only-boundary
+  required_by: RGQ-020, RGQ-025, and RGQ-043
+  verdict: pass
+  evidence: P3d outputs candidate-only statuses and static scans found no solver-level
+    certified status production in P3d-owned files.
+  reviewer_rationale: P3d does not overclaim final target support or exact image semantics.
 appendix_override_checks:
-  - appendix_section: "Appendix A sections 10.12 and 10.13"
-    controlling_requirement: "RGQ-057"
-    verdict: "pass"
-    evidence: "Reviewer confirmed P3d stays candidate-only and does not bypass later exact membership/elimination verification."
-    reviewer_rationale: "No weaker Appendix path is being used."
+- appendix_section: Appendix A sections 10.12 and 10.13
+  controlling_requirement: RGQ-057
+  verdict: pass
+  evidence: Reviewer confirmed P3d stays candidate-only and does not bypass later
+    exact membership/elimination verification.
+  reviewer_rationale: No weaker Appendix path is being used.
 status_mapping_checks:
-  - error_or_internal_condition: "Primitive certificate verification"
-    mapped_solver_status: "not_applicable"
-    verdict: "not_applicable"
-    evidence: "P3d primitive verifiers return bool and do not introduce new public statuses."
-    reviewer_rationale: "Public status mapping is not changed in this phase."
+- error_or_internal_condition: Primitive certificate verification
+  mapped_solver_status: not_applicable
+  verdict: not_applicable
+  evidence: P3d primitive verifiers return bool and do not introduce new public statuses.
+  reviewer_rationale: Public status mapping is not changed in this phase.
 suite_partition_checks:
-  - suite_name: "not_applicable"
-    verdict: "not_applicable"
-    evidence: "No P15 acceptance suite is implemented or claimed in P3d."
-    reviewer_rationale: "P3d does not claim acceptance."
+- suite_name: not_applicable
+  verdict: not_applicable
+  evidence: No P15 acceptance suite is implemented or claimed in P3d.
+  reviewer_rationale: P3d does not claim acceptance.
 semantic_deletion_challenges: []
 tamper_challenges: []
 unresolved_risks:
-  - "P3d remains a primitive layer only; kernel integration, ProjectionMessage production, and exact Q membership/elimination acceptance remain owned by later phases, especially P8b."
-  - "Git cannot provide commit-bound evidence freshness until the repository has a commit; archive uses explicit unborn-master-no-commit worktree state."
+- P3d remains a primitive layer only; kernel integration, ProjectionMessage production,
+  and exact Q membership/elimination acceptance remain owned by later phases, especially
+  P8b.
+- Git cannot provide commit-bound evidence freshness until the repository has a commit;
+  archive uses explicit unborn-master-no-commit worktree state.
 blocking_findings: []
 required_fixes: []
 pass_conditions:

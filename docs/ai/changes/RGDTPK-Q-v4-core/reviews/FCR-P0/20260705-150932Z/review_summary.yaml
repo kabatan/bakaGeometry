@@ -14,7 +14,7 @@ schema_mirror_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2
 commit: bdd5090d62597b6f378aba777b5ede914f4505d2+fcr-p0-worktree
 prompt_sha256: 31467573bf575d21471bd63dbec2628d9b82576a821672ba8473f611e9944116
 response_sha256: d87f1ecd2a5f415eceed627470a369300c6bfaff312c010f8e695ed41aba68b5
-evidence_manifest_sha256: b5b3e39b517e7967aeac7ebf45814a33c36911b26422f2dbae73222061a92201
+evidence_manifest_sha256: aac4a9a43b2ef19b85b401d79e13aa7b5edbba17e6165165b6771a91f037de9a
 prompt_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P0/20260705-150932Z/prompt.md
 response_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P0/20260705-150932Z/response.md
 evidence_manifest_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P0/20260705-150932Z/evidence_manifest.yaml

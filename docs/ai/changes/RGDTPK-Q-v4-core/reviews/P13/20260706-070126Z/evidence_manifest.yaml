@@ -1,0 +1,49 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: P13
+commit: f1f44f4947847e8f08470009fdbb48383819bbdd+p16-archive-normalization
+algorithm_spec_source_sha256: 2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed
+failure_source_sha256: df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: b2d6655c3926c0528d86284cb91f35db319a5efe6d2fe068f568c32f779c8b70
+review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
+evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P13/commands.txt
+  sha256: 8cd339a0dee516dbb0077247c76835fc36688097a452b54e9f68133263409dd5
+  purpose: phase evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P13/command_outputs.txt
+  sha256: 410dc8b484160ed8a44ac91081cf39695ded9cd9a4d72e12d42cc97f1dfc0a49
+  purpose: phase evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P13/function_implementation_table.yaml
+  sha256: fe1cdf1853ef76c1c674b5d546b48ba7a025bef09c5bb7b149221a47646e115a
+  purpose: phase evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P13/reviewer_results.md
+  sha256: 27c80e63916fb5baf7374ee64b46958b5df9962d725cffac222c005b5a171461
+  purpose: phase evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P13/20260706-070126Z/prompt.md
+  sha256: 33ce1074a1df86e1a68ac0e216eee2461b6b1602a294aee1f7da903c38b38825
+  purpose: phase evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P13/20260706-070126Z/response.md
+  sha256: e0f36323c094f8688f82df4a198d4d396210d8a64ecb925d83b37a178878182e
+  purpose: phase evidence
+command_outputs:
+- command: cargo test --manifest-path geosolver-core/Cargo.toml --test p13_exact_image_semantics
+    -- --nocapture
+  cwd: C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P13/command_outputs.txt
+  output_sha256: 410dc8b484160ed8a44ac91081cf39695ded9cd9a4d72e12d42cc97f1dfc0a49
+  finished_at_utc: 20260706-090000Z
+static_scans: []
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P13/function_implementation_table.yaml
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P13/20260706-070126Z/prompt.md
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P13/20260706-070126Z/response.md
+known_limitations: []
+algorithmic_claims_made:
+- PARTIAL_MECHANISM_READY:MECH-012
+claim_ceiling_after_phase: PARTIAL_MECHANISM_READY:MECH-012
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

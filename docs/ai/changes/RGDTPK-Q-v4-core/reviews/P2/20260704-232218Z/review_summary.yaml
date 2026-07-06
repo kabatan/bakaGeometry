@@ -1,133 +1,154 @@
-schema_version: "rgdtpk-review-v2.2"
-phase_id: "P2"
-phase_kind: "data_model"
-review_status: "PASS"
+schema_version: rgdtpk-review-v2.2
+phase_id: P2
+phase_kind: data_model
+review_status: PASS
 phase_closable: true
-claim_ceiling_after_phase: "SCAFFOLD_READY"
-base_spec_sha256: "dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c"
-plan_sha256: "e78cfebc3cce75fbe632c1d0384f59eee7168a27c81d7326c1f02362584b26bc"
-source_map_sha256: "c3fc89dd76d1bf68684ad5359f6e2c4accf28e8db87c0e725b36aba21a2362a2"
-review_archive_schema_sha256: "53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad"
-review_summary_schema_sha256: "ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0"
-evidence_manifest_schema_sha256: "70fd1c72382f5ab847e3eb2eb40f135abb628f46c2a1e5ebf006acdba81c8e0f"
-schema_mirror_sha256: "ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0"
-commit: "unborn-master-no-commit"
-prompt_sha256: "734b75a5c6508a14d8b0d9754143b268de3680aec6188a623e1add3208270ca3"
-response_sha256: "05abc52cfe3df72507a26966aa0f562510eb12e208be0c379db555a7eb6f8c5d"
-evidence_manifest_sha256: "b0d57f76556153874ea6c9b08b435c3e72ec3396661603ebf42107ed03d09d19"
-prompt_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P2/20260704-232218Z/prompt.md"
-response_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P2/20260704-232218Z/response.md"
-evidence_manifest_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P2/20260704-232218Z/evidence_manifest.yaml"
-reviewer_identity: "guardian_boundary_reviewer"
-reviewed_rids: ["RGQ-001", "RGQ-002", "RGQ-003", "RGQ-006", "RGQ-012", "RGQ-030", "RGQ-058"]
-reviewed_mechs: ["MECH-001", "MECH-002", "MECH-012"]
+claim_ceiling_after_phase: SCAFFOLD_READY
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: e78cfebc3cce75fbe632c1d0384f59eee7168a27c81d7326c1f02362584b26bc
+source_map_sha256: c3fc89dd76d1bf68684ad5359f6e2c4accf28e8db87c0e725b36aba21a2362a2
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0
+evidence_manifest_schema_sha256: 70fd1c72382f5ab847e3eb2eb40f135abb628f46c2a1e5ebf006acdba81c8e0f
+schema_mirror_sha256: ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0
+commit: unborn-master-no-commit
+prompt_sha256: 734b75a5c6508a14d8b0d9754143b268de3680aec6188a623e1add3208270ca3
+response_sha256: 05abc52cfe3df72507a26966aa0f562510eb12e208be0c379db555a7eb6f8c5d
+evidence_manifest_sha256: b0d57f76556153874ea6c9b08b435c3e72ec3396661603ebf42107ed03d09d19
+prompt_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P2/20260704-232218Z/prompt.md
+response_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P2/20260704-232218Z/response.md
+evidence_manifest_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P2/20260704-232218Z/evidence_manifest.yaml
+reviewer_identity: guardian_boundary_reviewer
+reviewed_rids:
+- RGQ-001
+- RGQ-002
+- RGQ-003
+- RGQ-006
+- RGQ-012
+- RGQ-030
+- RGQ-058
+reviewed_mechs:
+- MECH-001
+- MECH-002
+- MECH-012
 source_sections_checked:
-  - "Appendix A section 9"
-  - "Appendix A section 28"
-  - "PLAN.md P2"
+- Appendix A section 9
+- Appendix A section 28
+- PLAN.md P2
 files_inspected:
-  - "geosolver-core/src/problem/input.rs"
-  - "geosolver-core/src/problem/semantic.rs"
-  - "geosolver-core/src/problem/validate.rs"
-  - "geosolver-core/src/problem/canonicalize.rs"
-  - "geosolver-core/src/problem/context.rs"
-  - "geosolver-core/src/result/status.rs"
-  - "geosolver-core/src/result/diagnostics.rs"
-  - "geosolver-core/src/result/cost_trace.rs"
-  - "geosolver-core/src/result/output.rs"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P2/notes.md"
+- geosolver-core/src/problem/input.rs
+- geosolver-core/src/problem/semantic.rs
+- geosolver-core/src/problem/validate.rs
+- geosolver-core/src/problem/canonicalize.rs
+- geosolver-core/src/problem/context.rs
+- geosolver-core/src/result/status.rs
+- geosolver-core/src/result/diagnostics.rs
+- geosolver-core/src/result/cost_trace.rs
+- geosolver-core/src/result/output.rs
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P2/notes.md
 evidence_inspected:
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P2/command_outputs.txt"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P2/function_implementation_table.yaml"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P2/static_scan_unsupported.txt"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P2/static_scan_geometry_fixture.txt"
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P2/command_outputs.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P2/function_implementation_table.yaml
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P2/static_scan_unsupported.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P2/static_scan_geometry_fixture.txt
 commands_inspected:
-  - "cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check"
-  - "cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture"
-  - "rg Unsupported in geosolver-core/src"
-function_implementation_table: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P2/function_implementation_table.yaml"
+- cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+- cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture
+- rg Unsupported in geosolver-core/src
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P2/function_implementation_table.yaml
 algorithmic_sufficiency:
-  verdict: "sufficient"
-  rationale: "Reviewer verified P2-scoped validation, canonicalization, status mapping, and evidence consistency after fixes."
+  verdict: sufficient
+  rationale: Reviewer verified P2-scoped validation, canonicalization, status mapping,
+    and evidence consistency after fixes.
 forbidden_pattern_scan:
-  heavy_fallback: "not_applicable"
-  narrow_slice_escape: "not_applicable"
-  hidden_fallback: "not_applicable"
-  decorative_certificate: "not_applicable"
-  placeholder_candidate: "not_applicable"
-  geometry_dispatch: "pass"
-  unsupported_for_well_formed_input: "pass"
-  exact_image_overclaim: "pass"
-  target_relation_schedule_discretion: "not_applicable"
-  weak_action_krylov_coverage: "not_applicable"
-  nonfinite_without_positive_proof: "not_applicable"
-  non_spec_status: "pass"
-  required_function_deferred: "pass"
-  appendix_override_bypass: "pass"
-  stress_fixture_dispatch: "not_applicable"
+  heavy_fallback: not_applicable
+  narrow_slice_escape: not_applicable
+  hidden_fallback: not_applicable
+  decorative_certificate: not_applicable
+  placeholder_candidate: not_applicable
+  geometry_dispatch: pass
+  unsupported_for_well_formed_input: pass
+  exact_image_overclaim: pass
+  target_relation_schedule_discretion: not_applicable
+  weak_action_krylov_coverage: not_applicable
+  nonfinite_without_positive_proof: not_applicable
+  non_spec_status: pass
+  required_function_deferred: pass
+  appendix_override_bypass: pass
+  stress_fixture_dispatch: not_applicable
 not_applicable_justifications:
-  "forbidden_pattern_scan.heavy_fallback": "P2 has no projection kernel execution path."
-  "forbidden_pattern_scan.narrow_slice_escape": "P2 validates generic polynomial target problems and does not implement solver acceptance suites."
-  "forbidden_pattern_scan.hidden_fallback": "P2 has no planner or kernel ladder."
-  "forbidden_pattern_scan.decorative_certificate": "P2 has no certificate verifier."
-  "forbidden_pattern_scan.placeholder_candidate": "P2 has no candidate decode implementation."
-  "forbidden_pattern_scan.target_relation_schedule_discretion": "TargetRelationSearch is not implemented in P2."
-  "forbidden_pattern_scan.weak_action_krylov_coverage": "ActionKrylov is not implemented in P2."
-  "forbidden_pattern_scan.nonfinite_without_positive_proof": "Nonfinite handling is not implemented in P2."
-  "forbidden_pattern_scan.stress_fixture_dispatch": "Acceptance stress suites are not implemented in P2."
-  "suite_partition_checks[0]": "P15 suite partition is not active in P2."
+  forbidden_pattern_scan.heavy_fallback: P2 has no projection kernel execution path.
+  forbidden_pattern_scan.narrow_slice_escape: P2 validates generic polynomial target
+    problems and does not implement solver acceptance suites.
+  forbidden_pattern_scan.hidden_fallback: P2 has no planner or kernel ladder.
+  forbidden_pattern_scan.decorative_certificate: P2 has no certificate verifier.
+  forbidden_pattern_scan.placeholder_candidate: P2 has no candidate decode implementation.
+  forbidden_pattern_scan.target_relation_schedule_discretion: TargetRelationSearch
+    is not implemented in P2.
+  forbidden_pattern_scan.weak_action_krylov_coverage: ActionKrylov is not implemented
+    in P2.
+  forbidden_pattern_scan.nonfinite_without_positive_proof: Nonfinite handling is not
+    implemented in P2.
+  forbidden_pattern_scan.stress_fixture_dispatch: Acceptance stress suites are not
+    implemented in P2.
+  suite_partition_checks[0]: P15 suite partition is not active in P2.
 raw_response_consistency:
   raw_response_contains_blocker: false
   raw_response_contains_required_fix: false
   summary_overrides_raw_response: false
   reviewer_declared_files_inspected: true
 phase_specific_checks:
-  - check_id: "p2-semantic-reference-validation"
-    required_by: "RGQ-012"
-    verdict: "pass"
-    evidence: "Reviewer confirmed relation IDs and slack_variables are validated against declared references."
-    reviewer_rationale: "Prior blocker is fixed in code and evidence."
-  - check_id: "p2-role-insensitive-validation"
-    required_by: "RGQ-012"
-    verdict: "pass"
-    evidence: "Tests show coordinate roles and branch/slack semantics are accepted when references are valid."
-    reviewer_rationale: "Validation does not use geometry/role dispatch."
-  - check_id: "p2-canonicalization"
-    required_by: "RGQ-012"
-    verdict: "pass"
-    evidence: "Canonicalization clears denominators, removes zero relations with diagnostics, detects nonzero constant contradiction, and preserves semantic encodings."
-    reviewer_rationale: "Matches P2 requirements."
-  - check_id: "p2-status-closed-set"
-    required_by: "RGQ-058"
-    verdict: "pass"
-    evidence: "Public SolverStatus remains Appendix A closed set; no Unsupported status/path scan hit."
-    reviewer_rationale: "Matches RGQ-058."
+- check_id: p2-semantic-reference-validation
+  required_by: RGQ-012
+  verdict: pass
+  evidence: Reviewer confirmed relation IDs and slack_variables are validated against
+    declared references.
+  reviewer_rationale: Prior blocker is fixed in code and evidence.
+- check_id: p2-role-insensitive-validation
+  required_by: RGQ-012
+  verdict: pass
+  evidence: Tests show coordinate roles and branch/slack semantics are accepted when
+    references are valid.
+  reviewer_rationale: Validation does not use geometry/role dispatch.
+- check_id: p2-canonicalization
+  required_by: RGQ-012
+  verdict: pass
+  evidence: Canonicalization clears denominators, removes zero relations with diagnostics,
+    detects nonzero constant contradiction, and preserves semantic encodings.
+  reviewer_rationale: Matches P2 requirements.
+- check_id: p2-status-closed-set
+  required_by: RGQ-058
+  verdict: pass
+  evidence: Public SolverStatus remains Appendix A closed set; no Unsupported status/path
+    scan hit.
+  reviewer_rationale: Matches RGQ-058.
 appendix_override_checks:
-  - appendix_section: "Appendix A sections 9 and 28"
-    controlling_requirement: "RGQ-057"
-    verdict: "pass"
-    evidence: "P2 did not weaken validation/canonicalization/status requirements."
-    reviewer_rationale: "No hardening override bypass is active in P2."
+- appendix_section: Appendix A sections 9 and 28
+  controlling_requirement: RGQ-057
+  verdict: pass
+  evidence: P2 did not weaken validation/canonicalization/status requirements.
+  reviewer_rationale: No hardening override bypass is active in P2.
 status_mapping_checks:
-  - error_or_internal_condition: "InvalidInput"
-    mapped_solver_status: "InvalidInput"
-    verdict: "pass"
-    evidence: "SolverError::invalid_input maps to SolverStatus::InvalidInput."
-    reviewer_rationale: "Matches RGQ-006/RGQ-058."
-  - error_or_internal_condition: "TemporaryPipelineNotConnected"
-    mapped_solver_status: "ImplementationBug"
-    verdict: "pass"
-    evidence: "Temporary path remains tracked for P14 and maps to an existing public status."
-    reviewer_rationale: "Allowed before P14 under Plan P1/P2 scope."
+- error_or_internal_condition: InvalidInput
+  mapped_solver_status: InvalidInput
+  verdict: pass
+  evidence: SolverError::invalid_input maps to SolverStatus::InvalidInput.
+  reviewer_rationale: Matches RGQ-006/RGQ-058.
+- error_or_internal_condition: TemporaryPipelineNotConnected
+  mapped_solver_status: ImplementationBug
+  verdict: pass
+  evidence: Temporary path remains tracked for P14 and maps to an existing public
+    status.
+  reviewer_rationale: Allowed before P14 under Plan P1/P2 scope.
 suite_partition_checks:
-  - suite_name: "not_applicable"
-    verdict: "not_applicable"
-    evidence: "No P15 suite exists in P2."
-    reviewer_rationale: "No acceptance claim is made."
+- suite_name: not_applicable
+  verdict: not_applicable
+  evidence: No P15 suite exists in P2.
+  reviewer_rationale: No acceptance claim is made.
 semantic_deletion_challenges: []
 tamper_challenges: []
 unresolved_risks:
-  - "TemporaryPipelineNotConnected path must be removed before P14 closes."
+- TemporaryPipelineNotConnected path must be removed before P14 closes.
 blocking_findings: []
 required_fixes: []
 pass_conditions:

@@ -12,9 +12,9 @@ review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3ba
 evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
 schema_mirror_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
 commit: fd2c5c5ecaeaad0b9f7a5210fa58954ac22d17d1+fcr-p7-worktree
-prompt_sha256: 323a1bae75e51840be940db844ce98c94862277c90c1dfb1c580dbe9ca138525
-response_sha256: 43b44293f950719da87ab76b7eb0cbc266d5b8f599acc351bed15e6b570132c2
-evidence_manifest_sha256: c643dd90a14c95844b7898b1243592c920473ae0ff7422cffc5675855282c7a4
+prompt_sha256: b8722f2db173ee903551232d49ae4218205947fca05a38a6cb0914af1414e979
+response_sha256: a2327f5b7507930a72e08ad558106e1a5445bdec3737d09433615620143da312
+evidence_manifest_sha256: bc6aab1788e59496a6d13b39ff5abb657a485875385f2edea9462d7e6be51410
 prompt_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P7/20260705-173716Z/prompt.md
 response_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P7/20260705-173716Z/response.md
 evidence_manifest_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P7/20260705-173716Z/evidence_manifest.yaml
@@ -27,7 +27,8 @@ reviewed_mechs:
 - MECH-007
 - MECH-016
 source_sections_checked:
-- FULL_CORE_REPAIR_BASE_SPEC.md FCR-007 generic SparseResultant or non-production requirement
+- FULL_CORE_REPAIR_BASE_SPEC.md FCR-007 generic SparseResultant or non-production
+  requirement
 - FULL_CORE_REPAIR_BASE_SPEC.md FCR-008 projection-kernel claim-boundary requirement
 - FULL_CORE_REPAIR_PLAN.md FCR-P7
 - FULL_CORE_REPAIR_REVIEWER_PROMPTS.md FCR-P7
@@ -64,7 +65,9 @@ commands_inspected:
 function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_PRODUCTION_AUDIT.md
 algorithmic_sufficiency:
   verdict: sufficient
-  rationale: FCR-P7 satisfies the generic-or-non-production contract by removing SparseResultant, SpecializationInterpolation, RegularChain, and NormTrace from production completion registries and planner lists, while recording that they remain test/support only.
+  rationale: FCR-P7 satisfies the generic-or-non-production contract by removing SparseResultant,
+    SpecializationInterpolation, RegularChain, and NormTrace from production completion
+    registries and planner lists, while recording that they remain test/support only.
 forbidden_pattern_scan:
   heavy_fallback: pass
   narrow_slice_escape: pass
@@ -83,9 +86,12 @@ forbidden_pattern_scan:
   stress_fixture_dispatch: pass
 not_applicable_justifications:
   status_mapping_checks[0]: FCR-P7 did not add or remap public SolverStatus values.
-  suite_partition_checks[0]: FCR-P7 is advanced-kernel claim-boundary work, not the FCR-P15 acceptance-suite partition.
-  unsupported_for_well_formed_input: FCR-P7 does not add a new unsupported path for well-formed inputs.
-  target_relation_schedule_discretion: FCR-P7 does not modify TargetRelationSearch scheduling.
+  suite_partition_checks[0]: FCR-P7 is advanced-kernel claim-boundary work, not the
+    FCR-P15 acceptance-suite partition.
+  unsupported_for_well_formed_input: FCR-P7 does not add a new unsupported path for
+    well-formed inputs.
+  target_relation_schedule_discretion: FCR-P7 does not modify TargetRelationSearch
+    scheduling.
   weak_action_krylov_coverage: FCR-P7 does not modify ActionKrylov coverage.
   non_spec_status: FCR-P7 does not add public non-spec statuses.
 raw_response_consistency:
@@ -97,29 +103,43 @@ phase_specific_checks:
 - check_id: fcr-p7-production-registry-excludes-advanced-kernels
   required_by: FCR-P7
   verdict: pass
-  evidence: kernels/mod.rs production all_kernels returns only TargetUnivariateKernel and LinearAffineKernel; the FCR-P7 regression test asserts the four advanced projection kernels are absent from runtime completion registry claims.
-  reviewer_rationale: Advanced kernels are not present in the production registry used as completion evidence.
+  evidence: kernels/mod.rs production all_kernels returns only TargetUnivariateKernel
+    and LinearAffineKernel; the FCR-P7 regression test asserts the four advanced projection
+    kernels are absent from runtime completion registry claims.
+  reviewer_rationale: Advanced kernels are not present in the production registry
+    used as completion evidence.
 - check_id: fcr-p7-production-planner-excludes-advanced-kernels
   required_by: FCR-P7
   verdict: pass
-  evidence: planner/admission.rs production all_planner_kernel_kinds returns only target-univariate and linear-affine; advanced admission arms are cfg(test) and production fallback declines quarantined advanced kinds.
-  reviewer_rationale: Plan-time output construction by advanced kernels is not a production completion path.
+  evidence: planner/admission.rs production all_planner_kernel_kinds returns only
+    target-univariate and linear-affine; advanced admission arms are cfg(test) and
+    production fallback declines quarantined advanced kinds.
+  reviewer_rationale: Plan-time output construction by advanced kernels is not a production
+    completion path.
 - check_id: fcr-p7-cleanup-report-records-nonproduction-status
   required_by: FCR-P7
   verdict: pass
-  evidence: FULL_CORE_CLEANUP_REPORT.md records SparseResultant, SpecializationInterpolation, RegularChain, and NormTrace as test/support evidence only and not production generic completion claims.
-  reviewer_rationale: The report narrows claims instead of asserting unsupported generic readiness.
+  evidence: FULL_CORE_CLEANUP_REPORT.md records SparseResultant, SpecializationInterpolation,
+    RegularChain, and NormTrace as test/support evidence only and not production generic
+    completion claims.
+  reviewer_rationale: The report narrows claims instead of asserting unsupported generic
+    readiness.
 - check_id: fcr-p7-required-evidence-fresh
   required_by: FCR-P7
   verdict: pass
-  evidence: cargo fmt, cargo test --lib fcr_p7_, full cargo test, cargo check, git diff --check, static scan, and guardian review were all run after the FCR-P7 code changes.
-  reviewer_rationale: Required dynamic and static evidence is fresh for the changed files.
+  evidence: cargo fmt, cargo test --lib fcr_p7_, full cargo test, cargo check, git
+    diff --check, static scan, and guardian review were all run after the FCR-P7 code
+    changes.
+  reviewer_rationale: Required dynamic and static evidence is fresh for the changed
+    files.
 appendix_override_checks:
 - appendix_section: Appendix A projection-kernel requirements and MECH-007
   controlling_requirement: FCR-P7
   verdict: pass
-  evidence: FCR-P7 does not claim advanced generic projection kernels as production-complete; those kernels are quarantined to test/support paths.
-  reviewer_rationale: The phase respects the source-fidelity boundary by using the non-production alternative allowed by the FCR overlay.
+  evidence: FCR-P7 does not claim advanced generic projection kernels as production-complete;
+    those kernels are quarantined to test/support paths.
+  reviewer_rationale: The phase respects the source-fidelity boundary by using the
+    non-production alternative allowed by the FCR overlay.
 status_mapping_checks:
 - error_or_internal_condition: not_applicable_for_fcr_p7
   mapped_solver_status: not_applicable
@@ -129,15 +149,21 @@ status_mapping_checks:
 suite_partition_checks:
 - suite_name: not_applicable
   verdict: not_applicable
-  evidence: FCR-P7 adds claim-boundary regression tests, not the acceptance-suite partition.
-  reviewer_rationale: Full support/exact-image/failure suite partitioning remains later FCR work.
+  evidence: FCR-P7 adds claim-boundary regression tests, not the acceptance-suite
+    partition.
+  reviewer_rationale: Full support/exact-image/failure suite partitioning remains
+    later FCR work.
 semantic_deletion_challenges: []
 tamper_challenges: []
 unresolved_risks:
-- FCR-P7 does not prove SparseResultant, SpecializationInterpolation, RegularChain, or NormTrace implement v4 generic production contracts.
-- The reviewed advanced kernels remain test/support evidence only and do not authorize production readiness.
-- FULL_CORE_CLEANUP_REPORT.md has broader wording about Universal production generalization outside this FCR-P7 review; do not treat that as authorized by this phase.
-- FCR-P7 does not authorize P13, candidate-cover readiness, exact-image readiness, source fidelity, or acceptance completion.
+- FCR-P7 does not prove SparseResultant, SpecializationInterpolation, RegularChain,
+  or NormTrace implement v4 generic production contracts.
+- The reviewed advanced kernels remain test/support evidence only and do not authorize
+  production readiness.
+- FULL_CORE_CLEANUP_REPORT.md has broader wording about Universal production generalization
+  outside this FCR-P7 review; do not treat that as authorized by this phase.
+- FCR-P7 does not authorize P13, candidate-cover readiness, exact-image readiness,
+  source fidelity, or acceptance completion.
 - No R-ID is marked VERIFIED.
 blocking_findings: []
 required_fixes: []

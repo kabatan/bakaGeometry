@@ -32,6 +32,7 @@ pub struct CoreRunCertificate {
     pub squarefree_support_hash: Option<Hash>,
     pub root_isolation_hash: Option<Hash>,
     pub decoded_candidate_hash: Option<Hash>,
+    pub exact_image_certificate_hash: Option<Hash>,
     pub global_support_certificate_hash: Option<Hash>,
     pub final_dag_replay_evidence_hash: Option<Hash>,
     pub final_dag_replay_evidence: Option<FinalDagReplayEvidence>,
@@ -108,6 +109,7 @@ pub struct CoreRunCertificateInput<'a> {
     pub squarefree_support: Option<&'a UniPolynomialQ>,
     pub root_isolation: &'a [RealRootRecord],
     pub decoded_candidates: &'a [TargetCandidate],
+    pub exact_image_certificate: Option<&'a crate::fiber::exact_image::FiberClassificationResult>,
     pub global_support_certificate_hash: Option<Hash>,
     pub final_dag_replay_evidence: Option<FinalDagReplayEvidence>,
 }
@@ -130,6 +132,9 @@ pub fn build_core_run_certificate(input: CoreRunCertificateInput<'_>) -> CoreRun
         squarefree_support_hash: input.squarefree_support.map(|support| support.hash),
         root_isolation_hash: Some(hash_root_isolation(input.root_isolation)),
         decoded_candidate_hash: Some(hash_decoded_candidates(input.decoded_candidates)),
+        exact_image_certificate_hash: input
+            .exact_image_certificate
+            .map(crate::fiber::exact_image::hash_fiber_classification_result),
         global_support_certificate_hash: input.global_support_certificate_hash,
         final_dag_replay_evidence_hash,
         final_dag_replay_evidence: input.final_dag_replay_evidence,
@@ -702,6 +707,7 @@ pub fn hash_core_run_certificate(cert: &CoreRunCertificate) -> Hash {
     chunks.push(optional_hash_bytes(cert.squarefree_support_hash));
     chunks.push(optional_hash_bytes(cert.root_isolation_hash));
     chunks.push(optional_hash_bytes(cert.decoded_candidate_hash));
+    chunks.push(optional_hash_bytes(cert.exact_image_certificate_hash));
     chunks.push(optional_hash_bytes(cert.global_support_certificate_hash));
     chunks.push(optional_hash_bytes(cert.final_dag_replay_evidence_hash));
     chunks.push(
@@ -1078,6 +1084,7 @@ mod tests {
             squarefree_support_hash: None,
             root_isolation_hash: None,
             decoded_candidate_hash: None,
+            exact_image_certificate_hash: None,
             global_support_certificate_hash: None,
             final_dag_replay_evidence_hash,
             final_dag_replay_evidence: None,

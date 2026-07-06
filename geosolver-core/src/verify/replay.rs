@@ -1,6 +1,7 @@
 use std::collections::BTreeSet;
 
-use crate::compose::compose::compose_projection_messages;
+use crate::compose::compose::{compose_projection_messages, hash_composed_projection};
+use crate::compose::final_support::{hash_nonfinite_certificate, verify_nonfinite_certificate};
 use crate::compose::message::ProjectionMessage;
 use crate::graph::hypergraph::build_relation_variable_hypergraph;
 use crate::graph::influence::build_target_influence_graph;
@@ -18,6 +19,7 @@ use crate::problem::context::new_context;
 use crate::problem::input::RationalTargetProblem;
 use crate::problem::validate::validate_input;
 use crate::result::output::TargetSolveResult;
+use crate::result::status::SolverStatus;
 use crate::solver::options::SolverOptions;
 use crate::types::hash::{hash_sequence, Hash};
 use crate::verify::run_certificate::{
@@ -33,6 +35,7 @@ pub fn replay_run_certificate(
     problem: &RationalTargetProblem,
 ) -> ReplayResult {
     let accepted = replay_checks(result, problem);
+    let certificate_binding = replay_certificate_binding(result);
     ReplayResult {
         accepted,
         replay_hash: hash_sequence(
@@ -40,18 +43,35 @@ pub fn replay_run_certificate(
             &[
                 problem.input_hash.0.to_vec(),
                 result.target.0.to_be_bytes().to_vec(),
-                result
-                    .certificate
-                    .as_ref()
-                    .map(|cert| cert.run_hash.0.to_vec())
-                    .unwrap_or_else(|| vec![0xff]),
+                certificate_binding,
                 vec![accepted as u8],
             ],
         ),
     }
 }
 
+fn replay_certificate_binding(result: &TargetSolveResult) -> Vec<u8> {
+    if result.status == SolverStatus::CertifiedNonFiniteTargetImage {
+        return result
+            .nonfinite_certificate
+            .as_ref()
+            .map(|cert| hash_nonfinite_certificate(cert).0.to_vec())
+            .unwrap_or_else(|| vec![0xfe]);
+    }
+    result
+        .certificate
+        .as_ref()
+        .map(|cert| cert.run_hash.0.to_vec())
+        .unwrap_or_else(|| vec![0xff])
+}
+
 fn replay_checks(result: &TargetSolveResult, problem: &RationalTargetProblem) -> bool {
+    if result.status == SolverStatus::CertifiedNonFiniteTargetImage {
+        return replay_nonfinite_result(result, problem);
+    }
+    if result.nonfinite_certificate.is_some() {
+        return false;
+    }
     let Some(cert) = &result.certificate else {
         return false;
     };
@@ -120,6 +140,27 @@ fn replay_checks(result: &TargetSolveResult, problem: &RationalTargetProblem) ->
     if cert.decoded_candidate_hash != Some(hash_decoded_candidates(&result.decoded_candidates)) {
         return false;
     }
+    let exact_image_certificate_hash = match &result.exact_image_certificate {
+        Some(classification) => {
+            let expected_hash =
+                crate::fiber::exact_image::hash_fiber_classification_result(classification);
+            if classification.classification_hash != expected_hash {
+                return false;
+            }
+            Some(expected_hash)
+        }
+        None => None,
+    };
+    if cert.exact_image_certificate_hash != exact_image_certificate_hash {
+        return false;
+    }
+    if matches!(
+        result.status,
+        SolverStatus::CertifiedExactTargetImage | SolverStatus::CertifiedEmptyRealTargetImage
+    ) && exact_image_certificate_hash.is_none()
+    {
+        return false;
+    }
     let expected_replay_evidence = build_final_dag_replay_evidence_from_dag(
         &actual_dag,
         &compressed,
@@ -172,6 +213,50 @@ fn replay_checks(result: &TargetSolveResult, problem: &RationalTargetProblem) ->
         return false;
     }
     roots_and_candidates_verified
+}
+
+fn replay_nonfinite_result(result: &TargetSolveResult, problem: &RationalTargetProblem) -> bool {
+    if result.target != problem.target
+        || result.certificate.is_some()
+        || result.support_polynomial.is_some()
+        || result.squarefree_support_polynomial.is_some()
+        || !result.root_isolation.is_empty()
+        || !result.decoded_candidates.is_empty()
+        || result.exact_image_certificate.is_some()
+    {
+        return false;
+    }
+    let Some(cert) = &result.nonfinite_certificate else {
+        return false;
+    };
+    if cert.certificate_hash != hash_nonfinite_certificate(cert) {
+        return false;
+    }
+    let Ok(validated) = validate_input(problem.clone()) else {
+        return false;
+    };
+    let Ok(canonical) = canonicalize_system(validated) else {
+        return false;
+    };
+    let mut ctx = new_context(SolverOptions::default());
+    let Ok(compressed) = pre_kernel_compress(canonical, &mut ctx) else {
+        return false;
+    };
+    let Some(actual_dag) = replay_target_projection_dag(&compressed) else {
+        return false;
+    };
+    let Ok(composed) = compose_projection_messages(
+        &actual_dag,
+        result.projection_messages.clone(),
+        problem.target,
+        &mut ctx,
+    ) else {
+        return false;
+    };
+    if composed.composed_hash != hash_composed_projection(&composed) {
+        return false;
+    }
+    verify_nonfinite_certificate(cert, &composed).is_ok()
 }
 
 #[allow(dead_code)]
@@ -578,6 +663,7 @@ mod tests {
             squarefree_support: Some(&support),
             root_isolation: &[],
             decoded_candidates: &[],
+            exact_image_certificate: None,
             global_support_certificate_hash: None,
             final_dag_replay_evidence: None,
         });
@@ -684,6 +770,7 @@ mod tests {
             squarefree_support: Some(&support),
             root_isolation: &[],
             decoded_candidates: &[],
+            exact_image_certificate: None,
             global_support_certificate_hash: None,
             final_dag_replay_evidence: None,
         });
@@ -903,6 +990,7 @@ mod tests {
             squarefree_support: Some(&support),
             root_isolation: &[],
             decoded_candidates: &[],
+            exact_image_certificate: None,
             global_support_certificate_hash: Some(global_support_certificate_hash(
                 t, &messages, &support,
             )),
@@ -1243,6 +1331,7 @@ mod tests {
             squarefree_support: Some(&forged_support),
             root_isolation: &[],
             decoded_candidates: &[],
+            exact_image_certificate: None,
             global_support_certificate_hash: Some(global_support_certificate_hash(
                 t,
                 &messages,
@@ -1337,6 +1426,7 @@ mod tests {
             squarefree_support: Some(&forged_support),
             root_isolation: &[],
             decoded_candidates: &[],
+            exact_image_certificate: None,
             global_support_certificate_hash: Some(global_support_certificate_hash(
                 t,
                 &messages,
@@ -1444,6 +1534,7 @@ mod tests {
             squarefree_support: Some(&support),
             root_isolation: &[],
             decoded_candidates: &[],
+            exact_image_certificate: None,
             global_support_certificate_hash: Some(global_support_certificate_hash(
                 t, &messages, &support,
             )),
@@ -1496,6 +1587,7 @@ mod tests {
             squarefree_support: Some(squarefree_support),
             root_isolation: roots,
             decoded_candidates: candidates,
+            exact_image_certificate: None,
             global_support_certificate_hash: support_certificate_hash,
             final_dag_replay_evidence: Some(evidence),
         })
@@ -1925,6 +2017,7 @@ mod tests {
             projection_messages: messages,
             certificate: Some(certificate),
             exact_image_certificate: None,
+            nonfinite_certificate: None,
             diagnostics: Vec::new(),
             cost_trace: GlobalCostTrace::default(),
         }

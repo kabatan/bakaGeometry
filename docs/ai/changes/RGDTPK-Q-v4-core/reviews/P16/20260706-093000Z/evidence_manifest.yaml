@@ -1,0 +1,140 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: P16
+commit: f1f44f4947847e8f08470009fdbb48383819bbdd+p16-final-working-tree
+algorithm_spec_source_sha256: 2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed
+failure_source_sha256: df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: b2d6655c3926c0528d86284cb91f35db319a5efe6d2fe068f568c32f779c8b70
+review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
+evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/CLOSURE.md
+  sha256: edda1af56a1e78c5ba8f8fd66ed67967bbae48daa20e1acac267303ceb3cb8eb
+  purpose: P16 final closure evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/CONSISTENCY_AUDIT.md
+  sha256: a9cb8cc1e0d75777e4b7c2f7f0c971972b9e9e6ede0ae00cd2bfcb52f3b95148
+  purpose: P16 final closure evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_ACCEPTANCE_RESULTS.md
+  sha256: 769867b5ba96028f747b7945a3fe3c85ad41d1e16b5e57d3e038bf72273220f8
+  purpose: P16 final closure evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P16/commands.txt
+  sha256: e13a8fbe927814def76841dbd32423a165132fb397004bf6b0041177cbb121d3
+  purpose: P16 final closure evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P16/command_outputs.txt
+  sha256: 0239a69b563714914fac78b77d7647d647421ad547d519c470f0c4d83287e308
+  purpose: P16 final closure evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P16/static_scans.txt
+  sha256: f97f567e06a3ec53561a8a79916c2c525ee47784b418a24204318e1c83e1ce74
+  purpose: P16 final closure evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P16/archive_audit.txt
+  sha256: 2b027fdfbadc7820962191038888efcb75988c0da4251d80bb8d75b055c04a09
+  purpose: P16 final closure evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P16/function_implementation_table.yaml
+  sha256: f70a5d15a0193c974ffdcdd80f6ed4f4e461871dab507dcda5a3b85af50010be
+  purpose: P16 final closure evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P16/reviewer_results.md
+  sha256: 23b19a12d4b344cfd016b132cb70a520ae88e75205280c5610a44d86baf034a6
+  purpose: P16 final closure evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P16/20260706-093000Z/prompt.md
+  sha256: 9791b288bd3430491fc93bc5cb3e61669d5aa83696a1550e3e232409eef79cc6
+  purpose: P16 final closure evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P16/20260706-093000Z/response.md
+  sha256: 1feb17d3ca0919d146f9604c16d83bb54d1c229b17408b5d82e0387414e77f30
+  purpose: P16 final closure evidence
+- path: geosolver-core/src/verify/replay.rs
+  sha256: 99ca4f0c260daa71c9d79a960df7c4e5ae257a39d0406775c6604778891a3394
+  purpose: P16 final closure evidence
+- path: geosolver-core/src/verify/run_certificate.rs
+  sha256: b7e875ef9cc3c341bd61b31a08cce98a7aacbd36ba0d5622064d78735f58fab8
+  purpose: P16 final closure evidence
+- path: geosolver-core/src/result/output.rs
+  sha256: e6253eae83fc909096451bd70d152caba45403bdd53f80b5b96e75317051eba2
+  purpose: P16 final closure evidence
+- path: geosolver-core/src/compose/final_support.rs
+  sha256: 2444afc782d539b10ea2075df12cca357bfd1de221b8223bb07a82b424e0b426
+  purpose: P16 final closure evidence
+- path: geosolver-core/tests/fcr_final_nonfinite_semantics.rs
+  sha256: f0e2f0612ad94238cb866da59a3e9040ae7cb09b96009492c61f731cd853f861
+  purpose: P16 final closure evidence
+- path: geosolver-core/tests/p13_exact_image_semantics.rs
+  sha256: 182258f6cf0ebdd588e463a1450c90455f7fb7c6c88d9964552964ca6ab1d2bb
+  purpose: P16 final closure evidence
+command_outputs:
+- command: cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+  cwd: C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P16/command_outputs.txt
+  output_sha256: 0239a69b563714914fac78b77d7647d647421ad547d519c470f0c4d83287e308
+  finished_at_utc: 20260706-100000Z
+- command: cargo clippy --manifest-path geosolver-core/Cargo.toml --all-targets --all-features
+    -- -D warnings
+  cwd: C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P16/command_outputs.txt
+  output_sha256: 0239a69b563714914fac78b77d7647d647421ad547d519c470f0c4d83287e308
+  finished_at_utc: 20260706-100000Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml --all-targets --all-features
+  cwd: C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P16/command_outputs.txt
+  output_sha256: 0239a69b563714914fac78b77d7647d647421ad547d519c470f0c4d83287e308
+  finished_at_utc: 20260706-100000Z
+- command: cargo test --manifest-path geosolver-core/Cargo.toml --test fcr_final_nonfinite_semantics
+    -- --nocapture
+  cwd: C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P16/command_outputs.txt
+  output_sha256: 0239a69b563714914fac78b77d7647d647421ad547d519c470f0c4d83287e308
+  finished_at_utc: 20260706-100000Z
+- command: git diff --check
+  cwd: C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P16/command_outputs.txt
+  output_sha256: 0239a69b563714914fac78b77d7647d647421ad547d519c470f0c4d83287e308
+  finished_at_utc: 20260706-100000Z
+static_scans:
+- scan_id: P16-unsupported
+  command: rg -n --sort path --path-separator / "Unsupported|unsupported" geosolver-core/src
+  forbidden_pattern: Unsupported|unsupported
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P16/static_scans.txt
+- scan_id: P16-geometry-fixture-dispatch
+  command: rg -n --sort path --path-separator / "circle|triangle|tangent|distance|area|incircle|circumcircle|orthic|mixtilinear|fixture|expected|answer|problem_id|official"
+    geosolver-core/src
+  forbidden_pattern: geometry or fixture dispatch
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P16/static_scans.txt
+- scan_id: P16-stub-placeholder
+  command: rg -n --sort path --path-separator / "todo!|unimplemented!|placeholder|dummy|fake|stub"
+    geosolver-core/src
+  forbidden_pattern: stub or placeholder markers
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P16/static_scans.txt
+- scan_id: P16-qe-cad-full-coordinate
+  command: rg -n --sort path --path-separator / "CAD|QE|RCF|coordinate solution|coordinate
+    roots|full coordinate RUR|RUR" geosolver-core/src
+  forbidden_pattern: QE/CAD/RCF/full-coordinate fallback
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P16/static_scans.txt
+- scan_id: P16-old-acceptance-phrase
+  command: rg -n --sort path --path-separator / "ACCEPTANCE_COMPLETE.*candidate-cover
+    solver core implementation" geosolver-core docs/ai/changes/RGDTPK-Q-v4-core/CLOSURE.md
+  forbidden_pattern: old candidate-cover acceptance-complete phrase
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P16/static_scans.txt
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P16/function_implementation_table.yaml
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P16/20260706-093000Z/prompt.md
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P16/20260706-093000Z/response.md
+known_limitations:
+- SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC is not claimed
+- No benchmark superiority or universal finite-system completeness claim
+- Geometry DSL, natural-language parsing, and diagram/image understanding are out
+  of scope
+algorithmic_claims_made:
+- RGDTPK_Q_V4_ACCEPTANCE_COMPLETE
+claim_ceiling_after_phase: RGDTPK_Q_V4_ACCEPTANCE_COMPLETE
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

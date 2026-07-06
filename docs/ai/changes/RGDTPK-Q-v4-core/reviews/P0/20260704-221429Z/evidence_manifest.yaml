@@ -1,83 +1,86 @@
-schema_version: "rgdtpk-evidence-manifest-v2.2"
-phase_id: "P0"
-commit: "unborn-master-no-commit"
-algorithm_spec_source_sha256: "2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed"
-failure_source_sha256: "df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e"
-base_spec_sha256: "dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c"
-plan_sha256: "e78cfebc3cce75fbe632c1d0384f59eee7168a27c81d7326c1f02362584b26bc"
-source_map_sha256: "c3fc89dd76d1bf68684ad5359f6e2c4accf28e8db87c0e725b36aba21a2362a2"
-review_archive_schema_sha256: "53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad"
-review_summary_schema_sha256: "ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0"
-evidence_manifest_schema_sha256: "70fd1c72382f5ab847e3eb2eb40f135abb628f46c2a1e5ebf006acdba81c8e0f"
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: P0
+commit: unborn-master-no-commit
+algorithm_spec_source_sha256: 2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed
+failure_source_sha256: df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: e78cfebc3cce75fbe632c1d0384f59eee7168a27c81d7326c1f02362584b26bc
+source_map_sha256: c3fc89dd76d1bf68684ad5359f6e2c4accf28e8db87c0e725b36aba21a2362a2
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0
+evidence_manifest_schema_sha256: 70fd1c72382f5ab847e3eb2eb40f135abb628f46c2a1e5ebf006acdba81c8e0f
 evidence_files:
-  - path: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/pack_manifest_check.txt"
-    sha256: "73267b8b8c4cf38e8cac7cf529c6743f6d95fb765177983d0e52397c28bff363"
-    purpose: "Verifies imported pack files match PACK_MANIFEST.sha256."
-  - path: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/schema_mirror_check.txt"
-    sha256: "a5631d8ced96046c223548decf27d3cb3842eaf97a81945e1ca154bad91a6fd8"
-    purpose: "Verifies REVIEW_SUMMARY_SCHEMA.yaml and schemas/review_summary.schema.yaml are byte-identical by hash."
-  - path: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/yaml_parse_check.txt"
-    sha256: "17a1b20d79bc2bc4680255cbbfd3fefce6b8582c63a676c1a337ae72099e9024"
-    purpose: "Records local YAML parse check for schema files."
-  - path: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/docs_ai_file_list.txt"
-    sha256: "e53bf6da7eb2d6476b317422434874bbd87eb0d0d0464b7f058c58cc78954760"
-    purpose: "Records imported docs/ai file list after setup."
-  - path: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/git_status_untracked.txt"
-    sha256: "6853b651110a7f25d48aa5f64cdca9e0210d6d753d999d55f24645ae75cb05e8"
-    purpose: "Records git status after import before final archive files were added."
-  - path: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/p0_directory_check.txt"
-    sha256: "144f2b20af5e90aa63565f6b17dd1119a7e046e4ab406083cfd8abd06d355d4b"
-    purpose: "Records presence of P0 evidence and review directories."
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/pack_manifest_check.txt
+  sha256: 73267b8b8c4cf38e8cac7cf529c6743f6d95fb765177983d0e52397c28bff363
+  purpose: Verifies imported pack files match PACK_MANIFEST.sha256.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/schema_mirror_check.txt
+  sha256: a5631d8ced96046c223548decf27d3cb3842eaf97a81945e1ca154bad91a6fd8
+  purpose: Verifies REVIEW_SUMMARY_SCHEMA.yaml and schemas/review_summary.schema.yaml
+    are byte-identical by hash.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/yaml_parse_check.txt
+  sha256: 17a1b20d79bc2bc4680255cbbfd3fefce6b8582c63a676c1a337ae72099e9024
+  purpose: Records local YAML parse check for schema files.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/docs_ai_file_list.txt
+  sha256: 468f060be4efc62212878df6acd2fb38a6caef7ec96151e291f734ae094a8ceb
+  purpose: Records imported docs/ai file list after setup.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/git_status_untracked.txt
+  sha256: 4bd8a593e4775df231959b255604be845b539698e15d3f8320af1fe2ceca889a
+  purpose: Records git status after import before final archive files were added.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/p0_directory_check.txt
+  sha256: 144f2b20af5e90aa63565f6b17dd1119a7e046e4ab406083cfd8abd06d355d4b
+  purpose: Records presence of P0 evidence and review directories.
 command_outputs:
-  - command: "PowerShell PACK_MANIFEST.sha256 verification over workspace files"
-    cwd: "C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry"
-    exit_code: 0
-    output_path: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/pack_manifest_check.txt"
-    output_sha256: "73267b8b8c4cf38e8cac7cf529c6743f6d95fb765177983d0e52397c28bff363"
-    finished_at_utc: "20260704-221429Z"
-  - command: "PowerShell Get-FileHash schema mirror check"
-    cwd: "C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry"
-    exit_code: 0
-    output_path: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/schema_mirror_check.txt"
-    output_sha256: "a5631d8ced96046c223548decf27d3cb3842eaf97a81945e1ca154bad91a6fd8"
-    finished_at_utc: "20260704-221429Z"
-  - command: "python - YAML parse check for review/evidence schemas"
-    cwd: "C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry"
-    exit_code: 0
-    output_path: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/yaml_parse_check.txt"
-    output_sha256: "17a1b20d79bc2bc4680255cbbfd3fefce6b8582c63a676c1a337ae72099e9024"
-    finished_at_utc: "20260704-221429Z"
-  - command: "Get-ChildItem docs/ai -Recurse -File"
-    cwd: "C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry"
-    exit_code: 0
-    output_path: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/docs_ai_file_list.txt"
-    output_sha256: "e53bf6da7eb2d6476b317422434874bbd87eb0d0d0464b7f058c58cc78954760"
-    finished_at_utc: "20260704-221429Z"
-  - command: "git status --short --untracked-files=all"
-    cwd: "C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry"
-    exit_code: 0
-    output_path: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/git_status_untracked.txt"
-    output_sha256: "6853b651110a7f25d48aa5f64cdca9e0210d6d753d999d55f24645ae75cb05e8"
-    finished_at_utc: "20260704-221429Z"
+- command: PowerShell PACK_MANIFEST.sha256 verification over workspace files
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/pack_manifest_check.txt
+  output_sha256: 73267b8b8c4cf38e8cac7cf529c6743f6d95fb765177983d0e52397c28bff363
+  finished_at_utc: 20260704-221429Z
+- command: PowerShell Get-FileHash schema mirror check
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/schema_mirror_check.txt
+  output_sha256: a5631d8ced96046c223548decf27d3cb3842eaf97a81945e1ca154bad91a6fd8
+  finished_at_utc: 20260704-221429Z
+- command: python - YAML parse check for review/evidence schemas
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/yaml_parse_check.txt
+  output_sha256: 17a1b20d79bc2bc4680255cbbfd3fefce6b8582c63a676c1a337ae72099e9024
+  finished_at_utc: 20260704-221429Z
+- command: Get-ChildItem docs/ai -Recurse -File
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/docs_ai_file_list.txt
+  output_sha256: 468f060be4efc62212878df6acd2fb38a6caef7ec96151e291f734ae094a8ceb
+  finished_at_utc: 20260704-221429Z
+- command: git status --short --untracked-files=all
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/git_status_untracked.txt
+  output_sha256: 4bd8a593e4775df231959b255604be845b539698e15d3f8320af1fe2ceca889a
+  finished_at_utc: 20260704-221429Z
 static_scans:
-  - scan_id: "p0-pack-manifest"
-    command: "PowerShell PACK_MANIFEST.sha256 verification over workspace files"
-    forbidden_pattern: "hash mismatch or missing imported file"
-    result: "pass"
-    output_path: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/pack_manifest_check.txt"
-  - scan_id: "p0-schema-mirror"
-    command: "PowerShell Get-FileHash schema mirror check"
-    forbidden_pattern: "non-identical review schema mirror"
-    result: "pass"
-    output_path: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/schema_mirror_check.txt"
-function_implementation_table: "not_applicable_p0_import_admission_no_solver_code"
+- scan_id: p0-pack-manifest
+  command: PowerShell PACK_MANIFEST.sha256 verification over workspace files
+  forbidden_pattern: hash mismatch or missing imported file
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/pack_manifest_check.txt
+- scan_id: p0-schema-mirror
+  command: PowerShell Get-FileHash schema mirror check
+  forbidden_pattern: non-identical review schema mirror
+  result: pass
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/schema_mirror_check.txt
+function_implementation_table: not_applicable_p0_import_admission_no_solver_code
 related_reviews:
-  - "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-221429Z/response.md"
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-221429Z/response.md
 known_limitations:
-  - "This archive records draft Base Spec/Plan admission only; it does not close P0 or prove solver behavior."
-  - "Independent executable JSON Schema validation was not run because local Python lacks jsonschema."
-  - "Implementation must wait for explicit user approval of both Base Spec and Plan."
+- This archive records draft Base Spec/Plan admission only; it does not close P0 or
+  prove solver behavior.
+- Independent executable JSON Schema validation was not run because local Python lacks
+  jsonschema.
+- Implementation must wait for explicit user approval of both Base Spec and Plan.
 algorithmic_claims_made: []
-claim_ceiling_after_phase: "SCAFFOLD_READY"
+claim_ceiling_after_phase: SCAFFOLD_READY
 commands_are_fresh: true
 no_untracked_evidence_omitted: false

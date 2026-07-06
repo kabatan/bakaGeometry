@@ -60,7 +60,8 @@ commands_inspected:
 - cargo fmt --manifest-path geosolver-core/Cargo.toml --check
 - cargo test --manifest-path geosolver-core/Cargo.toml p10_ -- --nocapture
 - cargo test --manifest-path geosolver-core/Cargo.toml
-- rg forbidden P10 shortcut names and fallback APIs in compose, status, Universal, and TargetRelationSearch files
+- rg forbidden P10 shortcut names and fallback APIs in compose, status, Universal,
+  and TargetRelationSearch files
 - rg CertifiedNonFiniteTargetImage locations
 - rg P10 hardcase and no-local-nonfinite polarity anchors
 - rg P10 implementation anchors
@@ -70,7 +71,9 @@ commands_inspected:
 function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P10/function_implementation_table.yaml
 algorithmic_sufficiency:
   verdict: sufficient
-  rationale: Reviewer inspected P10 source, status mapping, nonfinite polarity paths, and evidence and found message-only composition, target-only final support, and positive certificate-gated nonfinite finalization sufficient for P10 scope.
+  rationale: Reviewer inspected P10 source, status mapping, nonfinite polarity paths,
+    and evidence and found message-only composition, target-only final support, and
+    positive certificate-gated nonfinite finalization sufficient for P10 scope.
 forbidden_pattern_scan:
   heavy_fallback: pass
   narrow_slice_escape: pass
@@ -88,8 +91,10 @@ forbidden_pattern_scan:
   appendix_override_bypass: pass
   stress_fixture_dispatch: pass
 not_applicable_justifications:
-  forbidden_pattern_scan.weak_action_krylov_coverage: ActionKrylov coverage belongs to P8c and is not modified by P10.
-  suite_partition_checks[0]: P15-only acceptance suite partition is not active in P10; no candidate-cover core, exact-image core, or final acceptance claim is made.
+  forbidden_pattern_scan.weak_action_krylov_coverage: ActionKrylov coverage belongs
+    to P8c and is not modified by P10.
+  suite_partition_checks[0]: P15-only acceptance suite partition is not active in
+    P10; no candidate-cover core, exact-image core, or final acceptance claim is made.
 raw_response_consistency:
   raw_response_contains_blocker: false
   raw_response_contains_required_fix: false
@@ -99,46 +104,61 @@ phase_specific_checks:
 - check_id: p10-message-only-composition
   required_by: RGQ-026
   verdict: pass
-  evidence: Reviewer found compose.rs validates message hash/export boundaries and passes only merged message relations into separator elimination.
-  reviewer_rationale: P10 composition consumes projection messages rather than reconstructing the original full coordinate system.
+  evidence: Reviewer found compose.rs validates message hash/export boundaries and
+    passes only merged message relations into separator elimination.
+  reviewer_rationale: P10 composition consumes projection messages rather than reconstructing
+    the original full coordinate system.
 - check_id: p10-separator-elimination-message-only
   required_by: RGQ-026
   verdict: pass
-  evidence: Reviewer found separator_elimination.rs builds a synthetic message-only system and runs target-relation search.
-  reviewer_rationale: Separator elimination uses only message relations and target-direct kernels.
+  evidence: Reviewer found separator_elimination.rs builds a synthetic message-only
+    system and runs target-relation search.
+  reviewer_rationale: Separator elimination uses only message relations and target-direct
+    kernels.
 - check_id: p10-target-only-final-support
   required_by: RGQ-026
   verdict: pass
-  evidence: Reviewer found final_support.rs builds support only from relations with variables contained in {T}; no support returns AlgorithmicHardCase.
-  reviewer_rationale: P10 does not turn no target-only support into nonfinite without a certificate.
+  evidence: Reviewer found final_support.rs builds support only from relations with
+    variables contained in {T}; no support returns AlgorithmicHardCase.
+  reviewer_rationale: P10 does not turn no target-only support into nonfinite without
+    a certificate.
 - check_id: p10-positive-nonfinite-certificate
   required_by: RGQ-045
   verdict: pass
-  evidence: Reviewer found NonFiniteCertificate creation and verification before public CertifiedNonFiniteTargetImage finalization.
-  reviewer_rationale: Relation-search exhaustion and local Universal failure remain disjoint from certified nonfinite status.
+  evidence: Reviewer found NonFiniteCertificate creation and verification before public
+    CertifiedNonFiniteTargetImage finalization.
+  reviewer_rationale: Relation-search exhaustion and local Universal failure remain
+    disjoint from certified nonfinite status.
 - check_id: p10-rgq058-status-mapping
   required_by: RGQ-058
   verdict: pass
-  evidence: Reviewer found status.rs keeps statuses out of SolverErrorKind and output.rs maps SolverError through public_status; final nonfinite goes through TargetSolveResult finalization.
+  evidence: Reviewer found status.rs keeps statuses out of SolverErrorKind and output.rs
+    maps SolverError through public_status; final nonfinite goes through TargetSolveResult
+    finalization.
   reviewer_rationale: Public status mapping is explicit and reviewed for P10.
 appendix_override_checks:
 - appendix_section: Appendix A section 24.3
   controlling_requirement: RGQ-057
   verdict: pass
-  evidence: Separator elimination is restricted to message relations and does not reintroduce original local coordinate relations.
+  evidence: Separator elimination is restricted to message relations and does not
+    reintroduce original local coordinate relations.
   reviewer_rationale: P10 follows RGQ-057 hardening over any weaker Appendix wording.
 - appendix_section: Appendix A section 24.4
   controlling_requirement: RGQ-045
   verdict: pass
-  evidence: Final support no-target-only branch does not certify nonfinite unless certify_nonfinite_target_image succeeds.
+  evidence: Final support no-target-only branch does not certify nonfinite unless
+    certify_nonfinite_target_image succeeds.
   reviewer_rationale: P10 follows RGQ-045/RGQ-051 hardening requiring positive proof.
 status_mapping_checks:
-- error_or_internal_condition: No target-only relation after composition and nonfiniteness not certified
+- error_or_internal_condition: No target-only relation after composition and nonfiniteness
+    not certified
   mapped_solver_status: AlgorithmicHardCase
   verdict: pass
-  evidence: final_support.rs no-support branch returns AlgorithmicHardCase unless positive nonfinite certification succeeds.
+  evidence: final_support.rs no-support branch returns AlgorithmicHardCase unless
+    positive nonfinite certification succeeds.
   reviewer_rationale: Matches RGQ-051 polarity.
-- error_or_internal_condition: TargetRelationSearch exhausts without target/separator relation
+- error_or_internal_condition: TargetRelationSearch exhausts without target/separator
+    relation
   mapped_solver_status: AlgorithmicHardCase
   verdict: pass
   evidence: target_relation_search.rs exhaustion path remains AlgorithmicHardCase.
@@ -146,13 +166,16 @@ status_mapping_checks:
 - error_or_internal_condition: Verified positive NonFiniteCertificate finalized
   mapped_solver_status: CertifiedNonFiniteTargetImage
   verdict: pass
-  evidence: finalize_nonfinite_result re-verifies NonFiniteCertificate against the composed projection before returning TargetSolveResult with CertifiedNonFiniteTargetImage.
-  reviewer_rationale: CertifiedNonFiniteTargetImage is produced through the reviewed final-support positive-certificate route.
+  evidence: finalize_nonfinite_result re-verifies NonFiniteCertificate against the
+    composed projection before returning TargetSolveResult with CertifiedNonFiniteTargetImage.
+  reviewer_rationale: CertifiedNonFiniteTargetImage is produced through the reviewed
+    final-support positive-certificate route.
 suite_partition_checks:
 - suite_name: not_applicable
   verdict: not_applicable
   evidence: P15 acceptance suite partition is not active in P10.
-  reviewer_rationale: P10 closes MECH-009 and MECH-015 only and makes no candidate-cover core, exact-image core, or final acceptance claim.
+  reviewer_rationale: P10 closes MECH-009 and MECH-015 only and makes no candidate-cover
+    core, exact-image core, or final acceptance claim.
 semantic_deletion_challenges: []
 tamper_challenges:
 - challenge_id: p10-tampered-message-relation
@@ -161,13 +184,18 @@ tamper_challenges:
   evidence: p10_tampered_message_relation_is_rejected_before_composition passes.
   reviewer_rationale: Composition rejects tampered message relation before use.
 - challenge_id: p10-nonfinite-certificate-binding
-  target: NonFiniteCertificate binding to composed projection before public nonfinite finalization
+  target: NonFiniteCertificate binding to composed projection before public nonfinite
+    finalization
   verdict: pass
-  evidence: p10_certified_nonfinite_system_uses_positive_certificate_only passes and reviewer found final nonfinite re-verification.
+  evidence: p10_certified_nonfinite_system_uses_positive_certificate_only passes and
+    reviewer found final nonfinite re-verification.
   reviewer_rationale: Public nonfinite status is certificate-gated.
 unresolved_risks:
-- The nonfinite certificate is intentionally narrow; broad nonfinite completeness is not claimed.
-- P10 does not assess P11 replay/certificate closure, P12 roots/decode, public orchestration, performance readiness, final acceptance, or exact-image completion beyond the P10 real-nonfinite certificate function.
+- The nonfinite certificate is intentionally narrow; broad nonfinite completeness
+  is not claimed.
+- P10 does not assess P11 replay/certificate closure, P12 roots/decode, public orchestration,
+  performance readiness, final acceptance, or exact-image completion beyond the P10
+  real-nonfinite certificate function.
 blocking_findings: []
 required_fixes: []
 pass_conditions:

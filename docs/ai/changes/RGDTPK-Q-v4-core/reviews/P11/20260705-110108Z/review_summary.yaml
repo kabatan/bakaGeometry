@@ -83,7 +83,10 @@ commands_inspected:
 function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P11/function_implementation_table.yaml
 algorithmic_sufficiency:
   verdict: sufficient
-  rationale: Reviewer verified exact projection-message payload replay, global support replay, run certificate hash binding, compression/hypergraph replay checks, P11-scoped invariant derivation, public kernel replay delegation, tamper/deletion tests, and fresh spec/quality PASS evidence for P11 scope.
+  rationale: Reviewer verified exact projection-message payload replay, global support
+    replay, run certificate hash binding, compression/hypergraph replay checks, P11-scoped
+    invariant derivation, public kernel replay delegation, tamper/deletion tests,
+    and fresh spec/quality PASS evidence for P11 scope.
 forbidden_pattern_scan:
   heavy_fallback: pass
   narrow_slice_escape: pass
@@ -101,8 +104,11 @@ forbidden_pattern_scan:
   appendix_override_bypass: pass
   stress_fixture_dispatch: pass
 not_applicable_justifications:
-  status_mapping_checks[0]: P11 does not add or change public SolverStatus mapping; replay returns boolean acceptance and status mapping remains for later integration phases.
-  suite_partition_checks[0]: P15-only acceptance suite partition is not active in P11; no candidate-cover core, exact-image core, or final acceptance claim is made.
+  status_mapping_checks[0]: P11 does not add or change public SolverStatus mapping;
+    replay returns boolean acceptance and status mapping remains for later integration
+    phases.
+  suite_partition_checks[0]: P15-only acceptance suite partition is not active in
+    P11; no candidate-cover core, exact-image core, or final acceptance claim is made.
 raw_response_consistency:
   raw_response_contains_blocker: false
   raw_response_contains_required_fix: false
@@ -112,45 +118,60 @@ phase_specific_checks:
 - check_id: p11-exact-certificate-payload-replay
   required_by: RGQ-027
   verdict: pass
-  evidence: Reviewer accepted that KernelCertificatePayload variants and verify_projection_message perform exact route-specific replay and reject binding-only or synthetic payloads.
-  reviewer_rationale: Hash-only or unconditional certificate acceptance was specifically challenged and remediated.
+  evidence: Reviewer accepted that KernelCertificatePayload variants and verify_projection_message
+    perform exact route-specific replay and reject binding-only or synthetic payloads.
+  reviewer_rationale: Hash-only or unconditional certificate acceptance was specifically
+    challenged and remediated.
 - check_id: p11-run-certificate-hash-binding
   required_by: RGQ-038
   verdict: pass
-  evidence: Replay recomputes input, canonical, compression, hypergraph, projection DAG, message, plan, support, root, candidate, and invariant hashes.
+  evidence: Replay recomputes input, canonical, compression, hypergraph, projection
+    DAG, message, plan, support, root, candidate, and invariant hashes.
   reviewer_rationale: The prior compression/hypergraph hash gap was fixed and tamper-tested.
 - check_id: p11-invariant-flag-discipline
   required_by: RGQ-040
   verdict: pass
-  evidence: derive_core_invariant_flags leaves unsupported final anti-dispatch/QE-CAD flags false and replay requires only P11-supported invariants via p11_replay_enforced.
-  reviewer_rationale: P11 no longer overclaims broad invariants without enforcement evidence.
+  evidence: derive_core_invariant_flags leaves unsupported final anti-dispatch/QE-CAD
+    flags false and replay requires only P11-supported invariants via p11_replay_enforced.
+  reviewer_rationale: P11 no longer overclaims broad invariants without enforcement
+    evidence.
 - check_id: p11-public-kernel-replay
   required_by: RGQ-027
   verdict: pass
-  evidence: Public kernel replay implementations delegate to exact_replay_result, which calls verify_projection_message.
-  reviewer_rationale: A direct kernel.replay caller cannot accept a forged payload rejected by the verifier.
+  evidence: Public kernel replay implementations delegate to exact_replay_result,
+    which calls verify_projection_message.
+  reviewer_rationale: A direct kernel.replay caller cannot accept a forged payload
+    rejected by the verifier.
 - check_id: p11-deletion-and-tamper-challenges
   required_by: RGQ-053
   verdict: pass
-  evidence: Focused P11 tests include deletion, synthetic certificate, forged payload, dependency cycle, compression/hypergraph, and run hash tamper challenges.
-  reviewer_rationale: P11 includes semantic deletion and tamper tests required by the phase prompt.
+  evidence: Focused P11 tests include deletion, synthetic certificate, forged payload,
+    dependency cycle, compression/hypergraph, and run hash tamper challenges.
+  reviewer_rationale: P11 includes semantic deletion and tamper tests required by
+    the phase prompt.
 appendix_override_checks:
 - appendix_section: Appendix A section 25
   controlling_requirement: RGQ-027
   verdict: pass
-  evidence: Projection messages verify exported variables, source authorization, certificate binding, and exact route-specific proof payloads before replay acceptance.
-  reviewer_rationale: P11 follows hardening requirements and does not rely on hash-only certificates.
+  evidence: Projection messages verify exported variables, source authorization, certificate
+    binding, and exact route-specific proof payloads before replay acceptance.
+  reviewer_rationale: P11 follows hardening requirements and does not rely on hash-only
+    certificates.
 status_mapping_checks:
-- error_or_internal_condition: P11 replay acceptance and certificate verification failure
+- error_or_internal_condition: P11 replay acceptance and certificate verification
+    failure
   mapped_solver_status: not_applicable
   verdict: not_applicable
-  evidence: P11 replay returns ReplayResult acceptance and does not introduce or alter public SolverStatus mapping.
-  reviewer_rationale: Status mapping is not part of P11 closure and remains for later integration phases.
+  evidence: P11 replay returns ReplayResult acceptance and does not introduce or alter
+    public SolverStatus mapping.
+  reviewer_rationale: Status mapping is not part of P11 closure and remains for later
+    integration phases.
 suite_partition_checks:
 - suite_name: not_applicable
   verdict: not_applicable
   evidence: P15 acceptance suite partition is not active in P11.
-  reviewer_rationale: P11 closes replay/certificates only and makes no candidate-cover core, exact-image core, or final acceptance claim.
+  reviewer_rationale: P11 closes replay/certificates only and makes no candidate-cover
+    core, exact-image core, or final acceptance claim.
 semantic_deletion_challenges:
 - challenge_id: p11-projection-message-deletion
   target: Run replay with a deleted projection message
@@ -159,7 +180,8 @@ semantic_deletion_challenges:
   reviewer_rationale: Replay rejects semantic deletion of required projection evidence.
 tamper_challenges:
 - challenge_id: p11-run-hash-binding-tamper
-  target: Input, canonical, compression, hypergraph, DAG, plan, support certificate, invariant, and squarefree fields
+  target: Input, canonical, compression, hypergraph, DAG, plan, support certificate,
+    invariant, and squarefree fields
   verdict: pass
   evidence: p11_replay_fails_on_input_canonical_dag_plan_and_squarefree_tamper passes.
   reviewer_rationale: Self-consistently rehashed field tampering is rejected by replay.
@@ -169,13 +191,17 @@ tamper_challenges:
   evidence: p11_replay_fails_on_support_root_and_candidate_tamper passes.
   reviewer_rationale: Root and candidate hashes remain bound to the support.
 - challenge_id: p11-forged-payload-tamper
-  target: TargetAction, RegularChain, SparseResultant, NormTrace, and Universal forged payloads
+  target: TargetAction, RegularChain, SparseResultant, NormTrace, and Universal forged
+    payloads
   verdict: pass
-  evidence: P11 forged-payload tests pass through verify_projection_message and public kernel replay rejection paths.
+  evidence: P11 forged-payload tests pass through verify_projection_message and public
+    kernel replay rejection paths.
   reviewer_rationale: Hash-consistent forged payloads are rejected by exact replay.
 unresolved_risks:
-- P11 replay is scoped to certificate/support/projection-message replay; final anti-dispatch/QE-CAD, root/decode completion, orchestration, and stress coverage remain outside this phase.
-- build_core_run_certificate is currently exercised from tests; later production orchestration needs reviewer-callable smoke coverage when wired in.
+- P11 replay is scoped to certificate/support/projection-message replay; final anti-dispatch/QE-CAD,
+  root/decode completion, orchestration, and stress coverage remain outside this phase.
+- build_core_run_certificate is currently exercised from tests; later production orchestration
+  needs reviewer-callable smoke coverage when wired in.
 - No R-ID is marked VERIFIED by the P11 review.
 blocking_findings: []
 required_fixes: []

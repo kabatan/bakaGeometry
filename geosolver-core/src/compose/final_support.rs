@@ -291,6 +291,7 @@ pub fn finalize_nonfinite_result(
         projection_messages,
         certificate: None::<CoreRunCertificate>,
         exact_image_certificate: None,
+        nonfinite_certificate: Some(cert.clone()),
         diagnostics: vec![DiagnosticRecord::new(
             "CertifiedNonFiniteTargetImage",
             format!(
@@ -347,6 +348,7 @@ pub fn finalize_candidate_cover_result(
         projection_messages,
         certificate: None::<CoreRunCertificate>,
         exact_image_certificate: None,
+        nonfinite_certificate: None,
         diagnostics,
         cost_trace,
     })
@@ -602,7 +604,7 @@ fn hash_zero_certificate(cert: &TargetEliminationZeroCertificate) -> Hash {
     hash_sequence("target-elimination-zero-certificate", &chunks)
 }
 
-fn hash_nonfinite_certificate(cert: &NonFiniteCertificate) -> Hash {
+pub fn hash_nonfinite_certificate(cert: &NonFiniteCertificate) -> Hash {
     let mut chunks = vec![
         cert.target.0.to_be_bytes().to_vec(),
         cert.composed_hash.0.to_vec(),

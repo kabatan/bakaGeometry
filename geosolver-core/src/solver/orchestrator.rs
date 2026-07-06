@@ -170,6 +170,7 @@ pub fn solve_with_context(
                 &messages,
                 Some(&support),
                 &roots,
+                exact_image_certificate.as_ref(),
                 Some(&support_certificate),
             );
             let cost_trace = step_cost_trace(
@@ -219,6 +220,7 @@ pub fn solve_with_context(
                 projection_messages: messages,
                 certificate: Some(certificate),
                 exact_image_certificate,
+                nonfinite_certificate: None,
                 diagnostics,
                 cost_trace,
             };

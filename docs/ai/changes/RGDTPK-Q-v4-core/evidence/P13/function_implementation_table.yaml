@@ -1,8 +1,9 @@
 phase: P13
-status: evidence_prepared_review_pending
+status: reviewer_passed
 claim_boundary: >
   P13 implements exact-image finite classification and exact-image nonfinite gate evidence.
-  Exact-image readiness is not claimed until P13 reviewers pass.
+  P13 reviewer pass closes MECH-012 only; P16 remains responsible for final exact-image readiness
+  and acceptance claims.
 functions:
   - spec: "fiber/exact_image.rs::classify_real_target_image"
     implementation: "geosolver-core/src/fiber/exact_image.rs::classify_real_target_image"

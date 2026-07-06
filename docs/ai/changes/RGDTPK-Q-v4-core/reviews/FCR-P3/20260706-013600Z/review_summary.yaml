@@ -12,9 +12,9 @@ review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3ba
 evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
 schema_mirror_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
 commit: 9aecc2ae3b5dd3841a262521a00b1edddca831e0+fcr-p3-worktree
-prompt_sha256: 01ca48e56885b692a29498053cdfa4b1270a2a2fe10f865b1d292cbc050782e6
-response_sha256: 4916e6a24a3ee237383119f2c239c2ff59907cc3f513224a8578eb8c289d9087
-evidence_manifest_sha256: 4783fbfeb4a745325db301fbe6f8eb25dcc2432d0fd9bb510b738de36b753282
+prompt_sha256: 4ed502452c3b6df3961d55908447e9416e07b8d590037886aaf10cfcc5be5016
+response_sha256: 61e718fc7bf6d97c8ceca5bdca0e2c285cc175d6396c8cfda97cd69270226911
+evidence_manifest_sha256: 78d979185d4106682a2d6af72a3a7183d18f18bfc9e834d23cb9dbf67d2459ac
 prompt_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P3/20260706-013600Z/prompt.md
 response_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P3/20260706-013600Z/response.md
 evidence_manifest_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P3/20260706-013600Z/evidence_manifest.yaml
@@ -63,7 +63,9 @@ commands_inspected:
 function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_PRODUCTION_AUDIT.md
 algorithmic_sufficiency:
   verdict: sufficient
-  rationale: FCR-P3 integrates the public candidate-cover pipeline surface from API through final certificate for currently admitted production kernels, while explicitly preserving later phases for generic kernel coverage.
+  rationale: FCR-P3 integrates the public candidate-cover pipeline surface from API
+    through final certificate for currently admitted production kernels, while explicitly
+    preserving later phases for generic kernel coverage.
 forbidden_pattern_scan:
   heavy_fallback: pass
   narrow_slice_escape: pass
@@ -81,9 +83,12 @@ forbidden_pattern_scan:
   appendix_override_bypass: pass
   stress_fixture_dispatch: pass
 not_applicable_justifications:
-  status_mapping_checks[0]: FCR-P3 maps unsupported production kernel selection to existing AlgorithmicHardCase and does not add new public status variants.
-  suite_partition_checks[0]: FCR-P3 adds one public pipeline integration oracle; full acceptance-suite partitioning remains later FCR work.
-  semantic_deletion_challenges: FCR-P3 does not delete source semantics; it wires the existing public pipeline.
+  status_mapping_checks[0]: FCR-P3 maps unsupported production kernel selection to
+    existing AlgorithmicHardCase and does not add new public status variants.
+  suite_partition_checks[0]: FCR-P3 adds one public pipeline integration oracle; full
+    acceptance-suite partitioning remains later FCR work.
+  semantic_deletion_challenges: FCR-P3 does not delete source semantics; it wires
+    the existing public pipeline.
 raw_response_consistency:
   raw_response_contains_blocker: false
   raw_response_contains_required_fix: false
@@ -93,50 +98,68 @@ phase_specific_checks:
 - check_id: fcr-p3-temporary-pipeline-removed
   required_by: FCR-P3
   verdict: pass
-  evidence: No temporary_pipeline_not_connected call remains in api.rs, solver/orchestrator.rs, or solver/pipeline.rs.
-  reviewer_rationale: The public API no longer exits through the temporary placeholder path.
+  evidence: No temporary_pipeline_not_connected call remains in api.rs, solver/orchestrator.rs,
+    or solver/pipeline.rs.
+  reviewer_rationale: The public API no longer exits through the temporary placeholder
+    path.
 - check_id: fcr-p3-required-stage-order
   required_by: FCR-P3
   verdict: pass
-  evidence: solve_with_context calls validation, canonicalization, compression, graph/DAG, planning, execution, verification, composition, support, roots, certificate, and finalization steps.
+  evidence: solve_with_context calls validation, canonicalization, compression, graph/DAG,
+    planning, execution, verification, composition, support, roots, certificate, and
+    finalization steps.
   reviewer_rationale: The orchestrator follows the FCR-P3 candidate-cover stage order.
 - check_id: fcr-p3-dag-planner-kernel-execution
   required_by: FCR-P3
   verdict: pass
-  evidence: step_plan calls plan_all_blocks; step_execute executes declared ladder plans in child-first DAG order with child messages.
-  reviewer_rationale: The orchestrator does not hand-build projection messages or skip DAG/planner/kernel execution.
+  evidence: step_plan calls plan_all_blocks; step_execute executes declared ladder
+    plans in child-first DAG order with child messages.
+  reviewer_rationale: The orchestrator does not hand-build projection messages or
+    skip DAG/planner/kernel execution.
 - check_id: fcr-p3-message-and-support-verification
   required_by: FCR-010/FCR-P3
   verdict: pass
-  evidence: step_execute and step_verify_messages call verify_projection_message with actual block KernelContext; finite success calls verify_global_support.
-  reviewer_rationale: Public finite success is backed by exact message and support verification.
+  evidence: step_execute and step_verify_messages call verify_projection_message with
+    actual block KernelContext; finite success calls verify_global_support.
+  reviewer_rationale: Public finite success is backed by exact message and support
+    verification.
 - check_id: fcr-p3-public-success-result-fields
   required_by: FCR-P3
   verdict: pass
-  evidence: p3_public_pipeline_integration confirms CertifiedCandidateCover includes support, squarefree support, roots, candidates, projection messages, cost trace, and CoreRunCertificate with final DAG evidence hash.
+  evidence: p3_public_pipeline_integration confirms CertifiedCandidateCover includes
+    support, squarefree support, roots, candidates, projection messages, cost trace,
+    and CoreRunCertificate with final DAG evidence hash.
   reviewer_rationale: The public result is not a placeholder success.
 appendix_override_checks:
 - appendix_section: Appendix A sections 0-34
   controlling_requirement: FCR-P3
   verdict: pass
-  evidence: FCR-P3 integrates the public pipeline without claiming full candidate-cover readiness or P13 exact-image completion.
-  reviewer_rationale: The corrective FCR overlay remains controlling and later generic kernel obligations are not bypassed.
+  evidence: FCR-P3 integrates the public pipeline without claiming full candidate-cover
+    readiness or P13 exact-image completion.
+  reviewer_rationale: The corrective FCR overlay remains controlling and later generic
+    kernel obligations are not bypassed.
 status_mapping_checks:
 - error_or_internal_condition: Empty declared production kernel ladder
   mapped_solver_status: AlgorithmicHardCase
   verdict: pass
-  evidence: plan_all_blocks returns AlgorithmicHardCase when no admitted production projection kernel exists for a block.
-  reviewer_rationale: Unsupported shapes now produce bounded public failure instead of temporary or implementation placeholder success.
+  evidence: plan_all_blocks returns AlgorithmicHardCase when no admitted production
+    projection kernel exists for a block.
+  reviewer_rationale: Unsupported shapes now produce bounded public failure instead
+    of temporary or implementation placeholder success.
 suite_partition_checks:
 - suite_name: not_applicable
   verdict: not_applicable
-  evidence: FCR-P3 is integration wiring plus one public finite oracle, not the FCR-P15 acceptance suite.
-  reviewer_rationale: Full support-producing, exact-image, and failure/nonfinite suite partitioning remains later work.
+  evidence: FCR-P3 is integration wiring plus one public finite oracle, not the FCR-P15
+    acceptance suite.
+  reviewer_rationale: Full support-producing, exact-image, and failure/nonfinite suite
+    partitioning remains later work.
 semantic_deletion_challenges: []
 tamper_challenges: []
 unresolved_risks:
-- Advanced kernel production coverage remains quarantined or incomplete until later FCR phases.
-- FCR-P3 does not by itself justify CANDIDATE_COVER_CORE_READY, source fidelity, acceptance completion, P13 readiness, or advanced kernel readiness.
+- Advanced kernel production coverage remains quarantined or incomplete until later
+  FCR phases.
+- FCR-P3 does not by itself justify CANDIDATE_COVER_CORE_READY, source fidelity, acceptance
+  completion, P13 readiness, or advanced kernel readiness.
 - No R-ID is marked VERIFIED.
 blocking_findings: []
 required_fixes: []

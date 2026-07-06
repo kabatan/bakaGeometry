@@ -1,137 +1,167 @@
-schema_version: "rgdtpk-review-v2.2"
-phase_id: "P3f"
-phase_kind: "algorithmic"
-review_status: "PASS"
+schema_version: rgdtpk-review-v2.2
+phase_id: P3f
+phase_kind: algorithmic
+review_status: PASS
 phase_closable: true
-claim_ceiling_after_phase: "SCAFFOLD_READY"
-base_spec_sha256: "dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c"
-plan_sha256: "e78cfebc3cce75fbe632c1d0384f59eee7168a27c81d7326c1f02362584b26bc"
-source_map_sha256: "c3fc89dd76d1bf68684ad5359f6e2c4accf28e8db87c0e725b36aba21a2362a2"
-review_archive_schema_sha256: "53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad"
-review_summary_schema_sha256: "ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0"
-evidence_manifest_schema_sha256: "70fd1c72382f5ab847e3eb2eb40f135abb628f46c2a1e5ebf006acdba81c8e0f"
-schema_mirror_sha256: "ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0"
-commit: "unborn-master-no-commit"
-prompt_sha256: "18081a31943ccba7f20949273b8a677286263531d13a06a8e142eee5de9b7aa9"
-response_sha256: "e4e95d99ce7b51df19fd2b6d73786059bc06642d53292c2fbc8f423efe2878aa"
-evidence_manifest_sha256: "7e89925d2b4ffe268400ad54880e37a8aab0ae51d97a41a4ea60d01fc0de930e"
-prompt_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3f/20260705-014726Z/prompt.md"
-response_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3f/20260705-014726Z/response.md"
-evidence_manifest_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3f/20260705-014726Z/evidence_manifest.yaml"
-reviewer_identity: "guardian_boundary_reviewer"
-reviewed_rids: ["RGQ-023", "RGQ-024", "RGQ-028", "RGQ-029", "RGQ-058", "RGQ-059"]
-reviewed_mechs: ["MECH-007", "MECH-011", "MECH-012"]
+claim_ceiling_after_phase: SCAFFOLD_READY
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: e78cfebc3cce75fbe632c1d0384f59eee7168a27c81d7326c1f02362584b26bc
+source_map_sha256: c3fc89dd76d1bf68684ad5359f6e2c4accf28e8db87c0e725b36aba21a2362a2
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0
+evidence_manifest_schema_sha256: 70fd1c72382f5ab847e3eb2eb40f135abb628f46c2a1e5ebf006acdba81c8e0f
+schema_mirror_sha256: ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0
+commit: unborn-master-no-commit
+prompt_sha256: 18081a31943ccba7f20949273b8a677286263531d13a06a8e142eee5de9b7aa9
+response_sha256: e4e95d99ce7b51df19fd2b6d73786059bc06642d53292c2fbc8f423efe2878aa
+evidence_manifest_sha256: 7e89925d2b4ffe268400ad54880e37a8aab0ae51d97a41a4ea60d01fc0de930e
+prompt_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3f/20260705-014726Z/prompt.md
+response_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3f/20260705-014726Z/response.md
+evidence_manifest_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P3f/20260705-014726Z/evidence_manifest.yaml
+reviewer_identity: guardian_boundary_reviewer
+reviewed_rids:
+- RGQ-023
+- RGQ-024
+- RGQ-028
+- RGQ-029
+- RGQ-058
+- RGQ-059
+reviewed_mechs:
+- MECH-007
+- MECH-011
+- MECH-012
 source_sections_checked:
-  - "RGQ-023"
-  - "RGQ-024"
-  - "RGQ-028"
-  - "RGQ-029"
-  - "Appendix A sections 10.16 through 10.19"
-  - "PLAN.md P3f"
+- RGQ-023
+- RGQ-024
+- RGQ-028
+- RGQ-029
+- Appendix A sections 10.16 through 10.19
+- PLAN.md P3f
 files_inspected:
-  - "docs/ai/changes/RGDTPK-Q-v4-core/BASE_SPEC.md"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/PLAN.md"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_ARCHIVE_SCHEMA.md"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_SUMMARY_SCHEMA.yaml"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/schemas/evidence_manifest.schema.yaml"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/REVIEWER_PROMPTS.md"
-  - "geosolver-core/src/algebra/regular_chain.rs"
-  - "geosolver-core/src/algebra/norm_trace.rs"
-  - "geosolver-core/src/algebra/real_root.rs"
-  - "geosolver-core/src/algebra/sign.rs"
+- docs/ai/changes/RGDTPK-Q-v4-core/BASE_SPEC.md
+- docs/ai/changes/RGDTPK-Q-v4-core/PLAN.md
+- docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_ARCHIVE_SCHEMA.md
+- docs/ai/changes/RGDTPK-Q-v4-core/REVIEW_SUMMARY_SCHEMA.yaml
+- docs/ai/changes/RGDTPK-Q-v4-core/schemas/evidence_manifest.schema.yaml
+- docs/ai/changes/RGDTPK-Q-v4-core/REVIEWER_PROMPTS.md
+- geosolver-core/src/algebra/regular_chain.rs
+- geosolver-core/src/algebra/norm_trace.rs
+- geosolver-core/src/algebra/real_root.rs
+- geosolver-core/src/algebra/sign.rs
 evidence_inspected:
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3f/commands.txt"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3f/command_outputs.txt"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3f/static_scans.txt"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3f/function_implementation_table.yaml"
-  - "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3f/notes.md"
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3f/commands.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3f/command_outputs.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3f/static_scans.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3f/function_implementation_table.yaml
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3f/notes.md
 commands_inspected:
-  - "cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check"
-  - "cargo test --manifest-path geosolver-core/Cargo.toml algebra::real_root -- --nocapture"
-  - "cargo test --manifest-path geosolver-core/Cargo.toml algebra::sign -- --nocapture"
-  - "cargo test --manifest-path geosolver-core/Cargo.toml algebra::norm_trace -- --nocapture"
-  - "cargo test --manifest-path geosolver-core/Cargo.toml algebra::regular_chain -- --nocapture"
-  - "cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture"
-  - "rg forbidden implementation markers in P3f-owned files"
-  - "rg geometry dispatch, floating path, coordinate/full-RUR, fallback, and final-status overclaim patterns in P3f-owned files"
-  - "rg P3f required functions and exact/component/refinement markers"
-function_implementation_table: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3f/function_implementation_table.yaml"
+- cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+- cargo test --manifest-path geosolver-core/Cargo.toml algebra::real_root -- --nocapture
+- cargo test --manifest-path geosolver-core/Cargo.toml algebra::sign -- --nocapture
+- cargo test --manifest-path geosolver-core/Cargo.toml algebra::norm_trace -- --nocapture
+- cargo test --manifest-path geosolver-core/Cargo.toml algebra::regular_chain -- --nocapture
+- cargo test --manifest-path geosolver-core/Cargo.toml -- --nocapture
+- rg forbidden implementation markers in P3f-owned files
+- rg geometry dispatch, floating path, coordinate/full-RUR, fallback, and final-status
+  overclaim patterns in P3f-owned files
+- rg P3f required functions and exact/component/refinement markers
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P3f/function_implementation_table.yaml
 algorithmic_sufficiency:
-  verdict: "sufficient"
-  rationale: "Reviewer confirmed P3f required primitive functions are implemented with component/guard semantics, algebraic-form tower detection, exact resultant-backed norm verification, exact rational Sturm/root intervals, and exact sign/Thom helpers with non-success refinement boundaries."
+  verdict: sufficient
+  rationale: Reviewer confirmed P3f required primitive functions are implemented with
+    component/guard semantics, algebraic-form tower detection, exact resultant-backed
+    norm verification, exact rational Sturm/root intervals, and exact sign/Thom helpers
+    with non-success refinement boundaries.
 forbidden_pattern_scan:
-  heavy_fallback: "pass"
-  narrow_slice_escape: "pass"
-  hidden_fallback: "pass"
-  decorative_certificate: "pass"
-  placeholder_candidate: "not_applicable"
-  geometry_dispatch: "pass"
-  unsupported_for_well_formed_input: "pass"
-  exact_image_overclaim: "pass"
-  target_relation_schedule_discretion: "not_applicable"
-  weak_action_krylov_coverage: "not_applicable"
-  nonfinite_without_positive_proof: "pass"
-  non_spec_status: "pass"
-  required_function_deferred: "pass"
-  appendix_override_bypass: "pass"
-  stress_fixture_dispatch: "pass"
+  heavy_fallback: pass
+  narrow_slice_escape: pass
+  hidden_fallback: pass
+  decorative_certificate: pass
+  placeholder_candidate: not_applicable
+  geometry_dispatch: pass
+  unsupported_for_well_formed_input: pass
+  exact_image_overclaim: pass
+  target_relation_schedule_discretion: not_applicable
+  weak_action_krylov_coverage: not_applicable
+  nonfinite_without_positive_proof: pass
+  non_spec_status: pass
+  required_function_deferred: pass
+  appendix_override_bypass: pass
+  stress_fixture_dispatch: pass
 not_applicable_justifications:
-  "forbidden_pattern_scan.placeholder_candidate": "P3f implements algebra/root/sign primitives, not decoded target candidates."
-  "forbidden_pattern_scan.target_relation_schedule_discretion": "TargetRelationSearch scheduling belongs to P6/P8a, not P3f."
-  "forbidden_pattern_scan.weak_action_krylov_coverage": "ActionKrylov coverage belongs to P3e/P8c, not P3f."
-  "appendix_override_checks[0]": "RGQ-059 confirms P3f functions must be real implementations and not empty foundations; reviewer confirmed this stricter requirement is met."
-  "status_mapping_checks[0]": "P3f primitive APIs return SolverError for hard cases and do not introduce public SolverStatus variants."
-  "suite_partition_checks[0]": "P15 suite partition is not active in P3f."
+  forbidden_pattern_scan.placeholder_candidate: P3f implements algebra/root/sign primitives,
+    not decoded target candidates.
+  forbidden_pattern_scan.target_relation_schedule_discretion: TargetRelationSearch
+    scheduling belongs to P6/P8a, not P3f.
+  forbidden_pattern_scan.weak_action_krylov_coverage: ActionKrylov coverage belongs
+    to P3e/P8c, not P3f.
+  appendix_override_checks[0]: RGQ-059 confirms P3f functions must be real implementations
+    and not empty foundations; reviewer confirmed this stricter requirement is met.
+  status_mapping_checks[0]: P3f primitive APIs return SolverError for hard cases and
+    do not introduce public SolverStatus variants.
+  suite_partition_checks[0]: P15 suite partition is not active in P3f.
 raw_response_consistency:
   raw_response_contains_blocker: false
   raw_response_contains_required_fix: false
   summary_overrides_raw_response: false
   reviewer_declared_files_inspected: true
 phase_specific_checks:
-  - check_id: "p3f-regular-chain-component-semantics"
-    required_by: "Appendix A section 10.16 and RGQ-023"
-    verdict: "pass"
-    evidence: "Reviewer confirmed regular-chain code preserves guards/component semantics and uses projection semantics rather than dropping them."
-    reviewer_rationale: "Component/guard/projection semantics are carried in records and hashes."
-  - check_id: "p3f-norm-trace-algebraic-form"
-    required_by: "Appendix A section 10.17 and RGQ-024"
-    verdict: "pass"
-    evidence: "Reviewer confirmed tower detection is algebraic-form based and norm verification recomputes primitive-normalized resultant relations."
-    reviewer_rationale: "Detection does not branch on geometry names and verification is not unconditional."
-  - check_id: "p3f-exact-real-root-isolation"
-    required_by: "Appendix A section 10.18 and RGQ-028"
-    verdict: "pass"
-    evidence: "Reviewer confirmed root helpers use exact rational arithmetic, rational intervals, and Sturm logic."
-    reviewer_rationale: "No floating-only root path was found."
-  - check_id: "p3f-exact-sign-thom-boundary"
-    required_by: "Appendix A section 10.19 and RGQ-029"
-    verdict: "pass"
-    evidence: "Reviewer confirmed sign helpers return RefinementRequired when sign constancy is not certified."
-    reviewer_rationale: "Sign classification does not assert success without exact evidence."
+- check_id: p3f-regular-chain-component-semantics
+  required_by: Appendix A section 10.16 and RGQ-023
+  verdict: pass
+  evidence: Reviewer confirmed regular-chain code preserves guards/component semantics
+    and uses projection semantics rather than dropping them.
+  reviewer_rationale: Component/guard/projection semantics are carried in records
+    and hashes.
+- check_id: p3f-norm-trace-algebraic-form
+  required_by: Appendix A section 10.17 and RGQ-024
+  verdict: pass
+  evidence: Reviewer confirmed tower detection is algebraic-form based and norm verification
+    recomputes primitive-normalized resultant relations.
+  reviewer_rationale: Detection does not branch on geometry names and verification
+    is not unconditional.
+- check_id: p3f-exact-real-root-isolation
+  required_by: Appendix A section 10.18 and RGQ-028
+  verdict: pass
+  evidence: Reviewer confirmed root helpers use exact rational arithmetic, rational
+    intervals, and Sturm logic.
+  reviewer_rationale: No floating-only root path was found.
+- check_id: p3f-exact-sign-thom-boundary
+  required_by: Appendix A section 10.19 and RGQ-029
+  verdict: pass
+  evidence: Reviewer confirmed sign helpers return RefinementRequired when sign constancy
+    is not certified.
+  reviewer_rationale: Sign classification does not assert success without exact evidence.
 appendix_override_checks:
-  - appendix_section: "Appendix A sections 10.16 through 10.19"
-    controlling_requirement: "RGQ-059"
-    verdict: "pass"
-    evidence: "Reviewer confirmed P3f functions are real implementations, not hook-only wrappers or deferred shells."
-    reviewer_rationale: "The hardening requirement that P3f not close with empty helper foundations is satisfied."
+- appendix_section: Appendix A sections 10.16 through 10.19
+  controlling_requirement: RGQ-059
+  verdict: pass
+  evidence: Reviewer confirmed P3f functions are real implementations, not hook-only
+    wrappers or deferred shells.
+  reviewer_rationale: The hardening requirement that P3f not close with empty helper
+    foundations is satisfied.
 status_mapping_checks:
-  - error_or_internal_condition: "Primitive hard case or uncertified sign boundary"
-    mapped_solver_status: "AlgorithmicHardCase or internal RefinementRequired"
-    verdict: "pass"
-    evidence: "Zero support and impossible subdivision return AlgorithmicHardCase; uncertified signs return RefinementRequired rather than success."
-    reviewer_rationale: "No non-spec public status or false success mapping was introduced."
+- error_or_internal_condition: Primitive hard case or uncertified sign boundary
+  mapped_solver_status: AlgorithmicHardCase or internal RefinementRequired
+  verdict: pass
+  evidence: Zero support and impossible subdivision return AlgorithmicHardCase; uncertified
+    signs return RefinementRequired rather than success.
+  reviewer_rationale: No non-spec public status or false success mapping was introduced.
 suite_partition_checks:
-  - suite_name: "not_applicable"
-    verdict: "not_applicable"
-    evidence: "No P15 acceptance suite is implemented or claimed in P3f."
-    reviewer_rationale: "P3f does not claim acceptance."
+- suite_name: not_applicable
+  verdict: not_applicable
+  evidence: No P15 acceptance suite is implemented or claimed in P3f.
+  reviewer_rationale: P3f does not claim acceptance.
 semantic_deletion_challenges: []
 tamper_challenges: []
 unresolved_risks:
-  - "P3f remains primitive-layer only; RegularChainProjectionKernel and NormTraceProjectionKernel integration remain later phases."
-  - "Root decode and exact-image fiber classification remain later phases."
-  - "P3f starts executable primitive support for MECH-007, MECH-011, and MECH-012 but does not close them."
-  - "Git cannot provide commit-bound evidence freshness until the repository has a commit; archive uses explicit unborn-master-no-commit worktree state."
+- P3f remains primitive-layer only; RegularChainProjectionKernel and NormTraceProjectionKernel
+  integration remain later phases.
+- Root decode and exact-image fiber classification remain later phases.
+- P3f starts executable primitive support for MECH-007, MECH-011, and MECH-012 but
+  does not close them.
+- Git cannot provide commit-bound evidence freshness until the repository has a commit;
+  archive uses explicit unborn-master-no-commit worktree state.
 blocking_findings: []
 required_fixes: []
 pass_conditions:

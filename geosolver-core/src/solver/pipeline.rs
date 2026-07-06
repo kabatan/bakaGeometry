@@ -401,6 +401,7 @@ fn core_certificate_size_kappa(cert: &CoreRunCertificate) -> usize {
     size += cert.squarefree_support_hash.is_some() as usize;
     size += cert.root_isolation_hash.is_some() as usize;
     size += cert.decoded_candidate_hash.is_some() as usize;
+    size += cert.exact_image_certificate_hash.is_some() as usize;
     size += cert.global_support_certificate_hash.is_some() as usize;
     size += cert.final_dag_replay_evidence_hash.is_some() as usize;
     if let Some(evidence) = &cert.final_dag_replay_evidence {
@@ -448,6 +449,7 @@ pub fn step_core_certificate(
     messages: &[ProjectionMessage],
     support: Option<&UniPolynomialQ>,
     roots: &RootCandidateBundle,
+    exact_image_certificate: Option<&crate::fiber::exact_image::FiberClassificationResult>,
     support_certificate: Option<&GlobalSupportCertificate>,
 ) -> CoreRunCertificate {
     let kernel_plan_hashes = executed_plan_hashes(plans, messages);
@@ -479,6 +481,7 @@ pub fn step_core_certificate(
         squarefree_support: Some(&roots.squarefree_support),
         root_isolation: &roots.root_isolation,
         decoded_candidates: &roots.decoded_candidates,
+        exact_image_certificate,
         global_support_certificate_hash: support_certificate.map(|cert| cert.certificate_hash),
         final_dag_replay_evidence: Some(replay_evidence),
     })

@@ -12,9 +12,9 @@ review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3ba
 evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
 schema_mirror_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
 commit: 75678f311a4f756c94bead0e19a51c5c2d04848a+fcr-p6-worktree
-prompt_sha256: 327ccafc463db4454c621e422879463420cb25354701e809b63b044a1220f4dc
-response_sha256: 7c399ab600c4690b758057057c9b893144e4709ced67824edad53b2eec659de7
-evidence_manifest_sha256: be0793d543a9d388c601f707a91b0e0f1df32d3349e57af42f43d8b39fca225c
+prompt_sha256: d8d7deaa033024a8b43a50995a26ca14b1fce990da1126bef5ae353e38c39ee5
+response_sha256: c538d37ea66211ed265b1237579d12798d02ce137158ff63fde31294cb3bff17
+evidence_manifest_sha256: c27d315d591b4dc34c2bcf11fe153433500a2b541d2c2c40949d7c498e1bc111
 prompt_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P6/20260705-172722Z/prompt.md
 response_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P6/20260705-172722Z/response.md
 evidence_manifest_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P6/20260705-172722Z/evidence_manifest.yaml
@@ -27,7 +27,8 @@ reviewed_mechs:
 - MECH-008
 - MECH-010
 source_sections_checked:
-- FULL_CORE_REPAIR_BASE_SPEC.md FCR-007 SparseResultant generic-or-non-production requirement
+- FULL_CORE_REPAIR_BASE_SPEC.md FCR-007 SparseResultant generic-or-non-production
+  requirement
 - FULL_CORE_REPAIR_BASE_SPEC.md FCR-009 UniversalTargetElimination non-fallback requirement
 - FULL_CORE_REPAIR_PLAN.md FCR-P6
 - FULL_CORE_REPAIR_REVIEWER_PROMPTS.md FCR-P6
@@ -62,7 +63,9 @@ commands_inspected:
 function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_PRODUCTION_AUDIT.md
 algorithmic_sufficiency:
   verdict: sufficient
-  rationale: FCR-P6 keeps fake/test F4 outside production reachability and routes Universal production local target/separator elimination through certified LocalGroebner with keep-only outputs and exact output_membership replay.
+  rationale: FCR-P6 keeps fake/test F4 outside production reachability and routes
+    Universal production local target/separator elimination through certified LocalGroebner
+    with keep-only outputs and exact output_membership replay.
 forbidden_pattern_scan:
   heavy_fallback: pass
   narrow_slice_escape: pass
@@ -81,9 +84,12 @@ forbidden_pattern_scan:
   stress_fixture_dispatch: pass
 not_applicable_justifications:
   status_mapping_checks[0]: FCR-P6 did not add or remap public SolverStatus values.
-  suite_partition_checks[0]: FCR-P6 is Universal/local Groebner mechanism work, not the FCR-P15 acceptance-suite partition.
-  unsupported_for_well_formed_input: FCR-P6 preserves allowed AlgorithmicHardCase/FiniteResourceFailure/CertificateDesignGap semantics rather than adding Unsupported.
-  target_relation_schedule_discretion: FCR-P6 does not modify TargetRelationSearch scheduling.
+  suite_partition_checks[0]: FCR-P6 is Universal/local Groebner mechanism work, not
+    the FCR-P15 acceptance-suite partition.
+  unsupported_for_well_formed_input: FCR-P6 preserves allowed AlgorithmicHardCase/FiniteResourceFailure/CertificateDesignGap
+    semantics rather than adding Unsupported.
+  target_relation_schedule_discretion: FCR-P6 does not modify TargetRelationSearch
+    scheduling.
   weak_action_krylov_coverage: FCR-P6 does not modify ActionKrylov coverage.
 raw_response_consistency:
   raw_response_contains_blocker: false
@@ -94,34 +100,49 @@ phase_specific_checks:
 - check_id: fcr-p6-f4-not-production-reachable
   required_by: FCR-P6
   verdict: pass
-  evidence: algebra/mod.rs gates f4 behind cfg(test), Universal production source has no NotProductionF4, for_tests, or NonProductionGroebnerBatch references, and reviewer confirmed no production reachability.
-  reviewer_rationale: Fake/test F4 is not production compiled or called from Universal execution.
+  evidence: algebra/mod.rs gates f4 behind cfg(test), Universal production source
+    has no NotProductionF4, for_tests, or NonProductionGroebnerBatch references, and
+    reviewer confirmed no production reachability.
+  reviewer_rationale: Fake/test F4 is not production compiled or called from Universal
+    execution.
 - check_id: fcr-p6-universal-uses-certified-local-groebner
   required_by: FCR-P6
   verdict: pass
-  evidence: universal_elimination.rs executes EliminationStrategy::LocalGroebner and elimination.rs validates keep-only generators and certificates.
-  reviewer_rationale: Universal uses certified local Groebner rather than a fake F4 route.
+  evidence: universal_elimination.rs executes EliminationStrategy::LocalGroebner and
+    elimination.rs validates keep-only generators and certificates.
+  reviewer_rationale: Universal uses certified local Groebner rather than a fake F4
+    route.
 - check_id: fcr-p6-output-memberships-match-output-relations
   required_by: FCR-P6
   verdict: pass
-  evidence: Universal local Groebner output no longer primitive-normalizes relation_generators apart from certificates; verify_message.rs replays output_memberships against message outputs.
-  reviewer_rationale: The previous risk of certifying one polynomial while outputting a primitive-scaled different polynomial is closed for this path.
+  evidence: Universal local Groebner output no longer primitive-normalizes relation_generators
+    apart from certificates; verify_message.rs replays output_memberships against
+    message outputs.
+  reviewer_rationale: The previous risk of certifying one polynomial while outputting
+    a primitive-scaled different polynomial is closed for this path.
 - check_id: fcr-p6-keep-only-no-coordinate-roots
   required_by: FCR-P6
   verdict: pass
-  evidence: extract_verified_export_generators rejects non-export variables, required FCR-P6 tests assert keep-only output and no Universal local coordinate/root/RUR payload.
-  reviewer_rationale: Local elimination exports target/separator variables only and does not produce coordinate roots/RUR.
+  evidence: extract_verified_export_generators rejects non-export variables, required
+    FCR-P6 tests assert keep-only output and no Universal local coordinate/root/RUR
+    payload.
+  reviewer_rationale: Local elimination exports target/separator variables only and
+    does not produce coordinate roots/RUR.
 - check_id: fcr-p6-required-tests
   required_by: FCR-P6
   verdict: pass
-  evidence: cargo test --lib fcr_ passed all four required FCR-P6 tests plus existing FCR tests.
-  reviewer_rationale: Required dynamic coverage exists and is fresh after the last code change.
+  evidence: cargo test --lib fcr_ passed all four required FCR-P6 tests plus existing
+    FCR tests.
+  reviewer_rationale: Required dynamic coverage exists and is fresh after the last
+    code change.
 appendix_override_checks:
 - appendix_section: Appendix A section 20 and MECH-008
   controlling_requirement: FCR-P6
   verdict: pass
-  evidence: Universal local stage is bounded, block-local, keep-only, certificate replayable, and not coordinate-root based.
-  reviewer_rationale: The FCR-P6 overlay is respected without claiming full SparseResultant or final pipeline readiness.
+  evidence: Universal local stage is bounded, block-local, keep-only, certificate
+    replayable, and not coordinate-root based.
+  reviewer_rationale: The FCR-P6 overlay is respected without claiming full SparseResultant
+    or final pipeline readiness.
 status_mapping_checks:
 - error_or_internal_condition: not_applicable_for_fcr_p6
   mapped_solver_status: not_applicable
@@ -131,14 +152,19 @@ status_mapping_checks:
 suite_partition_checks:
 - suite_name: not_applicable
   verdict: not_applicable
-  evidence: FCR-P6 adds Universal/local Groebner mechanism tests, not the acceptance-suite partition.
-  reviewer_rationale: Full support/exact-image/failure suite partitioning remains later FCR work.
+  evidence: FCR-P6 adds Universal/local Groebner mechanism tests, not the acceptance-suite
+    partition.
+  reviewer_rationale: Full support/exact-image/failure suite partitioning remains
+    later FCR work.
 semantic_deletion_challenges: []
 tamper_challenges: []
 unresolved_risks:
-- FCR-P6 does not claim real production F4; f4 remains test-only and no F4 readiness/source-fidelity claim is supported.
-- FULL_CORE_SOURCE_SPEC_COMPLIANCE_MAP.md still records SparseResultant rows as incorrect; FCR-P7 retains the full SparseResultant generic-kernel repair.
-- FCR-P6 does not authorize P13, exact-image readiness, final candidate-cover readiness, full source fidelity, or acceptance completion.
+- FCR-P6 does not claim real production F4; f4 remains test-only and no F4 readiness/source-fidelity
+  claim is supported.
+- FULL_CORE_SOURCE_SPEC_COMPLIANCE_MAP.md still records SparseResultant rows as incorrect;
+  FCR-P7 retains the full SparseResultant generic-kernel repair.
+- FCR-P6 does not authorize P13, exact-image readiness, final candidate-cover readiness,
+  full source fidelity, or acceptance completion.
 - No R-ID is marked VERIFIED.
 blocking_findings: []
 required_fixes: []

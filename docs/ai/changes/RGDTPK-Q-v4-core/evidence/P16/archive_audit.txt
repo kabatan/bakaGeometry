@@ -1,0 +1,30 @@
+P16 formal review archive audit
+
+Formal review archives: 57.
+Supplemental review-packet-only directories: 5, preserved for traceability and superseded by
+schema-formalized archives.
+
+Schema validation:
+- review_summary.yaml: PASS for all formal archives.
+- evidence_manifest.yaml: PASS for all formal archives.
+
+Hash binding:
+- prompt_sha256 mismatches: 0.
+- response_sha256 mismatches: 0.
+- evidence_manifest_sha256 mismatches: 0.
+
+PASS consistency:
+- PASS with blocking_findings: 0.
+- PASS with required_fixes: 0.
+
+Schema mirror:
+- REVIEW_SUMMARY_SCHEMA.yaml and schemas/review_summary.schema.yaml are byte-identical.
+
+P16 formalized these review archives:
+- FCR-P10/20260705-184419Z
+- FCR-P11/20260706-055251Z
+- FCR-P12/20260706-060906Z
+- P13/20260706-070126Z
+- P14/20260706-073434Z
+- P15/20260706-084500Z
+- P16/20260706-093000Z

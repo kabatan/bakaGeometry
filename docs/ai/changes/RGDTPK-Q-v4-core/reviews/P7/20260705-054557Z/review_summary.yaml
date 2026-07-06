@@ -63,7 +63,9 @@ commands_inspected:
 function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P7/function_implementation_table.yaml
 algorithmic_sufficiency:
   verdict: sufficient
-  rationale: Reviewer inspected the P7 kernel registry, TargetUnivariate, LinearAffine, planner admission, evidence, and fresh P7 tests after remediation; P7-specific admission/execute/replay boundaries are sufficient for this phase.
+  rationale: Reviewer inspected the P7 kernel registry, TargetUnivariate, LinearAffine,
+    planner admission, evidence, and fresh P7 tests after remediation; P7-specific
+    admission/execute/replay boundaries are sufficient for this phase.
 forbidden_pattern_scan:
   heavy_fallback: pass
   narrow_slice_escape: pass
@@ -81,8 +83,10 @@ forbidden_pattern_scan:
   appendix_override_bypass: pass
   stress_fixture_dispatch: pass
 not_applicable_justifications:
-  appendix_override_checks[0]: P7 implements Appendix sections 14 through 16 only; Universal/final-support override sections are not active in P7.
-  suite_partition_checks[0]: P15-only acceptance suite partition is not active in P7; no acceptance, candidate-cover completion, or exact-image claim is made.
+  appendix_override_checks[0]: P7 implements Appendix sections 14 through 16 only;
+    Universal/final-support override sections are not active in P7.
+  suite_partition_checks[0]: P15-only acceptance suite partition is not active in
+    P7; no acceptance, candidate-cover completion, or exact-image claim is made.
 raw_response_consistency:
   raw_response_contains_blocker: false
   raw_response_contains_required_fix: false
@@ -92,56 +96,74 @@ phase_specific_checks:
 - check_id: p7-kernel-trait-registry
   required_by: RGQ-016
   verdict: pass
-  evidence: TargetProjectionKernel defines kind/admit/plan/execute/replay and all_kernels returns all nine kernels in Appendix order.
+  evidence: TargetProjectionKernel defines kind/admit/plan/execute/replay and all_kernels
+    returns all nine kernels in Appendix order.
   reviewer_rationale: Reviewer explicitly passed the registry and trait scope.
 - check_id: p7-target-univariate-support
   required_by: RGQ-017
   verdict: pass
-  evidence: TargetUnivariate computes primitive squarefree LCM support from block and child-message target-only relations; p7 target tests pass.
-  reviewer_rationale: Reviewer verified child-message binding, target-only planner admission, source hashes, and support construction.
+  evidence: TargetUnivariate computes primitive squarefree LCM support from block
+    and child-message target-only relations; p7 target tests pass.
+  reviewer_rationale: Reviewer verified child-message binding, target-only planner
+    admission, source hashes, and support construction.
 - check_id: p7-linear-affine
   required_by: RGQ-018
   verdict: pass
-  evidence: LinearAffine uses safe constant pivots or recorded guards, clears denominators, validates source hashes, and exports only planned exported variables.
-  reviewer_rationale: Reviewer found LinearAffine safe pivot, guard, denominator clearing, and export restriction consistent.
+  evidence: LinearAffine uses safe constant pivots or recorded guards, clears denominators,
+    validates source hashes, and exports only planned exported variables.
+  reviewer_rationale: Reviewer found LinearAffine safe pivot, guard, denominator clearing,
+    and export restriction consistent.
 - check_id: p7-structural-replay-and-tamper
   required_by: RGQ-038
   verdict: pass
-  evidence: P7 replay rejects stale package identity and wrong block/export context; auth/source/message tamper tests pass.
-  reviewer_rationale: Reviewer accepted this as P7 structural kernel-level replay, while leaving final run replay to later phases.
+  evidence: P7 replay rejects stale package identity and wrong block/export context;
+    auth/source/message tamper tests pass.
+  reviewer_rationale: Reviewer accepted this as P7 structural kernel-level replay,
+    while leaving final run replay to later phases.
 appendix_override_checks:
 - appendix_section: Appendix A sections 20.3 and 20.4 Universal local elimination
   controlling_requirement: RGQ-041
   verdict: not_applicable
-  evidence: P7 does not implement UniversalTargetElimination execution; registered later-phase kernels decline admission.
-  reviewer_rationale: No Universal/final-support nonfinite override is claimed in P7.
+  evidence: P7 does not implement UniversalTargetElimination execution; registered
+    later-phase kernels decline admission.
+  reviewer_rationale: No Universal/final-support nonfinite override is claimed in
+    P7.
 status_mapping_checks:
-- error_or_internal_condition: P7 stale plan authorization/source/message tamper and LinearAffine incomplete elimination
-  mapped_solver_status: ImplementationBug for tamper; AlgorithmicHardCase for incomplete affine elimination
+- error_or_internal_condition: P7 stale plan authorization/source/message tamper and
+    LinearAffine incomplete elimination
+  mapped_solver_status: ImplementationBug for tamper; AlgorithmicHardCase for incomplete
+    affine elimination
   verdict: pass
-  evidence: P7 tamper tests assert ImplementationBug, and stale incomplete LinearAffine plan returns AlgorithmicHardCase.
-  reviewer_rationale: Status mapping preserves implementation invariant failures separately from algebraic hard cases.
+  evidence: P7 tamper tests assert ImplementationBug, and stale incomplete LinearAffine
+    plan returns AlgorithmicHardCase.
+  reviewer_rationale: Status mapping preserves implementation invariant failures separately
+    from algebraic hard cases.
 suite_partition_checks:
 - suite_name: not_applicable
   verdict: not_applicable
   evidence: P15-only acceptance suite partition is not active in P7.
-  reviewer_rationale: No support-producing acceptance, exact-image, or failure-suite completion claim is made.
+  reviewer_rationale: No support-producing acceptance, exact-image, or failure-suite
+    completion claim is made.
 semantic_deletion_challenges: []
 tamper_challenges:
 - challenge_id: p7-target-univariate-auth-source-child-message-tamper
   target: TargetUnivariate execution plan binding
   verdict: pass
   evidence: p7_target_univariate_rejects_auth_source_and_child_message_tamper passes.
-  reviewer_rationale: Execution rejects block authorization, source hash, and child message package-hash mismatch.
+  reviewer_rationale: Execution rejects block authorization, source hash, and child
+    message package-hash mismatch.
 - challenge_id: p7-linear-affine-auth-source-tamper
   target: LinearAffine execution plan binding
   verdict: pass
   evidence: p7_linear_affine_rejects_auth_and_source_hash_tamper passes.
-  reviewer_rationale: Execution rejects block authorization and source relation hash mismatch.
+  reviewer_rationale: Execution rejects block authorization and source relation hash
+    mismatch.
 unresolved_risks:
-- P7 replay is structural kernel-level replay only; P11 owns final run replay and full certificate replay closure.
+- P7 replay is structural kernel-level replay only; P11 owns final run replay and
+  full certificate replay closure.
 - P8/P9-owned kernels remain registered placeholders and are not covered by this PASS.
-- Candidate-cover completion, exact-image completion, public orchestration, and final acceptance remain open.
+- Candidate-cover completion, exact-image completion, public orchestration, and final
+  acceptance remain open.
 blocking_findings: []
 required_fixes: []
 pass_conditions:

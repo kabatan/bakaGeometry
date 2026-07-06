@@ -1,0 +1,51 @@
+P16 command output summary
+
+Timestamp: 20260706 P16 final closure after quality remediation.
+
+1. cargo fmt --manifest-path geosolver-core/Cargo.toml -- --check
+   Result: PASS.
+
+2. cargo clippy --manifest-path geosolver-core/Cargo.toml --all-targets --all-features -- -D warnings
+   Result: PASS.
+
+3. cargo test --manifest-path geosolver-core/Cargo.toml --all-targets --all-features
+   Result: PASS.
+   Summary:
+   - lib tests: 212 passed.
+   - fcr_final_nonfinite_semantics: 2 passed.
+   - fcr_p10_acceptance_suite: 12 passed.
+   - fcr_p11_red_team_suite: 10 passed.
+   - fcr_p4_pure_planning: 7 passed.
+   - p12_roots_decode_integration: 1 passed.
+   - p12g_generality_stress: 1 passed.
+   - p13_exact_image_semantics: 7 passed.
+   - p14_full_pipeline_integration: 10 passed.
+   - p15_acceptance_stress: 6 passed.
+   - p3_public_pipeline_integration: 2 passed.
+
+4. cargo test --manifest-path geosolver-core/Cargo.toml --test fcr_final_nonfinite_semantics -- --nocapture
+   Result: PASS.
+   Summary:
+   - fcr_final_nonfinite_semantics: 2 passed.
+
+5. P16 code-specific checks
+   Result: PASS.
+   Evidence: P13 exact-image test now tampers `classification_hash` and replay rejects it.
+   `CoreRunCertificate` includes `exact_image_certificate_hash`; `hash_core_run_certificate` and
+   replay both bind it.
+   Evidence: FCR final nonfinite test now accepts replay for the positive public nonfinite baseline,
+   asserts the nonfinite replay hash is bound to `hash_nonfinite_certificate`, tampers
+   `NonFiniteCertificate.certificate_hash` and replay rejects it, then injects a nonfinite
+   certificate into a finite result and replay rejects the incompatible field combination.
+
+6. Static scans after final P16 code change
+   Result: PASS.
+   Summary:
+   - Unsupported/unsupported in `geosolver-core/src`: 0.
+   - geometry/fixture/expected-answer scan: 142 classified matches, no production dispatch.
+   - todo/unimplemented/placeholder/dummy/fake/stub in `geosolver-core/src`: 0.
+   - CAD/QE/RCF/full-coordinate/RUR scan: 3 classified rejection-text matches.
+   - old candidate-cover acceptance-complete phrase: 0.
+
+7. git diff --check
+   Result: PASS. CRLF warnings only.

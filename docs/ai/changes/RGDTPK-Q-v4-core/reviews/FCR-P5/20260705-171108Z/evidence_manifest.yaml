@@ -11,109 +11,110 @@ review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3ba
 evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
 evidence_files:
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_BASE_SPEC.md
-  sha256: 1f73bd7a26b2566b08f53d31b14785110466e8ae6170b6769d1af17d50a36047
-  purpose: "FCR-P5 source: FCR-006 generic TargetActionKrylov requirements"
+  sha256: b805dc0f07a3c502f7dcbc2c2ec38280736954a0b30169c91787838f30c67fb3
+  purpose: 'FCR-P5 source: FCR-006 generic TargetActionKrylov requirements'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_PLAN.md
-  sha256: b836599108c1db4a4e828e672780e5074049045fe5fa590e94252cdc91850bb9
-  purpose: "FCR-P5 source: generic quotient/action plan"
+  sha256: 9b44ea140ab881e7dc96f6d7175dbfcbebea43afd2f7fbc1e742169020bd68fc
+  purpose: 'FCR-P5 source: generic quotient/action plan'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_SOURCE_SPEC_COMPLIANCE_MAP.md
-  sha256: 892b75221a3f724ab864e0214e3a0559e99331cda0b8fba4976f5a21372f08ec
-  purpose: "FCR-P5 source: compliance map and residual stale TargetAction rows"
+  sha256: ebe1906059c2ef6b3fcb9479a9b4a18aef1de170f5214b35d2d1caa6b157908d
+  purpose: 'FCR-P5 source: compliance map and residual stale TargetAction rows'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_REVIEWER_PROMPTS.md
-  sha256: 28075ea55b02213c4b38f5304735f87b163ab7eddb15121eefe072878a1f387b
-  purpose: "FCR-P5 source: reviewer fail/pass prompt"
+  sha256: 5ad91032c2938967e070bab7f29cabcda95f77c689513f60c715f1167257529d
+  purpose: 'FCR-P5 source: reviewer fail/pass prompt'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/BASE_SPEC.md
   sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
-  purpose: "FCR-P5 source: approved base spec"
+  purpose: 'FCR-P5 source: approved base spec'
 - path: geosolver-core/src/algebra/groebner.rs
-  sha256: e6731ddf9b123d56090206c54694638f7c210cf1978f215442ace3b42d495dd6
-  purpose: "FCR-P5 code: certified Groebner reduction"
+  sha256: 3da570d7c22b23db965eab85b137a5c802c0ce36de35a7fee8ab8a91e9398a17
+  purpose: 'FCR-P5 code: certified Groebner reduction'
 - path: geosolver-core/src/algebra/quotient.rs
-  sha256: 9012a24c1792d42c8178b7aadea97e3788a148d76077fec541c26009869c6710
-  purpose: "FCR-P5 code: generic production quotient/action constructor"
+  sha256: 5a7b7266d2b96c46a0a96499c3f98a6f480e1f1642589b9c170b0bbe3a4b425b
+  purpose: 'FCR-P5 code: generic production quotient/action constructor'
 - path: geosolver-core/src/algebra/krylov.rs
   sha256: 68c08504a4b1d50b43106800a72aebd0a6abec13fc5241a6809c35856b7a3ec1
-  purpose: "FCR-P5 code: full-basis Krylov coverage replay"
+  purpose: 'FCR-P5 code: full-basis Krylov coverage replay'
 - path: geosolver-core/src/algebra/normal_form.rs
   sha256: 1df3065cc1d0893206e11fd4dc75d1564b9be39b3a2ceb6804a2e2837389e4fd
-  purpose: "FCR-P5 code: exact membership certificate verification"
+  purpose: 'FCR-P5 code: exact membership certificate verification'
 - path: geosolver-core/src/algebra/f4.rs
   sha256: 97adaee528cea3056134ef611cf643a2ba530a86d74b170c8c3cd8a6b5699490
-  purpose: "FCR-P5 code: inspected non-production F4 remains non-production"
+  purpose: 'FCR-P5 code: inspected non-production F4 remains non-production'
 - path: geosolver-core/src/kernels/action_krylov.rs
-  sha256: 562ea34a63ee63f12cda1bf0977b2d5b0eda0aa9fc5a7a0671ec2d1c19e14ab8
-  purpose: "FCR-P5 code: GenericQuotient selection, execute, and tests"
+  sha256: e80bed98da365ff46739dce703de48e492a747dfa31d8e67fce02b3b1ff3d994
+  purpose: 'FCR-P5 code: GenericQuotient selection, execute, and tests'
 - path: geosolver-core/src/verify/verify_message.rs
   sha256: 4e3bdd78ec03a7ab34dee1d830c936bf7e6f5df1e9eed2de4e065a351360c5c8
-  purpose: "FCR-P5 code: target-action message replay"
+  purpose: 'FCR-P5 code: target-action message replay'
 - path: geosolver-core/src/verify/certificates.rs
-  sha256: 697a45a86b35e1c2eee29295568c1bb62f9e87908f2d7a63819bcd6332f56439
-  purpose: "FCR-P5 code: target-action certificate payload"
+  sha256: d436e42bb61fa5ee84e01afccdff322ba03c7d63f7b7bfc4434e167f19111c68
+  purpose: 'FCR-P5 code: target-action certificate payload'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P5/commands.txt
-  sha256: e584e4f709af556d244e8fd924c6605483c3c8c3d5c47beb2261be74053569d8
-  purpose: "FCR-P5 evidence: commands run"
+  sha256: dd2dd49fb7e6df5374ac8aea1f154b45adb88544f642d449a076bae7130d1c72
+  purpose: 'FCR-P5 evidence: commands run'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P5/command_outputs.txt
-  sha256: 3b0bed5657a1dd00e52b8a58726e7d363c8d18744d836ca15b249cf7128abec8
-  purpose: "FCR-P5 evidence: command outputs and summaries"
+  sha256: 6654bea149fa97d83d9ff621d0719b4667d516202c55907855d0ef4e4e60143f
+  purpose: 'FCR-P5 evidence: command outputs and summaries'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P5/generic_action_static_scan.txt
-  sha256: d28daf8b2647c2ab3b70e1160d0fbd71b0766c501af04e04e84ae7cd7a9b2b4a
-  purpose: "FCR-P5 evidence: generic action static scan"
+  sha256: f3e2869f0ad780e559242ab3d07c42387858bc06bb26577b02bb5d25dfce4bf3
+  purpose: 'FCR-P5 evidence: generic action static scan'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P5/guardian_boundary_reviewer_pass.md
-  sha256: 370b90b83019d068851695d3e76d95f4f9c384f43f36d1ce26dc074c5f7e52fa
-  purpose: "FCR-P5 evidence: guardian PASS response"
+  sha256: 55814865845270546a8c7bc9915d20f070a2e09e2e7036b274171ae8cad0179f
+  purpose: 'FCR-P5 evidence: guardian PASS response'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P5/20260705-171108Z/prompt.md
-  sha256: 833e23d3ca40daf1dc576322433c27c1714296cc22ed2e242d13d5afa89e354d
-  purpose: "FCR-P5 archived reviewer prompt"
+  sha256: c58533b07e5e52ed6eb1f9ec63960b8052a3df73ed72b29ba385141144d968a6
+  purpose: FCR-P5 archived reviewer prompt
 - path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P5/20260705-171108Z/response.md
-  sha256: 370b90b83019d068851695d3e76d95f4f9c384f43f36d1ce26dc074c5f7e52fa
-  purpose: "FCR-P5 archived reviewer response"
+  sha256: 55814865845270546a8c7bc9915d20f070a2e09e2e7036b274171ae8cad0179f
+  purpose: FCR-P5 archived reviewer response
 command_outputs:
 - command: cargo fmt
-  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry/geosolver-core
   exit_code: 0
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P5/command_outputs.txt
-  output_sha256: 3b0bed5657a1dd00e52b8a58726e7d363c8d18744d836ca15b249cf7128abec8
+  output_sha256: 6654bea149fa97d83d9ff621d0719b4667d516202c55907855d0ef4e4e60143f
   finished_at_utc: 20260705-171108Z
 - command: cargo test --lib kernels::action_krylov::tests
-  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry/geosolver-core
   exit_code: 0
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P5/command_outputs.txt
-  output_sha256: 3b0bed5657a1dd00e52b8a58726e7d363c8d18744d836ca15b249cf7128abec8
+  output_sha256: 6654bea149fa97d83d9ff621d0719b4667d516202c55907855d0ef4e4e60143f
   finished_at_utc: 20260705-171108Z
 - command: cargo test
-  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry/geosolver-core
   exit_code: 0
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P5/command_outputs.txt
-  output_sha256: 3b0bed5657a1dd00e52b8a58726e7d363c8d18744d836ca15b249cf7128abec8
+  output_sha256: 6654bea149fa97d83d9ff621d0719b4667d516202c55907855d0ef4e4e60143f
   finished_at_utc: 20260705-171108Z
 - command: cargo check
-  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry/geosolver-core"
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry/geosolver-core
   exit_code: 0
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P5/command_outputs.txt
-  output_sha256: 3b0bed5657a1dd00e52b8a58726e7d363c8d18744d836ca15b249cf7128abec8
+  output_sha256: 6654bea149fa97d83d9ff621d0719b4667d516202c55907855d0ef4e4e60143f
   finished_at_utc: 20260705-171108Z
 - command: git diff --check
-  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
   exit_code: 0
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P5/command_outputs.txt
-  output_sha256: 3b0bed5657a1dd00e52b8a58726e7d363c8d18744d836ca15b249cf7128abec8
+  output_sha256: 6654bea149fa97d83d9ff621d0719b4667d516202c55907855d0ef4e4e60143f
   finished_at_utc: 20260705-171108Z
 - command: static GenericQuotient/Groebner quotient scan
-  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
   exit_code: 0
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P5/generic_action_static_scan.txt
-  output_sha256: d28daf8b2647c2ab3b70e1160d0fbd71b0766c501af04e04e84ae7cd7a9b2b4a
+  output_sha256: f3e2869f0ad780e559242ab3d07c42387858bc06bb26577b02bb5d25dfce4bf3
   finished_at_utc: 20260705-171108Z
 - command: guardian_boundary_reviewer FCR-P5
-  cwd: "C:/Users/bakat/OneDrive/\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8/bakaGeometry"
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
   exit_code: 0
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P5/guardian_boundary_reviewer_pass.md
-  output_sha256: 370b90b83019d068851695d3e76d95f4f9c384f43f36d1ce26dc074c5f7e52fa
+  output_sha256: 55814865845270546a8c7bc9915d20f070a2e09e2e7036b274171ae8cad0179f
   finished_at_utc: 20260705-171108Z
 static_scans:
 - scan_id: fcr-p5-generic-selection-present
   command: rg GenericQuotient and generic_target_action_selection
-  forbidden_pattern: complete production selection space limited to TargetOnly and AliasUnivariate
+  forbidden_pattern: complete production selection space limited to TargetOnly and
+    AliasUnivariate
   result: pass
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P5/generic_action_static_scan.txt
 - scan_id: fcr-p5-groebner-standard-basis
@@ -130,9 +131,12 @@ function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_PRODUC
 related_reviews:
 - docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P5/guardian_boundary_reviewer_pass.md
 known_limitations:
-- FULL_CORE_SOURCE_SPEC_COMPLIANCE_MAP.md still contains conservative/stale TargetAction rows to reconcile before broader source-fidelity or completion claims.
-- algebra/f4.rs remains explicitly non-production; FCR-P5 passes through Groebner-backed quotient construction, not F4 readiness.
-- FCR-P5 does not authorize P13, exact-image readiness, candidate-cover readiness, source fidelity, or acceptance completion.
+- FULL_CORE_SOURCE_SPEC_COMPLIANCE_MAP.md still contains conservative/stale TargetAction
+  rows to reconcile before broader source-fidelity or completion claims.
+- algebra/f4.rs remains explicitly non-production; FCR-P5 passes through Groebner-backed
+  quotient construction, not F4 readiness.
+- FCR-P5 does not authorize P13, exact-image readiness, candidate-cover readiness,
+  source fidelity, or acceptance completion.
 - No R-ID is marked VERIFIED.
 algorithmic_claims_made:
 - PARTIAL_MECHANISM_READY:MECH-014

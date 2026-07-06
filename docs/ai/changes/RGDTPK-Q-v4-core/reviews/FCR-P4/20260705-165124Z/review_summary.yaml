@@ -12,9 +12,9 @@ review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3ba
 evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
 schema_mirror_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
 commit: adbef2b35e5e5a36897a5b17202f96331147df82+fcr-p4-worktree
-prompt_sha256: 3180f954d439bd9a73d0a53a0b98bd257b6661876d1aed5be0ac0ef08b2dcd39
-response_sha256: 4958ebe1a3bb80e17e4e7bf916c3dfdbda507469bc6284c0af422f187d2b66be
-evidence_manifest_sha256: 87b9895c7dd32fcd7da77cc32ece3572c9cac69fe0162605dd6b736b683b7142
+prompt_sha256: 3a4c307d592ba47f230efd26f537e869217d412ad7fe7c1f231e3d91719cf503
+response_sha256: e27cbd22580ab93203526144507be7287e6e8b9534ed65fd95859338c2607496
+evidence_manifest_sha256: 50fa76453ff6949ce210fccbba20d15a858412a86d5af6140dcf96659d964293
 prompt_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P4/20260705-165124Z/prompt.md
 response_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P4/20260705-165124Z/response.md
 evidence_manifest_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P4/20260705-165124Z/evidence_manifest.yaml
@@ -61,7 +61,9 @@ commands_inspected:
 function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_PRODUCTION_AUDIT.md
 algorithmic_sufficiency:
   verdict: sufficient
-  rationale: FCR-P4 moves audited final relation construction out of plan/probe paths and into execute paths with certificate/message binding, while keeping the claim ceiling limited.
+  rationale: FCR-P4 moves audited final relation construction out of plan/probe paths
+    and into execute paths with certificate/message binding, while keeping the claim
+    ceiling limited.
 forbidden_pattern_scan:
   heavy_fallback: pass
   narrow_slice_escape: pass
@@ -80,9 +82,12 @@ forbidden_pattern_scan:
   stress_fixture_dispatch: pass
 not_applicable_justifications:
   status_mapping_checks[0]: FCR-P4 does not add or remap public SolverStatus values.
-  suite_partition_checks[0]: FCR-P4 is plan/execute separation, not the FCR-P15 acceptance-suite partition.
-  nonfinite_without_positive_proof: FCR-P4 does not change nonfinite certification behavior.
-  target_relation_schedule_discretion: FCR-P4 does not modify TargetRelationSearch scheduling.
+  suite_partition_checks[0]: FCR-P4 is plan/execute separation, not the FCR-P15 acceptance-suite
+    partition.
+  nonfinite_without_positive_proof: FCR-P4 does not change nonfinite certification
+    behavior.
+  target_relation_schedule_discretion: FCR-P4 does not modify TargetRelationSearch
+    scheduling.
 raw_response_consistency:
   raw_response_contains_blocker: false
   raw_response_contains_required_fix: false
@@ -92,29 +97,37 @@ phase_specific_checks:
 - check_id: fcr-p4-plan-functions-are-pure
   required_by: FCR-P4
   verdict: pass
-  evidence: Required FCR-P4 static tests inspect plan/probe function bodies and passed 7/7.
-  reviewer_rationale: The audited plan/probe paths do not call forbidden final-output builders or generators.
+  evidence: Required FCR-P4 static tests inspect plan/probe function bodies and passed
+    7/7.
+  reviewer_rationale: The audited plan/probe paths do not call forbidden final-output
+    builders or generators.
 - check_id: fcr-p4-output-construction-in-execute
   required_by: FCR-P4
   verdict: pass
-  evidence: execute_* paths call their trace builders and certificate hash/from_execution_plan_with_payload paths.
+  evidence: execute_* paths call their trace builders and certificate hash/from_execution_plan_with_payload
+    paths.
   reviewer_rationale: Relation-producing work is in execute and is bound into certificates/messages.
 - check_id: fcr-p4-certified-probe-not-hiding-output
   required_by: FCR-P4
   verdict: pass
-  evidence: TargetActionKrylov no longer uses CertifiedProbePlan for final relation construction; reviewer found no such hiding.
-  reviewer_rationale: CertifiedProbePlan is not used by audited kernels to legitimize plan-time output construction.
+  evidence: TargetActionKrylov no longer uses CertifiedProbePlan for final relation
+    construction; reviewer found no such hiding.
+  reviewer_rationale: CertifiedProbePlan is not used by audited kernels to legitimize
+    plan-time output construction.
 - check_id: fcr-p4-verification-fresh
   required_by: FCR-P4
   verdict: pass
-  evidence: cargo fmt, cargo test, cargo check, git diff --check, and guardian_boundary_reviewer FCR-P4 all exit 0/PASS after final code change.
+  evidence: cargo fmt, cargo test, cargo check, git diff --check, and guardian_boundary_reviewer
+    FCR-P4 all exit 0/PASS after final code change.
   reviewer_rationale: Evidence is fresh for the reviewed worktree state.
 appendix_override_checks:
 - appendix_section: Appendix A sections 20 and 25
   controlling_requirement: FCR-P4
   verdict: pass
-  evidence: Planner paths declare templates/bounds/sample points; execute paths construct and certify relation generators.
-  reviewer_rationale: FCR overlay requirement on plan/execute separation is respected without overclaiming later readiness.
+  evidence: Planner paths declare templates/bounds/sample points; execute paths construct
+    and certify relation generators.
+  reviewer_rationale: FCR overlay requirement on plan/execute separation is respected
+    without overclaiming later readiness.
 status_mapping_checks:
 - error_or_internal_condition: not_applicable_for_fcr_p4
   mapped_solver_status: not_applicable
@@ -125,13 +138,17 @@ suite_partition_checks:
 - suite_name: not_applicable
   verdict: not_applicable
   evidence: FCR-P4 adds pure-planning tests, not the acceptance-suite partition.
-  reviewer_rationale: Full support/exact-image/failure suite partitioning remains later FCR work.
+  reviewer_rationale: Full support/exact-image/failure suite partitioning remains
+    later FCR work.
 semantic_deletion_challenges: []
 tamper_challenges: []
 unresolved_risks:
-- KernelExecutionPlan::new still defaults to PurePlan, so future non-pure planners must not use it without explicit classification.
-- FCR-P4 only admits current plan/execute separation and does not close generic advanced-kernel readiness.
-- FCR-P4 does not authorize P13, exact-image readiness, candidate-cover readiness, source fidelity, or acceptance completion.
+- KernelExecutionPlan::new still defaults to PurePlan, so future non-pure planners
+  must not use it without explicit classification.
+- FCR-P4 only admits current plan/execute separation and does not close generic advanced-kernel
+  readiness.
+- FCR-P4 does not authorize P13, exact-image readiness, candidate-cover readiness,
+  source fidelity, or acceptance completion.
 - No R-ID is marked VERIFIED.
 blocking_findings: []
 required_fixes: []

@@ -1,52 +1,52 @@
-schema_version: "rgdtpk-evidence-manifest-v2.2"
-phase_id: "P0"
-commit: "unborn-master-no-commit"
-algorithm_spec_source_sha256: "2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed"
-failure_source_sha256: "df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e"
-base_spec_sha256: "dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c"
-plan_sha256: "e78cfebc3cce75fbe632c1d0384f59eee7168a27c81d7326c1f02362584b26bc"
-source_map_sha256: "c3fc89dd76d1bf68684ad5359f6e2c4accf28e8db87c0e725b36aba21a2362a2"
-review_archive_schema_sha256: "53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad"
-review_summary_schema_sha256: "ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0"
-evidence_manifest_schema_sha256: "70fd1c72382f5ab847e3eb2eb40f135abb628f46c2a1e5ebf006acdba81c8e0f"
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: P0
+commit: unborn-master-no-commit
+algorithm_spec_source_sha256: 2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed
+failure_source_sha256: df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: e78cfebc3cce75fbe632c1d0384f59eee7168a27c81d7326c1f02362584b26bc
+source_map_sha256: c3fc89dd76d1bf68684ad5359f6e2c4accf28e8db87c0e725b36aba21a2362a2
+review_archive_schema_sha256: 53ed17e5416a0a98a3e058ad20c37191050e3ea649e79a97cdbf92dc05771bad
+review_summary_schema_sha256: ca9a11d4e5511218222d1cd5b675223d3e3017a989cfb776795ac6ef1b352ec0
+evidence_manifest_schema_sha256: 70fd1c72382f5ab847e3eb2eb40f135abb628f46c2a1e5ebf006acdba81c8e0f
 evidence_files:
-  - path: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/commands.txt"
-    sha256: "fd069582a8ce7488fbb0e688719a770ed9a9b6abc5d008b2ef06680f9d937713"
-    purpose: "P0 command list."
-  - path: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/command_outputs.txt"
-    sha256: "1134a6f7a17c5329e32ca26a83fadc83eaf016adc9c93cbf4cd343242a2518ad"
-    purpose: "P0 command output bundle before static scan fix."
-  - path: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/static_scans.txt"
-    sha256: "dbb257b48266336b89979a9d3d98c210d1d667dcd0c84c6e28dc83d75deff95b"
-    purpose: "P0 static scans before fixing Plan-command self-match evidence."
-  - path: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/schema_validation.txt"
-    sha256: "e1d3344ce8490305b47c0b44c4399ab4d94c1530496efd979871f7e2082857e5"
-    purpose: "P0 schema validation."
-  - path: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/function_implementation_table.yaml"
-    sha256: "aec284ef6c6715cb40fd70784375e34cfa96d8cf9aa29b549f23aefb3c554fe9"
-    purpose: "P0 implementation table for setup artifacts."
-  - path: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/user_approval_20260705.md"
-    sha256: "3dd4d98f365bea554caaa48bd51ef97de5cfaf02b437540398aa865ebde9e5f8"
-    purpose: "User approval record."
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/commands.txt
+  sha256: fd069582a8ce7488fbb0e688719a770ed9a9b6abc5d008b2ef06680f9d937713
+  purpose: P0 command list.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/command_outputs.txt
+  sha256: 7d2c148582b41aed0384bbc7a2475637c7fe5aa63fb74a21720ee64aa53f3555
+  purpose: P0 command output bundle before static scan fix.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/static_scans.txt
+  sha256: 9dbabd7b3e9a239e230e52369670ab387421587bb2562f8a9b9f566cf3d5f7d8
+  purpose: P0 static scans before fixing Plan-command self-match evidence.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/schema_validation.txt
+  sha256: 3a707055f81a06871d8850c6257b14a27a41365732bc1fc624cb0fb71a7fed17
+  purpose: P0 schema validation.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/function_implementation_table.yaml
+  sha256: aec284ef6c6715cb40fd70784375e34cfa96d8cf9aa29b549f23aefb3c554fe9
+  purpose: P0 implementation table for setup artifacts.
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/user_approval_20260705.md
+  sha256: 3dd4d98f365bea554caaa48bd51ef97de5cfaf02b437540398aa865ebde9e5f8
+  purpose: User approval record.
 command_outputs:
-  - command: "P0 closure evidence review"
-    cwd: "C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry"
-    exit_code: 0
-    output_path: "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-223810Z/response.md"
-    output_sha256: "965c33cc80516cd8462e501675b13ce81d8c6da98c07f4f5e12307f56266d701"
-    finished_at_utc: "20260704-223810Z"
+- command: P0 closure evidence review
+  cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-223810Z/response.md
+  output_sha256: 965c33cc80516cd8462e501675b13ce81d8c6da98c07f4f5e12307f56266d701
+  finished_at_utc: 20260704-223810Z
 static_scans:
-  - scan_id: "p0-static-scan-self-match-before-fix"
-    command: "rg forbidden old candidate-cover acceptance phrase"
-    forbidden_pattern: "Plan command self-match recorded as failed scan"
-    result: "fail"
-    output_path: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/static_scans.txt"
-function_implementation_table: "docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/function_implementation_table.yaml"
+- scan_id: p0-static-scan-self-match-before-fix
+  command: rg forbidden old candidate-cover acceptance phrase
+  forbidden_pattern: Plan command self-match recorded as failed scan
+  result: fail
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/static_scans.txt
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P0/function_implementation_table.yaml
 related_reviews:
-  - "docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-223810Z/response.md"
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/P0/20260704-223810Z/response.md
 known_limitations:
-  - "This review is FAIL_FIXABLE and does not close P0."
+- This review is FAIL_FIXABLE and does not close P0.
 algorithmic_claims_made: []
-claim_ceiling_after_phase: "SCAFFOLD_READY"
+claim_ceiling_after_phase: SCAFFOLD_READY
 commands_are_fresh: true
 no_untracked_evidence_omitted: false

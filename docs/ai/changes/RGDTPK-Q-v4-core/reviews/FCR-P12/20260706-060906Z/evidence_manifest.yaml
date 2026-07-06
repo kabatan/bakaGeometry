@@ -1,0 +1,49 @@
+schema_version: rgdtpk-evidence-manifest-v2.2
+phase_id: FCR-P12
+commit: f1f44f4947847e8f08470009fdbb48383819bbdd+p16-archive-normalization
+algorithm_spec_source_sha256: 2dc2f950896ff3e60858b17bf3f1867667564ae773e0a71d6db8c0953143caed
+failure_source_sha256: df0d9d525a022f1851fe8021c70fea97d10408425e7b2670bf991858723ae14e
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: b2d6655c3926c0528d86284cb91f35db319a5efe6d2fe068f568c32f779c8b70
+review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
+evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
+evidence_files:
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P12/commands.txt
+  sha256: 9ed1f67ee9e68ec016b5dd45a751381cfb932e0102c0fb97b6148610782537aa
+  purpose: phase evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P12/command_outputs.txt
+  sha256: 84f96eb485970660490597c73c24b82253110b1b9d3ea8227b73ee204db32c5d
+  purpose: phase evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P12/scan_outputs.txt
+  sha256: f1f27b84e1add68988c89fdcfa9ce1f6af5715829aa0c7a20fd5e860f6937055
+  purpose: phase evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P12/reviewer_results.md
+  sha256: d8e41ea9f8b464c2d15b9ff8d6db80968368d44db655da040556d6a5508a1c2d
+  purpose: phase evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P12/20260706-060906Z/prompt.md
+  sha256: a4a4093b8acba25572dd403154bbc5f06d8fd5f3ad8e1ad825ffa8deb8128cc8
+  purpose: phase evidence
+- path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P12/20260706-060906Z/response.md
+  sha256: 55de4044c95dfa4a6356d59b27cc9598d85a5461e5678c3ef1736b4787e603df
+  purpose: phase evidence
+command_outputs:
+- command: cargo test --manifest-path geosolver-core/Cargo.toml --all-targets --all-features
+    -- --nocapture
+  cwd: C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry
+  exit_code: 0
+  output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P12/command_outputs.txt
+  output_sha256: 84f96eb485970660490597c73c24b82253110b1b9d3ea8227b73ee204db32c5d
+  finished_at_utc: 20260706-090000Z
+static_scans: []
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P12/commands.txt
+related_reviews:
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P12/20260706-060906Z/prompt.md
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P12/20260706-060906Z/response.md
+known_limitations: []
+algorithmic_claims_made:
+- CANDIDATE_COVER_CORE_READY
+claim_ceiling_after_phase: CANDIDATE_COVER_CORE_READY
+commands_are_fresh: true
+no_untracked_evidence_omitted: true

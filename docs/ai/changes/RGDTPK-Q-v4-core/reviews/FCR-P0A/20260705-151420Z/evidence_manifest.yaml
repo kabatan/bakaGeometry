@@ -11,31 +11,31 @@ review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3ba
 evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
 evidence_files:
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_AGENT_FAILURE_MODE_RESET.md
-  sha256: a97b50bf597ed590889a7609a2cb25d9ec40f7be27d47adf332e52d3fa8abe36
+  sha256: 1e2629c443078eb8e824167865690097c8e56096c823ed7f573f372468c9cff5
   purpose: 'FCR-P0A evidence: FULL_CORE_AGENT_FAILURE_MODE_RESET.md'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_AGENT_FAILURE_MODE_RESET_TEMPLATE.md
-  sha256: 0a9ea0b33bd1cbfac8598eb67923cc165d8ac006aa0e9db5390c1b164d832133
+  sha256: 95e00a307f391b6a7908bb8d59a467bf0a7dd55271f24982ec552e08f44e9932
   purpose: 'FCR-P0A evidence: FULL_CORE_AGENT_FAILURE_MODE_RESET_TEMPLATE.md'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_PLAN.md
-  sha256: b836599108c1db4a4e828e672780e5074049045fe5fa590e94252cdc91850bb9
+  sha256: 9b44ea140ab881e7dc96f6d7175dbfcbebea43afd2f7fbc1e742169020bd68fc
   purpose: 'FCR-P0A evidence: FULL_CORE_REPAIR_PLAN.md'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/FULL_CORE_REPAIR_BASE_SPEC.md
-  sha256: 1f73bd7a26b2566b08f53d31b14785110466e8ae6170b6769d1af17d50a36047
+  sha256: b805dc0f07a3c502f7dcbc2c2ec38280736954a0b30169c91787838f30c67fb3
   purpose: 'FCR-P0A evidence: FULL_CORE_REPAIR_BASE_SPEC.md'
 - path: docs/ai/ACTIVE_CONTEXT.md
-  sha256: c1c1a5ff35a1d2af1ecda598014472ae19b427df0b13273d02f0a0918f8aa958
+  sha256: 953dbb4a24720e54b1cc7d01ea5563623911a8872d1f83bbd3666ccb031eaa04
   purpose: 'FCR-P0A evidence: ACTIVE_CONTEXT.md'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0A/commands.txt
-  sha256: 9f75c363c74ed74bd790ccc17c6b3a37bbbaea1324fe3f3b44f7f7682c47b1ef
+  sha256: b2551bf741c3366dc264bd5023fa11f87bb4c60d1aecfd56a3d9cecb7a52bbfa
   purpose: 'FCR-P0A evidence: commands.txt'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0A/command_outputs.txt
   sha256: fef756d5893517f940f6d1e64ceaa17437a4059e11c7e2f2838d753875a8287d
   purpose: 'FCR-P0A evidence: command_outputs.txt'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0A/phase_handoff.yaml
-  sha256: 8147ba190e8bae017a02ad84762f94a17bfe61ee51375df0cc324b92c21c676e
+  sha256: 4d1c9385b7141f9d0541d2cde1b6b29c74e8140c3ceed2fc97f27a58f2a35fc5
   purpose: 'FCR-P0A evidence: phase_handoff.yaml'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0A/guardian_boundary_reviewer_pass.md
-  sha256: 98ff3fecc8684757f42ac82a28243742a1a239647f7127e5f0eafba85ed84604
+  sha256: 0591b1e10eded4a0f4b73f1ae277ecf2fcb6aa2349cb1a196fe797e00de491a9
   purpose: 'FCR-P0A evidence: guardian_boundary_reviewer_pass.md'
 - path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P0A/20260705-151420Z/prompt.md
   sha256: 4614eee922427270646a21cf80d6d951381bb137cab1fa1821af5ac8126a75e2
@@ -60,7 +60,7 @@ command_outputs:
   cwd: C:/Users/bakat/OneDrive/ドキュメント/bakaGeometry
   exit_code: 0
   output_path: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P0A/guardian_boundary_reviewer_pass.md
-  output_sha256: 98ff3fecc8684757f42ac82a28243742a1a239647f7127e5f0eafba85ed84604
+  output_sha256: 0591b1e10eded4a0f4b73f1ae277ecf2fcb6aa2349cb1a196fe797e00de491a9
   finished_at_utc: 20260705-151420Z
 static_scans:
 - scan_id: fcr-p0a-reset-constraints

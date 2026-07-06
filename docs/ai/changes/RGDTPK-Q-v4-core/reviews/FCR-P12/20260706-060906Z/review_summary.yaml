@@ -1,0 +1,123 @@
+schema_version: rgdtpk-review-v2.2
+phase_id: FCR-P12
+phase_kind: closure
+review_status: PASS
+phase_closable: true
+claim_ceiling_after_phase: CANDIDATE_COVER_CORE_READY
+base_spec_sha256: dfd6832c211af0928270cfbaa98dcf73e50cd37e6155534703b1217636038f6c
+plan_sha256: ab75dbeb8214dd90564cdb753c8354317c80831b4bb0b5694b38dd1219f1f4a8
+source_map_sha256: 2e9393cd2328bf7e2df440b14ee33110160225955c2ee499eafa2237271bde44
+review_archive_schema_sha256: b2d6655c3926c0528d86284cb91f35db319a5efe6d2fe068f568c32f779c8b70
+review_summary_schema_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
+evidence_manifest_schema_sha256: 71b1285a18392f61868b947628aac0a591de29f975d3df5a69ae3ac44217af76
+schema_mirror_sha256: e078bd86caf3efabfe056da1de9b80194e79e4756bdd3af3bacb938cc2f206be
+commit: f1f44f4947847e8f08470009fdbb48383819bbdd+p16-archive-normalization
+prompt_sha256: a4a4093b8acba25572dd403154bbc5f06d8fd5f3ad8e1ad825ffa8deb8128cc8
+response_sha256: 55de4044c95dfa4a6356d59b27cc9598d85a5461e5678c3ef1736b4787e603df
+evidence_manifest_sha256: 3adf7b6c4d3446d604027cc92cce5f8e26a322c530a83ae4f3e08fdb60242ec7
+prompt_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P12/20260706-060906Z/prompt.md
+response_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P12/20260706-060906Z/response.md
+evidence_manifest_path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P12/20260706-060906Z/evidence_manifest.yaml
+reviewer_identity: guardian_boundary_reviewer
+reviewed_rids:
+- RGQ-028
+- RGQ-034
+- RGQ-037
+- RGQ-048
+- RGQ-049
+reviewed_mechs:
+- MECH-011
+- MECH-016
+source_sections_checked:
+- FULL_CORE_REPAIR_PLAN.md FCR-P12
+- BASE_SPEC.md RGQ-049
+files_inspected:
+- docs/ai/changes/RGDTPK-Q-v4-core/CLOSURE.md
+- geosolver-core/src/verify/run_certificate.rs
+evidence_inspected:
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P12/commands.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P12/command_outputs.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P12/scan_outputs.txt
+- docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P12/reviewer_results.md
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P12/20260706-060906Z/prompt.md
+- docs/ai/changes/RGDTPK-Q-v4-core/reviews/FCR-P12/20260706-060906Z/response.md
+commands_inspected:
+- cargo test --manifest-path geosolver-core/Cargo.toml --all-targets --all-features
+  -- --nocapture
+function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/FCR-P12/commands.txt
+algorithmic_sufficiency:
+  verdict: sufficient
+  rationale: Archived reviewer response records PASS after code and evidence inspection
+    for this phase scope.
+forbidden_pattern_scan:
+  heavy_fallback: pass
+  narrow_slice_escape: pass
+  hidden_fallback: pass
+  decorative_certificate: pass
+  placeholder_candidate: pass
+  geometry_dispatch: pass
+  unsupported_for_well_formed_input: pass
+  exact_image_overclaim: pass
+  target_relation_schedule_discretion: pass
+  weak_action_krylov_coverage: pass
+  nonfinite_without_positive_proof: pass
+  non_spec_status: pass
+  required_function_deferred: pass
+  appendix_override_bypass: pass
+  stress_fixture_dispatch: pass
+not_applicable_justifications: {}
+raw_response_consistency:
+  raw_response_contains_blocker: false
+  raw_response_contains_required_fix: false
+  summary_overrides_raw_response: false
+  reviewer_declared_files_inspected: true
+phase_specific_checks:
+- check_id: fcr-p12-candidate-cover-closure
+  required_by: RGQ-049
+  verdict: pass
+  evidence: FCR-P12 reviewer results approve CANDIDATE_COVER_CORE_READY only.
+  reviewer_rationale: Boundary excludes exact-image/source/full/nonfinite overclaims.
+appendix_override_checks:
+- appendix_section: phase scope
+  controlling_requirement: RGQ-028
+  verdict: pass
+  evidence: Reviewer response records no Appendix override bypass in this phase scope.
+  reviewer_rationale: The phase follows the controlling hardening rule for the reviewed
+    behavior.
+status_mapping_checks:
+- error_or_internal_condition: phase public status mapping
+  mapped_solver_status: per phase evidence
+  verdict: pass
+  evidence: Reviewer response records status behavior is within phase scope.
+  reviewer_rationale: No non-spec status or overclaim was accepted.
+suite_partition_checks:
+- suite_name: not_applicable
+  verdict: not_applicable
+  evidence: This phase is not P15/P16 suite partition closure.
+  reviewer_rationale: Suite partition is checked in P15/P16.
+semantic_deletion_challenges: []
+tamper_challenges: []
+unresolved_risks: []
+blocking_findings: []
+required_fixes: []
+pass_conditions:
+  schema_valid: true
+  schema_mirror_byte_identical: true
+  no_blocking_findings: true
+  no_required_fixes: true
+  raw_response_consistent: true
+  algorithmic_sufficiency_satisfied: true
+  all_forbidden_scans_pass: true
+  phase_specific_checks_pass: true
+  appendix_overrides_respected: true
+  status_mapping_respected: true
+  suite_partition_respected: true
+  reviewer_read_code_not_only_summary: true
+  no_controlling_stub_or_placeholder: true
+  exact_verification_present_where_required: true
+  no_failures_overridden_by_summary: true
+  fresh_evidence_after_last_code_change: true
+  pass_matches_raw_response: true
+  schema_hashes_match_current_files: true
+  prompt_and_response_archived: true
+  evidence_manifest_archived_and_valid: true

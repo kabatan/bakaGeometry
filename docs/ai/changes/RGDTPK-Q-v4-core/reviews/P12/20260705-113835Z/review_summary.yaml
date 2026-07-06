@@ -75,7 +75,11 @@ commands_inspected:
 function_implementation_table: docs/ai/changes/RGDTPK-Q-v4-core/evidence/P12/function_implementation_table.yaml
 algorithmic_sufficiency:
   verdict: sufficient
-  rationale: Reviewer verified exact squarefree support, exact rational real-root isolation, decoded candidate target/support/root-index/interval/hash binding, mandatory algebraic-root records, production candidate-cover finalizer wiring, replay candidate completeness checks, and support-producing integration evidence for P12 scope.
+  rationale: Reviewer verified exact squarefree support, exact rational real-root
+    isolation, decoded candidate target/support/root-index/interval/hash binding,
+    mandatory algebraic-root records, production candidate-cover finalizer wiring,
+    replay candidate completeness checks, and support-producing integration evidence
+    for P12 scope.
 forbidden_pattern_scan:
   heavy_fallback: pass
   narrow_slice_escape: pass
@@ -93,9 +97,13 @@ forbidden_pattern_scan:
   appendix_override_bypass: pass
   stress_fixture_dispatch: pass
 not_applicable_justifications:
-  status_mapping_checks[0]: P12 adds roots/decode/finalizer/replay binding behavior but does not add public SolverStatus mapping; public pipeline status mapping remains P14/P15 scope.
-  suite_partition_checks[0]: P15 acceptance suite partition is not active in P12; P12 closes exact root isolation and decode only.
-  semantic_deletion_challenges: P12 is not one of the schema-mandated semantic deletion phases; replay tamper challenges are recorded for candidate omission and duplication.
+  status_mapping_checks[0]: P12 adds roots/decode/finalizer/replay binding behavior
+    but does not add public SolverStatus mapping; public pipeline status mapping remains
+    P14/P15 scope.
+  suite_partition_checks[0]: P15 acceptance suite partition is not active in P12;
+    P12 closes exact root isolation and decode only.
+  semantic_deletion_challenges: P12 is not one of the schema-mandated semantic deletion
+    phases; replay tamper challenges are recorded for candidate omission and duplication.
 raw_response_consistency:
   raw_response_contains_blocker: false
   raw_response_contains_required_fix: false
@@ -105,50 +113,70 @@ phase_specific_checks:
 - check_id: p12-squarefree-support
   required_by: RGQ-028
   verdict: pass
-  evidence: squarefree_support rejects zero support and delegates exact squarefree normalization to derivative/gcd-backed univariate arithmetic.
-  reviewer_rationale: P12 implements exact squarefree support without floating factorization or placeholder roots.
+  evidence: squarefree_support rejects zero support and delegates exact squarefree
+    normalization to derivative/gcd-backed univariate arithmetic.
+  reviewer_rationale: P12 implements exact squarefree support without floating factorization
+    or placeholder roots.
 - check_id: p12-exact-real-root-isolation
   required_by: RGQ-028
   verdict: pass
-  evidence: isolate_real_roots uses exact squarefree support and exact Sturm-backed isolation with rational intervals; tests cover no-real, rational, multiple, irrational, repeated, and high-coefficient cases.
-  reviewer_rationale: Required exact rational isolating intervals are present and tested.
+  evidence: isolate_real_roots uses exact squarefree support and exact Sturm-backed
+    isolation with rational intervals; tests cover no-real, rational, multiple, irrational,
+    repeated, and high-coefficient cases.
+  reviewer_rationale: Required exact rational isolating intervals are present and
+    tested.
 - check_id: p12-decoded-candidate-binding
   required_by: RGQ-028
   verdict: pass
-  evidence: decode_candidates binds target, support hash, root index, isolating interval, and candidate hash.
+  evidence: decode_candidates binds target, support hash, root index, isolating interval,
+    and candidate hash.
   reviewer_rationale: Candidate objects are deterministic and not placeholders.
 - check_id: p12-algebraic-root-records
   required_by: RGQ-034
   verdict: pass
-  evidence: AlgebraicRootRecord, algebraic_roots_from_support, exact refinement, and comparison helpers are implemented and covered by focused tests.
-  reviewer_rationale: Mandatory algebraic-number implementation is present rather than deferred.
+  evidence: AlgebraicRootRecord, algebraic_roots_from_support, exact refinement, and
+    comparison helpers are implemented and covered by focused tests.
+  reviewer_rationale: Mandatory algebraic-number implementation is present rather
+    than deferred.
 - check_id: p12-production-candidate-cover-finalizer
   required_by: RGQ-037
   verdict: pass
-  evidence: finalize_candidate_cover_result computes squarefree support, exact roots, and decoded candidates before returning CertifiedCandidateCover.
-  reviewer_rationale: Prior unit-test-only decode wiring gap is remediated through a production support-producing result construction path.
+  evidence: finalize_candidate_cover_result computes squarefree support, exact roots,
+    and decoded candidates before returning CertifiedCandidateCover.
+  reviewer_rationale: Prior unit-test-only decode wiring gap is remediated through
+    a production support-producing result construction path.
 - check_id: p12-replay-candidate-completeness
   required_by: RGQ-048
   verdict: pass
-  evidence: verify_roots_and_candidates rejects omitted or duplicate decoded candidates and recomputes target/support/index/interval/hash binding.
+  evidence: verify_roots_and_candidates rejects omitted or duplicate decoded candidates
+    and recomputes target/support/index/interval/hash binding.
   reviewer_rationale: Self-consistently rehashed omission/duplicate tampering is rejected.
 - check_id: p12-support-producing-integration
   required_by: RGQ-037
   verdict: pass
-  evidence: p12_candidate_cover_finalizer_returns_exact_roots_and_nonplaceholder_candidates exercises nonzero support through the finalizer and observes exact roots and non-placeholder candidates.
-  reviewer_rationale: P12 has integration evidence for support-producing candidate-cover construction within its scope.
+  evidence: p12_candidate_cover_finalizer_returns_exact_roots_and_nonplaceholder_candidates
+    exercises nonzero support through the finalizer and observes exact roots and non-placeholder
+    candidates.
+  reviewer_rationale: P12 has integration evidence for support-producing candidate-cover
+    construction within its scope.
 appendix_override_checks:
 - appendix_section: Appendix A section 26
   controlling_requirement: RGQ-028
   verdict: pass
-  evidence: squarefree_support, isolate_real_roots, decode_candidates, and algebraic root helpers implement exact support/root/decode behavior with rational intervals and deterministic hashes.
-  reviewer_rationale: P12 follows the controlling roots/decode section and does not substitute floating roots or placeholder candidates.
+  evidence: squarefree_support, isolate_real_roots, decode_candidates, and algebraic
+    root helpers implement exact support/root/decode behavior with rational intervals
+    and deterministic hashes.
+  reviewer_rationale: P12 follows the controlling roots/decode section and does not
+    substitute floating roots or placeholder candidates.
 status_mapping_checks:
-- error_or_internal_condition: P12 root/decode finalizer and replay candidate verification failures
+- error_or_internal_condition: P12 root/decode finalizer and replay candidate verification
+    failures
   mapped_solver_status: not_applicable
   verdict: not_applicable
-  evidence: P12 does not introduce or alter public SolverStatus mapping; failure semantics for full public orchestration remain later phase scope.
-  reviewer_rationale: The P12 closure claim is MECH-011 only and does not close P14 public pipeline status mapping.
+  evidence: P12 does not introduce or alter public SolverStatus mapping; failure semantics
+    for full public orchestration remain later phase scope.
+  reviewer_rationale: The P12 closure claim is MECH-011 only and does not close P14
+    public pipeline status mapping.
 suite_partition_checks:
 - suite_name: not_applicable
   verdict: not_applicable
@@ -157,14 +185,20 @@ suite_partition_checks:
 semantic_deletion_challenges: []
 tamper_challenges:
 - challenge_id: p12-candidate-omission-duplicate-tamper
-  target: Run replay with omitted or duplicate decoded candidates while recomputing run-certificate hashes
+  target: Run replay with omitted or duplicate decoded candidates while recomputing
+    run-certificate hashes
   verdict: pass
-  evidence: p12_replay_rejects_candidate_omission_and_duplicates_even_when_hashes_match passes.
-  reviewer_rationale: Replay enforces one decoded candidate per isolated real root and rejects structural candidate tampering.
+  evidence: p12_replay_rejects_candidate_omission_and_duplicates_even_when_hashes_match
+    passes.
+  reviewer_rationale: Replay enforces one decoded candidate per isolated real root
+    and rejects structural candidate tampering.
 unresolved_risks:
-- P12 does not close P13 exact-image semantics, P14 public orchestration, P15 acceptance suites, P16 final closure, source-faithful status, or acceptance-complete status.
-- Candidate-cover finalization is P12 mechanism construction and not a full solve_with_context pipeline claim.
-- Descartes-selected isolation currently routes to exact Sturm; no distinct Descartes implementation is claimed.
+- P12 does not close P13 exact-image semantics, P14 public orchestration, P15 acceptance
+  suites, P16 final closure, source-faithful status, or acceptance-complete status.
+- Candidate-cover finalization is P12 mechanism construction and not a full solve_with_context
+  pipeline claim.
+- Descartes-selected isolation currently routes to exact Sturm; no distinct Descartes
+  implementation is claimed.
 - No R-ID is marked VERIFIED by this review.
 blocking_findings: []
 required_fixes: []
