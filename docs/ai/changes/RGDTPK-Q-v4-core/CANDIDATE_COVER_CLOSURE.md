@@ -38,12 +38,18 @@ does not run exact-image fiber/guard/slack/branch filtering unless `exact_image_
   - adds Route B `ComposedIdealMembershipSupportCertificate`;
   - verifies exact rational identity `S(T) = sum q_i r_i`;
   - rejects multiplier tamper and removed composed relation evidence.
+- `compose/compose.rs`
+  - preserves separator-composition Route A;
+  - allows Route B fallback only when the composed message ideal has a target eliminant;
+  - still rejects incomplete message deletion.
+- `compose/final_support.rs`
+  - constructs support via Route A first;
+  - constructs support via Route B composed-ideal elimination when Route A is unavailable;
+  - prevents message-relation hard cases from becoming nonfinite without positive proof.
 - `solver/orchestrator.rs`
   - emits `ExactImageFilteringNotRequested`;
   - emits `CandidateCoverMayContainSpuriousRoots`;
   - keeps candidate-cover mode separate from exact-image filtering.
-- `compose/final_support.rs`
-  - emits the same candidate-cover diagnostics for direct finalization.
 - `tests/ccc_candidate_cover_completion.rs`
   - adds four public spurious-root retention cases;
   - adds 12 fresh public red-team algebraic inputs.
@@ -56,6 +62,7 @@ Focused commands:
 
 ```text
 cargo test --manifest-path geosolver-core/Cargo.toml verify_support -- --nocapture: PASS
+cargo test --manifest-path geosolver-core/Cargo.toml ccc_route_b_final_support -- --nocapture: PASS
 cargo test --manifest-path geosolver-core/Cargo.toml --test p13_exact_image_semantics -- --nocapture: PASS
 cargo test --manifest-path geosolver-core/Cargo.toml --test ccc_candidate_cover_completion -- --nocapture: PASS
 ```

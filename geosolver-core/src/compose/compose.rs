@@ -2,12 +2,16 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
+use crate::algebra::groebner::{
+    groebner_elimination_basis, polynomial_in_keep_variables, GroebnerOptions,
+};
+use crate::algebra::monomial_order::elimination_order;
 use crate::compose::message::{hash_projection_message, ProjectionMessage};
 use crate::compose::separator_elimination::eliminate_separators_from_message_relations;
 use crate::graph::projection_dag::TargetProjectionDAG;
 use crate::problem::context::SolverContext;
 use crate::result::cost_trace::CompositionCostTrace;
-use crate::result::status::{FailureKind, SolverError, SolverErrorKind};
+use crate::result::status::{AlgebraicReason, FailureKind, SolverError, SolverErrorKind, StageId};
 use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::{BlockId, VariableId};
 use crate::types::polynomial::{poly_variables, SparsePolynomialQ};
@@ -87,22 +91,41 @@ pub fn compose_projection_messages(
             .difference(&keep)
             .copied()
             .collect::<BTreeSet<_>>();
-        let message = eliminate_separators_from_message_relations(
+        let separator_result = eliminate_separators_from_message_relations(
             relations.clone(),
             keep,
             separators,
             target,
             ctx,
-        )?;
-        separator_hashes.push(message.package_hash);
-        root_relations.extend(target_only_relations(&message.relation_generators, target));
-        separator_messages.push(message);
+        );
+        match separator_result {
+            Ok(message) => {
+                separator_hashes.push(message.package_hash);
+                root_relations.extend(target_only_relations(&message.relation_generators, target));
+                separator_messages.push(message);
+            }
+            Err(err)
+                if matches!(
+                    err.kind,
+                    SolverErrorKind::Failure(FailureKind::ImplementationBug { .. })
+                ) =>
+            {
+                return Err(err);
+            }
+            Err(_err) => {
+                if !message_relations_have_target_eliminant(&relations, target) {
+                    return Err(_err);
+                }
+                // Final support construction has a separate composed-ideal membership route.
+                // Continue only when the composed message ideal already has a target eliminant.
+            }
+        }
     }
-    if root_relations.is_empty() {
+    if root_relations.is_empty() && !message_relations_have_target_eliminant(&relations, target) {
         return Err(algorithmic_hard_case(
             target,
             dag.dag_hash,
-            "composition produced no target-only root relation",
+            "composition produced no target-only root relation or composed-ideal target eliminant",
         ));
     }
     let mut composed = ComposedProjection {
@@ -211,6 +234,38 @@ fn target_only_relations(
         .collect()
 }
 
+fn message_relations_have_target_eliminant(
+    relations: &[SparsePolynomialQ],
+    target: VariableId,
+) -> bool {
+    if relations.is_empty() {
+        return false;
+    }
+    let all_variables = relations
+        .iter()
+        .flat_map(poly_variables)
+        .collect::<BTreeSet<_>>();
+    if !all_variables.contains(&target) {
+        return false;
+    }
+    let eliminate = all_variables
+        .iter()
+        .copied()
+        .filter(|var| *var != target)
+        .collect::<Vec<_>>();
+    let keep = BTreeSet::from([target]);
+    let order = elimination_order(&eliminate, &[target]);
+    groebner_elimination_basis(relations, &order, GroebnerOptions::default())
+        .map(|basis| {
+            basis.basis.iter().any(|entry| {
+                !entry.polynomial.terms.is_empty()
+                    && polynomial_in_keep_variables(&entry.polynomial, &keep)
+                    && poly_variables(&entry.polynomial).contains(&target)
+            })
+        })
+        .unwrap_or(false)
+}
+
 fn algorithmic_hard_case(
     target: VariableId,
     minimal_block_hash: Hash,
@@ -219,8 +274,8 @@ fn algorithmic_hard_case(
     SolverError {
         target: Some(target),
         kind: SolverErrorKind::Failure(FailureKind::AlgorithmicHardCase {
-            stage: crate::result::status::StageId("P10Composition".to_owned()),
-            reason: crate::result::status::AlgebraicReason(reason.to_owned()),
+            stage: StageId("P10Composition".to_owned()),
+            reason: AlgebraicReason(reason.to_owned()),
             minimal_block_hash,
         }),
     }

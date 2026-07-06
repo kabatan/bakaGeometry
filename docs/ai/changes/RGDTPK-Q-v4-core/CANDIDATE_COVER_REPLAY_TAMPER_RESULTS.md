@@ -22,8 +22,9 @@ Nonfinite replay uses the public `NonFiniteCertificate`, recomputes composition,
 
 ## New Support-Certificate Route B
 
-`verify_support.rs` now has a machine-readable
-`ComposedIdealMembershipSupportCertificate` for the route:
+`compose/final_support.rs` can now construct support from the composed message ideal when Route A is
+unavailable, and `verify_support.rs` has a machine-readable
+`ComposedIdealMembershipSupportCertificate` for the verification route:
 
 ```text
 S(T) = sum q_i r_i
@@ -42,6 +43,7 @@ The certificate records:
 Focused tests:
 
 ```text
+ccc_route_b_final_support_uses_composed_ideal_membership_when_route_a_unavailable: PASS
 composed_ideal_membership_route_verifies_support_without_target_only_root_relation: PASS
 composed_ideal_membership_route_rejects_multiplier_tamper: PASS
 composed_ideal_membership_route_rejects_removed_relation: PASS

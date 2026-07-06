@@ -2,6 +2,10 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
+use crate::algebra::groebner::{
+    groebner_elimination_basis, polynomial_in_keep_variables, GroebnerOptions,
+};
+use crate::algebra::monomial_order::elimination_order;
 use crate::compose::compose::{hash_composed_projection, ComposedProjection};
 use crate::compose::message::ProjectionMessage;
 use crate::result::cost_trace::GlobalCostTrace;
@@ -76,13 +80,17 @@ pub fn build_global_support_polynomial(
     target: VariableId,
     _ctx: &mut crate::problem::context::SolverContext,
 ) -> Result<UniPolynomialQ, SolverError> {
-    support_from_target_only_relations(&composed, target).ok_or_else(|| {
-        algorithmic_hard_case(
-            target,
-            composed.composed_hash,
-            "no target-only support after composition",
-        )
-    })
+    if let Some(support) = support_from_target_only_relations(&composed, target) {
+        return Ok(support);
+    }
+    if let Some(support) = support_from_composed_ideal_membership(&composed, target)? {
+        return Ok(support);
+    }
+    Err(algorithmic_hard_case(
+        target,
+        composed.composed_hash,
+        "no certified target support after composition",
+    ))
 }
 
 pub fn build_final_support_or_nonfinite(
@@ -101,6 +109,16 @@ pub fn build_final_support_or_nonfinite_with_system(
 ) -> Result<FinalSupportComputation, SolverError> {
     if let Some(support) = support_from_target_only_relations(&composed, target) {
         return Ok(FinalSupportComputation::Support(support));
+    }
+    if let Some(support) = support_from_composed_ideal_membership(&composed, target)? {
+        return Ok(FinalSupportComputation::Support(support));
+    }
+    if !composed.message_relations.is_empty() && composed.root_relations.is_empty() {
+        return Err(algorithmic_hard_case(
+            target,
+            composed.composed_hash,
+            "message relations remain but no finite support or nonfinite proof was certified",
+        ));
     }
     match certify_nonfinite_target_image_with_system(&composed, system, ctx) {
         Ok(cert) => Ok(FinalSupportComputation::CertifiedNonFinite(cert)),
@@ -392,6 +410,63 @@ fn support_from_target_only_relations(
         found = true;
     }
     found.then_some(support)
+}
+
+fn support_from_composed_ideal_membership(
+    composed: &ComposedProjection,
+    target: VariableId,
+) -> Result<Option<UniPolynomialQ>, SolverError> {
+    if composed.target != target || hash_composed_projection(composed) != composed.composed_hash {
+        return Err(implementation_bug(
+            target,
+            "composed projection hash mismatch during composed-ideal support construction",
+        ));
+    }
+    let relations = composed
+        .message_relations
+        .iter()
+        .filter(|relation| !relation.terms.is_empty())
+        .cloned()
+        .collect::<Vec<_>>();
+    if relations.is_empty() {
+        return Ok(None);
+    }
+    let all_variables = relations
+        .iter()
+        .flat_map(poly_variables)
+        .collect::<BTreeSet<_>>();
+    if !all_variables.contains(&target) {
+        return Ok(None);
+    }
+    let eliminate = all_variables
+        .iter()
+        .copied()
+        .filter(|var| *var != target)
+        .collect::<Vec<_>>();
+    let keep = BTreeSet::from([target]);
+    let order = elimination_order(&eliminate, &[target]);
+    let basis = groebner_elimination_basis(&relations, &order, GroebnerOptions::default())?;
+    let mut support = normalize_univariate(UniPolynomialQ {
+        variable: target,
+        coeffs_low_to_high: vec![int_q(1)],
+        hash: hash_sequence("univariate", &[]),
+    });
+    let mut found = false;
+    for entry in &basis.basis {
+        if !polynomial_in_keep_variables(&entry.polynomial, &keep) {
+            continue;
+        }
+        let Some(uni) = polynomial_to_univariate(&entry.polynomial, target) else {
+            continue;
+        };
+        if degree_uni(&uni).is_none() || degree_uni(&uni) == Some(0) {
+            continue;
+        }
+        let sq = squarefree_part_uni(&uni);
+        support = squarefree_part_uni(&univariate_mul(&support, &sq));
+        found = true;
+    }
+    Ok(found.then_some(support))
 }
 
 fn polynomial_to_univariate(
@@ -691,12 +766,15 @@ mod tests {
     use crate::types::hash::hash_sequence;
     use crate::types::ids::BlockId;
     use crate::types::ids::VariableId;
+    use crate::types::polynomial::{constant_poly, poly_sub, variable_poly};
     use crate::types::rational::int_q;
     use crate::types::univariate::{normalize_univariate, UniPolynomialQ};
+    use crate::verify::verify_support::{verify_global_support, GlobalSupportProofRoute};
 
     use super::{
-        certify_nonfinite_target_image, finalize_candidate_cover_result,
-        hash_nonfinite_certificate, verify_nonfinite_certificate, NonFiniteProofKind,
+        build_final_support_or_nonfinite, certify_nonfinite_target_image,
+        finalize_candidate_cover_result, hash_nonfinite_certificate, verify_nonfinite_certificate,
+        FinalSupportComputation, NonFiniteProofKind,
     };
 
     #[test]
@@ -755,5 +833,43 @@ mod tests {
         cert.certificate_hash = hash_nonfinite_certificate(&cert);
         let err = verify_nonfinite_certificate(&cert, &composed).unwrap_err();
         assert_eq!(err.public_status(), SolverStatus::ImplementationBug);
+    }
+
+    #[test]
+    fn ccc_route_b_final_support_uses_composed_ideal_membership_when_route_a_unavailable() {
+        let t = VariableId(0);
+        let x = VariableId(1);
+        let mut composed = ComposedProjection {
+            target: t,
+            root_block_id: BlockId(0),
+            message_relations: vec![
+                poly_sub(&variable_poly(x), &constant_poly(int_q(1))),
+                poly_sub(&variable_poly(t), &variable_poly(x)),
+            ],
+            root_relations: Vec::new(),
+            source_message_hashes: vec![hash_sequence("ccc-route-b-message", &[])],
+            separator_elimination_hashes: Vec::new(),
+            separator_elimination_messages: Vec::new(),
+            composition_cost: CompositionCostTrace {
+                relation_count_before: 2,
+                relation_count_after: 0,
+            },
+            composed_hash: hash_sequence("composed-projection", &[]),
+        };
+        composed.composed_hash = hash_composed_projection(&composed);
+        let mut ctx = new_context(SolverOptions::default());
+
+        let outcome = build_final_support_or_nonfinite(composed.clone(), t, &mut ctx).unwrap();
+        let FinalSupportComputation::Support(support) = outcome else {
+            panic!("expected Route B finite support");
+        };
+        let cert = verify_global_support(&support, &composed).unwrap();
+
+        assert_eq!(support.variable, t);
+        assert_eq!(support.coeffs_low_to_high, vec![int_q(-1), int_q(1)]);
+        assert_eq!(
+            cert.proof_route,
+            GlobalSupportProofRoute::ComposedIdealMembership
+        );
     }
 }

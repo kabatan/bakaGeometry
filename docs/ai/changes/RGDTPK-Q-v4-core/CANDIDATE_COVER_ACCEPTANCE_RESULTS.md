@@ -32,6 +32,19 @@ completion, benchmark superiority, or universal finite-system completeness.
 | A12 slack/guard spurious roots allowed | `ccc_p11_a12_spurious_roots_are_allowed_in_candidate_cover_mode` has four public spurious-root cases. |
 | A13 bounded hard failure not nonfinite | Existing FCR/P11 bounded failure tests plus fresh red-team case 10. |
 
+## Route B Support Construction
+
+`compose/final_support.rs::build_final_support_or_nonfinite_with_system` now constructs finite
+support through composed-ideal elimination when Route A target-only root relations are unavailable.
+`compose/compose.rs::compose_projection_messages` admits this fallback only when the composed message
+ideal has a target eliminant; incomplete message deletion still fails.
+
+Focused production support-stage test:
+
+```text
+ccc_route_b_final_support_uses_composed_ideal_membership_when_route_a_unavailable: PASS
+```
+
 ## Fresh Red-Team Inputs
 
 `geosolver-core/tests/ccc_candidate_cover_completion.rs::ccc_p12_red_team_runs_twelve_fresh_public_inputs`
@@ -58,6 +71,7 @@ and `CandidateCoverMayContainSpuriousRoots`.
 
 ```text
 cargo test --manifest-path geosolver-core/Cargo.toml verify_support -- --nocapture: PASS
+cargo test --manifest-path geosolver-core/Cargo.toml ccc_route_b_final_support -- --nocapture: PASS
 cargo test --manifest-path geosolver-core/Cargo.toml --test p13_exact_image_semantics -- --nocapture: PASS
 cargo test --manifest-path geosolver-core/Cargo.toml --test ccc_candidate_cover_completion -- --nocapture: PASS
 ```
