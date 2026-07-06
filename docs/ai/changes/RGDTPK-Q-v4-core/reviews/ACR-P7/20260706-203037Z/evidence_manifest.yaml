@@ -1,0 +1,55 @@
+phase: ACR-P7
+archive_kind: guardian_boundary_review
+status: PASS
+files_reviewed:
+  - docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_COMPLETION_REPAIR_BASE_SPEC.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_COMPLETION_REPAIR_PLAN.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_COMPLETION_REVIEWER_PROMPTS.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_P7_MECH_EVIDENCE.md
+  - geosolver-core/src/graph/weighted_primal.rs
+  - geosolver-core/src/graph/separators.rs
+  - geosolver-core/src/graph/tree_decomposition.rs
+  - geosolver-core/src/graph/projection_dag.rs
+  - geosolver-core/src/graph/metrics.rs
+  - geosolver-core/src/solver/pipeline.rs
+command_evidence:
+  - command: "cargo fmt --check"
+    cwd: geosolver-core
+    result: PASS
+  - command: "cargo check"
+    cwd: geosolver-core
+    result: PASS
+  - command: "cargo test --lib acr_p7 -- --nocapture"
+    cwd: geosolver-core
+    result: "9 passed"
+  - command: "cargo test --lib graph::tree_decomposition::tests -- --nocapture"
+    cwd: geosolver-core
+    result: "5 passed"
+  - command: "cargo test --lib graph::separators::tests -- --nocapture"
+    cwd: geosolver-core
+    result: "3 passed"
+  - command: "cargo test --lib graph::projection_dag::tests -- --nocapture"
+    cwd: geosolver-core
+    result: "4 passed"
+  - command: "cargo test --lib graph::metrics::tests -- --nocapture"
+    cwd: geosolver-core
+    result: "1 passed"
+  - command: "cargo test --lib"
+    cwd: geosolver-core
+    result: "247 passed"
+  - command: "rg -n -i forbidden-marker-pattern src -g \"*.rs\""
+    cwd: geosolver-core
+    result: "no matches"
+  - command: "git diff --check"
+    cwd: repository root
+    result: "PASS with CRLF warnings only"
+limitations:
+  - "PASS scope is ACR-P7 only."
+  - "This does not authorize ACR-P8+, final candidate-cover readiness, source fidelity, full acceptance, production safety, or any R-ID VERIFIED claim."
+additional_reviews:
+  - reviewer: spec_verifier
+    status: PASS
+    archive: docs/ai/changes/RGDTPK-Q-v4-core/reviews/ACR-P7/20260706-203037Z/spec_verifier_response.md
+  - reviewer: quality_reviewer
+    status: PASS
+    archive: docs/ai/changes/RGDTPK-Q-v4-core/reviews/ACR-P7/20260706-203037Z/quality_reviewer_response.md

@@ -165,6 +165,11 @@ pub fn validate_projection_dag(
                     "projection DAG duplication certificate hash mismatch",
                 ));
             }
+            if relation_duplication_certificate_cost(certificate) == 0 {
+                return Err(implementation_bug(
+                    "projection DAG duplication certificate has zero replay cost",
+                ));
+            }
         }
         for relation_id in &block.relation_ids {
             let Some(relation) = relations_by_id.get(relation_id) else {
@@ -347,7 +352,21 @@ fn hash_duplication_certificate(certificate: &RelationDuplicationCertificate) ->
     for block_id in &certificate.source_block_ids {
         chunks.push(block_id.0.to_be_bytes().to_vec());
     }
+    chunks.push(
+        relation_duplication_certificate_cost(certificate)
+            .to_be_bytes()
+            .to_vec(),
+    );
     hash_sequence("relation-duplication-certificate", &chunks)
+}
+
+pub fn relation_duplication_certificate_cost(
+    certificate: &RelationDuplicationCertificate,
+) -> usize {
+    certificate
+        .source_block_ids
+        .len()
+        .saturating_mul(certificate.source_block_ids.len().max(1))
 }
 
 fn implementation_bug(message: &str) -> SolverError {

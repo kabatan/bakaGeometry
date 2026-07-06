@@ -82,7 +82,7 @@ pub fn step_compress(
 
 pub fn step_build_graphs(
     compressed: &CompressedSystemQ,
-    _ctx: &mut SolverContext,
+    ctx: &mut SolverContext,
 ) -> Result<GraphBundle, SolverError> {
     let hypergraph = build_relation_variable_hypergraph(compressed);
     let influence = build_target_influence_graph(&hypergraph, compressed.target);
@@ -92,12 +92,72 @@ pub fn step_build_graphs(
         compressed.target,
         &CostModel::default(),
     );
+    record_decomposition_diagnostics(&decomposition, ctx);
     Ok(GraphBundle {
         hypergraph,
         influence,
         weighted_primal,
         decomposition,
     })
+}
+
+fn record_decomposition_diagnostics(decomposition: &DecompositionTree, ctx: &mut SolverContext) {
+    for diagnostic in &decomposition.diagnostics {
+        if diagnostic.selected {
+            continue;
+        }
+        let mut record = crate::result::diagnostics::DiagnosticRecord::new(
+            "GraphDecompositionLargeBlockNoImprovingSeparator",
+            diagnostic.reason.clone(),
+            Some(StageId("P7GraphDecomposition".to_owned())),
+        );
+        record
+            .details
+            .insert("node_id".to_owned(), diagnostic.node_id.to_string());
+        record.details.insert(
+            "variable_count".to_owned(),
+            diagnostic.variable_count.to_string(),
+        );
+        record.details.insert(
+            "baseline_projection_cost".to_owned(),
+            diagnostic.baseline_projection_cost.to_string(),
+        );
+        record.details.insert(
+            "evaluated_candidate_count".to_owned(),
+            diagnostic.evaluated_candidate_count.to_string(),
+        );
+        record.details.insert(
+            "best_candidate_kind".to_owned(),
+            diagnostic
+                .best_candidate_kind
+                .map(|kind| format!("{kind:?}"))
+                .unwrap_or_else(|| "none".to_owned()),
+        );
+        record.details.insert(
+            "best_candidate_vars".to_owned(),
+            diagnostic
+                .best_candidate_vars
+                .iter()
+                .map(|var| var.0.to_string())
+                .collect::<Vec<_>>()
+                .join(","),
+        );
+        record.details.insert(
+            "best_candidate_estimated_total_cost".to_owned(),
+            diagnostic
+                .best_candidate_estimated_total_cost
+                .map(|cost| cost.to_string())
+                .unwrap_or_else(|| "none".to_owned()),
+        );
+        record.details.insert(
+            "best_candidate_max_component_size".to_owned(),
+            diagnostic
+                .best_candidate_max_component_size
+                .map(|width| width.to_string())
+                .unwrap_or_else(|| "none".to_owned()),
+        );
+        ctx.diagnostics.push(record);
+    }
 }
 
 pub fn step_build_dag(
@@ -1594,6 +1654,103 @@ mod tests {
         .is_ok());
     }
 
+    #[test]
+    fn acr_p7_graph_build_reduces_width_for_generic_algebraic_separator() {
+        let problem = p7_separator_problem();
+        let mut ctx = new_context(SolverOptions::default());
+        let validated = step_validate(problem, &mut ctx).unwrap();
+        let canonical = step_canonicalize(validated, &mut ctx).unwrap();
+        let compressed = step_compress(canonical, &mut ctx).unwrap();
+        let graphs = step_build_graphs(&compressed, &mut ctx).unwrap();
+        let root_width = graphs.decomposition.root.variables.len();
+        let max_child_width = graphs
+            .decomposition
+            .root
+            .children
+            .iter()
+            .map(|child| child.variables.len())
+            .max()
+            .unwrap_or(root_width);
+
+        assert!(!graphs.decomposition.root.children.is_empty());
+        assert!(max_child_width < root_width);
+        assert!(graphs
+            .decomposition
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.selected
+                && diagnostic.reason == "selected_cost_improving_separator"));
+    }
+
+    #[test]
+    fn acr_p7_large_block_diagnostic_reaches_solver_context() {
+        let problem = p7_no_separator_problem();
+        let mut ctx = new_context(SolverOptions::default());
+        let validated = step_validate(problem, &mut ctx).unwrap();
+        let canonical = step_canonicalize(validated, &mut ctx).unwrap();
+        let compressed = step_compress(canonical, &mut ctx).unwrap();
+        let graphs = step_build_graphs(&compressed, &mut ctx).unwrap();
+
+        assert!(graphs.decomposition.root.children.is_empty());
+        let diagnostic = ctx
+            .diagnostics
+            .iter()
+            .find(|record| record.name == "GraphDecompositionLargeBlockNoImprovingSeparator")
+            .expect("large block should record why no separator improved estimated cost");
+        assert_eq!(
+            diagnostic.details.get("variable_count"),
+            Some(&"6".to_owned())
+        );
+        assert!(diagnostic
+            .details
+            .get("baseline_projection_cost")
+            .is_some_and(|cost| cost.parse::<usize>().unwrap_or(0) > 0));
+        assert_eq!(
+            diagnostic.message,
+            "no_separator_reduced_block_width".to_owned()
+        );
+    }
+
+    #[test]
+    fn acr_p7_graph_build_cost_aware_split_variable_count_only_would_keep() {
+        let problem = p7_cost_aware_separator_problem();
+        let mut ctx = new_context(SolverOptions::default());
+        let validated = step_validate(problem, &mut ctx).unwrap();
+        let canonical = step_canonicalize(validated, &mut ctx).unwrap();
+        let compressed = step_compress(canonical, &mut ctx).unwrap();
+        let graphs = step_build_graphs(&compressed, &mut ctx).unwrap();
+
+        assert!(p7_variable_count_only_would_keep(&graphs.weighted_primal));
+        assert_eq!(
+            graphs.decomposition.root.separator,
+            std::collections::BTreeSet::from([VariableId(32), VariableId(33)])
+        );
+        assert_eq!(graphs.decomposition.root.children.len(), 2);
+    }
+
+    #[test]
+    fn acr_p7_small_high_cost_block_diagnostic_reaches_solver_context() {
+        let t = VariableId(40);
+        let x = VariableId(41);
+        let problem = make_problem(
+            vec![t, x],
+            t,
+            vec![dense_pair_relation(t, x, 128)],
+            Vec::new(),
+        );
+        let mut ctx = new_context(SolverOptions::default());
+        let validated = step_validate(problem, &mut ctx).unwrap();
+        let canonical = step_canonicalize(validated, &mut ctx).unwrap();
+        let compressed = step_compress(canonical, &mut ctx).unwrap();
+        let graphs = step_build_graphs(&compressed, &mut ctx).unwrap();
+
+        assert!(graphs.decomposition.root.children.is_empty());
+        assert!(ctx.diagnostics.iter().any(|record| {
+            record.name == "GraphDecompositionLargeBlockNoImprovingSeparator"
+                && record.message == "small_high_cost_block_retained_without_separator_candidate"
+        }));
+    }
+
     fn budget_test_plan() -> KernelExecutionPlan {
         let estimate = AlgebraicWorkEstimate::new(
             2,
@@ -1866,6 +2023,102 @@ mod tests {
             vec![target_relation, high_footprint_relation],
             Vec::new(),
         )
+    }
+
+    fn p7_separator_problem() -> RationalTargetProblem {
+        let t = VariableId(10);
+        let s = VariableId(11);
+        let a = VariableId(12);
+        let b = VariableId(13);
+        let c = VariableId(14);
+        let d = VariableId(15);
+        make_problem(
+            vec![t, s, a, b, c, d],
+            t,
+            vec![
+                poly_mul(&variable_poly(t), &variable_poly(s)),
+                poly_mul(&variable_poly(s), &variable_poly(a)),
+                poly_mul(&variable_poly(a), &variable_poly(b)),
+                poly_mul(&variable_poly(s), &variable_poly(c)),
+                poly_mul(&variable_poly(c), &variable_poly(d)),
+            ],
+            Vec::new(),
+        )
+    }
+
+    fn p7_no_separator_problem() -> RationalTargetProblem {
+        let t = VariableId(20);
+        let variables = (21..26).map(VariableId).collect::<Vec<_>>();
+        let relation = variables.iter().fold(variable_poly(t), |acc, variable| {
+            poly_mul(&acc, &variable_poly(*variable))
+        });
+        make_problem(
+            std::iter::once(t).chain(variables).collect(),
+            t,
+            vec![relation],
+            Vec::new(),
+        )
+    }
+
+    fn p7_cost_aware_separator_problem() -> RationalTargetProblem {
+        let t = VariableId(30);
+        let a = VariableId(31);
+        let s1 = VariableId(32);
+        let s2 = VariableId(33);
+        let b = VariableId(34);
+        let c = VariableId(35);
+        make_problem(
+            vec![t, a, s1, s2, b, c],
+            t,
+            vec![
+                dense_pair_relation(t, a, 96),
+                dense_pair_relation(b, c, 96),
+                poly_mul(&variable_poly(t), &variable_poly(s1)),
+                poly_mul(&variable_poly(a), &variable_poly(s2)),
+                poly_mul(&variable_poly(b), &variable_poly(s1)),
+                poly_mul(&variable_poly(c), &variable_poly(s2)),
+            ],
+            Vec::new(),
+        )
+    }
+
+    fn p7_variable_count_only_would_keep(
+        g: &crate::graph::weighted_primal::WeightedPrimalGraph,
+    ) -> bool {
+        let baseline_width = g.variables.len();
+        crate::graph::separators::bounded_min_cut_separator_candidates(g, g.target)
+            .into_iter()
+            .map(|candidate| {
+                let components =
+                    crate::graph::weighted_primal::components_after_removing(g, &candidate.vars);
+                let max_component_width = components
+                    .iter()
+                    .map(std::collections::BTreeSet::len)
+                    .max()
+                    .unwrap_or(0);
+                max_component_width.saturating_add(candidate.vars.len().saturating_mul(2))
+            })
+            .min()
+            .is_some_and(|best_variable_count_score| best_variable_count_score >= baseline_width)
+    }
+
+    fn dense_pair_relation(
+        u: VariableId,
+        v: VariableId,
+        term_count: usize,
+    ) -> crate::types::polynomial::SparsePolynomialQ {
+        normalize_poly(crate::types::polynomial::SparsePolynomialQ {
+            terms: (0..term_count)
+                .map(|idx| TermQ {
+                    coeff: int_q(1),
+                    monomial: normalize_monomial(vec![
+                        (u, idx as u32),
+                        (v, term_count.saturating_sub(idx).saturating_sub(1) as u32),
+                    ]),
+                })
+                .collect(),
+            hash: hash_sequence("poly", &[]),
+        })
     }
 
     fn dense_univariate_relation(

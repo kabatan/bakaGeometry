@@ -23,11 +23,16 @@ pub struct WeightedPrimalGraph {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AlgebraicWeight {
     pub score: RationalQ,
+    pub relation_arity_max: usize,
+    pub relation_degree_max: usize,
     pub degree_participation: usize,
     pub monomial_contribution: usize,
     pub coefficient_height_bits: usize,
     pub target_distance: Option<usize>,
     pub occurrence_count: usize,
+    pub affine_relation_count: usize,
+    pub definitional_relation_count: usize,
+    pub predicted_local_projection_cost: usize,
 }
 
 pub fn build_weighted_primal_graph(
@@ -98,11 +103,16 @@ pub fn variable_weight(v: VariableId, system: &CompressedSystemQ) -> AlgebraicWe
 pub fn edge_weight(_u: VariableId, _v: VariableId, relations: &[RelationId]) -> AlgebraicWeight {
     AlgebraicWeight {
         score: int_q(relations.len() as i64),
+        relation_arity_max: usize::from(!relations.is_empty()) * 2,
+        relation_degree_max: relations.len(),
         degree_participation: relations.len(),
         monomial_contribution: relations.len(),
         coefficient_height_bits: 0,
         target_distance: None,
         occurrence_count: relations.len(),
+        affine_relation_count: 0,
+        definitional_relation_count: 0,
+        predicted_local_projection_cost: relations.len().max(1),
     }
 }
 
@@ -194,34 +204,67 @@ fn variable_weight_with_distance(
     system: &CompressedSystemQ,
     target_distance: Option<usize>,
 ) -> AlgebraicWeight {
-    let mut degree_participation = 0;
-    let mut monomial_contribution = 0;
-    let mut occurrence_count = 0;
+    let mut degree_participation = 0_usize;
+    let mut relation_arity_max = 0_usize;
+    let mut relation_degree_max = 0_usize;
+    let mut monomial_contribution = 0_usize;
+    let mut occurrence_count = 0_usize;
+    let mut affine_relation_count = 0_usize;
+    let mut definitional_relation_count = 0_usize;
     let mut related = Vec::new();
     for relation in &system.relations {
         let vars = poly_variables(&relation.polynomial);
         if vars.contains(&v) {
-            degree_participation += poly_total_degree(&relation.polynomial) as usize;
+            let degree = poly_total_degree(&relation.polynomial) as usize;
+            relation_arity_max = relation_arity_max.max(vars.len());
+            relation_degree_max = relation_degree_max.max(degree);
+            degree_participation += degree;
             monomial_contribution += relation.polynomial.terms.len();
             occurrence_count += 1;
+            if degree <= 1 {
+                affine_relation_count += 1;
+            }
+            if degree <= 1 && relation.polynomial.terms.len() <= 2 {
+                definitional_relation_count += 1;
+            }
             related.push(relation.clone());
         }
     }
     let coefficient_height_bits = max_coefficient_height_bits(&related);
     let distance_penalty = target_distance.unwrap_or(system.variables.len().saturating_add(1));
+    let predicted_local_projection_cost = saturating_product(&[
+        relation_arity_max.saturating_add(1),
+        relation_degree_max.saturating_add(1),
+        monomial_contribution.saturating_add(1),
+        coefficient_height_bits.saturating_add(1),
+        occurrence_count.saturating_add(1),
+    ]);
     let score = degree_participation
         + monomial_contribution
         + coefficient_height_bits
         + occurrence_count
-        + distance_penalty;
+        + distance_penalty
+        + predicted_local_projection_cost;
     AlgebraicWeight {
         score: int_q(score as i64),
+        relation_arity_max,
+        relation_degree_max,
         degree_participation,
         monomial_contribution,
         coefficient_height_bits,
         target_distance,
         occurrence_count,
+        affine_relation_count,
+        definitional_relation_count,
+        predicted_local_projection_cost,
     }
+}
+
+fn saturating_product(values: &[usize]) -> usize {
+    values
+        .iter()
+        .copied()
+        .fold(1_usize, |acc, value| acc.saturating_mul(value.max(1)))
 }
 
 fn target_distances(
@@ -292,9 +335,12 @@ mod tests {
         let influence = build_target_influence_graph(&h, t);
         let g = build_weighted_primal_graph(&compressed, &influence);
         let x_weight = g.variable_weights.get(&x).unwrap();
+        assert_eq!(x_weight.relation_arity_max, 3);
+        assert_eq!(x_weight.relation_degree_max, 2);
         assert_eq!(x_weight.degree_participation, 2);
         assert_eq!(x_weight.monomial_contribution, 2);
         assert_eq!(x_weight.occurrence_count, 1);
+        assert!(x_weight.predicted_local_projection_cost > 0);
         assert!(g.edge_weights.contains_key(&edge_key(t, x)));
     }
 }

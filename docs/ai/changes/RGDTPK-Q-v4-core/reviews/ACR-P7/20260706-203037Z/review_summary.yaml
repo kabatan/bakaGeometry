@@ -1,0 +1,34 @@
+phase: ACR-P7
+review_status: PASS
+reviewer: guardian_boundary_reviewer
+scope:
+  - ACR-P7 algebraic-cost-aware graph decomposition
+  - separator scoring terms
+  - retained-block diagnostics
+  - variable-count-only counterexample
+blockers: []
+passed_checks:
+  - "Separator scoring records relation arity, degree, monomial count, coefficient height, predicted local projection cost, linear/definitional eliminability, target distance, separator width, and duplication certificate cost."
+  - "Separator selection is gated by width reduction and estimated-cost improvement."
+  - "Generic high-footprint counterexample splits under algebraic-cost scoring while variable-count-only scoring would keep it."
+  - "High-cost retained blocks receive decomposition diagnostics even when variable count is small."
+  - "Unsplit larger blocks record reason, baseline cost, candidate count, and best candidate summary."
+  - "Relation duplication certificate cost is included and zero-cost certificates are rejected."
+verification:
+  cargo_fmt_check: PASS
+  cargo_check: PASS
+  acr_p7_tests: "9 passed"
+  tree_decomposition_tests: "5 passed"
+  separators_tests: "3 passed"
+  projection_dag_tests: "4 passed"
+  metrics_tests: "1 passed"
+  cargo_test_lib: "247 passed"
+  forbidden_marker_scan: "no matches"
+  git_diff_check: "PASS with CRLF warnings only"
+forbidden_claims:
+  - CANDIDATE_COVER_CORE_READY
+  - SOURCE_FAITHFUL_TO_V4_CANDIDATE_COVER_LAYER
+  - SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC
+  - RGDTPK_Q_V4_ACCEPTANCE_COMPLETE
+r_ids_verified: []
+next_action: "Commit ACR-P7 work, then proceed only to ACR-P8 under its own scope."

@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use crate::graph::projection_dag::ProjectionBlock;
+use crate::graph::projection_dag::{
+    relation_duplication_certificate_cost as duplication_certificate_cost, ProjectionBlock,
+};
 use crate::planner::cost_model::RouteCostClass;
 use crate::planner::relation_schedule::estimate_dense_relation_search_schedule;
 use crate::preprocess::compression::{
@@ -48,6 +50,9 @@ pub struct AlgebraicBlockMetrics {
     pub relation_degree_max: usize,
     pub relation_monomial_count: usize,
     pub coefficient_height_bits: usize,
+    pub separator_width: usize,
+    pub predicted_local_projection_cost: usize,
+    pub relation_duplication_certificate_cost: usize,
     pub target_distance_hint: Option<usize>,
     pub affine_relation_count: usize,
     pub definitional_relation_count: usize,
@@ -204,6 +209,21 @@ pub fn algebraic_block_metrics(
     let relation_degree_max = max_total_degree(&relations);
     let relation_monomial_count = total_monomial_count(&relations);
     let coefficient_height_bits = max_coefficient_height_bits(&relations);
+    let separator_width = block.exported_variables.len();
+    let predicted_local_projection_cost = block
+        .local_variables
+        .len()
+        .saturating_mul(block.local_variables.len())
+        .saturating_add(relation_monomial_count)
+        .saturating_add(relation_degree_max.saturating_mul(relation_arity_max.max(1)))
+        .saturating_add(coefficient_height_bits)
+        .saturating_add(rank.estimated_rank)
+        .saturating_add(template.nonzero_hint);
+    let relation_duplication_certificate_cost = block
+        .duplication_certificates
+        .iter()
+        .map(duplication_certificate_cost)
+        .sum::<usize>();
     let target_distance_hint = if block.local_variables.contains(&system.target) {
         Some(0)
     } else if block.exported_variables.contains(&system.target) {
@@ -229,6 +249,9 @@ pub fn algebraic_block_metrics(
             relation_degree_max.to_be_bytes().to_vec(),
             relation_monomial_count.to_be_bytes().to_vec(),
             coefficient_height_bits.to_be_bytes().to_vec(),
+            separator_width.to_be_bytes().to_vec(),
+            predicted_local_projection_cost.to_be_bytes().to_vec(),
+            relation_duplication_certificate_cost.to_be_bytes().to_vec(),
             format!("{estimated_dense_trs_cost_class:?}").into_bytes(),
             dense_preflight.preflight_hash.0.to_vec(),
             rank.estimate_hash.0.to_vec(),
@@ -240,6 +263,9 @@ pub fn algebraic_block_metrics(
         relation_degree_max,
         relation_monomial_count,
         coefficient_height_bits,
+        separator_width,
+        predicted_local_projection_cost,
+        relation_duplication_certificate_cost,
         target_distance_hint,
         affine_relation_count,
         definitional_relation_count,
