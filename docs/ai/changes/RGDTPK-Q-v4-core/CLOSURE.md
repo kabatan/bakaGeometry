@@ -1,5 +1,9 @@
 # Closure Packet - RGDTPK-Q-v4-core
 
+Status note for current work: historical closure only. The active algebraic-cost completion repair
+has suspended `CANDIDATE_COVER_CORE_READY` and `SOURCE_FAITHFUL_TO_V4_CANDIDATE_COVER_LAYER` until
+`ALG_COST_COMPLETION_REPAIR_PLAN.md` passes.
+
 Status: superseded for active work by `v4_candidate_cover_completion_pack_v1`.
 
 Active closure authority is now `CANDIDATE_COVER_CLOSURE.md`.

@@ -13,9 +13,12 @@ use crate::kernels::sparse_resultant::plan_sparse_resultant;
 use crate::kernels::specialization_interpolation::plan_specialization_interpolation;
 use crate::kernels::traits::KernelKind;
 use crate::kernels::universal_elimination::plan_universal_elimination;
+use crate::planner::algebraic_cost::RouteBudget;
+use crate::planner::cost_model::{estimate_kernel_cost, RouteCostClass};
 use crate::planner::kernel_plan::{
-    planned_failure_behavior, rank_plan, resource_bounds_hash, support_plan_hash, template_plan,
-    CertificateRoute, KernelExecutionPlan, KernelSupportPlan, LocalNonfinitePolicy, ResourceBounds,
+    hash_kernel_execution_plan, planned_failure_behavior, rank_plan, resource_bounds_hash,
+    support_plan_hash, template_plan, CertificateRoute, KernelExecutionPlan, KernelSupportPlan,
+    LocalNonfinitePolicy, ResourceBounds,
 };
 use crate::planner::probes::ProbeResults;
 use crate::planner::relation_schedule::{
@@ -92,12 +95,13 @@ pub fn collect_kernel_admissions(
         .enumerate()
         .map(|(index, kind)| {
             let plan_id = KernelPlanId(index as u32);
-            match catch_unwind(AssertUnwindSafe(|| {
+            let admission = match catch_unwind(AssertUnwindSafe(|| {
                 build_kernel_admission(plan_id, kind, block, system, &relation_map, probes, ctx)
             })) {
                 Ok(admission) => admission,
                 Err(payload) => route_panic_admission(kind, block, panic_message(payload)),
-            }
+            };
+            bind_admission_algebraic_cost(admission, block, system, probes)
         })
         .collect()
 }
@@ -419,22 +423,14 @@ fn finish_admission(
     status: KernelAdmissionStatus,
     execution_plan: Option<KernelExecutionPlan>,
 ) -> KernelAdmission {
-    let mut chunks = vec![
-        format!("{kind:?}").into_bytes(),
-        block_id.0.to_be_bytes().to_vec(),
-        format!("{status:?}").into_bytes(),
-    ];
-    for variable in &exported_variables {
-        chunks.push(variable.0.to_be_bytes().to_vec());
-    }
-    chunks.push(Vec::new());
-    for variable in &eliminated_variables {
-        chunks.push(variable.0.to_be_bytes().to_vec());
-    }
-    if let Some(plan) = &execution_plan {
-        chunks.push(plan.plan_hash.0.to_vec());
-    }
-    let admission_hash = hash_sequence("kernel-admission", &chunks);
+    let admission_hash = kernel_admission_hash(
+        kind,
+        block_id,
+        &exported_variables,
+        &eliminated_variables,
+        &status,
+        execution_plan.as_ref(),
+    );
     KernelAdmission {
         kind,
         block_id,
@@ -444,6 +440,74 @@ fn finish_admission(
         execution_plan,
         admission_hash,
     }
+}
+
+fn bind_admission_algebraic_cost(
+    mut admission: KernelAdmission,
+    block: &ProjectionBlock,
+    system: &CompressedSystemQ,
+    probes: &ProbeResults,
+) -> KernelAdmission {
+    if admission.execution_plan.is_some() {
+        let cost = estimate_kernel_cost(block, system, admission.kind, probes);
+        if cost.cost_class == RouteCostClass::CostProhibited {
+            admission.status = KernelAdmissionStatus::CostProhibited {
+                reason: "dominant algebraic route budget prohibited before execution".to_owned(),
+                estimate_hash: cost.estimate_hash,
+            };
+            admission.execution_plan = None;
+            admission.admission_hash = kernel_admission_hash(
+                admission.kind,
+                admission.block_id,
+                &admission.exported_variables,
+                &admission.eliminated_variables,
+                &admission.status,
+                None,
+            );
+            return admission;
+        }
+    }
+    if let Some(plan) = admission.execution_plan.as_mut() {
+        let cost = estimate_kernel_cost(block, system, admission.kind, probes);
+        plan.algebraic_work_estimate = cost.algebraic_work_estimate;
+        plan.route_budget = RouteBudget::from_estimate(&plan.algebraic_work_estimate);
+        plan.plan_hash = hash_kernel_execution_plan(plan);
+        admission.admission_hash = kernel_admission_hash(
+            admission.kind,
+            admission.block_id,
+            &admission.exported_variables,
+            &admission.eliminated_variables,
+            &admission.status,
+            admission.execution_plan.as_ref(),
+        );
+    }
+    admission
+}
+
+fn kernel_admission_hash(
+    kind: KernelKind,
+    block_id: crate::types::ids::BlockId,
+    exported_variables: &[VariableId],
+    eliminated_variables: &[VariableId],
+    status: &KernelAdmissionStatus,
+    execution_plan: Option<&KernelExecutionPlan>,
+) -> Hash {
+    let mut chunks = vec![
+        format!("{kind:?}").into_bytes(),
+        block_id.0.to_be_bytes().to_vec(),
+        format!("{status:?}").into_bytes(),
+    ];
+    for variable in exported_variables {
+        chunks.push(variable.0.to_be_bytes().to_vec());
+    }
+    chunks.push(Vec::new());
+    for variable in eliminated_variables {
+        chunks.push(variable.0.to_be_bytes().to_vec());
+    }
+    if let Some(plan) = &execution_plan {
+        chunks.push(plan.plan_hash.0.to_vec());
+    }
+    hash_sequence("kernel-admission", &chunks)
 }
 
 fn basic_support_plan(

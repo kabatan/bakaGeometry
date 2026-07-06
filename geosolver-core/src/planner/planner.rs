@@ -32,7 +32,7 @@ pub fn plan_all_blocks(
         let admissions = collect_kernel_admissions(block, system, &probes, ctx);
         let cost_estimates = admissions
             .iter()
-            .map(|admission| estimate_kernel_cost(block, admission.kind, &probes))
+            .map(|admission| estimate_kernel_cost(block, system, admission.kind, &probes))
             .collect::<Vec<_>>();
         record_kernel_route_admission_diagnostics(block, system, &admissions, &cost_estimates, ctx);
         record_dense_relation_search_admission_diagnostics(block, system, &admissions, ctx);
@@ -103,6 +103,44 @@ fn record_kernel_route_admission_diagnostics(
             diagnostic
                 .details
                 .insert("plan_hash".to_owned(), format!("{:?}", plan.plan_hash));
+            diagnostic.details.insert(
+                "algebraic_work_estimate_hash".to_owned(),
+                format!("{:?}", plan.algebraic_work_estimate.estimate_hash),
+            );
+            diagnostic.details.insert(
+                "route_budget_hash".to_owned(),
+                format!("{:?}", plan.route_budget.budget_hash),
+            );
+            diagnostic.details.insert(
+                "predicted_work_units".to_owned(),
+                plan.algebraic_work_estimate
+                    .predicted_work_units
+                    .0
+                    .to_string(),
+            );
+            if let Some(terms) = plan.algebraic_work_estimate.predicted_intermediate_terms {
+                diagnostic.details.insert(
+                    "predicted_intermediate_terms".to_owned(),
+                    terms.0.to_string(),
+                );
+            }
+            if let Some(terms) = plan.algebraic_work_estimate.predicted_output_terms {
+                diagnostic
+                    .details
+                    .insert("predicted_output_terms".to_owned(), terms.0.to_string());
+            }
+            diagnostic.details.insert(
+                "route_budget_max_work_units".to_owned(),
+                plan.route_budget.max_work_units.0.to_string(),
+            );
+            diagnostic.details.insert(
+                "route_budget_max_intermediate_terms".to_owned(),
+                plan.route_budget.max_intermediate_terms.to_string(),
+            );
+            diagnostic.details.insert(
+                "route_budget_max_output_terms".to_owned(),
+                plan.route_budget.max_output_terms.to_string(),
+            );
         }
         if let Some(cost) = cost {
             diagnostic
@@ -121,6 +159,10 @@ fn record_kernel_route_admission_diagnostics(
             diagnostic.details.insert(
                 "cost_estimate_hash".to_owned(),
                 format!("{:?}", cost.estimate_hash),
+            );
+            diagnostic.details.insert(
+                "dominant_work_estimate_hash".to_owned(),
+                format!("{:?}", cost.algebraic_work_estimate.estimate_hash),
             );
         }
         match &admission.status {

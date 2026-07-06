@@ -509,6 +509,15 @@ fn execute_block_with_declared_ladder(
     let kernels = crate::kernels::all_kernels();
     let mut route_failures = Vec::new();
     for execution_plan in &plan.declared_ladder {
+        if let Err(err) = enforce_route_budget_preflight(execution_plan) {
+            let allowed = is_declared_route_failure_allowed(execution_plan, &err);
+            record_block_projection_failure_trace(block, execution_plan, &err, allowed, ctx);
+            if allowed {
+                route_failures.push((execution_plan.kernel_kind, execution_plan.plan_hash, err));
+                continue;
+            }
+            return Err(err);
+        }
         let Some(kernel) = kernels
             .iter()
             .find(|kernel| kernel.kind() == execution_plan.kernel_kind)
@@ -521,7 +530,9 @@ fn execute_block_with_declared_ladder(
             child_messages: child_messages.clone(),
         };
         match kernel.execute(execution_plan, &mut kctx, ctx) {
-            Ok(message) => match verify_projection_message(&message, &kctx) {
+            Ok(message) => match enforce_route_budget_postflight(execution_plan, &message)
+                .and_then(|_| verify_projection_message(&message, &kctx))
+            {
                 Ok(()) => return Ok(message),
                 Err(err) => {
                     let allowed = is_declared_route_failure_allowed(execution_plan, &err);
@@ -563,6 +574,138 @@ fn execute_block_with_declared_ladder(
         block.block_hash,
         &route_failures,
     ))
+}
+
+fn enforce_route_budget_preflight(plan: &KernelExecutionPlan) -> Result<(), SolverError> {
+    if !plan.algebraic_work_estimate.is_hash_current() || !plan.route_budget.is_hash_current() {
+        return Err(implementation_bug(
+            "route budget or algebraic work estimate hash mismatch before execution",
+        ));
+    }
+    if plan.algebraic_work_estimate.predicted_work_units > plan.route_budget.max_work_units {
+        return Err(route_budget_failure(
+            plan,
+            "predicted work exceeds route budget",
+        ));
+    }
+    if plan
+        .algebraic_work_estimate
+        .predicted_intermediate_terms
+        .is_some_and(|terms| terms.exceeds_usize(plan.route_budget.max_intermediate_terms))
+    {
+        return Err(route_budget_failure(
+            plan,
+            "predicted intermediate terms exceed route budget",
+        ));
+    }
+    if plan
+        .algebraic_work_estimate
+        .predicted_output_terms
+        .is_some_and(|terms| terms.exceeds_usize(plan.route_budget.max_output_terms))
+    {
+        return Err(route_budget_failure(
+            plan,
+            "predicted output terms exceed route budget",
+        ));
+    }
+    if plan.algebraic_work_estimate.max_input_terms > plan.route_budget.max_input_terms_per_pair
+        || plan.algebraic_work_estimate.max_keep_variable_count
+            > plan.route_budget.max_keep_variables
+        || plan.algebraic_work_estimate.max_total_degree > plan.route_budget.max_total_degree
+    {
+        return Err(route_budget_failure(
+            plan,
+            "declared algebraic footprint exceeds route budget",
+        ));
+    }
+    if plan
+        .algebraic_work_estimate
+        .predicted_coefficient_height_bits
+        .is_some_and(|bits| bits.exceeds_usize(plan.route_budget.max_coefficient_height_bits))
+    {
+        return Err(route_budget_failure(
+            plan,
+            "predicted coefficient height exceeds route budget",
+        ));
+    }
+    Ok(())
+}
+
+fn enforce_route_budget_postflight(
+    plan: &KernelExecutionPlan,
+    message: &ProjectionMessage,
+) -> Result<(), SolverError> {
+    let Some(route_cost) = &message.cost_trace.route_cost else {
+        return Err(implementation_bug(
+            "projection message is missing route budget cost trace",
+        ));
+    };
+    if route_cost.algebraic_work_estimate_hash != plan.algebraic_work_estimate.estimate_hash
+        || route_cost.route_budget_hash != plan.route_budget.budget_hash
+    {
+        return Err(implementation_bug(
+            "projection message route cost trace is not bound to its execution plan",
+        ));
+    }
+    let output_terms = message
+        .relation_generators
+        .iter()
+        .map(poly_monomial_count)
+        .sum::<usize>();
+    if output_terms > plan.route_budget.max_output_terms {
+        return Err(route_budget_failure(
+            plan,
+            "produced output terms exceed route budget",
+        ));
+    }
+    let output_degree = message
+        .relation_generators
+        .iter()
+        .map(|relation| poly_total_degree(relation) as usize)
+        .max()
+        .unwrap_or(0);
+    if output_degree > plan.route_budget.max_total_degree {
+        return Err(route_budget_failure(
+            plan,
+            "produced output degree exceeds route budget",
+        ));
+    }
+    let output_height = max_poly_coefficient_height_bits(&message.relation_generators);
+    if output_height > plan.route_budget.max_coefficient_height_bits {
+        return Err(route_budget_failure(
+            plan,
+            "produced coefficient height exceeds route budget",
+        ));
+    }
+    Ok(())
+}
+
+fn route_budget_failure(plan: &KernelExecutionPlan, reason: &str) -> SolverError {
+    SolverError {
+        target: plan.exported_variables.first().copied(),
+        kind: SolverErrorKind::Failure(FailureKind::FiniteResourceFailure {
+            stage: StageId(format!("RouteBudget::{:?}::{reason}", plan.kernel_kind)),
+            block_id: Some(plan.block_id),
+            matrix_rows: plan
+                .resource_bounds
+                .max_matrix_rows
+                .or(plan.algebraic_work_estimate.matrix_rows),
+            matrix_cols: plan
+                .resource_bounds
+                .max_matrix_cols
+                .or(plan.algebraic_work_estimate.matrix_cols),
+            matrix_density: None,
+            quotient_rank_estimate: plan.algebraic_work_estimate.quotient_rank_estimate,
+            coefficient_height_bits: plan
+                .algebraic_work_estimate
+                .predicted_coefficient_height_bits
+                .map(|bits| bits.as_usize_saturating()),
+            memory_bytes: plan
+                .resource_bounds
+                .max_memory_bytes
+                .or_else(|| Some(plan.route_budget.max_work_units.0.min(u64::MAX as u128) as u64)),
+        }),
+    }
 }
 
 fn aggregate_ladder_failure(
@@ -652,6 +795,14 @@ fn record_block_projection_failure_trace(
     diagnostic.details.insert(
         "plan_hash".to_owned(),
         format!("{:?}", execution_plan.plan_hash),
+    );
+    diagnostic.details.insert(
+        "route_budget_hash".to_owned(),
+        format!("{:?}", execution_plan.route_budget.budget_hash),
+    );
+    diagnostic.details.insert(
+        "algebraic_work_estimate_hash".to_owned(),
+        format!("{:?}", execution_plan.algebraic_work_estimate.estimate_hash),
     );
     diagnostic
         .details
@@ -775,5 +926,144 @@ fn implementation_bug(message: &str) -> SolverError {
         kind: SolverErrorKind::Failure(FailureKind::ImplementationBug {
             invariant_violated: message.to_owned(),
         }),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::compose::message::{MessageRepresentation, ProjectionMessage, ProjectionStrength};
+    use crate::kernels::traits::KernelKind;
+    use crate::planner::algebraic_cost::{AlgebraicWorkEstimate, RouteBudget, SaturatingCount};
+    use crate::planner::kernel_plan::{
+        hash_kernel_execution_plan, planned_failure_behavior, resource_bounds_hash,
+        support_plan_hash, CertificateRoute, KernelSupportPlan, LocalNonfinitePolicy,
+        PlanWorkClassification, ResourceBounds,
+    };
+    use crate::preprocess::compression::CompressionTrace;
+    use crate::result::cost_trace::ProjectionCostTrace;
+    use crate::types::ids::{BlockId, KernelPlanId, PackageId, RelationId};
+    use crate::types::polynomial::{constant_poly, poly_add, variable_poly};
+    use crate::types::rational::int_q;
+    use crate::verify::certificates::KernelCertificate;
+
+    #[test]
+    fn acr_p2_route_budget_preflight_stops_over_budget_estimate() {
+        let mut plan = budget_test_plan();
+        plan.route_budget.max_intermediate_terms = 10;
+        plan.route_budget.budget_hash =
+            crate::planner::algebraic_cost::route_budget_hash(&plan.route_budget);
+        plan.plan_hash = hash_kernel_execution_plan(&plan);
+
+        let err = enforce_route_budget_preflight(&plan).unwrap_err();
+        assert_eq!(err.public_status(), SolverStatus::FiniteResourceFailure);
+    }
+
+    #[test]
+    fn acr_p2_route_budget_postflight_stops_over_budget_output() {
+        let mut plan = budget_test_plan();
+        plan.route_budget.max_output_terms = 1;
+        plan.route_budget.budget_hash =
+            crate::planner::algebraic_cost::route_budget_hash(&plan.route_budget);
+        plan.plan_hash = hash_kernel_execution_plan(&plan);
+        let message = budget_test_message(&plan);
+
+        let err = enforce_route_budget_postflight(&plan, &message).unwrap_err();
+        assert_eq!(err.public_status(), SolverStatus::FiniteResourceFailure);
+    }
+
+    fn budget_test_plan() -> KernelExecutionPlan {
+        let estimate = AlgebraicWorkEstimate::new(
+            2,
+            1,
+            1,
+            2,
+            2,
+            4,
+            1,
+            Some(2),
+            Some(2),
+            Some(2),
+            Some(SaturatingCount::from_usize(128)),
+            Some(SaturatingCount::from_usize(128)),
+            Some(SaturatingCount::from_usize(32)),
+            SaturatingCount::from_usize(128),
+        );
+        let mut budget = RouteBudget::from_estimate(&estimate);
+        budget.max_output_terms = 8;
+        budget.budget_hash = crate::planner::algebraic_cost::route_budget_hash(&budget);
+        let mut support_plan = KernelSupportPlan {
+            dense_relation_search_schedule: None,
+            affine_elimination_order: None,
+            template_plan: None,
+            rank_plan: None,
+            universal_strategy_sequence: Vec::new(),
+            degree_bound: 4,
+            support_hash: hash_sequence("kernel-support-plan", &[]),
+        };
+        support_plan.support_hash = support_plan_hash(&support_plan);
+        let mut resource_bounds = ResourceBounds {
+            max_matrix_rows: Some(2),
+            max_matrix_cols: Some(2),
+            max_export_degree: Some(4),
+            max_multiplier_total_degree: Some(4),
+            max_local_elimination_steps: Some(1),
+            max_memory_bytes: Some(1024),
+            bounds_hash: hash_sequence("planner-resource-bounds", &[]),
+        };
+        resource_bounds.bounds_hash = resource_bounds_hash(&resource_bounds);
+        KernelExecutionPlan::new_with_algebraic_cost(
+            KernelPlanId(99),
+            BlockId(7),
+            KernelKind::SparseResultantProjection,
+            hash_sequence("authorization", &[]),
+            vec![RelationId(1)],
+            vec![hash_sequence("source", &[])],
+            Vec::new(),
+            Vec::new(),
+            vec![VariableId(0)],
+            vec![VariableId(1)],
+            support_plan,
+            resource_bounds,
+            estimate,
+            budget,
+            CertificateRoute::SparseResultantExactVerification,
+            planned_failure_behavior(
+                vec![SolverStatus::FiniteResourceFailure],
+                LocalNonfinitePolicy::NotApplicable,
+            ),
+            PlanWorkClassification::PurePlan,
+        )
+    }
+
+    fn budget_test_message(plan: &KernelExecutionPlan) -> ProjectionMessage {
+        let relation = poly_add(&variable_poly(VariableId(0)), &constant_poly(int_q(1)));
+        let certificate = KernelCertificate::from_execution_plan(
+            plan,
+            std::slice::from_ref(&relation),
+            hash_sequence("cert", &[]),
+        );
+        let mut message = ProjectionMessage {
+            package_id: PackageId(99),
+            block_id: plan.block_id,
+            kernel_kind: plan.kernel_kind,
+            source_relation_ids: plan.source_relation_ids.clone(),
+            eliminated_variables: plan.eliminated_variables.clone(),
+            exported_variables: plan.exported_variables.clone(),
+            relation_generators: vec![relation],
+            representation: MessageRepresentation::GeneratorSet,
+            projection_strength: ProjectionStrength::CandidateCoverStrong,
+            certificate,
+            compression_trace: CompressionTrace::default(),
+            cost_trace: ProjectionCostTrace {
+                block_id: plan.block_id,
+                kernel_kind: plan.kernel_kind,
+                route_cost: Some(ProjectionCostTrace::route_cost_from_plan(plan)),
+                ..ProjectionCostTrace::default()
+            },
+            package_hash: hash_sequence("projection-message-initial", &[]),
+        };
+        message.package_hash = crate::compose::message::hash_projection_message(&message);
+        message
     }
 }

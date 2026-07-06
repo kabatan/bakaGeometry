@@ -9,7 +9,8 @@ use crate::algebra::quotient::ProductionQuotientHandleInput;
 use crate::algebra::regular_chain::{ProjectionGenerators, RegularChainDAG};
 use crate::algebra::resultant::SparseResultantCertificate;
 use crate::planner::kernel_plan::{
-    AffineEliminationStep, CertificateRoute, KernelExecutionPlan, UniversalStrategy,
+    hash_kernel_execution_plan, AffineEliminationStep, CertificateRoute, KernelExecutionPlan,
+    UniversalStrategy,
 };
 use crate::types::hash::Hash;
 use crate::types::ids::RelationId;
@@ -51,7 +52,7 @@ impl KernelCertificate {
         let mut cert = Self {
             certificate_hash,
             certificate_route: plan.certificate_route,
-            plan_hash: plan.plan_hash,
+            plan_hash: hash_kernel_execution_plan(plan),
             source_relation_hashes: plan.source_relation_hashes.clone(),
             output_relation_hashes: output_relations
                 .iter()

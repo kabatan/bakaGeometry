@@ -1,0 +1,112 @@
+schema_version: alg-cost-completion-acceptance-v1
+
+claim_policy:
+  suspended_until_all_pass:
+    - CANDIDATE_COVER_CORE_READY
+    - SOURCE_FAITHFUL_TO_V4_CANDIDATE_COVER_LAYER
+  max_claim_during_repair:
+    - CANDIDATE_COVER_PIPELINE_PRESENT_BUT_ALGEBRAIC_COST_INCOMPLETE
+  forbidden_always_without_exact_image:
+    - SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC
+    - RGDTPK_Q_V4_ACCEPTANCE_COMPLETE
+
+anti_overfit:
+  forbidden_strings_in_tests_and_code:
+    - mixtilinear
+    - mixtilinear_candidate_cover_problem
+    - circumcircle
+    - incircle
+    - tangent_solver
+    - expected_cos
+  forbidden_dependency:
+    - diagnostic_problem_file
+    - known_support_polynomial
+    - specific_external_problem_hash
+
+route_cost_requirements:
+  dense_target_relation_search:
+    closed_form_preflight: required
+    no_materialization_before_feasible: required
+    sparse_or_lazy_strategy_for_large_blocks: required
+  sparse_resultant_projection:
+    expression_swell_preflight: required
+    runtime_growth_guards: required
+    recursive_determinant_large_entries: forbidden
+    modular_or_evaluation_backend_with_exact_verification: required
+  declared_ladder:
+    route_budget: required
+    route_failure_trace: required
+    later_route_runs_after_allowed_failure: required
+  universal:
+    bounded_internal_stages: required
+    verified_projection_message_on_generic_stress: required
+  graph_decomposition:
+    algebraic_cost_aware_separator_scoring: required
+    large_block_explanation: required
+
+support_producing_stress:
+  required_families:
+    - id: S1
+      name: large_block_dense_trs_prohibited_target_action_succeeds
+      required_status: CertifiedCandidateCover
+    - id: S2
+      name: large_block_dense_trs_prohibited_sparse_lazy_trs_succeeds
+      required_status: CertifiedCandidateCover
+    - id: S3
+      name: sparse_resultant_modular_backend_succeeds
+      required_status: CertifiedCandidateCover
+    - id: S4
+      name: sparse_resultant_swell_prohibited_later_route_succeeds
+      required_status: CertifiedCandidateCover
+    - id: S5
+      name: specialization_interpolation_succeeds_after_route_prohibition
+      required_status: CertifiedCandidateCover
+    - id: S6
+      name: universal_succeeds_after_internal_stage_failures
+      required_status: CertifiedCandidateCover
+    - id: S7
+      name: decomposition_reduces_high_cost_block
+      required_status: CertifiedCandidateCover
+    - id: S8
+      name: one_large_block_bounded_universal_success
+      required_status: CertifiedCandidateCover
+  per_case_required_evidence:
+    - public_or_near_public_pipeline
+    - projection_message_verified
+    - support_polynomial_nonzero
+    - exact_Q_support_verification
+    - replay_accepts
+    - cost_trace_present
+    - successful_route_recorded
+    - dense_trs_status_recorded
+    - sparse_resultant_status_recorded
+  anti_overfit_variants_minimum: 2
+  variants:
+    - variable_id_permutation
+    - relation_order_permutation
+    - nonzero_rational_scaling
+
+review_archive:
+  required_per_phase:
+    - prompt.md
+    - response.md
+    - review_summary.yaml
+    - evidence_manifest.yaml
+  required_final:
+    - ALG_COST_COMPLETION_CLOSURE.md
+    - ALG_COST_FINAL_RED_TEAM_RESULTS.md
+    - ALG_COST_ROUTE_BUDGET_AUDIT.md
+    - ALG_COST_DECOMPOSITION_AUDIT.md
+    - ALG_COST_NO_OVERFIT_AUDIT.md
+
+failure_conditions:
+  fail_if:
+    - route_monopolizes_ladder
+    - sparse_resultant_swell_unbounded
+    - dense_trs_materializes_before_preflight
+    - planned_is_treated_as_executed
+    - helper_only_stress
+    - failure_status_used_for_support_producing_stress
+    - diagnostic_problem_fixture_used
+    - geometry_dispatch_used
+    - expected_answer_dispatch_used

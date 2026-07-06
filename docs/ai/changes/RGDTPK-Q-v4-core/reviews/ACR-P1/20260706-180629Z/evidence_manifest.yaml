@@ -1,0 +1,20 @@
+schema_version: alg-cost-evidence-v1
+phase_id: ACR-P1
+claim_ceiling_after_phase: CANDIDATE_COVER_PIPELINE_PRESENT_BUT_ALGEBRAIC_COST_INCOMPLETE
+review_status: PASS
+evidence:
+  - path: docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_SOURCE_SPEC_GAP_MAP.md
+    purpose: source-spec gap map for ACR-P1 required sections and mandatory fail-list items
+  - path: docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_COMPLETION_REPAIR_BASE_SPEC.md
+    purpose: governing repair Base Spec
+  - path: docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_COMPLETION_REPAIR_PLAN.md
+    purpose: governing phase plan
+  - path: docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_CURRENT_DEFECT_AUDIT.md
+    purpose: source defect audit used to seed the gap map
+review_archive:
+  prompt: docs/ai/changes/RGDTPK-Q-v4-core/reviews/ACR-P1/20260706-180629Z/prompt.md
+  response: docs/ai/changes/RGDTPK-Q-v4-core/reviews/ACR-P1/20260706-180629Z/response.md
+  summary: docs/ai/changes/RGDTPK-Q-v4-core/reviews/ACR-P1/20260706-180629Z/review_summary.yaml
+notes:
+  - ACR-P1 is an audit/map phase only.
+  - No tests were required or run for this phase.

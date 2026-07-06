@@ -1,0 +1,13 @@
+schema_version: alg-cost-evidence-v1
+phase_id: ACR-P2
+claim_ceiling_after_phase: CANDIDATE_COVER_PIPELINE_PRESENT_BUT_ALGEBRAIC_COST_INCOMPLETE
+review_status: FAIL
+evidence:
+  - path: docs/ai/changes/RGDTPK-Q-v4-core/reviews/ACR-P2/20260706-182041Z/response.md
+    purpose: failed mandatory reviewer result and required fixes
+review_archive:
+  prompt: docs/ai/changes/RGDTPK-Q-v4-core/reviews/ACR-P2/20260706-182041Z/prompt.md
+  response: docs/ai/changes/RGDTPK-Q-v4-core/reviews/ACR-P2/20260706-182041Z/response.md
+  summary: docs/ai/changes/RGDTPK-Q-v4-core/reviews/ACR-P2/20260706-182041Z/review_summary.yaml
+notes:
+  - ACR-P2 remains open until the required fixes pass a new review.

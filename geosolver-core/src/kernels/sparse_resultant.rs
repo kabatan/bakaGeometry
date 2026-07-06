@@ -8,6 +8,7 @@ use crate::compose::message::{MessageRepresentation, ProjectionMessage, Projecti
 use crate::graph::projection_dag::ProjectionBlock;
 use crate::kernels::traits::{KernelContext, KernelKind, ReplayResult, TargetProjectionKernel};
 use crate::planner::admission::{KernelAdmission, KernelAdmissionStatus};
+use crate::planner::algebraic_cost::SaturatingCount;
 use crate::planner::kernel_plan::{
     hash_kernel_execution_plan, planned_failure_behavior, rank_plan, resource_bounds_hash,
     support_plan_hash, template_plan, CertificateRoute, KernelExecutionPlan, KernelSupportPlan,
@@ -318,6 +319,7 @@ pub fn execute_sparse_resultant(
         })),
         coefficient_height_before_bits: max_poly_coefficient_height_bits(&relation_polys),
         coefficient_height_after_bits: poly_coefficient_height_bits(&trace.relation),
+        route_cost: Some(ProjectionCostTrace::route_cost_from_plan(plan)),
     };
     let certificate = KernelCertificate::from_execution_plan_with_payload(
         plan,
@@ -523,7 +525,15 @@ fn selectable_resultant_pair(
                 max_matrix_dim: max_dim,
             };
             if let Ok(template) = build_sparse_resultant_template(input.clone()) {
+                let footprint =
+                    resultant_pair_cost(&input, template.matrix_rows, template.matrix_cols);
+                if resultant_pair_growth_is_prohibited(&footprint) {
+                    continue;
+                }
                 candidates.push((
+                    footprint.predicted_intermediate_terms.as_usize_saturating(),
+                    footprint.input_term_count,
+                    footprint.keep_variable_count,
                     template.matrix_rows.saturating_mul(template.matrix_cols),
                     relations[i].hash,
                     relations[j].hash,
@@ -534,11 +544,65 @@ fn selectable_resultant_pair(
             }
         }
     }
-    candidates.sort_by_key(|entry| (entry.0, entry.1, entry.2, entry.3, entry.4));
+    candidates.sort_by_key(|entry| {
+        (
+            entry.0, entry.1, entry.2, entry.3, entry.4, entry.5, entry.6, entry.7,
+        )
+    });
     candidates
         .into_iter()
         .next()
-        .map(|(_, _, _, i, j, input)| (i, j, input))
+        .map(|(_, _, _, _, _, _, i, j, input)| (i, j, input))
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ResultantPairCost {
+    input_term_count: usize,
+    max_input_terms: usize,
+    keep_variable_count: usize,
+    predicted_intermediate_terms: SaturatingCount,
+}
+
+fn resultant_pair_cost(
+    input: &ResultantInput,
+    matrix_rows: usize,
+    matrix_cols: usize,
+) -> ResultantPairCost {
+    let input_term_count = input
+        .polynomials
+        .iter()
+        .map(poly_monomial_count)
+        .sum::<usize>()
+        .max(1);
+    let max_input_terms = input
+        .polynomials
+        .iter()
+        .map(poly_monomial_count)
+        .max()
+        .unwrap_or(0)
+        .max(1);
+    let keep_variable_count = input.keep_variables.len();
+    let predicted_intermediate_terms = input
+        .polynomials
+        .iter()
+        .map(|poly| SaturatingCount::from_usize(poly_monomial_count(poly).max(1)))
+        .fold(SaturatingCount::ONE, |acc, terms| acc.saturating_mul(terms))
+        .saturating_mul(SaturatingCount::from_usize(
+            matrix_rows.max(1).saturating_mul(matrix_cols.max(1)),
+        ))
+        .saturating_mul(SaturatingCount::from_usize(keep_variable_count.max(1)));
+    ResultantPairCost {
+        input_term_count,
+        max_input_terms,
+        keep_variable_count,
+        predicted_intermediate_terms,
+    }
+}
+
+fn resultant_pair_growth_is_prohibited(cost: &ResultantPairCost) -> bool {
+    cost.max_input_terms > 8_192
+        || cost.keep_variable_count > 24
+        || cost.predicted_intermediate_terms.exceeds_usize(250_000)
 }
 
 fn selected_keep_variables(
@@ -792,16 +856,7 @@ fn finish_admission(
 }
 
 fn projection_message_hash(message: &ProjectionMessage) -> Hash {
-    let mut chunks = vec![
-        message.package_id.0.to_be_bytes().to_vec(),
-        message.block_id.0.to_be_bytes().to_vec(),
-        format!("{:?}", message.kernel_kind).into_bytes(),
-        message.certificate.certificate_hash.0.to_vec(),
-    ];
-    for relation in &message.relation_generators {
-        chunks.push(relation.hash.0.to_vec());
-    }
-    hash_sequence("projection-message", &chunks)
+    crate::compose::message::hash_projection_message(message)
 }
 
 fn sorted_set(vars: &BTreeSet<VariableId>) -> Vec<VariableId> {
@@ -860,7 +915,11 @@ mod tests {
     use crate::solver::options::SolverOptions;
     use crate::types::hash::hash_sequence;
     use crate::types::ids::{BlockId, PackageId, VariableId};
-    use crate::types::polynomial::{constant_poly, poly_sub, poly_variables, variable_poly};
+    use crate::types::monomial::normalize_monomial;
+    use crate::types::polynomial::{
+        constant_poly, normalize_poly, poly_sub, poly_variables, variable_poly, SparsePolynomialQ,
+        TermQ,
+    };
     use crate::types::rational::int_q;
     use crate::verify::certificates::KernelCertificate;
 
@@ -1013,6 +1072,18 @@ mod tests {
         assert_eq!(plan.source_relation_hashes.len(), 2);
     }
 
+    #[test]
+    fn acr_p2_sparse_resultant_pair_scoring_rejects_large_entry_small_matrix() {
+        let y = VariableId(20);
+        let keep_variables = (0..12).map(VariableId).collect::<Vec<_>>();
+        let relations = vec![
+            dense_linear_polynomial(y, &keep_variables, 300),
+            dense_linear_polynomial(y, &keep_variables, 700),
+        ];
+
+        assert!(selectable_resultant_pair(&relations, y, 4).is_none());
+    }
+
     fn compressed_system(
         variables: Vec<VariableId>,
         target: VariableId,
@@ -1070,5 +1141,31 @@ mod tests {
             &[message.relation_generators[0].hash.0.to_vec()],
         );
         message
+    }
+
+    fn dense_linear_polynomial(
+        eliminate: VariableId,
+        keep_variables: &[VariableId],
+        offset: usize,
+    ) -> SparsePolynomialQ {
+        let terms = (0..300)
+            .map(|idx| {
+                let mut exponents = vec![(eliminate, 1)];
+                let code = idx + offset;
+                for (bit, variable) in keep_variables.iter().enumerate() {
+                    if (code >> bit) & 1 == 1 {
+                        exponents.push((*variable, 1));
+                    }
+                }
+                TermQ {
+                    coeff: int_q(1),
+                    monomial: normalize_monomial(exponents),
+                }
+            })
+            .collect::<Vec<_>>();
+        normalize_poly(SparsePolynomialQ {
+            terms,
+            hash: hash_sequence("poly", &[]),
+        })
     }
 }

@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::kernels::traits::KernelKind;
+use crate::planner::algebraic_cost::SaturatingCount;
+use crate::planner::kernel_plan::KernelExecutionPlan;
+use crate::types::hash::Hash;
 use crate::types::ids::BlockId;
 use crate::types::rational::RationalQ;
 
@@ -34,6 +37,22 @@ pub struct ProjectionCostTrace {
     pub matrix_density: Option<RationalQ>,
     pub coefficient_height_before_bits: usize,
     pub coefficient_height_after_bits: usize,
+    pub route_cost: Option<RouteCostTrace>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RouteCostTrace {
+    pub algebraic_work_estimate_hash: Hash,
+    pub route_budget_hash: Hash,
+    pub predicted_work_units: SaturatingCount,
+    pub predicted_intermediate_terms: Option<SaturatingCount>,
+    pub predicted_output_terms: Option<SaturatingCount>,
+    pub route_budget_max_work_units: SaturatingCount,
+    pub route_budget_max_intermediate_terms: usize,
+    pub route_budget_max_output_terms: usize,
+    pub route_budget_max_keep_variables: usize,
+    pub route_budget_max_total_degree: usize,
+    pub route_budget_max_coefficient_height_bits: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -62,6 +81,25 @@ impl Default for ProjectionCostTrace {
             matrix_density: None,
             coefficient_height_before_bits: 0,
             coefficient_height_after_bits: 0,
+            route_cost: None,
+        }
+    }
+}
+
+impl ProjectionCostTrace {
+    pub fn route_cost_from_plan(plan: &KernelExecutionPlan) -> RouteCostTrace {
+        RouteCostTrace {
+            algebraic_work_estimate_hash: plan.algebraic_work_estimate.estimate_hash,
+            route_budget_hash: plan.route_budget.budget_hash,
+            predicted_work_units: plan.algebraic_work_estimate.predicted_work_units,
+            predicted_intermediate_terms: plan.algebraic_work_estimate.predicted_intermediate_terms,
+            predicted_output_terms: plan.algebraic_work_estimate.predicted_output_terms,
+            route_budget_max_work_units: plan.route_budget.max_work_units,
+            route_budget_max_intermediate_terms: plan.route_budget.max_intermediate_terms,
+            route_budget_max_output_terms: plan.route_budget.max_output_terms,
+            route_budget_max_keep_variables: plan.route_budget.max_keep_variables,
+            route_budget_max_total_degree: plan.route_budget.max_total_degree,
+            route_budget_max_coefficient_height_bits: plan.route_budget.max_coefficient_height_bits,
         }
     }
 }

@@ -35,6 +35,30 @@ pub fn hash_projection_message(message: &ProjectionMessage) -> Hash {
     for relation in &message.relation_generators {
         chunks.push(relation.hash.0.to_vec());
     }
+    if let Some(route_cost) = &message.cost_trace.route_cost {
+        chunks.push(route_cost.algebraic_work_estimate_hash.0.to_vec());
+        chunks.push(route_cost.route_budget_hash.0.to_vec());
+        chunks.push(route_cost.predicted_work_units.0.to_be_bytes().to_vec());
+        chunks.push(
+            route_cost
+                .route_budget_max_work_units
+                .0
+                .to_be_bytes()
+                .to_vec(),
+        );
+        chunks.push(
+            route_cost
+                .route_budget_max_intermediate_terms
+                .to_be_bytes()
+                .to_vec(),
+        );
+        chunks.push(
+            route_cost
+                .route_budget_max_output_terms
+                .to_be_bytes()
+                .to_vec(),
+        );
+    }
     crate::types::hash::hash_sequence("projection-message", &chunks)
 }
 

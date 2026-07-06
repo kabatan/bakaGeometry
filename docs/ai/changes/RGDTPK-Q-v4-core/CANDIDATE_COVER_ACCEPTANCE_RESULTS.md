@@ -1,6 +1,12 @@
 # Candidate-Cover Acceptance Results
 
-Status: candidate-cover completion evidence.
+Status: historical candidate-cover completion evidence; current readiness claim suspended by
+`ALG_COST_REPAIR_STATUS.md`.
+
+Suspension note: the prior `CANDIDATE_COVER_CORE_READY` and
+`SOURCE_FAITHFUL_TO_V4_CANDIDATE_COVER_LAYER` claims are not active until
+`RGDTPK-Q-v4-algebraic-cost-completion-repair-v1` passes all phases in
+`ALG_COST_COMPLETION_REPAIR_PLAN.md`.
 
 ## Claim Boundary
 

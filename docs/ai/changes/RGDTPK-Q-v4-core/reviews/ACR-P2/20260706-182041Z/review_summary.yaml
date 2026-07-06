@@ -1,0 +1,29 @@
+schema_version: alg-cost-review-v1
+phase_id: ACR-P2
+review_status: FAIL
+phase_closable: false
+algorithmic_sufficiency: insufficient
+source_spec_alignment: misaligned
+blocking_findings:
+  - Production cost estimates do not use actual polynomial term counts.
+  - SparseResultant candidate pair scoring still sorts by matrix size and hashes only.
+  - RouteBudget is hash/certificate/message-bound but not runtime-enforced.
+required_fixes:
+  - Make estimate_kernel_cost consume authorized relation polynomial footprints.
+  - Change sparse resultant admission/pair scoring to reject or CostProhibit small-matrix large-entry cases before execution.
+  - Enforce RouteBudget in production execution paths.
+dominant_cost_checks:
+  dense_trs_materialization_bounded: true
+  sparse_resultant_swell_bounded: false
+  route_budget_enforced: false
+  ladder_non_monopolizing: false
+  graph_decomposition_cost_aware: null
+support_producing_checks:
+  public_or_near_public_pipeline_used: false
+  projection_message_verified: false
+  support_verified: false
+  replay_accepted: false
+anti_overfit_checks:
+  no_diagnostic_problem_fixture: true
+  no_geometry_name_dispatch: true
+  no_expected_answer_dispatch: true

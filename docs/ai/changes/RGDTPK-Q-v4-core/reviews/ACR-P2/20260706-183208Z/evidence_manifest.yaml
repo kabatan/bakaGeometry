@@ -1,0 +1,48 @@
+schema_version: alg-cost-evidence-v1
+phase_id: ACR-P2
+claim_ceiling_after_phase: CANDIDATE_COVER_PIPELINE_PRESENT_BUT_ALGEBRAIC_COST_INCOMPLETE
+review_status: PASS
+evidence:
+  - path: geosolver-core/src/planner/algebraic_cost.rs
+    purpose: AlgebraicWorkEstimate, RouteBudget, SaturatingCount and hashes
+  - path: geosolver-core/src/planner/cost_model.rs
+    purpose: dominant-cost estimates using actual polynomial footprints and tests
+  - path: geosolver-core/src/planner/kernel_plan.rs
+    purpose: plan hash/certificate-bound budget tests
+  - path: geosolver-core/src/solver/pipeline.rs
+    purpose: RouteBudget preflight/postflight enforcement and route-local continuation
+  - path: geosolver-core/src/kernels/sparse_resultant.rs
+    purpose: expression-growth-aware pair scoring/rejection
+  - path: geosolver-core/src/result/cost_trace.rs
+    purpose: route cost trace fields
+  - path: geosolver-core/src/compose/message.rs
+    purpose: route cost bound into projection message hash
+commands:
+  - command: cargo fmt --check
+    cwd: geosolver-core
+    result: pass
+  - command: cargo check
+    cwd: geosolver-core
+    result: pass
+  - command: cargo test --lib acr_p2 -- --nocapture
+    cwd: geosolver-core
+    result: pass
+  - command: cargo test --lib p8b_sparse_resultant_kernel_produces_exact_exported_relation -- --nocapture
+    cwd: geosolver-core
+    result: pass
+  - command: cargo test --lib p6_planning_is_deterministic -- --nocapture
+    cwd: geosolver-core
+    result: pass
+  - command: cargo test --lib
+    cwd: geosolver-core
+    result: pass
+  - command: rg -n "mixtilinear|mixt|expected answer|problem hash|geometry name" geosolver-core/src -g "*.rs"
+    cwd: .
+    result: no_matches
+review_archive:
+  prompt: docs/ai/changes/RGDTPK-Q-v4-core/reviews/ACR-P2/20260706-183208Z/prompt.md
+  response: docs/ai/changes/RGDTPK-Q-v4-core/reviews/ACR-P2/20260706-183208Z/response.md
+  summary: docs/ai/changes/RGDTPK-Q-v4-core/reviews/ACR-P2/20260706-183208Z/review_summary.yaml
+notes:
+  - ACR-P2 PASS is scoped to route budget and dominant-cost architecture.
+  - It does not close P3/P4/P5/P6/P7/P8/P9/P10.

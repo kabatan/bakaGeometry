@@ -444,6 +444,7 @@ pub fn execute_target_action_krylov(
                 .collect::<Vec<_>>(),
         ),
         coefficient_height_after_bits: poly_coefficient_height_bits(&trace.relation),
+        route_cost: Some(ProjectionCostTrace::route_cost_from_plan(plan)),
     };
     let certificate = KernelCertificate::from_execution_plan_with_payload(
         plan,
@@ -1268,16 +1269,7 @@ fn finish_admission(
 }
 
 fn projection_message_hash(message: &ProjectionMessage) -> Hash {
-    let mut chunks = vec![
-        message.package_id.0.to_be_bytes().to_vec(),
-        message.block_id.0.to_be_bytes().to_vec(),
-        format!("{:?}", message.kernel_kind).into_bytes(),
-        message.certificate.certificate_hash.0.to_vec(),
-    ];
-    for relation in &message.relation_generators {
-        chunks.push(relation.hash.0.to_vec());
-    }
-    hash_sequence("projection-message", &chunks)
+    crate::compose::message::hash_projection_message(message)
 }
 
 fn certificate_design_gap(message: &str) -> SolverError {

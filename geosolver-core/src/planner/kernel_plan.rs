@@ -2,6 +2,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::kernels::traits::KernelKind;
 use crate::planner::admission::{KernelAdmission, KernelAdmissionStatus};
+use crate::planner::algebraic_cost::{
+    algebraic_work_estimate_hash, route_budget_hash, AlgebraicWorkEstimate, RouteBudget,
+};
 use crate::planner::cost_model::KernelCostEstimate;
 use crate::planner::relation_schedule::{
     hash_dense_relation_search_schedule, DenseRelationSearchSchedule,
@@ -34,6 +37,8 @@ pub struct KernelExecutionPlan {
     pub eliminated_variables: Vec<VariableId>,
     pub support_plan: KernelSupportPlan,
     pub resource_bounds: ResourceBounds,
+    pub algebraic_work_estimate: AlgebraicWorkEstimate,
+    pub route_budget: RouteBudget,
     pub certificate_route: CertificateRoute,
     pub failure_behavior: PlannedFailureBehavior,
     pub plan_work_classification: PlanWorkClassification,
@@ -252,6 +257,55 @@ impl KernelExecutionPlan {
         failure_behavior: PlannedFailureBehavior,
         plan_work_classification: PlanWorkClassification,
     ) -> Self {
+        let algebraic_work_estimate = default_algebraic_work_estimate(
+            &source_relation_ids,
+            &exported_variables,
+            &eliminated_variables,
+            &support_plan,
+            &resource_bounds,
+        );
+        let route_budget = RouteBudget::from_estimate(&algebraic_work_estimate);
+        Self::new_with_algebraic_cost(
+            plan_id,
+            block_id,
+            kernel_kind,
+            input_block_authorization_hash,
+            source_relation_ids,
+            source_relation_hashes,
+            child_block_ids,
+            child_message_hashes,
+            exported_variables,
+            eliminated_variables,
+            support_plan,
+            resource_bounds,
+            algebraic_work_estimate,
+            route_budget,
+            certificate_route,
+            failure_behavior,
+            plan_work_classification,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_algebraic_cost(
+        plan_id: KernelPlanId,
+        block_id: BlockId,
+        kernel_kind: KernelKind,
+        input_block_authorization_hash: Hash,
+        source_relation_ids: Vec<RelationId>,
+        source_relation_hashes: Vec<Hash>,
+        child_block_ids: Vec<BlockId>,
+        child_message_hashes: Vec<Hash>,
+        exported_variables: Vec<VariableId>,
+        eliminated_variables: Vec<VariableId>,
+        support_plan: KernelSupportPlan,
+        resource_bounds: ResourceBounds,
+        algebraic_work_estimate: AlgebraicWorkEstimate,
+        route_budget: RouteBudget,
+        certificate_route: CertificateRoute,
+        failure_behavior: PlannedFailureBehavior,
+        plan_work_classification: PlanWorkClassification,
+    ) -> Self {
         let mut plan = Self {
             plan_id,
             block_id,
@@ -265,6 +319,8 @@ impl KernelExecutionPlan {
             eliminated_variables,
             support_plan,
             resource_bounds,
+            algebraic_work_estimate,
+            route_budget,
             certificate_route,
             failure_behavior,
             plan_work_classification,
@@ -341,6 +397,14 @@ pub fn hash_kernel_execution_plan(plan: &KernelExecutionPlan) -> Hash {
     chunks.push(support_plan_hash(&plan.support_plan).0.to_vec());
     chunks.push(plan.resource_bounds.bounds_hash.0.to_vec());
     chunks.push(resource_bounds_hash(&plan.resource_bounds).0.to_vec());
+    chunks.push(plan.algebraic_work_estimate.estimate_hash.0.to_vec());
+    chunks.push(
+        algebraic_work_estimate_hash(&plan.algebraic_work_estimate)
+            .0
+            .to_vec(),
+    );
+    chunks.push(plan.route_budget.budget_hash.0.to_vec());
+    chunks.push(route_budget_hash(&plan.route_budget).0.to_vec());
     chunks.push(format!("{:?}", plan.certificate_route).into_bytes());
     chunks.push(plan.failure_behavior.behavior_hash.0.to_vec());
     chunks.push(failure_behavior_hash(&plan.failure_behavior).0.to_vec());
@@ -393,6 +457,40 @@ pub fn resource_bounds_hash(bounds: &ResourceBounds) -> Hash {
                 .map(|value| value.to_be_bytes().to_vec())
                 .unwrap_or_else(|| vec![0xff]),
         ],
+    )
+}
+
+fn default_algebraic_work_estimate(
+    source_relation_ids: &[RelationId],
+    exported_variables: &[VariableId],
+    eliminated_variables: &[VariableId],
+    support_plan: &KernelSupportPlan,
+    resource_bounds: &ResourceBounds,
+) -> AlgebraicWorkEstimate {
+    let matrix_rows = support_plan
+        .template_plan
+        .as_ref()
+        .map(|template| template.matrix_rows)
+        .or(resource_bounds.max_matrix_rows);
+    let matrix_cols = support_plan
+        .template_plan
+        .as_ref()
+        .map(|template| template.matrix_cols)
+        .or(resource_bounds.max_matrix_cols);
+    let quotient_rank_estimate = support_plan
+        .rank_plan
+        .as_ref()
+        .map(|rank| rank.estimated_rank);
+    AlgebraicWorkEstimate::conservative_plan_shape(
+        exported_variables
+            .len()
+            .saturating_add(eliminated_variables.len()),
+        source_relation_ids.len(),
+        exported_variables.len(),
+        matrix_rows,
+        matrix_cols,
+        quotient_rank_estimate,
+        support_plan.degree_bound,
     )
 }
 
@@ -631,5 +729,140 @@ fn implementation_bug(message: &str) -> SolverError {
         kind: SolverErrorKind::Failure(FailureKind::ImplementationBug {
             invariant_violated: message.to_owned(),
         }),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::planner::algebraic_cost::SaturatingCount;
+    use crate::result::cost_trace::ProjectionCostTrace;
+    use crate::verify::certificates::KernelCertificate;
+
+    fn test_hash(tag: &str) -> Hash {
+        hash_sequence(tag, &[])
+    }
+
+    fn support_plan() -> KernelSupportPlan {
+        let mut support = KernelSupportPlan {
+            dense_relation_search_schedule: None,
+            affine_elimination_order: None,
+            template_plan: Some(template_plan(4, 4, test_hash("rows"), test_hash("cols"))),
+            rank_plan: Some(rank_plan(8)),
+            universal_strategy_sequence: Vec::new(),
+            degree_bound: 3,
+            support_hash: hash_sequence("kernel-support-plan", &[]),
+        };
+        support.support_hash = support_plan_hash(&support);
+        support
+    }
+
+    fn resource_bounds() -> ResourceBounds {
+        let mut bounds = ResourceBounds {
+            max_matrix_rows: Some(4),
+            max_matrix_cols: Some(4),
+            max_export_degree: Some(3),
+            max_multiplier_total_degree: Some(6),
+            max_local_elimination_steps: Some(8),
+            max_memory_bytes: Some(1_048_576),
+            bounds_hash: hash_sequence("planner-resource-bounds", &[]),
+        };
+        bounds.bounds_hash = resource_bounds_hash(&bounds);
+        bounds
+    }
+
+    fn algebraic_work(predicted_intermediate_terms: usize) -> AlgebraicWorkEstimate {
+        AlgebraicWorkEstimate::new(
+            6,
+            2,
+            3,
+            16,
+            8,
+            3,
+            3,
+            Some(4),
+            Some(4),
+            Some(8),
+            Some(SaturatingCount::from_usize(predicted_intermediate_terms)),
+            Some(SaturatingCount::from_usize(predicted_intermediate_terms)),
+            Some(SaturatingCount::from_usize(128)),
+            SaturatingCount::from_usize(predicted_intermediate_terms.saturating_mul(4)),
+        )
+    }
+
+    fn plan_with_intermediate_terms(predicted_intermediate_terms: usize) -> KernelExecutionPlan {
+        let estimate = algebraic_work(predicted_intermediate_terms);
+        let budget = RouteBudget::from_estimate(&estimate);
+        KernelExecutionPlan::new_with_algebraic_cost(
+            KernelPlanId(7),
+            BlockId(3),
+            KernelKind::SparseResultantProjection,
+            test_hash("authorization"),
+            vec![RelationId(1), RelationId(2)],
+            vec![test_hash("relation-1"), test_hash("relation-2")],
+            Vec::new(),
+            Vec::new(),
+            vec![VariableId(0), VariableId(1), VariableId(2)],
+            vec![VariableId(3), VariableId(4), VariableId(5)],
+            support_plan(),
+            resource_bounds(),
+            estimate,
+            budget,
+            CertificateRoute::SparseResultantExactVerification,
+            planned_failure_behavior(
+                vec![
+                    SolverStatus::AlgorithmicHardCase,
+                    SolverStatus::FiniteResourceFailure,
+                ],
+                LocalNonfinitePolicy::NotApplicable,
+            ),
+            PlanWorkClassification::PurePlan,
+        )
+    }
+
+    #[test]
+    fn acr_p2_plan_hash_changes_when_dominant_cost_estimate_changes() {
+        let compact = plan_with_intermediate_terms(128);
+        let expanded = plan_with_intermediate_terms(4096);
+
+        assert!(compact.algebraic_work_estimate.is_hash_current());
+        assert!(compact.route_budget.is_hash_current());
+        assert_ne!(
+            compact.algebraic_work_estimate.estimate_hash,
+            expanded.algebraic_work_estimate.estimate_hash
+        );
+        assert_ne!(
+            compact.route_budget.budget_hash,
+            expanded.route_budget.budget_hash
+        );
+        assert_ne!(compact.plan_hash, expanded.plan_hash);
+    }
+
+    #[test]
+    fn acr_p2_route_budget_is_certificate_and_trace_bound() {
+        let plan = plan_with_intermediate_terms(512);
+        let route_cost = ProjectionCostTrace::route_cost_from_plan(&plan);
+        assert_eq!(
+            route_cost.algebraic_work_estimate_hash,
+            plan.algebraic_work_estimate.estimate_hash
+        );
+        assert_eq!(route_cost.route_budget_hash, plan.route_budget.budget_hash);
+        assert_eq!(
+            route_cost.route_budget_max_intermediate_terms,
+            plan.route_budget.max_intermediate_terms
+        );
+
+        let mut tampered = plan.clone();
+        tampered.route_budget.max_intermediate_terms = tampered
+            .route_budget
+            .max_intermediate_terms
+            .saturating_add(1);
+        assert_ne!(hash_kernel_execution_plan(&tampered), plan.plan_hash);
+
+        let cert = KernelCertificate::from_execution_plan(&plan, &[], test_hash("certificate"));
+        let tampered_cert =
+            KernelCertificate::from_execution_plan(&tampered, &[], test_hash("certificate"));
+        assert_ne!(cert.plan_hash, tampered_cert.plan_hash);
+        assert_ne!(cert.binding_hash, tampered_cert.binding_hash);
     }
 }

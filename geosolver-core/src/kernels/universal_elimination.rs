@@ -576,6 +576,7 @@ fn execute_universal_stage_with_solver_ctx(
                 })),
                 coefficient_height_before_bits: max_poly_coefficient_height_bits(&relations),
                 coefficient_height_after_bits: max_poly_coefficient_height_bits(&generators),
+                route_cost: Some(ProjectionCostTrace::route_cost_from_plan(parent_plan)),
             };
             verify_universal_no_coordinate_fallback(&stage_execution_plan_shadow(stage), &trace)?;
             Ok(build_universal_message(
@@ -727,6 +728,7 @@ fn wrap_stage_message(
         matrix_density: message.cost_trace.matrix_density.clone(),
         coefficient_height_before_bits: message.cost_trace.coefficient_height_before_bits,
         coefficient_height_after_bits: message.cost_trace.coefficient_height_after_bits,
+        route_cost: Some(ProjectionCostTrace::route_cost_from_plan(parent_plan)),
     };
     verify_universal_no_coordinate_fallback(&stage_execution_plan_shadow(stage), &trace)?;
     let relation_generators = message.relation_generators.clone();
@@ -1192,16 +1194,7 @@ fn universal_stage_hash(stage: &UniversalStagePlan) -> Hash {
 }
 
 fn projection_message_hash(message: &ProjectionMessage) -> Hash {
-    let mut chunks = vec![
-        message.package_id.0.to_be_bytes().to_vec(),
-        message.block_id.0.to_be_bytes().to_vec(),
-        format!("{:?}", message.kernel_kind).into_bytes(),
-        message.certificate.certificate_hash.0.to_vec(),
-    ];
-    for relation in &message.relation_generators {
-        chunks.push(relation.hash.0.to_vec());
-    }
-    hash_sequence("projection-message", &chunks)
+    crate::compose::message::hash_projection_message(message)
 }
 
 fn finish_admission(

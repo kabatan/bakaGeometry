@@ -1,6 +1,14 @@
 # Candidate-Cover Closure
 
-Status: candidate-cover repair complete.
+Status: historical closure; current readiness claim suspended by
+`ALG_COST_REPAIR_STATUS.md`.
+
+Suspension note: `CANDIDATE_COVER_CORE_READY` and
+`SOURCE_FAITHFUL_TO_V4_CANDIDATE_COVER_LAYER` are not current active claims until
+`RGDTPK-Q-v4-algebraic-cost-completion-repair-v1` passes all phases in
+`ALG_COST_COMPLETION_REPAIR_PLAN.md`.
+
+Historical status: candidate-cover repair complete under the prior evidence boundary.
 
 Allowed claim:
 
