@@ -183,6 +183,20 @@ pub fn solve_with_context(
             );
             let mut diagnostics = compressed.diagnostics.clone();
             diagnostics.extend(ctx.diagnostics.clone());
+            if !ctx.options.exact_image_mode {
+                diagnostics.push(DiagnosticRecord::new(
+                    "ExactImageFilteringNotRequested",
+                    "candidate-cover mode returns roots of S(T) without exact-image filtering"
+                        .to_owned(),
+                    Some(StageId("P13CandidateCover".to_owned())),
+                ));
+                diagnostics.push(DiagnosticRecord::new(
+                    "CandidateCoverMayContainSpuriousRoots",
+                    "certified candidate cover proves true target values are contained in roots(S); extra roots are allowed"
+                        .to_owned(),
+                    Some(StageId("P13CandidateCover".to_owned())),
+                ));
+            }
             if roots.root_isolation.is_empty() {
                 diagnostics.push(DiagnosticRecord::new(
                     if ctx.options.exact_image_mode {

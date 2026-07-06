@@ -329,15 +329,26 @@ pub fn finalize_candidate_cover_result(
             "decoded candidate count does not match isolated root count",
         ));
     }
-    let diagnostics = if root_isolation.is_empty() {
-        vec![DiagnosticRecord::new(
+    let mut diagnostics = vec![
+        DiagnosticRecord::new(
+            "ExactImageFilteringNotRequested",
+            "candidate-cover mode returns roots of S(T) without exact-image filtering".to_owned(),
+            Some(StageId("P13CandidateCover".to_owned())),
+        ),
+        DiagnosticRecord::new(
+            "CandidateCoverMayContainSpuriousRoots",
+            "certified candidate cover proves true target values are contained in roots(S); extra roots are allowed"
+                .to_owned(),
+            Some(StageId("P13CandidateCover".to_owned())),
+        ),
+    ];
+    if root_isolation.is_empty() {
+        diagnostics.push(DiagnosticRecord::new(
             "EmptyRealCandidateCover",
             "support has no real roots; certified candidate cover is empty".to_owned(),
             Some(StageId("P12RootDecode".to_owned())),
-        )]
-    } else {
-        Vec::new()
-    };
+        ));
+    }
     Ok(TargetSolveResult {
         status: SolverStatus::CertifiedCandidateCover,
         target,

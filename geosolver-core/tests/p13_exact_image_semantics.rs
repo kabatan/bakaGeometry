@@ -80,6 +80,14 @@ fn p13_candidate_cover_mode_does_not_claim_exact_image_for_semantic_problem() {
     assert_eq!(result.status, SolverStatus::CertifiedCandidateCover);
     assert!(result.exact_image_certificate.is_none());
     assert!(result.decoded_candidates.len() >= 2);
+    assert!(result
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.name == "ExactImageFilteringNotRequested"));
+    assert!(result
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.name == "CandidateCoverMayContainSpuriousRoots"));
     assert!(replay_run_certificate(&result, &problem).accepted);
 }
 

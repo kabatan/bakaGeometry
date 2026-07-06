@@ -1,0 +1,120 @@
+schema_version: candidate-cover-acceptance-v1
+claim_target:
+  allowed:
+    - CANDIDATE_COVER_CORE_READY
+    - SOURCE_FAITHFUL_TO_V4_CANDIDATE_COVER_LAYER
+  forbidden_without_exact_image_completion:
+    - EXACT_IMAGE_CORE_READY
+    - SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC
+    - RGDTPK_Q_V4_ACCEPTANCE_COMPLETE
+
+semantic_rule:
+  candidate_cover:
+    statement: "true_target_values_subset_of_roots_S"
+    spurious_roots_allowed: true
+    exact_target_image_required: false
+  reviewer_must_not_fail_for:
+    - extra_roots
+    - absent_exact_image_certificate
+    - real_semantic_filtering_not_performed
+  reviewer_must_fail_for:
+    - missing_true_target_value
+    - no_exact_Q_support_verification
+    - helper_only_support
+    - expected_answer_dispatch
+    - hidden_coordinate_solve
+
+support_producing_public_cases:
+  - id: A1
+    name: no_initial_target_only_relation_one_block
+    required_status: CertifiedCandidateCover
+    required_path: api::solve_target
+    required_evidence:
+      - nonzero_support
+      - exact_Q_verification
+      - replay_accepts
+      - cost_trace
+  - id: A2
+    name: multivariate_quotient_action_nonlinear_target
+    required_kernel: TargetActionKrylov
+    must_not_be:
+      - target_only_relation_already_present
+      - local_univariate_alias_only
+  - id: A3
+    name: multiple_eliminated_variables_multiple_separators
+    required_evidence:
+      - projection_messages_at_least_2
+      - separator_composition_essential
+  - id: A4
+    name: sparse_resultant_or_generic_route_no_initial_target_only
+    required_evidence:
+      - exact_resultant_or_membership_verification
+  - id: A5
+    name: specialization_interpolation_exact_Q_verification
+    required_evidence:
+      - sample_schedule_declared
+      - final_relation_exactly_verified
+  - id: A6
+    name: guarded_rational_affine_nonconstant_denominator
+    required_evidence:
+      - denominator_guard_recorded
+      - support_contains_true_values
+  - id: A7
+    name: target_independent_component_feasibility_obligation
+    required_evidence:
+      - candidate_cover_not_blocked_by_target_independent_component
+      - feasibility_obligation_retained_for_exact_image_later
+  - id: A8
+    name: one_large_block_universal
+    required_kernel: UniversalTargetElimination
+    required_evidence:
+      - no_useful_separator
+      - declared_universal_ladder
+  - id: A9
+    name: regular_chain_optimizer
+    required_evidence:
+      - component_semantics_not_overclaimed
+      - generic_pipeline_continues_if_declined
+  - id: A10
+    name: norm_trace_optimizer
+    required_evidence:
+      - norm_relation_exactly_verified
+      - generic_pipeline_continues_if_declined
+  - id: A11
+    name: non_real_support_empty_candidate_cover
+    required_status: CertifiedCandidateCover
+    allow_empty_candidates: true
+  - id: A12
+    name: slack_guard_spurious_roots_allowed
+    required_status: CertifiedCandidateCover
+    required_behavior:
+      - exact_image_mode_false
+      - spurious_roots_remain
+      - replay_accepts
+  - id: A13
+    name: bounded_hard_failure_not_nonfinite
+    required_status_one_of:
+      - AlgorithmicHardCase
+      - FiniteResourceFailure
+      - CertificateDesignGap
+    forbidden_status:
+      - CertifiedNonFiniteTargetImage
+    required_evidence:
+      - nonempty_cost_trace
+
+red_team:
+  fresh_inputs_minimum: 12
+  spurious_root_cases_minimum: 4
+  must_include:
+    - multivariate_action_not_alias
+    - two_separator_composition
+    - higher_degree_sparse_eliminant
+    - guarded_affine_nonconstant_denominator
+    - one_large_block_universal
+    - target_independent_component
+    - positive_nonfinite_certificate
+    - no_positive_proof_not_nonfinite
+    - regular_chain_fresh
+    - norm_trace_fresh
+    - support_membership_route
+    - semantic_spurious_roots
