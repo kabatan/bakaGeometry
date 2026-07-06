@@ -200,6 +200,7 @@ pub fn plan_sparse_resultant_with_messages(
     );
     let mut support_plan = KernelSupportPlan {
         dense_relation_search_schedule: None,
+        sparse_relation_search_schedule: None,
         affine_elimination_order: None,
         template_plan: Some(template),
         rank_plan: Some(rank_plan(probe.matrix_rows.min(probe.matrix_cols))),

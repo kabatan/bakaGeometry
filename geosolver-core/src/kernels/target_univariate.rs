@@ -112,6 +112,7 @@ pub fn admit_target_univariate_with_messages(
         .unwrap_or(1);
     let mut support_plan = KernelSupportPlan {
         dense_relation_search_schedule: None,
+        sparse_relation_search_schedule: None,
         affine_elimination_order: None,
         template_plan: Some(template_plan(
             1,

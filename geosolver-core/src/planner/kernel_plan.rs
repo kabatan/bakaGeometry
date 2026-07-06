@@ -7,7 +7,8 @@ use crate::planner::algebraic_cost::{
 };
 use crate::planner::cost_model::{KernelCostEstimate, RouteCostClass};
 use crate::planner::relation_schedule::{
-    hash_dense_relation_search_schedule, DenseRelationSearchSchedule,
+    hash_dense_relation_search_schedule, hash_sparse_relation_search_schedule,
+    DenseRelationSearchSchedule, SparseRelationSearchSchedule,
 };
 use crate::result::status::{FailureKind, SolverError, SolverErrorKind, SolverStatus};
 use crate::types::hash::{hash_sequence, Hash};
@@ -66,6 +67,7 @@ pub struct CertifiedProbePlan {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct KernelSupportPlan {
     pub dense_relation_search_schedule: Option<DenseRelationSearchSchedule>,
+    pub sparse_relation_search_schedule: Option<SparseRelationSearchSchedule>,
     pub affine_elimination_order: Option<AffineEliminationPlan>,
     pub template_plan: Option<TemplatePlan>,
     pub rank_plan: Option<RankPlan>,
@@ -424,6 +426,10 @@ pub fn support_plan_hash(plan: &KernelSupportPlan) -> Hash {
     if let Some(schedule) = &plan.dense_relation_search_schedule {
         chunks.push(schedule.schedule_hash.0.to_vec());
         chunks.push(hash_dense_relation_search_schedule(schedule).0.to_vec());
+    }
+    if let Some(schedule) = &plan.sparse_relation_search_schedule {
+        chunks.push(schedule.schedule_hash.0.to_vec());
+        chunks.push(hash_sparse_relation_search_schedule(schedule).0.to_vec());
     }
     if let Some(order) = &plan.affine_elimination_order {
         chunks.push(order.order_hash.0.to_vec());
@@ -799,6 +805,7 @@ mod tests {
     fn support_plan() -> KernelSupportPlan {
         let mut support = KernelSupportPlan {
             dense_relation_search_schedule: None,
+            sparse_relation_search_schedule: None,
             affine_elimination_order: None,
             template_plan: Some(template_plan(4, 4, test_hash("rows"), test_hash("cols"))),
             rank_plan: Some(rank_plan(8)),

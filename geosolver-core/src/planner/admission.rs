@@ -22,8 +22,10 @@ use crate::planner::kernel_plan::{
 };
 use crate::planner::probes::ProbeResults;
 use crate::planner::relation_schedule::{
-    build_dense_relation_search_schedule, dense_relation_search_decline_reason,
-    estimate_dense_relation_search_schedule,
+    build_dense_relation_search_schedule, build_sparse_relation_search_schedule,
+    dense_relation_search_decline_reason, estimate_dense_relation_search_schedule,
+    estimate_sparse_relation_search_schedule, sparse_relation_search_decline_reason,
+    DenseRelationSearchSchedule, RelationSearchStage, SparseRelationSearchSchedule,
 };
 use crate::preprocess::compression::CompressedSystemQ;
 use crate::problem::context::SolverContext;
@@ -165,7 +167,7 @@ fn build_kernel_admission(
                     target_relation_hashes,
                     vec![system.target],
                     eliminated_variables.clone(),
-                    basic_support_plan(None, probes, target_degree_bound),
+                    basic_support_plan(None, None, probes, target_degree_bound),
                     resource_bounds(ctx, Some(target_degree_bound), probes),
                     CertificateRoute::SourceMembershipCertificate,
                     LocalNonfinitePolicy::NotApplicable,
@@ -178,18 +180,13 @@ fn build_kernel_admission(
             if relation_polys.is_empty() {
                 declined("no authorized local relations for dense relation search")
             } else {
-                let preflight = estimate_dense_relation_search_schedule(
+                let dense_preflight = estimate_dense_relation_search_schedule(
                     &relation_polys,
                     &eliminated_variables,
                     &exported_variables,
                     &ctx.options,
                 );
-                if !preflight.materialization_allowed {
-                    cost_prohibited(
-                        &dense_relation_search_decline_reason(&preflight),
-                        preflight.preflight_hash,
-                    )
-                } else {
+                if dense_preflight.materialization_allowed {
                     let schedule = build_dense_relation_search_schedule(
                         &relation_polys,
                         &eliminated_variables,
@@ -205,11 +202,57 @@ fn build_kernel_admission(
                         relation_hashes,
                         exported_variables.clone(),
                         eliminated_variables.clone(),
-                        basic_support_plan(Some(schedule), probes, degree_bound),
+                        basic_support_plan(Some(schedule), None, probes, degree_bound),
                         resource_bounds(ctx, Some(degree_bound), probes),
                         CertificateRoute::DenseRelationSearchMembership,
                         LocalNonfinitePolicy::NotApplicable,
                     )
+                } else {
+                    let sparse_preflight = estimate_sparse_relation_search_schedule(
+                        &relation_polys,
+                        &eliminated_variables,
+                        &exported_variables,
+                        &ctx.options,
+                    );
+                    if !sparse_preflight.feasible {
+                        let reason = format!(
+                            "{}; {}",
+                            dense_relation_search_decline_reason(&dense_preflight),
+                            sparse_relation_search_decline_reason(&sparse_preflight),
+                        );
+                        cost_prohibited(
+                            &reason,
+                            hash_sequence(
+                                "target-relation-search-dense-and-sparse-preflight",
+                                &[
+                                    dense_preflight.preflight_hash.0.to_vec(),
+                                    sparse_preflight.preflight_hash.0.to_vec(),
+                                ],
+                            ),
+                        )
+                    } else {
+                        let schedule = build_sparse_relation_search_schedule(
+                            &relation_polys,
+                            &eliminated_variables,
+                            &exported_variables,
+                            &ctx.options,
+                        );
+                        let degree_bound = schedule.stage.export_degree;
+                        let stage = schedule.stage.clone();
+                        admitted_with_plan(
+                            plan_id,
+                            kind,
+                            block,
+                            source_relation_ids,
+                            relation_hashes,
+                            exported_variables.clone(),
+                            eliminated_variables.clone(),
+                            basic_support_plan(None, Some(schedule), probes, degree_bound),
+                            relation_search_resource_bounds(ctx, &stage, degree_bound),
+                            CertificateRoute::DenseRelationSearchMembership,
+                            LocalNonfinitePolicy::NotApplicable,
+                        )
+                    }
                 }
             }
         }
@@ -448,6 +491,26 @@ fn bind_admission_algebraic_cost(
     system: &CompressedSystemQ,
     probes: &ProbeResults,
 ) -> KernelAdmission {
+    let sparse_target_relation_plan = admission.kind == KernelKind::TargetRelationSearch
+        && admission
+            .execution_plan
+            .as_ref()
+            .is_some_and(|plan| plan.support_plan.sparse_relation_search_schedule.is_some());
+    if sparse_target_relation_plan {
+        if let Some(plan) = admission.execution_plan.as_mut() {
+            plan.route_budget = RouteBudget::from_estimate(&plan.algebraic_work_estimate);
+            plan.plan_hash = hash_kernel_execution_plan(plan);
+        }
+        admission.admission_hash = kernel_admission_hash(
+            admission.kind,
+            admission.block_id,
+            &admission.exported_variables,
+            &admission.eliminated_variables,
+            &admission.status,
+            admission.execution_plan.as_ref(),
+        );
+        return admission;
+    }
     if admission.execution_plan.is_some() {
         let cost = estimate_kernel_cost(block, system, admission.kind, probes);
         if cost.cost_class == RouteCostClass::CostProhibited {
@@ -511,19 +574,35 @@ fn kernel_admission_hash(
 }
 
 fn basic_support_plan(
-    schedule: Option<crate::planner::relation_schedule::DenseRelationSearchSchedule>,
+    schedule: Option<DenseRelationSearchSchedule>,
+    sparse_schedule: Option<SparseRelationSearchSchedule>,
     probes: &ProbeResults,
     degree_bound: usize,
 ) -> KernelSupportPlan {
-    let template = template_plan(
-        probes.local_macaulay_size.template_estimate.row_count,
-        probes.local_macaulay_size.template_estimate.column_count,
-        probes.local_macaulay_size.template_estimate.estimate_hash,
-        probes.mixed_support.probe_hash,
+    let sparse_stage = sparse_schedule.as_ref().map(|schedule| &schedule.stage);
+    let template = if let Some(stage) = sparse_stage {
+        template_plan(
+            stage.matrix_rows.max(1),
+            stage.matrix_cols.max(1),
+            stage.row_monomial_hash,
+            stage.export_support_hash,
+        )
+    } else {
+        template_plan(
+            probes.local_macaulay_size.template_estimate.row_count,
+            probes.local_macaulay_size.template_estimate.column_count,
+            probes.local_macaulay_size.template_estimate.estimate_hash,
+            probes.mixed_support.probe_hash,
+        )
+    };
+    let rank = rank_plan(
+        sparse_stage.map_or(probes.modular_rank.rank_estimate.estimated_rank, |stage| {
+            stage.matrix_cols.max(1)
+        }),
     );
-    let rank = rank_plan(probes.modular_rank.rank_estimate.estimated_rank);
     let mut support_plan = KernelSupportPlan {
         dense_relation_search_schedule: schedule,
+        sparse_relation_search_schedule: sparse_schedule,
         affine_elimination_order: None,
         template_plan: Some(template),
         rank_plan: Some(rank),
@@ -533,6 +612,24 @@ fn basic_support_plan(
     };
     support_plan.support_hash = support_plan_hash(&support_plan);
     support_plan
+}
+
+fn relation_search_resource_bounds(
+    ctx: &SolverContext,
+    stage: &RelationSearchStage,
+    degree_bound: usize,
+) -> ResourceBounds {
+    let mut bounds = ResourceBounds {
+        max_matrix_rows: Some(stage.matrix_rows.max(1)),
+        max_matrix_cols: Some(stage.matrix_cols.max(1)),
+        max_export_degree: Some(degree_bound),
+        max_multiplier_total_degree: Some(stage.multiplier_total_degree),
+        max_local_elimination_steps: Some(0),
+        max_memory_bytes: ctx.options.max_memory_bytes,
+        bounds_hash: hash_sequence("planner-resource-bounds", &[]),
+    };
+    bounds.bounds_hash = resource_bounds_hash(&bounds);
+    bounds
 }
 
 fn resource_bounds(

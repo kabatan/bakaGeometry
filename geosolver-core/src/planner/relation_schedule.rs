@@ -17,6 +17,10 @@ pub const DEFAULT_DENSE_TRS_MAX_MATRIX_ROWS: usize = 65_536;
 pub const DEFAULT_DENSE_TRS_MAX_MATRIX_COLS: usize = 65_536;
 pub const DEFAULT_DENSE_TRS_MAX_ESTIMATED_MEMORY_BYTES: u64 = 256 * 1024 * 1024;
 pub const DEFAULT_DENSE_TRS_MAX_MATERIALIZED_STAGES: usize = 16;
+pub const DEFAULT_SPARSE_TRS_MAX_EXPORT_SUPPORT: usize = 512;
+pub const DEFAULT_SPARSE_TRS_MAX_MULTIPLIER_SUPPORT_PER_RELATION: usize = 64;
+pub const DEFAULT_SPARSE_TRS_MAX_TERM_FOOTPRINT_RELATION_TERMS: usize = 64;
+pub const DEFAULT_SPARSE_TRS_MAX_EXPORT_POWER: usize = 8;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SaturatingCount {
@@ -30,6 +34,10 @@ impl SaturatingCount {
             value: Some(value),
             saturated: false,
         }
+    }
+
+    pub fn from_usize(value: usize) -> Self {
+        Self::exact(value as u128)
     }
 
     pub fn saturated() -> Self {
@@ -208,6 +216,40 @@ pub struct DenseRelationSearchSchedule {
     pub preflight: DenseRelationSearchPreflight,
     pub support_descriptors: Vec<SupportDescriptor>,
     pub stages: Vec<RelationSearchStage>,
+    pub schedule_hash: Hash,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SparseRelationSearchPreflight {
+    pub eliminated_variables: Vec<VariableId>,
+    pub exported_variables: Vec<VariableId>,
+    pub d_max: usize,
+    pub export_support_count: usize,
+    pub total_multiplier_support_count: usize,
+    pub row_monomial_count: usize,
+    pub matrix_rows: usize,
+    pub matrix_cols: usize,
+    pub estimated_memory_bytes: SaturatingCount,
+    pub caps: RelationSearchPlanningCaps,
+    pub feasible: bool,
+    pub cost_prohibited_reason: Option<String>,
+    pub preflight_hash: Hash,
+}
+
+impl SparseRelationSearchPreflight {
+    pub fn first_prohibition_reason(&self) -> Option<&str> {
+        self.cost_prohibited_reason.as_deref()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SparseRelationSearchSchedule {
+    pub eliminated_variables: Vec<VariableId>,
+    pub exported_variables: Vec<VariableId>,
+    pub d_max: usize,
+    pub preflight: SparseRelationSearchPreflight,
+    pub support_descriptors: Vec<SupportDescriptor>,
+    pub stage: RelationSearchStage,
     pub schedule_hash: Hash,
 }
 
@@ -441,6 +483,174 @@ pub fn build_dense_relation_search_schedule(
     schedule
 }
 
+pub fn estimate_sparse_relation_search_schedule(
+    j: &[SparsePolynomialQ],
+    eliminated: &[VariableId],
+    exported: &[VariableId],
+    options: &SolverOptions,
+) -> SparseRelationSearchPreflight {
+    let eliminated_variables = sorted_variables(eliminated);
+    let exported_variables = sorted_variables(exported);
+    let d_max = j
+        .iter()
+        .map(|relation| poly_total_degree(relation) as usize)
+        .max()
+        .unwrap_or(0);
+    let caps = RelationSearchPlanningCaps::from_options(options);
+    let export_support = build_sparse_export_monomial_support(j, &exported_variables);
+    let multiplier_supports =
+        build_sparse_multiplier_supports(j, &eliminated_variables, &exported_variables);
+    let row_monomials = build_row_monomial_support(j, &export_support, &multiplier_supports);
+    let export_support_count = export_support.len();
+    let total_multiplier_support_count = multiplier_supports
+        .iter()
+        .map(|support| support.len())
+        .sum::<usize>();
+    let matrix_cols = export_support_count.saturating_add(total_multiplier_support_count);
+    let matrix_rows = row_monomials.len();
+    let estimated_memory_bytes = SaturatingCount::from_usize(matrix_rows)
+        .add(SaturatingCount::from_usize(matrix_cols))
+        .mul_u128(128);
+    let mut reasons = Vec::new();
+    if export_support_count > caps.max_export_cols {
+        reasons.push(format!(
+            "sparse export support {} exceeds cap {}",
+            export_support_count, caps.max_export_cols
+        ));
+    }
+    if total_multiplier_support_count > caps.max_total_multiplier_cols {
+        reasons.push(format!(
+            "sparse total multiplier support {} exceeds cap {}",
+            total_multiplier_support_count, caps.max_total_multiplier_cols
+        ));
+    }
+    if matrix_cols > caps.max_matrix_cols {
+        reasons.push(format!(
+            "sparse matrix columns {} exceeds cap {}",
+            matrix_cols, caps.max_matrix_cols
+        ));
+    }
+    if matrix_rows > caps.max_matrix_rows {
+        reasons.push(format!(
+            "sparse matrix rows {} exceeds cap {}",
+            matrix_rows, caps.max_matrix_rows
+        ));
+    }
+    if estimated_memory_bytes.exceeds_u64(caps.max_estimated_memory_bytes) {
+        reasons.push(format!(
+            "sparse estimated memory bytes {} exceeds cap {}",
+            estimated_memory_bytes.display_value(),
+            caps.max_estimated_memory_bytes
+        ));
+    }
+    if export_support.is_empty() || matrix_cols == 0 || matrix_rows == 0 {
+        reasons.push("sparse TargetRelationSearch footprint is empty".to_owned());
+    }
+    let feasible = reasons.is_empty();
+    let mut preflight = SparseRelationSearchPreflight {
+        eliminated_variables,
+        exported_variables,
+        d_max,
+        export_support_count,
+        total_multiplier_support_count,
+        row_monomial_count: matrix_rows,
+        matrix_rows,
+        matrix_cols,
+        estimated_memory_bytes,
+        caps,
+        feasible,
+        cost_prohibited_reason: if feasible {
+            None
+        } else {
+            Some(reasons.join("; "))
+        },
+        preflight_hash: hash_sequence("sparse-trs-preflight", &[]),
+    };
+    preflight.preflight_hash = hash_sparse_relation_search_preflight(&preflight);
+    preflight
+}
+
+pub fn sparse_relation_search_decline_reason(preflight: &SparseRelationSearchPreflight) -> String {
+    let reason = preflight
+        .first_prohibition_reason()
+        .unwrap_or("sparse TargetRelationSearch footprint did not admit materialization");
+    format!(
+        "CostProhibitedSparseRoute: kernel=TargetRelationSearch route=SparseFootprint decision=CostProhibitedSparseRoute matrix_cols={} matrix_rows={} memory_bytes={} reason={reason}",
+        preflight.matrix_cols,
+        preflight.matrix_rows,
+        preflight.estimated_memory_bytes.display_value(),
+    )
+}
+
+pub fn build_sparse_relation_search_schedule(
+    j: &[SparsePolynomialQ],
+    eliminated: &[VariableId],
+    exported: &[VariableId],
+    options: &SolverOptions,
+) -> SparseRelationSearchSchedule {
+    let preflight = estimate_sparse_relation_search_schedule(j, eliminated, exported, options);
+    let export_support = build_sparse_export_monomial_support(j, &preflight.exported_variables);
+    let multiplier_supports = build_sparse_multiplier_supports(
+        j,
+        &preflight.eliminated_variables,
+        &preflight.exported_variables,
+    );
+    let row_monomials = build_row_monomial_support(j, &export_support, &multiplier_supports);
+    let export_support_hash = hash_monomials("rgq042-export-support", &export_support);
+    let multiplier_support_hashes = multiplier_supports
+        .iter()
+        .map(|support| hash_monomials("rgq042-multiplier-support", support))
+        .collect::<Vec<_>>();
+    let row_monomial_hash = hash_monomials("rgq042-row-monomials", &row_monomials);
+    let mut stage = RelationSearchStage {
+        export_degree: sparse_export_degree(&export_support),
+        multiplier_total_degree: sparse_multiplier_degree(&multiplier_supports),
+        export_support_hash,
+        multiplier_support_hashes: multiplier_support_hashes.clone(),
+        row_monomial_hash,
+        row_monomial_count: row_monomials.len(),
+        matrix_rows: row_monomials.len(),
+        matrix_cols: export_support.len().saturating_add(
+            multiplier_supports
+                .iter()
+                .map(|support| support.len())
+                .sum(),
+        ),
+        stage_hash: hash_sequence("rgq042-relation-search-stage", &[]),
+    };
+    stage.stage_hash = hash_relation_search_stage(&stage);
+    let all_variables = sorted_union(
+        &preflight.eliminated_variables,
+        &preflight.exported_variables,
+    );
+    let mut support_descriptors = vec![SupportDescriptor::SparseFootprint {
+        variables: preflight.exported_variables.clone(),
+        support_hash: export_support_hash,
+        estimated_count: SaturatingCount::from_usize(export_support.len()),
+    }];
+    for (support, support_hash) in multiplier_supports
+        .iter()
+        .zip(multiplier_support_hashes.iter())
+    {
+        support_descriptors.push(SupportDescriptor::SparseFootprint {
+            variables: all_variables.clone(),
+            support_hash: *support_hash,
+            estimated_count: SaturatingCount::from_usize(support.len()),
+        });
+    }
+    let mut schedule = SparseRelationSearchSchedule {
+        eliminated_variables: preflight.eliminated_variables.clone(),
+        exported_variables: preflight.exported_variables.clone(),
+        d_max: preflight.d_max,
+        preflight,
+        support_descriptors,
+        stage,
+        schedule_hash: hash_sequence("rgq042-sparse-relation-search-schedule", &[]),
+    };
+    schedule.schedule_hash = hash_sparse_relation_search_schedule(&schedule);
+    schedule
+}
+
 pub fn hash_dense_relation_search_schedule(schedule: &DenseRelationSearchSchedule) -> Hash {
     let mut chunks = vec![
         schedule.z_seed.to_be_bytes().to_vec(),
@@ -482,6 +692,27 @@ pub fn hash_relation_search_stage(stage: &RelationSearchStage) -> Hash {
     chunks.push(stage.matrix_rows.to_be_bytes().to_vec());
     chunks.push(stage.matrix_cols.to_be_bytes().to_vec());
     hash_sequence("rgq042-relation-search-stage", &chunks)
+}
+
+pub fn hash_sparse_relation_search_schedule(schedule: &SparseRelationSearchSchedule) -> Hash {
+    let mut chunks = vec![
+        schedule.d_max.to_be_bytes().to_vec(),
+        schedule.preflight.preflight_hash.0.to_vec(),
+        schedule.stage.stage_hash.0.to_vec(),
+        hash_relation_search_stage(&schedule.stage).0.to_vec(),
+    ];
+    for variable in &schedule.eliminated_variables {
+        chunks.push(variable.0.to_be_bytes().to_vec());
+    }
+    chunks.push(Vec::new());
+    for variable in &schedule.exported_variables {
+        chunks.push(variable.0.to_be_bytes().to_vec());
+    }
+    chunks.push(Vec::new());
+    for descriptor in &schedule.support_descriptors {
+        chunks.push(hash_support_descriptor(descriptor).0.to_vec());
+    }
+    hash_sequence("rgq042-sparse-relation-search-schedule", &chunks)
 }
 
 fn estimate_relation_search_stage(
@@ -702,6 +933,49 @@ fn hash_dense_relation_search_preflight(preflight: &DenseRelationSearchPreflight
     hash_sequence("dense-trs-preflight", &chunks)
 }
 
+fn hash_sparse_relation_search_preflight(preflight: &SparseRelationSearchPreflight) -> Hash {
+    let mut chunks = vec![
+        preflight.d_max.to_be_bytes().to_vec(),
+        preflight.export_support_count.to_be_bytes().to_vec(),
+        preflight
+            .total_multiplier_support_count
+            .to_be_bytes()
+            .to_vec(),
+        preflight.row_monomial_count.to_be_bytes().to_vec(),
+        preflight.matrix_rows.to_be_bytes().to_vec(),
+        preflight.matrix_cols.to_be_bytes().to_vec(),
+        count_to_bytes(preflight.estimated_memory_bytes),
+        (preflight.feasible as u8).to_be_bytes().to_vec(),
+        preflight
+            .cost_prohibited_reason
+            .as_deref()
+            .unwrap_or("")
+            .as_bytes()
+            .to_vec(),
+        preflight.caps.max_export_cols.to_be_bytes().to_vec(),
+        preflight
+            .caps
+            .max_total_multiplier_cols
+            .to_be_bytes()
+            .to_vec(),
+        preflight.caps.max_matrix_rows.to_be_bytes().to_vec(),
+        preflight.caps.max_matrix_cols.to_be_bytes().to_vec(),
+        preflight
+            .caps
+            .max_estimated_memory_bytes
+            .to_be_bytes()
+            .to_vec(),
+    ];
+    for variable in &preflight.eliminated_variables {
+        chunks.push(variable.0.to_be_bytes().to_vec());
+    }
+    chunks.push(Vec::new());
+    for variable in &preflight.exported_variables {
+        chunks.push(variable.0.to_be_bytes().to_vec());
+    }
+    hash_sequence("sparse-trs-preflight", &chunks)
+}
+
 fn hash_stage_estimate(estimate: &RelationSearchStageEstimate) -> Hash {
     let mut chunks = vec![
         estimate.export_degree.to_be_bytes().to_vec(),
@@ -774,6 +1048,73 @@ fn count_to_bytes(count: SaturatingCount) -> Vec<u8> {
     out
 }
 
+pub fn build_sparse_export_monomial_support(
+    relations: &[SparsePolynomialQ],
+    exported: &[VariableId],
+) -> Vec<Monomial> {
+    let exported_variables = sorted_variables(exported);
+    let exported_set = exported_variables.iter().copied().collect::<BTreeSet<_>>();
+    let max_degree = relations
+        .iter()
+        .map(|relation| poly_total_degree(relation) as usize)
+        .max()
+        .unwrap_or(1)
+        .clamp(1, DEFAULT_SPARSE_TRS_MAX_EXPORT_POWER);
+    let mut support = BTreeSet::new();
+    support.insert(normalize_monomial(Vec::new()));
+    for variable in &exported_variables {
+        for exponent in 1..=max_degree {
+            support.insert(normalize_monomial(vec![(*variable, exponent as u32)]));
+        }
+    }
+    for relation in relations {
+        for term in &relation.terms {
+            let projected = term
+                .monomial
+                .exponents
+                .iter()
+                .filter(|(variable, _)| exported_set.contains(variable))
+                .map(|(variable, exponent)| (*variable, *exponent))
+                .collect::<Vec<_>>();
+            support.insert(normalize_monomial(projected));
+        }
+    }
+    sort_and_truncate_support(support, DEFAULT_SPARSE_TRS_MAX_EXPORT_SUPPORT)
+}
+
+pub fn build_sparse_multiplier_supports(
+    relations: &[SparsePolynomialQ],
+    eliminated: &[VariableId],
+    exported: &[VariableId],
+) -> Vec<Vec<Monomial>> {
+    let all_variables = sorted_union(eliminated, exported);
+    let exported_variables = sorted_variables(exported);
+    relations
+        .iter()
+        .map(|relation| {
+            let mut support = BTreeSet::new();
+            support.insert(normalize_monomial(Vec::new()));
+            for variable in &all_variables {
+                support.insert(normalize_monomial(vec![(*variable, 1)]));
+            }
+            for variable in &exported_variables {
+                for exponent in 2..=DEFAULT_SPARSE_TRS_MAX_EXPORT_POWER.min(4) {
+                    support.insert(normalize_monomial(vec![(*variable, exponent as u32)]));
+                }
+            }
+            if relation.terms.len() <= DEFAULT_SPARSE_TRS_MAX_TERM_FOOTPRINT_RELATION_TERMS {
+                for term in &relation.terms {
+                    support.insert(term.monomial.clone());
+                }
+            }
+            sort_and_truncate_support(
+                support,
+                DEFAULT_SPARSE_TRS_MAX_MULTIPLIER_SUPPORT_PER_RELATION,
+            )
+        })
+        .collect()
+}
+
 fn build_export_monomial_support(
     exported: &[VariableId],
     bound: &RelationSearchBound,
@@ -798,6 +1139,30 @@ fn build_multiplier_supports(
             monomials_total_degree_leq(&variables, multiplier_degree)
         })
         .collect()
+}
+
+fn sparse_export_degree(support: &[Monomial]) -> usize {
+    support
+        .iter()
+        .map(|monomial| monomial_degree(monomial) as usize)
+        .max()
+        .unwrap_or(0)
+}
+
+fn sparse_multiplier_degree(supports: &[Vec<Monomial>]) -> usize {
+    supports
+        .iter()
+        .flat_map(|support| support.iter())
+        .map(|monomial| monomial_degree(monomial) as usize)
+        .max()
+        .unwrap_or(0)
+}
+
+fn sort_and_truncate_support(support: BTreeSet<Monomial>, cap: usize) -> Vec<Monomial> {
+    let mut out = support.into_iter().collect::<Vec<_>>();
+    out.sort_by(|a, b| (monomial_degree(a), a).cmp(&(monomial_degree(b), b)));
+    out.truncate(cap);
+    out
 }
 
 fn relation_search_z_seed(j: &[SparsePolynomialQ], exported: &[VariableId]) -> usize {

@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::graph::projection_dag::ProjectionBlock;
 use crate::kernels::traits::KernelKind;
 use crate::planner::algebraic_cost::{AlgebraicWorkEstimate, SaturatingCount};
+use crate::planner::kernel_plan::KernelExecutionPlan;
 use crate::planner::probes::ProbeResults;
 use crate::preprocess::compression::CompressedSystemQ;
 use crate::types::hash::{hash_sequence, Hash};
@@ -124,6 +125,99 @@ pub fn estimate_kernel_cost(
         cost_class,
         matrix_rows: base_rows,
         matrix_cols: base_cols,
+        quotient_rank_estimate,
+        coefficient_height_bits,
+        certificate_cost_units,
+        algebraic_work_estimate,
+        deterministic_score,
+        estimate_hash,
+    }
+}
+
+pub fn estimate_kernel_cost_for_admission(
+    block: &ProjectionBlock,
+    system: &CompressedSystemQ,
+    kernel: KernelKind,
+    probes: &ProbeResults,
+    execution_plan: Option<&KernelExecutionPlan>,
+) -> KernelCostEstimate {
+    let Some(plan) = execution_plan else {
+        return estimate_kernel_cost(block, system, kernel, probes);
+    };
+    if kernel != KernelKind::TargetRelationSearch
+        || plan.support_plan.sparse_relation_search_schedule.is_none()
+    {
+        return estimate_kernel_cost(block, system, kernel, probes);
+    }
+
+    let algebraic_work_estimate = plan.algebraic_work_estimate.clone();
+    let matrix_rows = algebraic_work_estimate
+        .matrix_rows
+        .or(plan.resource_bounds.max_matrix_rows)
+        .unwrap_or(1);
+    let matrix_cols = algebraic_work_estimate
+        .matrix_cols
+        .or(plan.resource_bounds.max_matrix_cols)
+        .unwrap_or(1);
+    let quotient_rank_estimate = algebraic_work_estimate
+        .quotient_rank_estimate
+        .or_else(|| {
+            plan.support_plan
+                .rank_plan
+                .as_ref()
+                .map(|rank| rank.estimated_rank)
+        })
+        .unwrap_or(1);
+    let coefficient_height_bits = algebraic_work_estimate
+        .predicted_coefficient_height_bits
+        .map(|bits| bits.as_usize_saturating())
+        .unwrap_or(probes.coefficient_growth.projected_height_bits);
+    let certificate_cost_units = certificate_cost(kernel);
+    let cost_class = classify_route_cost(
+        kernel,
+        matrix_rows,
+        matrix_cols,
+        quotient_rank_estimate,
+        &algebraic_work_estimate,
+    );
+    let penalty = kernel_order_penalty(kernel);
+    let deterministic_score = matrix_rows
+        .saturating_mul(matrix_cols)
+        .saturating_add(quotient_rank_estimate)
+        .saturating_add(coefficient_height_bits)
+        .saturating_add(certificate_cost_units)
+        .saturating_add(
+            algebraic_work_estimate
+                .predicted_work_units
+                .as_usize_saturating(),
+        )
+        .saturating_add(
+            algebraic_work_estimate
+                .predicted_intermediate_terms
+                .unwrap_or_default()
+                .as_usize_saturating(),
+        )
+        .saturating_add(penalty);
+    let estimate_hash = hash_sequence(
+        "kernel-cost-estimate",
+        &[
+            block.block_id.0.to_be_bytes().to_vec(),
+            format!("{kernel:?}").into_bytes(),
+            matrix_rows.to_be_bytes().to_vec(),
+            matrix_cols.to_be_bytes().to_vec(),
+            quotient_rank_estimate.to_be_bytes().to_vec(),
+            coefficient_height_bits.to_be_bytes().to_vec(),
+            algebraic_work_estimate.estimate_hash.0.to_vec(),
+            format!("{cost_class:?}").into_bytes(),
+            deterministic_score.to_be_bytes().to_vec(),
+        ],
+    );
+    KernelCostEstimate {
+        block_id: block.block_id,
+        kernel_kind: kernel,
+        cost_class,
+        matrix_rows,
+        matrix_cols,
         quotient_rank_estimate,
         coefficient_height_bits,
         certificate_cost_units,

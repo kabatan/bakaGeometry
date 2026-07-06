@@ -198,6 +198,7 @@ pub fn plan_universal_elimination_with_messages(
         .max(1);
     let mut support_plan = KernelSupportPlan {
         dense_relation_search_schedule: None,
+        sparse_relation_search_schedule: None,
         affine_elimination_order: None,
         template_plan: Some(template_plan(
             matrix_rows,
@@ -1363,6 +1364,7 @@ fn stage_execution_plan_shadow(stage: &UniversalStagePlan) -> KernelExecutionPla
         stage.eliminated_variables.clone(),
         KernelSupportPlan {
             dense_relation_search_schedule: None,
+            sparse_relation_search_schedule: None,
             affine_elimination_order: None,
             template_plan: None,
             rank_plan: None,

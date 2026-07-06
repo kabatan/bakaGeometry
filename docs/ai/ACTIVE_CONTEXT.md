@@ -33,6 +33,10 @@ Read first:
 10. `PLAN.md`
 11. `SOURCE_MAP.md`
 
+Current implementation evidence:
+
+- `ALG_COST_P8_MECH_EVIDENCE.md` records sparse/lazy TargetRelationSearch implementation evidence.
+
 Related diagnostic reports:
 
 - A prior timeout investigation report exists in this folder as non-authoritative background only.

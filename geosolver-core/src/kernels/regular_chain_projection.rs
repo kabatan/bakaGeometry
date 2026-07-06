@@ -132,6 +132,7 @@ pub fn plan_regular_chain_projection(
     let probe = probe_regular_chain_plan(&relations, &system.guards, &variables, &exported)?;
     let mut support_plan = KernelSupportPlan {
         dense_relation_search_schedule: None,
+        sparse_relation_search_schedule: None,
         affine_elimination_order: None,
         template_plan: Some(template_plan(
             probe.row_count,

@@ -1,0 +1,34 @@
+phase: ACR-P8
+commands:
+  - command: cargo fmt --check
+    cwd: geosolver-core
+    result: PASS
+  - command: cargo check
+    cwd: geosolver-core
+    result: PASS
+  - command: cargo test --lib acr_p8 -- --nocapture
+    cwd: geosolver-core
+    result: "PASS: 3 passed"
+  - command: cargo test --lib target_relation_search -- --nocapture
+    cwd: geosolver-core
+    result: "PASS: 12 passed"
+  - command: cargo test --lib
+    cwd: geosolver-core
+    result: "PASS: 250 passed"
+  - command: rg forbidden diagnostic/problem-specific markers over geosolver-core/src
+    cwd: repo root
+    result: "PASS: no matches"
+  - command: git diff --check
+    cwd: repo root
+    result: "PASS: exit 0, CRLF warnings only"
+tests:
+  - kernels::target_relation_search::tests::acr_p8_sparse_footprint_descriptor_is_not_dense_total_degree
+  - kernels::target_relation_search::tests::acr_p8_sparse_footprint_executes_when_dense_route_is_cost_prohibited
+  - solver::pipeline::tests::acr_p8_sparse_footprint_target_relation_pipeline_returns_candidate_cover
+review_driven_fix:
+  finding: Sparse TRS planner path initially used probe-derived template/rank/estimate for sparse schedules.
+  files:
+    - geosolver-core/src/planner/admission.rs
+    - geosolver-core/src/solver/pipeline.rs
+    - docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_P8_MECH_EVIDENCE.md
+  result: spec re-review PASS and quality re-review PASS

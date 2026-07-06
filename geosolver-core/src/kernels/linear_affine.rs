@@ -155,6 +155,7 @@ pub fn plan_linear_affine(
 ) -> Result<KernelExecutionPlan, SolverError> {
     let mut support_plan = KernelSupportPlan {
         dense_relation_search_schedule: None,
+        sparse_relation_search_schedule: None,
         affine_elimination_order: Some(order.clone()),
         template_plan: Some(template_plan(
             block.relation_ids.len().max(1),

@@ -124,6 +124,7 @@ pub fn plan_norm_trace_projection(
     let probe = probe_norm_trace_plan(&relations, &exported)?;
     let mut support_plan = KernelSupportPlan {
         dense_relation_search_schedule: None,
+        sparse_relation_search_schedule: None,
         affine_elimination_order: None,
         template_plan: Some(template_plan(
             1,

@@ -1655,6 +1655,130 @@ mod tests {
     }
 
     #[test]
+    fn acr_p8_sparse_footprint_target_relation_pipeline_returns_candidate_cover() {
+        let problem = p8_sparse_footprint_relation_problem();
+        let target = problem.target;
+        let mut ctx = new_context(SolverOptions::default());
+        let validated = step_validate(problem.clone(), &mut ctx).unwrap();
+        let canonical = step_canonicalize(validated, &mut ctx).unwrap();
+        let compressed = step_compress(canonical.clone(), &mut ctx).unwrap();
+        let graphs = step_build_graphs(&compressed, &mut ctx).unwrap();
+        let dag = step_build_dag(&graphs, &compressed, &mut ctx).unwrap();
+        let mut plans = step_plan(&dag, &compressed, &mut ctx).unwrap();
+
+        let trs_plan = plans[0]
+            .declared_ladder
+            .iter()
+            .find(|entry| entry.kernel_kind == KernelKind::TargetRelationSearch)
+            .expect("sparse footprint target relation route should be declared");
+        assert!(trs_plan
+            .support_plan
+            .dense_relation_search_schedule
+            .is_none());
+        let sparse_schedule = trs_plan
+            .support_plan
+            .sparse_relation_search_schedule
+            .as_ref()
+            .expect("sparse schedule should be attached to target relation plan");
+        let sparse_rows = sparse_schedule.stage.matrix_rows.max(1);
+        let sparse_cols = sparse_schedule.stage.matrix_cols.max(1);
+        let template = trs_plan
+            .support_plan
+            .template_plan
+            .as_ref()
+            .expect("sparse target relation plan should bind a template");
+        assert_eq!(template.matrix_rows, sparse_rows);
+        assert_eq!(template.matrix_cols, sparse_cols);
+        assert_eq!(
+            trs_plan.algebraic_work_estimate.matrix_rows,
+            Some(sparse_rows)
+        );
+        assert_eq!(
+            trs_plan.algebraic_work_estimate.matrix_cols,
+            Some(sparse_cols)
+        );
+        assert!(trs_plan.algebraic_work_estimate.is_hash_current());
+        assert!(trs_plan.route_budget.is_hash_current());
+        let trs_cost = plans[0]
+            .cost_estimates
+            .iter()
+            .find(|estimate| estimate.kernel_kind == KernelKind::TargetRelationSearch)
+            .expect("target relation cost estimate should be present");
+        assert_ne!(trs_cost.cost_class, RouteCostClass::CostProhibited);
+        assert_eq!(trs_cost.matrix_rows, sparse_rows);
+        assert_eq!(trs_cost.matrix_cols, sparse_cols);
+        assert_eq!(
+            trs_cost.algebraic_work_estimate.estimate_hash,
+            trs_plan.algebraic_work_estimate.estimate_hash
+        );
+        force_target_relation_search_only_declared_route(&mut plans[0]);
+
+        let messages = step_execute(&dag, &plans, &compressed, &mut ctx).unwrap();
+        step_verify_messages(&dag, &messages, &compressed).unwrap();
+        assert_eq!(messages.len(), 1);
+        assert_eq!(messages[0].kernel_kind, KernelKind::TargetRelationSearch);
+        assert!(matches!(
+            messages[0].certificate.payload,
+            KernelCertificatePayload::Membership(_)
+        ));
+        let composed = step_compose(&dag, messages.clone(), target, &mut ctx).unwrap();
+        let support = match step_support(&composed, &compressed, target, &mut ctx).unwrap() {
+            crate::compose::final_support::FinalSupportComputation::Support(support) => support,
+            crate::compose::final_support::FinalSupportComputation::CertifiedNonFinite(_) => {
+                panic!("expected finite support")
+            }
+        };
+        let support_certificate =
+            crate::verify::verify_support::verify_global_support(&support, &composed).unwrap();
+        let roots = step_roots(&support, target, &mut ctx).unwrap();
+        let certificate = step_core_certificate(
+            &problem,
+            &canonical,
+            &compressed,
+            &graphs,
+            &dag,
+            &plans,
+            &messages,
+            Some(&support),
+            &roots,
+            None,
+            Some(&support_certificate),
+        );
+        let cost_trace = step_cost_trace(
+            &compressed,
+            &dag,
+            &messages,
+            Some(&composed),
+            Some(&support),
+            Some(&certificate),
+        );
+        let mut diagnostics = compressed.diagnostics.clone();
+        diagnostics.extend(ctx.diagnostics.clone());
+        let result = TargetSolveResult {
+            status: SolverStatus::CertifiedCandidateCover,
+            target,
+            support_polynomial: Some(support),
+            squarefree_support_polynomial: Some(roots.squarefree_support),
+            root_isolation: roots.root_isolation,
+            decoded_candidates: roots.decoded_candidates,
+            projection_messages: messages,
+            certificate: Some(certificate),
+            exact_image_certificate: None,
+            nonfinite_certificate: None,
+            diagnostics,
+            cost_trace,
+        };
+
+        assert_eq!(result.status, SolverStatus::CertifiedCandidateCover);
+        assert!(result.diagnostics.iter().any(|record| {
+            record.name == "KernelRouteTrace"
+                && record.details.get("kernel_kind") == Some(&"TargetRelationSearch".to_owned())
+                && record.details.get("materialization_allowed") == Some(&"false".to_owned())
+                && record.details.get("sparse_footprint_feasible") == Some(&"true".to_owned())
+        }));
+    }
+
+    #[test]
     fn acr_p7_graph_build_reduces_width_for_generic_algebraic_separator() {
         let problem = p7_separator_problem();
         let mut ctx = new_context(SolverOptions::default());
@@ -1773,6 +1897,7 @@ mod tests {
         budget.budget_hash = crate::planner::algebraic_cost::route_budget_hash(&budget);
         let mut support_plan = KernelSupportPlan {
             dense_relation_search_schedule: None,
+            sparse_relation_search_schedule: None,
             affine_elimination_order: None,
             template_plan: None,
             rank_plan: None,
@@ -2025,6 +2150,62 @@ mod tests {
         )
     }
 
+    fn p8_sparse_footprint_relation_problem() -> RationalTargetProblem {
+        let t = VariableId(0);
+        let x = VariableId(1);
+        let y = VariableId(2);
+        make_problem(
+            vec![t, x, y],
+            t,
+            vec![
+                poly_sub(&variable_poly(x), &variable_poly(t)),
+                poly_sub(
+                    &poly_mul(&variable_poly(x), &variable_poly(x)),
+                    &constant_poly(int_q(1)),
+                ),
+                high_degree_redundant_relation(t, x, y, 2_049),
+            ],
+            Vec::new(),
+        )
+    }
+
+    fn high_degree_redundant_relation(
+        t: VariableId,
+        x: VariableId,
+        y: VariableId,
+        max_y_exponent: u32,
+    ) -> crate::types::polynomial::SparsePolynomialQ {
+        let base = poly_mul(
+            &poly_sub(
+                &poly_mul(&variable_poly(x), &variable_poly(x)),
+                &constant_poly(int_q(1)),
+            ),
+            &poly_add(&variable_poly(t), &constant_poly(int_q(1))),
+        );
+        poly_mul(&base, &two_term_univariate_tail(y, max_y_exponent))
+    }
+
+    fn two_term_univariate_tail(
+        variable: VariableId,
+        max_exponent: u32,
+    ) -> crate::types::polynomial::SparsePolynomialQ {
+        normalize_poly(crate::types::polynomial::SparsePolynomialQ {
+            terms: [
+                TermQ {
+                    coeff: int_q(1),
+                    monomial: normalize_monomial(Vec::new()),
+                },
+                TermQ {
+                    coeff: int_q(1),
+                    monomial: normalize_monomial(vec![(variable, max_exponent)]),
+                },
+            ]
+            .into_iter()
+            .collect(),
+            hash: hash_sequence("poly", &[]),
+        })
+    }
+
     fn p7_separator_problem() -> RationalTargetProblem {
         let t = VariableId(10);
         let s = VariableId(11);
@@ -2175,6 +2356,23 @@ mod tests {
         let rebuilt = KernelPlan::new(
             plan.block_id,
             vec![universal],
+            plan.admissions.clone(),
+            plan.cost_estimates.clone(),
+        )
+        .unwrap();
+        *plan = rebuilt;
+    }
+
+    fn force_target_relation_search_only_declared_route(plan: &mut KernelPlan) {
+        let target_relation = plan
+            .declared_ladder
+            .iter()
+            .find(|entry| entry.kernel_kind == KernelKind::TargetRelationSearch)
+            .cloned()
+            .expect("target relation route should be declared");
+        let rebuilt = KernelPlan::new(
+            plan.block_id,
+            vec![target_relation],
             plan.admissions.clone(),
             plan.cost_estimates.clone(),
         )

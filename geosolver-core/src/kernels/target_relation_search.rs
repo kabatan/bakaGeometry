@@ -18,11 +18,17 @@ use crate::planner::kernel_plan::{
 };
 use crate::planner::relation_schedule::{
     build_dense_relation_search_schedule as planner_build_dense_relation_search_schedule,
+    build_sparse_export_monomial_support as planner_build_sparse_export_monomial_support,
+    build_sparse_multiplier_supports as planner_build_sparse_multiplier_supports,
+    build_sparse_relation_search_schedule as planner_build_sparse_relation_search_schedule,
     dense_relation_search_decline_reason, estimate_dense_relation_search_schedule,
+    estimate_sparse_relation_search_schedule,
     hash_dense_relation_search_schedule as planner_hash_dense_relation_search_schedule,
     hash_relation_search_stage as planner_hash_relation_search_stage,
+    hash_sparse_relation_search_schedule as planner_hash_sparse_relation_search_schedule,
     relation_search_default_export_degree_cap as planner_relation_search_default_export_degree_cap,
-    DenseRelationSearchSchedule, RelationSearchBound, RelationSearchStage,
+    sparse_relation_search_decline_reason, DenseRelationSearchSchedule, RelationSearchBound,
+    RelationSearchStage, SparseRelationSearchSchedule,
 };
 use crate::problem::canonicalize::CanonicalRelationQ;
 use crate::problem::context::SolverContext;
@@ -149,58 +155,104 @@ pub fn admit_target_relation_search(
         .collect::<Vec<_>>();
     let exported_variables =
         sorted_variables(&block.exported_variables.iter().copied().collect::<Vec<_>>());
-    let preflight = estimate_dense_relation_search_schedule(
+    let dense_preflight = estimate_dense_relation_search_schedule(
         &relation_polys,
         &eliminated_variables,
         &exported_variables,
         &solver_ctx.options,
     );
-    if !preflight.materialization_allowed {
-        return finish_admission(
-            block,
-            KernelAdmissionStatus::CostProhibited {
-                reason: dense_relation_search_decline_reason(&preflight),
-                estimate_hash: preflight.preflight_hash,
-            },
-            None,
-        );
-    }
-    let schedule = build_dense_relation_search_schedule(
-        &relation_polys,
-        &eliminated_variables,
-        &exported_variables,
-        &solver_ctx.options,
-    );
-    let first_stage = schedule.stages.first();
+    let (dense_schedule, sparse_schedule, stage, degree_bound, multiplier_bound) =
+        if dense_preflight.materialization_allowed {
+            let schedule = build_dense_relation_search_schedule(
+                &relation_polys,
+                &eliminated_variables,
+                &exported_variables,
+                &solver_ctx.options,
+            );
+            let Some(first_stage) = schedule.stages.first().cloned() else {
+                return finish_admission(
+                    block,
+                    KernelAdmissionStatus::CostProhibited {
+                        reason: "dense TargetRelationSearch admitted no executable stages"
+                            .to_owned(),
+                        estimate_hash: schedule.schedule_hash,
+                    },
+                    None,
+                );
+            };
+            (
+                Some(schedule.clone()),
+                None,
+                first_stage,
+                schedule.e_cap,
+                schedule
+                    .stages
+                    .last()
+                    .map(|stage| stage.multiplier_total_degree),
+            )
+        } else {
+            let sparse_preflight = estimate_sparse_relation_search_schedule(
+                &relation_polys,
+                &eliminated_variables,
+                &exported_variables,
+                &solver_ctx.options,
+            );
+            if !sparse_preflight.feasible {
+                let reason = format!(
+                    "{}; {}",
+                    dense_relation_search_decline_reason(&dense_preflight),
+                    sparse_relation_search_decline_reason(&sparse_preflight),
+                );
+                return finish_admission(
+                    block,
+                    KernelAdmissionStatus::CostProhibited {
+                        reason,
+                        estimate_hash: hash_sequence(
+                            "target-relation-search-dense-and-sparse-preflight",
+                            &[
+                                dense_preflight.preflight_hash.0.to_vec(),
+                                sparse_preflight.preflight_hash.0.to_vec(),
+                            ],
+                        ),
+                    },
+                    None,
+                );
+            }
+            let schedule = build_sparse_relation_search_schedule(
+                &relation_polys,
+                &eliminated_variables,
+                &exported_variables,
+                &solver_ctx.options,
+            );
+            (
+                None,
+                Some(schedule.clone()),
+                schedule.stage.clone(),
+                schedule.stage.export_degree,
+                Some(schedule.stage.multiplier_total_degree),
+            )
+        };
     let mut support_plan = KernelSupportPlan {
-        dense_relation_search_schedule: Some(schedule.clone()),
+        dense_relation_search_schedule: dense_schedule,
+        sparse_relation_search_schedule: sparse_schedule,
         affine_elimination_order: None,
         template_plan: Some(template_plan(
-            first_stage.map_or(0, |stage| stage.matrix_rows).max(1),
-            first_stage.map_or(0, |stage| stage.matrix_cols).max(1),
-            first_stage.map_or_else(
-                || hash_sequence("target-relation-empty-row", &[]),
-                |stage| stage.row_monomial_hash,
-            ),
-            first_stage.map_or_else(
-                || hash_sequence("target-relation-empty-col", &[]),
-                |stage| stage.export_support_hash,
-            ),
+            stage.matrix_rows.max(1),
+            stage.matrix_cols.max(1),
+            stage.row_monomial_hash,
+            stage.export_support_hash,
         )),
-        rank_plan: Some(rank_plan(first_stage.map_or(1, |stage| stage.matrix_cols))),
+        rank_plan: Some(rank_plan(stage.matrix_cols.max(1))),
         universal_strategy_sequence: Vec::new(),
-        degree_bound: schedule.e_cap,
+        degree_bound,
         support_hash: hash_sequence("kernel-support-plan", &[]),
     };
     support_plan.support_hash = support_plan_hash(&support_plan);
     let mut resource_bounds = ResourceBounds {
-        max_matrix_rows: first_stage.map(|stage| stage.matrix_rows),
-        max_matrix_cols: first_stage.map(|stage| stage.matrix_cols),
-        max_export_degree: Some(schedule.e_cap),
-        max_multiplier_total_degree: schedule
-            .stages
-            .last()
-            .map(|stage| stage.multiplier_total_degree),
+        max_matrix_rows: Some(stage.matrix_rows),
+        max_matrix_cols: Some(stage.matrix_cols),
+        max_export_degree: Some(degree_bound),
+        max_multiplier_total_degree: multiplier_bound,
         max_local_elimination_steps: Some(0),
         max_memory_bytes: solver_ctx.options.max_memory_bytes,
         bounds_hash: hash_sequence("planner-resource-bounds", &[]),
@@ -253,13 +305,41 @@ pub fn execute_target_relation_search(
         .iter()
         .map(|relation| relation.polynomial.clone())
         .collect::<Vec<_>>();
-    let Some(schedule) = &plan.support_plan.dense_relation_search_schedule else {
-        return Err(implementation_bug(
-            "target relation search plan lacks dense schedule",
-        ));
-    };
+    if let Some(schedule) = &plan.support_plan.dense_relation_search_schedule {
+        return execute_dense_relation_search_schedule(
+            plan,
+            ctx,
+            solver_ctx,
+            &relations,
+            &relation_polys,
+            schedule,
+        );
+    }
+    if let Some(schedule) = &plan.support_plan.sparse_relation_search_schedule {
+        return execute_sparse_relation_search_schedule(
+            plan,
+            ctx,
+            solver_ctx,
+            &relations,
+            &relation_polys,
+            schedule,
+        );
+    }
+    Err(implementation_bug(
+        "target relation search plan lacks relation search schedule",
+    ))
+}
+
+fn execute_dense_relation_search_schedule(
+    plan: &KernelExecutionPlan,
+    ctx: &mut KernelContext,
+    solver_ctx: &mut SolverContext,
+    relations: &[CanonicalRelationQ],
+    relation_polys: &[SparsePolynomialQ],
+    schedule: &DenseRelationSearchSchedule,
+) -> Result<ProjectionMessage, SolverError> {
     let preflight = estimate_dense_relation_search_schedule(
-        &relation_polys,
+        relation_polys,
         &plan.eliminated_variables,
         &plan.exported_variables,
         &solver_ctx.options,
@@ -271,7 +351,7 @@ pub fn execute_target_relation_search(
         ));
     }
     let recomputed = build_dense_relation_search_schedule(
-        &relation_polys,
+        relation_polys,
         &plan.eliminated_variables,
         &plan.exported_variables,
         &solver_ctx.options,
@@ -283,11 +363,6 @@ pub fn execute_target_relation_search(
             "target relation search schedule is not reproducible from J,Y,Z,options",
         ));
     }
-    let exported = plan
-        .exported_variables
-        .iter()
-        .copied()
-        .collect::<BTreeSet<_>>();
     let mut traces = Vec::new();
     for stage in &schedule.stages {
         crate::problem::context::check_resource(
@@ -321,133 +396,287 @@ pub fn execute_target_relation_search(
         };
         let export_support = build_export_monomial_support(&plan.exported_variables, &bound);
         let multiplier_supports = build_multiplier_supports(
-            &relation_polys,
+            relation_polys,
             &plan.eliminated_variables,
             &plan.exported_variables,
             &bound,
         );
         let row_monomials =
-            build_row_monomial_support(&relation_polys, &export_support, &multiplier_supports);
+            build_row_monomial_support(relation_polys, &export_support, &multiplier_supports);
         verify_stage_recomputes(stage, &export_support, &multiplier_supports, &row_monomials)?;
-        let matrix_builder = build_membership_matrix_builder_with_supports(
-            &relation_polys,
+        if let Some(message) = execute_relation_search_stage(
+            plan,
+            ctx,
+            solver_ctx,
+            relations,
+            relation_polys,
+            stage,
+            bound,
+            export_support.clone(),
+            multiplier_supports.clone(),
+            row_monomials.clone(),
+        )? {
+            return Ok(message);
+        }
+        traces.push(membership_trace_for_stage(
+            stage,
+            relation_polys,
             &plan.eliminated_variables,
             &plan.exported_variables,
             &bound,
-            export_support,
-            multiplier_supports,
-            row_monomials,
-        );
-        let matrix = matrix_builder.matrix.clone();
-        crate::problem::context::check_resource_work(
-            solver_ctx,
-            StageId("TargetRelationSearch::matrix_materialized".to_owned()),
-            matrix.rows.max(1).saturating_mul(matrix.cols.max(1)) as u128,
-        )?;
-        let coefficient_height_before_bits = max_poly_coefficient_height_bits(&relation_polys);
-        enforce_matrix_limits(
-            plan,
-            ctx.system.target,
-            solver_ctx,
-            &matrix,
-            coefficient_height_before_bits,
-        )?;
-        let trace = membership_matrix_trace(stage, &matrix);
-        let nullspace = solve_homogeneous_modular(
-            MatrixBuilder {
-                matrix: matrix.clone(),
-            },
-            ModularSolvePlan {
-                seed: 101,
-                max_primes: 4,
-                stable_rank_after: 2,
-                reconstruction_height_bound: solver_ctx.options.max_coefficient_height_bits,
-            },
-        );
-        for verified in reconstruct_and_verify_relation_from_builder(
-            &nullspace,
-            &matrix_builder,
-            &relation_polys,
-            &exported,
-        )? {
-            crate::problem::context::check_resource(
-                solver_ctx,
-                StageId("TargetRelationSearch::verified_candidate".to_owned()),
-            )?;
-            let relation = verified.relation;
-            let multipliers = verified.multipliers;
-            let certificate_hash = target_relation_search_certificate_hash(
-                plan,
-                stage,
-                &trace,
-                &nullspace
-                    .traces
-                    .iter()
-                    .map(|trace| trace.prime)
-                    .collect::<Vec<_>>(),
-                &relation,
-                &multipliers,
-            );
-            let cost_trace = ProjectionCostTrace {
-                block_id: plan.block_id,
-                kernel_kind: KernelKind::TargetRelationSearch,
-                local_variable_count: ctx.block.local_variables.len(),
-                exported_variable_count: plan.exported_variables.len(),
-                local_relation_count: relations.len(),
-                local_monomial_count: relation_polys.iter().map(poly_monomial_count).sum(),
-                estimated_quotient_rank: Some(nullspace.rank),
-                matrix_rows: Some(matrix.rows),
-                matrix_cols: Some(matrix.cols),
-                matrix_density: Some(matrix_density(&matrix)),
-                coefficient_height_before_bits,
-                coefficient_height_after_bits: poly_coefficient_height_bits(&relation),
-                route_cost: Some(ProjectionCostTrace::route_cost_from_plan(plan)),
-            };
-            let membership = MembershipCertificate {
-                combination_terms: multipliers
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, multiplier)| !multiplier.terms.is_empty())
-                    .map(|(relation_id, multiplier)| MembershipTerm {
-                        relation_id,
-                        multiplier: multiplier.clone(),
-                    })
-                    .collect(),
-            };
-            let certificate = KernelCertificate::from_execution_plan_with_payload(
-                plan,
-                std::slice::from_ref(&relation),
-                certificate_hash,
-                KernelCertificatePayload::Membership(MembershipProjectionCertificate {
-                    source_relations: relation_polys.clone(),
-                    output_memberships: vec![membership],
-                }),
-            );
-            let mut message = ProjectionMessage {
-                package_id: PackageId(plan.plan_id.0),
-                block_id: plan.block_id,
-                kernel_kind: KernelKind::TargetRelationSearch,
-                source_relation_ids: plan.source_relation_ids.clone(),
-                eliminated_variables: plan.eliminated_variables.clone(),
-                exported_variables: plan.exported_variables.clone(),
-                relation_generators: vec![relation],
-                representation: MessageRepresentation::GeneratorSet,
-                projection_strength: ProjectionStrength::CandidateCoverStrong,
-                certificate,
-                compression_trace: ctx.system.compression_trace.clone(),
-                cost_trace,
-                package_hash: hash_sequence("projection-message-initial", &[]),
-            };
-            message.package_hash = projection_message_hash(&message);
-            return Ok(message);
-        }
-        traces.push(trace);
+            &export_support,
+            &multiplier_supports,
+            &row_monomials,
+        ));
     }
     Err(algorithmic_hard_case_with_traces(
         ctx,
         "no target/separator relation found within declared dense schedule",
         &traces,
     ))
+}
+
+fn execute_sparse_relation_search_schedule(
+    plan: &KernelExecutionPlan,
+    ctx: &mut KernelContext,
+    solver_ctx: &mut SolverContext,
+    relations: &[CanonicalRelationQ],
+    relation_polys: &[SparsePolynomialQ],
+    schedule: &SparseRelationSearchSchedule,
+) -> Result<ProjectionMessage, SolverError> {
+    let preflight = estimate_sparse_relation_search_schedule(
+        relation_polys,
+        &plan.eliminated_variables,
+        &plan.exported_variables,
+        &solver_ctx.options,
+    );
+    if !preflight.feasible {
+        return Err(algorithmic_hard_case(
+            ctx,
+            &sparse_relation_search_decline_reason(&preflight),
+        ));
+    }
+    let recomputed = build_sparse_relation_search_schedule(
+        relation_polys,
+        &plan.eliminated_variables,
+        &plan.exported_variables,
+        &solver_ctx.options,
+    );
+    if &recomputed != schedule
+        || hash_sparse_relation_search_schedule(schedule) != schedule.schedule_hash
+    {
+        return Err(implementation_bug(
+            "target relation search sparse schedule is not reproducible from J,Y,Z,options",
+        ));
+    }
+    crate::problem::context::check_resource(
+        solver_ctx,
+        StageId("TargetRelationSearch::sparse_footprint_stage".to_owned()),
+    )?;
+    let bound = RelationSearchBound {
+        export_degree: schedule.stage.export_degree,
+        multiplier_total_degree: schedule.stage.multiplier_total_degree,
+    };
+    let export_support =
+        build_sparse_export_monomial_support(relation_polys, &plan.exported_variables);
+    let multiplier_supports = build_sparse_multiplier_supports(
+        relation_polys,
+        &plan.eliminated_variables,
+        &plan.exported_variables,
+    );
+    let row_monomials =
+        build_row_monomial_support(relation_polys, &export_support, &multiplier_supports);
+    verify_stage_recomputes(
+        &schedule.stage,
+        &export_support,
+        &multiplier_supports,
+        &row_monomials,
+    )?;
+    if let Some(message) = execute_relation_search_stage(
+        plan,
+        ctx,
+        solver_ctx,
+        relations,
+        relation_polys,
+        &schedule.stage,
+        bound,
+        export_support.clone(),
+        multiplier_supports.clone(),
+        row_monomials.clone(),
+    )? {
+        return Ok(message);
+    }
+    let trace = membership_trace_for_stage(
+        &schedule.stage,
+        relation_polys,
+        &plan.eliminated_variables,
+        &plan.exported_variables,
+        &bound,
+        &export_support,
+        &multiplier_supports,
+        &row_monomials,
+    );
+    Err(algorithmic_hard_case_with_traces(
+        ctx,
+        "no target/separator relation found within declared sparse footprint schedule",
+        &[trace],
+    ))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn execute_relation_search_stage(
+    plan: &KernelExecutionPlan,
+    ctx: &mut KernelContext,
+    solver_ctx: &mut SolverContext,
+    relations: &[CanonicalRelationQ],
+    relation_polys: &[SparsePolynomialQ],
+    stage: &RelationSearchStage,
+    bound: RelationSearchBound,
+    export_support: Vec<Monomial>,
+    multiplier_supports: Vec<Vec<Monomial>>,
+    row_monomials: Vec<Monomial>,
+) -> Result<Option<ProjectionMessage>, SolverError> {
+    let matrix_builder = build_membership_matrix_builder_with_supports(
+        relation_polys,
+        &plan.eliminated_variables,
+        &plan.exported_variables,
+        &bound,
+        export_support,
+        multiplier_supports,
+        row_monomials,
+    );
+    let matrix = matrix_builder.matrix.clone();
+    crate::problem::context::check_resource_work(
+        solver_ctx,
+        StageId("TargetRelationSearch::matrix_materialized".to_owned()),
+        matrix.rows.max(1).saturating_mul(matrix.cols.max(1)) as u128,
+    )?;
+    let coefficient_height_before_bits = max_poly_coefficient_height_bits(relation_polys);
+    enforce_matrix_limits(
+        plan,
+        ctx.system.target,
+        solver_ctx,
+        &matrix,
+        coefficient_height_before_bits,
+    )?;
+    let trace = membership_matrix_trace(stage, &matrix);
+    let nullspace = solve_homogeneous_modular(
+        MatrixBuilder {
+            matrix: matrix.clone(),
+        },
+        ModularSolvePlan {
+            seed: 101,
+            max_primes: 4,
+            stable_rank_after: 2,
+            reconstruction_height_bound: solver_ctx.options.max_coefficient_height_bits,
+        },
+    );
+    let exported = plan
+        .exported_variables
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    for verified in reconstruct_and_verify_relation_from_builder(
+        &nullspace,
+        &matrix_builder,
+        relation_polys,
+        &exported,
+    )? {
+        crate::problem::context::check_resource(
+            solver_ctx,
+            StageId("TargetRelationSearch::verified_candidate".to_owned()),
+        )?;
+        let relation = verified.relation;
+        let multipliers = verified.multipliers;
+        let certificate_hash = target_relation_search_certificate_hash(
+            plan,
+            stage,
+            &trace,
+            &nullspace
+                .traces
+                .iter()
+                .map(|trace| trace.prime)
+                .collect::<Vec<_>>(),
+            &relation,
+            &multipliers,
+        );
+        let cost_trace = ProjectionCostTrace {
+            block_id: plan.block_id,
+            kernel_kind: KernelKind::TargetRelationSearch,
+            local_variable_count: ctx.block.local_variables.len(),
+            exported_variable_count: plan.exported_variables.len(),
+            local_relation_count: relations.len(),
+            local_monomial_count: relation_polys.iter().map(poly_monomial_count).sum(),
+            estimated_quotient_rank: Some(nullspace.rank),
+            matrix_rows: Some(matrix.rows),
+            matrix_cols: Some(matrix.cols),
+            matrix_density: Some(matrix_density(&matrix)),
+            coefficient_height_before_bits,
+            coefficient_height_after_bits: poly_coefficient_height_bits(&relation),
+            route_cost: Some(ProjectionCostTrace::route_cost_from_plan(plan)),
+        };
+        let membership = MembershipCertificate {
+            combination_terms: multipliers
+                .iter()
+                .enumerate()
+                .filter(|(_, multiplier)| !multiplier.terms.is_empty())
+                .map(|(relation_id, multiplier)| MembershipTerm {
+                    relation_id,
+                    multiplier: multiplier.clone(),
+                })
+                .collect(),
+        };
+        let certificate = KernelCertificate::from_execution_plan_with_payload(
+            plan,
+            std::slice::from_ref(&relation),
+            certificate_hash,
+            KernelCertificatePayload::Membership(MembershipProjectionCertificate {
+                source_relations: relation_polys.to_vec(),
+                output_memberships: vec![membership],
+            }),
+        );
+        let mut message = ProjectionMessage {
+            package_id: PackageId(plan.plan_id.0),
+            block_id: plan.block_id,
+            kernel_kind: KernelKind::TargetRelationSearch,
+            source_relation_ids: plan.source_relation_ids.clone(),
+            eliminated_variables: plan.eliminated_variables.clone(),
+            exported_variables: plan.exported_variables.clone(),
+            relation_generators: vec![relation],
+            representation: MessageRepresentation::GeneratorSet,
+            projection_strength: ProjectionStrength::CandidateCoverStrong,
+            certificate,
+            compression_trace: ctx.system.compression_trace.clone(),
+            cost_trace,
+            package_hash: hash_sequence("projection-message-initial", &[]),
+        };
+        message.package_hash = projection_message_hash(&message);
+        return Ok(Some(message));
+    }
+    Ok(None)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn membership_trace_for_stage(
+    stage: &RelationSearchStage,
+    relation_polys: &[SparsePolynomialQ],
+    eliminated_variables: &[VariableId],
+    exported_variables: &[VariableId],
+    bound: &RelationSearchBound,
+    export_support: &[Monomial],
+    multiplier_supports: &[Vec<Monomial>],
+    row_monomials: &[Monomial],
+) -> MembershipMatrixTrace {
+    let matrix_builder = build_membership_matrix_builder_with_supports(
+        relation_polys,
+        eliminated_variables,
+        exported_variables,
+        bound,
+        export_support.to_vec(),
+        multiplier_supports.to_vec(),
+        row_monomials.to_vec(),
+    );
+    membership_matrix_trace(stage, &matrix_builder.matrix)
 }
 
 pub fn relation_search_default_export_degree_cap(
@@ -469,6 +698,19 @@ pub fn build_dense_relation_search_schedule(
 
 pub fn hash_dense_relation_search_schedule(schedule: &DenseRelationSearchSchedule) -> Hash {
     planner_hash_dense_relation_search_schedule(schedule)
+}
+
+pub fn build_sparse_relation_search_schedule(
+    j: &[SparsePolynomialQ],
+    eliminated: &[VariableId],
+    exported: &[VariableId],
+    options: &SolverOptions,
+) -> SparseRelationSearchSchedule {
+    planner_build_sparse_relation_search_schedule(j, eliminated, exported, options)
+}
+
+pub fn hash_sparse_relation_search_schedule(schedule: &SparseRelationSearchSchedule) -> Hash {
+    planner_hash_sparse_relation_search_schedule(schedule)
 }
 
 pub fn hash_relation_search_stage(stage: &RelationSearchStage) -> Hash {
@@ -499,6 +741,21 @@ pub fn build_multiplier_supports(
             monomials_total_degree_leq(&variables, multiplier_degree)
         })
         .collect()
+}
+
+pub fn build_sparse_export_monomial_support(
+    relations: &[SparsePolynomialQ],
+    exported: &[VariableId],
+) -> Vec<Monomial> {
+    planner_build_sparse_export_monomial_support(relations, exported)
+}
+
+pub fn build_sparse_multiplier_supports(
+    relations: &[SparsePolynomialQ],
+    eliminated: &[VariableId],
+    exported: &[VariableId],
+) -> Vec<Vec<Monomial>> {
+    planner_build_sparse_multiplier_supports(relations, eliminated, exported)
 }
 
 fn build_row_monomial_support(
@@ -1163,13 +1420,18 @@ mod tests {
     };
     use crate::kernels::target_relation_search::{
         build_dense_relation_search_schedule, build_export_monomial_support,
-        build_membership_matrix_builder, build_multiplier_supports, execute_target_relation_search,
+        build_membership_matrix_builder, build_multiplier_supports,
+        build_sparse_relation_search_schedule, execute_target_relation_search,
         reconstruct_and_verify_relation, relation_search_default_export_degree_cap,
         RelationSearchBound, TargetRelationSearchKernel,
     };
     use crate::kernels::traits::{KernelKind, TargetProjectionKernel};
     use crate::planner::admission::{collect_kernel_admissions, KernelAdmissionStatus};
     use crate::planner::probes::run_cost_probes;
+    use crate::planner::relation_schedule::{
+        estimate_dense_relation_search_schedule, estimate_sparse_relation_search_schedule,
+        SupportDescriptor,
+    };
     use crate::preprocess::compression::CompressionState;
     use crate::problem::canonicalize::canonicalize_system;
     use crate::problem::context::new_context;
@@ -1183,10 +1445,11 @@ mod tests {
         monomial_degree, monomial_to_bytes, normalize_monomial, Monomial,
     };
     use crate::types::polynomial::{
-        clear_denominators_primitive, constant_poly, poly_add, poly_mul, poly_scale, poly_sub,
-        poly_variables, variable_poly, SparsePolynomialQ,
+        clear_denominators_primitive, constant_poly, normalize_poly, poly_add, poly_mul,
+        poly_scale, poly_sub, poly_variables, variable_poly, SparsePolynomialQ, TermQ,
     };
     use crate::types::rational::int_q;
+    use crate::verify::certificates::KernelCertificatePayload;
 
     #[test]
     fn rgq042_dense_schedule_is_recomputable_from_j_y_z_and_options() {
@@ -1379,6 +1642,99 @@ mod tests {
                 assert_eq!(stage.matrix_cols, matrix_cols);
             }
         }
+    }
+
+    #[test]
+    fn acr_p8_sparse_footprint_descriptor_is_not_dense_total_degree() {
+        let t = VariableId(0);
+        let s = VariableId(1);
+        let x = VariableId(2);
+        let y = VariableId(3);
+        let relations = vec![
+            poly_sub(&variable_poly(x), &variable_poly(t)),
+            poly_sub(&variable_poly(y), &variable_poly(s)),
+            poly_sub(
+                &poly_mul(&variable_poly(x), &variable_poly(y)),
+                &constant_poly(int_q(1)),
+            ),
+        ];
+
+        let schedule = build_sparse_relation_search_schedule(
+            &relations,
+            &[x, y],
+            &[t, s],
+            &SolverOptions::default(),
+        );
+
+        assert!(schedule.preflight.feasible);
+        assert!(schedule
+            .support_descriptors
+            .iter()
+            .all(|descriptor| matches!(descriptor, SupportDescriptor::SparseFootprint { .. })));
+        let dense_export_count =
+            test_monomials_total_degree_leq(&[t, s], schedule.stage.export_degree).len();
+        assert!(schedule.preflight.export_support_count < dense_export_count);
+        assert!(schedule.stage.matrix_rows <= schedule.preflight.caps.max_matrix_rows);
+    }
+
+    #[test]
+    fn acr_p8_sparse_footprint_executes_when_dense_route_is_cost_prohibited() {
+        let t = VariableId(0);
+        let x = VariableId(1);
+        let y = VariableId(2);
+        let relations = vec![
+            poly_sub(&variable_poly(x), &variable_poly(t)),
+            poly_sub(
+                &poly_mul(&variable_poly(x), &variable_poly(x)),
+                &constant_poly(int_q(1)),
+            ),
+            high_degree_redundant_relation(t, x, y, 2_049),
+        ];
+        let compressed = compressed_system(vec![t, x, y], t, relations.clone());
+        let block = test_block(&compressed, [t, x, y], [t]);
+        let mut ctx = new_context(SolverOptions::default());
+        let relation_polys = compressed
+            .relations
+            .iter()
+            .map(|relation| relation.polynomial.clone())
+            .collect::<Vec<_>>();
+        let dense_preflight =
+            estimate_dense_relation_search_schedule(&relation_polys, &[x, y], &[t], &ctx.options);
+        let sparse_preflight =
+            estimate_sparse_relation_search_schedule(&relation_polys, &[x, y], &[t], &ctx.options);
+        assert!(!dense_preflight.materialization_allowed);
+        assert!(sparse_preflight.feasible);
+
+        let probes = run_cost_probes(&block, &compressed, &mut ctx);
+        let admissions = collect_kernel_admissions(&block, &compressed, &probes, &ctx);
+        let admission = admissions
+            .into_iter()
+            .find(|admission| admission.kind == KernelKind::TargetRelationSearch)
+            .unwrap();
+        assert!(matches!(admission.status, KernelAdmissionStatus::Admitted));
+        let plan = admission.execution_plan.unwrap();
+        assert!(plan.support_plan.dense_relation_search_schedule.is_none());
+        assert!(plan.support_plan.sparse_relation_search_schedule.is_some());
+
+        let mut kctx = crate::kernels::traits::KernelContext {
+            block,
+            system: compressed,
+            child_messages: Vec::new(),
+        };
+        let message = execute_target_relation_search(&plan, &mut kctx, &mut ctx).unwrap();
+        assert_eq!(message.kernel_kind, KernelKind::TargetRelationSearch);
+        assert!(same_poly_up_to_sign(
+            &message.relation_generators[0],
+            &poly_sub(
+                &poly_mul(&variable_poly(t), &variable_poly(t)),
+                &constant_poly(int_q(1)),
+            )
+        ));
+        assert!(matches!(
+            message.certificate.payload,
+            KernelCertificatePayload::Membership(_)
+        ));
+        assert!(TargetRelationSearchKernel.replay(&message, &kctx).accepted);
     }
 
     #[test]
@@ -1669,6 +2025,40 @@ mod tests {
 
     fn same_poly_up_to_sign(a: &SparsePolynomialQ, b: &SparsePolynomialQ) -> bool {
         a == b || *a == poly_scale(b, &int_q(-1))
+    }
+
+    fn high_degree_redundant_relation(
+        t: VariableId,
+        x: VariableId,
+        y: VariableId,
+        max_y_exponent: u32,
+    ) -> SparsePolynomialQ {
+        let base = poly_mul(
+            &poly_sub(
+                &poly_mul(&variable_poly(x), &variable_poly(x)),
+                &constant_poly(int_q(1)),
+            ),
+            &poly_add(&variable_poly(t), &constant_poly(int_q(1))),
+        );
+        poly_mul(&base, &two_term_univariate_tail(y, max_y_exponent))
+    }
+
+    fn two_term_univariate_tail(variable: VariableId, max_exponent: u32) -> SparsePolynomialQ {
+        normalize_poly(SparsePolynomialQ {
+            terms: [
+                TermQ {
+                    coeff: int_q(1),
+                    monomial: normalize_monomial(Vec::new()),
+                },
+                TermQ {
+                    coeff: int_q(1),
+                    monomial: normalize_monomial(vec![(variable, max_exponent)]),
+                },
+            ]
+            .into_iter()
+            .collect(),
+            hash: hash_sequence("poly", &[]),
+        })
     }
 
     fn execute_case<const N: usize, const M: usize>(

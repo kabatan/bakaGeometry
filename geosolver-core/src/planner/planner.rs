@@ -3,12 +3,13 @@ use crate::kernels::traits::KernelKind;
 use crate::planner::admission::{
     collect_kernel_admissions, KernelAdmission, KernelAdmissionStatus,
 };
-use crate::planner::cost_model::estimate_kernel_cost;
+use crate::planner::cost_model::estimate_kernel_cost_for_admission;
 use crate::planner::kernel_plan::KernelPlan;
 use crate::planner::ladder::build_declared_ladder;
 use crate::planner::probes::run_cost_probes;
 use crate::planner::relation_schedule::{
     dense_relation_search_decline_reason, estimate_dense_relation_search_schedule,
+    estimate_sparse_relation_search_schedule,
 };
 use crate::preprocess::compression::CompressedSystemQ;
 use crate::problem::context::SolverContext;
@@ -32,7 +33,15 @@ pub fn plan_all_blocks(
         let admissions = collect_kernel_admissions(block, system, &probes, ctx);
         let cost_estimates = admissions
             .iter()
-            .map(|admission| estimate_kernel_cost(block, system, admission.kind, &probes))
+            .map(|admission| {
+                estimate_kernel_cost_for_admission(
+                    block,
+                    system,
+                    admission.kind,
+                    &probes,
+                    admission.execution_plan.as_ref(),
+                )
+            })
             .collect::<Vec<_>>();
         record_kernel_route_admission_diagnostics(block, system, &admissions, &cost_estimates, ctx);
         record_dense_relation_search_admission_diagnostics(block, system, &admissions, ctx);
@@ -256,6 +265,34 @@ fn insert_dense_preflight_details(
         diagnostic
             .details
             .insert("preflight_decline_reason".to_owned(), reason.to_owned());
+    }
+    let sparse_preflight = estimate_sparse_relation_search_schedule(
+        &relation_polys,
+        &eliminated_variables,
+        &exported_variables,
+        &ctx.options,
+    );
+    diagnostic.details.insert(
+        "sparse_footprint_feasible".to_owned(),
+        sparse_preflight.feasible.to_string(),
+    );
+    diagnostic.details.insert(
+        "sparse_preflight_hash".to_owned(),
+        format!("{:?}", sparse_preflight.preflight_hash),
+    );
+    diagnostic.details.insert(
+        "sparse_matrix_rows".to_owned(),
+        sparse_preflight.matrix_rows.to_string(),
+    );
+    diagnostic.details.insert(
+        "sparse_matrix_cols".to_owned(),
+        sparse_preflight.matrix_cols.to_string(),
+    );
+    if let Some(reason) = sparse_preflight.first_prohibition_reason() {
+        diagnostic.details.insert(
+            "sparse_preflight_decline_reason".to_owned(),
+            reason.to_owned(),
+        );
     }
 }
 
