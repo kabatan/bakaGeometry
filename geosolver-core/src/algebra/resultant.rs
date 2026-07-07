@@ -73,6 +73,7 @@ pub enum ResultantProofStatus {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ResultantBackendKind {
     LinearSubresultant,
+    QuadraticSubresultant,
     SmallEntrySymbolicDeterminant,
 }
 
@@ -239,6 +240,9 @@ fn compute_exact_resultant_relation(
     if let Some(relation) = linear_subresultant_relation(left, right, eliminate) {
         return Ok((relation, ResultantBackendKind::LinearSubresultant));
     }
+    if let Some(relation) = quadratic_subresultant_relation(left, right, eliminate) {
+        return Ok((relation, ResultantBackendKind::QuadraticSubresultant));
+    }
     Ok((
         sylvester_resultant(left, right, eliminate)?,
         ResultantBackendKind::SmallEntrySymbolicDeterminant,
@@ -393,6 +397,41 @@ fn linear_first_resultant(
         acc = poly_add(&acc, &term);
     }
     Some(clear_eliminate_variable(&acc, eliminate))
+}
+
+fn quadratic_subresultant_relation(
+    left: &SparsePolynomialQ,
+    right: &SparsePolynomialQ,
+    eliminate: VariableId,
+) -> Option<SparsePolynomialQ> {
+    if degree_in_variable(left, eliminate) != 2 || degree_in_variable(right, eliminate) != 2 {
+        return None;
+    }
+    let left_coeffs = coefficients_by_eliminate_degree(left, eliminate);
+    let right_coeffs = coefficients_by_eliminate_degree(right, eliminate);
+    let a = left_coeffs.get(&2).cloned().unwrap_or_else(zero_poly);
+    let b = left_coeffs.get(&1).cloned().unwrap_or_else(zero_poly);
+    let c = left_coeffs.get(&0).cloned().unwrap_or_else(zero_poly);
+    let d = right_coeffs.get(&2).cloned().unwrap_or_else(zero_poly);
+    let e = right_coeffs.get(&1).cloned().unwrap_or_else(zero_poly);
+    let f = right_coeffs.get(&0).cloned().unwrap_or_else(zero_poly);
+
+    let a2f2 = poly_mul(&poly_mul(&a, &a), &poly_mul(&f, &f));
+    let abef = poly_mul(&poly_mul(&a, &b), &poly_mul(&e, &f));
+    let ace2 = poly_mul(&poly_mul(&a, &c), &poly_mul(&e, &e));
+    let acdf_twice = poly_scale(&poly_mul(&poly_mul(&a, &c), &poly_mul(&d, &f)), &int_q(2));
+    let b2df = poly_mul(&poly_mul(&b, &b), &poly_mul(&d, &f));
+    let bcde = poly_mul(&poly_mul(&b, &c), &poly_mul(&d, &e));
+    let c2d2 = poly_mul(&poly_mul(&c, &c), &poly_mul(&d, &d));
+
+    let relation = poly_add(
+        &poly_sub(
+            &poly_add(&poly_sub(&poly_add(&a2f2, &ace2), &abef), &b2df),
+            &acdf_twice,
+        ),
+        &poly_sub(&c2d2, &bcde),
+    );
+    Some(clear_eliminate_variable(&relation, eliminate))
 }
 
 fn poly_pow_local(base: &SparsePolynomialQ, exp: u32) -> SparsePolynomialQ {
@@ -681,18 +720,45 @@ mod tests {
     }
 
     #[test]
+    fn acr_p9_quadratic_subresultant_backend_is_exact_and_replayable() {
+        let t = VariableId(1);
+        let x = VariableId(2);
+        let y = VariableId(3);
+        let left = poly_sub(
+            &monomial_polynomial(&[(y, 2)]),
+            &poly_add(&variable_poly(t), &constant_poly(int_q(1))),
+        );
+        let right = poly_sub(&monomial_polynomial(&[(y, 2)]), &constant_poly(int_q(7)));
+        let input = ResultantInput {
+            polynomials: vec![left, right],
+            eliminate: y,
+            keep_variables: vec![t, x],
+            max_matrix_dim: 4,
+        };
+
+        let template = build_sparse_resultant_template(input).unwrap();
+        let relation = compute_resultant_relation(&template, ModularOptions::default()).unwrap();
+
+        assert_eq!(
+            relation.certificate.backend,
+            ResultantBackendKind::QuadraticSubresultant
+        );
+        assert!(verify_resultant_certificate(&relation.certificate));
+    }
+
+    #[test]
     fn acr_p4_recursive_determinant_rejects_large_polynomial_entries() {
         let x = VariableId(1);
         let z = VariableId(2);
         let y = VariableId(3);
-        let y_squared = monomial_polynomial(&[(y, 2)]);
-        let left = poly_sub(&y_squared, &dense_keep_polynomial(&[x, z], 40, 0));
-        let right = poly_sub(&y_squared, &dense_keep_polynomial(&[x, z], 40, 113));
+        let y_cubed = monomial_polynomial(&[(y, 3)]);
+        let left = poly_sub(&y_cubed, &dense_keep_polynomial(&[x, z], 40, 0));
+        let right = poly_sub(&y_cubed, &dense_keep_polynomial(&[x, z], 40, 113));
         let input = ResultantInput {
             polynomials: vec![left, right],
             eliminate: y,
             keep_variables: vec![x, z],
-            max_matrix_dim: 4,
+            max_matrix_dim: 6,
         };
         let template = build_sparse_resultant_template(input).unwrap();
         let err = compute_resultant_relation(&template, ModularOptions::default()).unwrap_err();

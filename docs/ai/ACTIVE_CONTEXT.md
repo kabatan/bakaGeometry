@@ -36,6 +36,8 @@ Read first:
 Current implementation evidence:
 
 - `ALG_COST_P8_MECH_EVIDENCE.md` records sparse/lazy TargetRelationSearch implementation evidence.
+- `evidence/ACR-P9/MECH_EVIDENCE.md` records the generic large-footprint stress-suite evidence
+  pending reviewer closure.
 
 Related diagnostic reports:
 

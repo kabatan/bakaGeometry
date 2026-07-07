@@ -1,0 +1,93 @@
+schema_version: alg-cost-acr-p9-stress-matrix-v2
+phase: ACR-P9
+suite: geosolver-core/tests/acr_p9_large_footprint_stress.rs
+variant_policy:
+  variants_per_family: 3
+  variants:
+    - id: variant_0
+      transformations:
+        - baseline_variable_ids
+        - nonzero_rational_coefficient_scaling
+    - id: variant_1
+      transformations:
+        - non_base_variable_id_renaming
+        - nonzero_rational_coefficient_scaling
+    - id: variant_2
+      transformations:
+        - relation_order_permutation
+        - nonzero_rational_coefficient_scaling
+common_support_checks:
+  status: CertifiedCandidateCover
+  support_polynomial_nonzero: true
+  squarefree_support_polynomial_present: true
+  exact_image_filtering_required: false
+  nonfinite_certificate_absent: true
+  projection_message_verified: true
+  support_verified: true
+  replay_accepted: true
+  route_trace_present: true
+  cost_trace_present: true
+families:
+  - id: S1
+    test: acr_p9_s1_target_action_large_block
+    required_pattern: large block, dense TRS prohibited, TargetAction succeeds
+    dense_trs_status: materialization_allowed_false
+    sparse_resultant_status: not_required
+    successful_route: TargetActionKrylov
+    replay_accepted: true
+  - id: S2
+    test: acr_p9_s2_sparse_relation_search
+    required_pattern: large block, dense TRS prohibited, sparse/lazy TRS succeeds
+    dense_trs_status: materialization_allowed_false
+    sparse_resultant_status: not_required
+    successful_route: TargetRelationSearch
+    replay_accepted: true
+  - id: S3
+    test: acr_p9_s3_sparse_resultant_feasible
+    required_pattern: sparse resultant feasible with exact backend verification
+    dense_trs_status: not_required
+    sparse_resultant_status: Admitted
+    sparse_resultant_cost_class: Feasible
+    sparse_resultant_backend: QuadraticSubresultant
+    successful_route: SparseResultantProjection
+    replay_accepted: true
+  - id: S4
+    test: acr_p9_s4_sparse_resultant_prohibited_later_route
+    required_pattern: sparse resultant expression-swell prohibited, later route succeeds
+    dense_trs_status: materialization_allowed_false
+    sparse_resultant_status: CostProhibited
+    sparse_resultant_cost_class: CostProhibited
+    successful_route: TargetRelationSearch
+    replay_accepted: true
+  - id: S5
+    test: acr_p9_s5_specialization_interpolation_after_prohibitions
+    required_pattern: specialization-interpolation succeeds after dense prohibition and bounded sparse probe failure
+    dense_trs_status: materialization_allowed_false
+    sparse_resultant_bounded_failure_probe: PlanProbeFailed_or_CostProhibited
+    successful_route: SpecializationInterpolation
+    replay_accepted: true
+  - id: S6
+    test: acr_p9_s6_universal_after_internal_failures
+    required_pattern: Universal succeeds after at least two internal strategy failures
+    dense_trs_status: materialization_allowed_false
+    sparse_resultant_status: internal_bounded_or_not_selected
+    successful_route: UniversalTargetElimination
+    universal_executed_failed_strategy_hashes_min: 2
+    skipped_cost_prohibited_hashes_do_not_count: true
+    replay_accepted: true
+  - id: S7
+    test: acr_p9_s7_graph_decomposition_separator
+    required_pattern: graph decomposition reduces a high-cost block through algebraic separators
+    dense_trs_status: not_required
+    sparse_resultant_status: not_required
+    successful_route: TargetRelationSearch
+    graph_split_required: true
+    replay_accepted: true
+  - id: S8
+    test: acr_p9_s8_one_large_block_universal
+    required_pattern: no useful separator one-large-block still succeeds through bounded Universal
+    dense_trs_status: not_required
+    sparse_resultant_status: internal_bounded_or_not_selected
+    successful_route: UniversalTargetElimination
+    one_large_block_required: true
+    replay_accepted: true

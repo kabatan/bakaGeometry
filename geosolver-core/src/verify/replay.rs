@@ -25,7 +25,7 @@ use crate::types::hash::{hash_sequence, Hash};
 use crate::verify::run_certificate::{
     build_final_dag_replay_evidence_from_dag, derive_core_invariant_flags,
     hash_core_run_certificate, hash_decoded_candidates, hash_invariant_evidence,
-    hash_projection_messages, hash_root_isolation,
+    hash_projection_messages, hash_root_isolation, hash_solver_options,
 };
 use crate::verify::verify_message::verify_projection_message;
 use crate::verify::verify_support::verify_global_support;
@@ -78,6 +78,9 @@ fn replay_checks(result: &TargetSolveResult, problem: &RationalTargetProblem) ->
     if cert.run_hash != hash_core_run_certificate(cert) {
         return false;
     }
+    if cert.solver_options_hash != hash_solver_options(&cert.solver_options) {
+        return false;
+    }
     if cert.input_hash != problem.input_hash || cert.input_hash != recompute_input_hash(problem) {
         return false;
     }
@@ -90,7 +93,7 @@ fn replay_checks(result: &TargetSolveResult, problem: &RationalTargetProblem) ->
     if cert.canonical_system_hash != canonical.canonical_hash {
         return false;
     }
-    let mut ctx = new_context(SolverOptions::default());
+    let mut ctx = new_context(cert.solver_options.clone());
     let Ok(compressed) = pre_kernel_compress(canonical.clone(), &mut ctx) else {
         return false;
     };
@@ -198,8 +201,12 @@ fn replay_checks(result: &TargetSolveResult, problem: &RationalTargetProblem) ->
         &actual_dag.blocks,
         &message_dependencies,
     );
-    let support_verified =
-        verify_support_from_messages(result, &actual_dag, cert.global_support_certificate_hash);
+    let support_verified = verify_support_from_messages(
+        result,
+        &actual_dag,
+        &cert.solver_options,
+        cert.global_support_certificate_hash,
+    );
     let roots_and_candidates_verified = verify_roots_and_candidates(result);
     let expected_invariants = derive_core_invariant_flags(
         &result.projection_messages,
@@ -441,12 +448,13 @@ fn block_is_descendant(
 fn verify_support_from_messages(
     result: &TargetSolveResult,
     dag: &TargetProjectionDAG,
+    options: &SolverOptions,
     expected_certificate_hash: Option<Hash>,
 ) -> bool {
     let Some(support) = &result.support_polynomial else {
         return result.squarefree_support_polynomial.is_none();
     };
-    let mut ctx = new_context(SolverOptions::default());
+    let mut ctx = new_context(options.clone());
     let Ok(composed) = compose_projection_messages(
         dag,
         result.projection_messages.clone(),
@@ -652,6 +660,7 @@ mod tests {
         let messages = vec![message.clone()];
         let cert = build_core_run_certificate(CoreRunCertificateInput {
             input_hash: problem.input_hash,
+            solver_options: &SolverOptions::default(),
             canonical_hash: canonical_hash(&problem),
             target_variable: problem.target,
             compression_hash: compression_hash(&problem),
@@ -756,6 +765,7 @@ mod tests {
         let messages = vec![parent_message.clone(), child_message.clone()];
         let cert = build_core_run_certificate(CoreRunCertificateInput {
             input_hash: problem.input_hash,
+            solver_options: &SolverOptions::default(),
             canonical_hash: canonical_hash(&problem),
             target_variable: problem.target,
             compression_hash: compression_hash(&problem),
@@ -979,6 +989,7 @@ mod tests {
         );
         let cert = build_core_run_certificate(CoreRunCertificateInput {
             input_hash: problem.input_hash,
+            solver_options: &SolverOptions::default(),
             canonical_hash: canonical_hash(&problem),
             target_variable: problem.target,
             compression_hash: compression_hash(&problem),
@@ -1286,6 +1297,7 @@ mod tests {
             skipped_cost_prohibited_strategy_hashes: Vec::new(),
             chosen_strategy: UniversalStrategy::LocalGroebnerEliminationToKeepZ,
             failed_strategy_hashes: Vec::new(),
+            executed_failed_strategy_hashes: Vec::new(),
             output_relations: vec![forged_source.clone()],
             inner_payload: Some(Box::new(KernelCertificatePayload::TargetOnlySupport(
                 TargetOnlySupportCertificate {
@@ -1333,6 +1345,7 @@ mod tests {
         let problem = make_problem(vec![t], t, vec![authorized_source], Vec::new());
         let cert = build_core_run_certificate(CoreRunCertificateInput {
             input_hash: problem.input_hash,
+            solver_options: &SolverOptions::default(),
             canonical_hash: canonical_hash(&problem),
             target_variable: problem.target,
             compression_hash: compression_hash(&problem),
@@ -1425,6 +1438,7 @@ mod tests {
         let problem = make_problem(vec![t], t, vec![authorized_source], Vec::new());
         let cert = build_core_run_certificate(CoreRunCertificateInput {
             input_hash: problem.input_hash,
+            solver_options: &SolverOptions::default(),
             canonical_hash: canonical_hash(&problem),
             target_variable: problem.target,
             compression_hash: compression_hash(&problem),
@@ -1529,6 +1543,7 @@ mod tests {
         let problem = make_problem(vec![t], t, vec![authorized_source], Vec::new());
         let cert = build_core_run_certificate(CoreRunCertificateInput {
             input_hash: problem.input_hash,
+            solver_options: &SolverOptions::default(),
             canonical_hash: canonical_hash(&problem),
             target_variable: problem.target,
             compression_hash: compression_hash(&problem),
@@ -1589,6 +1604,7 @@ mod tests {
         );
         build_core_run_certificate(CoreRunCertificateInput {
             input_hash: problem.input_hash,
+            solver_options: &SolverOptions::default(),
             canonical_hash: canonical_hash(problem),
             target_variable: problem.target,
             compression_hash: compressed.compressed_hash,

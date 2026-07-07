@@ -4,6 +4,7 @@ use crate::kernels::traits::KernelKind;
 use crate::planner::admission::{KernelAdmission, KernelAdmissionStatus};
 use crate::planner::algebraic_cost::{
     algebraic_work_estimate_hash, route_budget_hash, AlgebraicWorkEstimate, RouteBudget,
+    SaturatingCount,
 };
 use crate::planner::cost_model::{KernelCostEstimate, RouteCostClass};
 use crate::planner::relation_schedule::{
@@ -476,6 +477,24 @@ fn default_algebraic_work_estimate(
     support_plan: &KernelSupportPlan,
     resource_bounds: &ResourceBounds,
 ) -> AlgebraicWorkEstimate {
+    if !support_plan.universal_strategy_sequence.is_empty() {
+        return universal_strategy_sequence_work_estimate(
+            source_relation_ids,
+            exported_variables,
+            eliminated_variables,
+            support_plan,
+        );
+    }
+    if support_plan.dense_relation_search_schedule.is_some()
+        || support_plan.sparse_relation_search_schedule.is_some()
+    {
+        return relation_search_schedule_work_estimate(
+            source_relation_ids,
+            exported_variables,
+            eliminated_variables,
+            support_plan,
+        );
+    }
     let matrix_rows = support_plan
         .template_plan
         .as_ref()
@@ -500,6 +519,149 @@ fn default_algebraic_work_estimate(
         matrix_cols,
         quotient_rank_estimate,
         support_plan.degree_bound,
+    )
+}
+
+fn relation_search_schedule_work_estimate(
+    source_relation_ids: &[RelationId],
+    exported_variables: &[VariableId],
+    eliminated_variables: &[VariableId],
+    support_plan: &KernelSupportPlan,
+) -> AlgebraicWorkEstimate {
+    let dense_stages = support_plan
+        .dense_relation_search_schedule
+        .as_ref()
+        .map(|schedule| schedule.stages.as_slice())
+        .unwrap_or(&[]);
+    let sparse_stage = support_plan
+        .sparse_relation_search_schedule
+        .as_ref()
+        .map(|schedule| std::slice::from_ref(&schedule.stage))
+        .unwrap_or(&[]);
+    let stages = dense_stages
+        .iter()
+        .chain(sparse_stage.iter())
+        .collect::<Vec<_>>();
+    let matrix_rows = stages
+        .iter()
+        .map(|stage| stage.matrix_rows.max(1))
+        .sum::<usize>()
+        .max(1);
+    let matrix_cols = stages
+        .iter()
+        .map(|stage| stage.matrix_cols.max(1))
+        .max()
+        .unwrap_or(1);
+    let matrix_work = stages
+        .iter()
+        .map(|stage| {
+            stage
+                .matrix_rows
+                .max(1)
+                .saturating_mul(stage.matrix_cols.max(1))
+        })
+        .sum::<usize>()
+        .max(1);
+    let max_degree = stages
+        .iter()
+        .map(|stage| {
+            stage
+                .export_degree
+                .saturating_add(stage.multiplier_total_degree)
+                .max(1)
+        })
+        .max()
+        .unwrap_or(support_plan.degree_bound.max(1))
+        .max(support_plan.degree_bound.max(1));
+    let keep_variables = exported_variables
+        .len()
+        .saturating_add(eliminated_variables.len())
+        .max(1);
+    AlgebraicWorkEstimate::new(
+        eliminated_variables
+            .len()
+            .saturating_add(exported_variables.len()),
+        source_relation_ids.len(),
+        exported_variables.len(),
+        0,
+        0,
+        max_degree,
+        keep_variables,
+        Some(matrix_rows),
+        Some(matrix_cols),
+        Some(matrix_cols),
+        Some(SaturatingCount::from_usize(
+            matrix_cols.max(exported_variables.len()).max(1),
+        )),
+        Some(SaturatingCount::from_usize(matrix_work)),
+        Some(SaturatingCount::from_usize(256)),
+        SaturatingCount::from_usize(matrix_work),
+    )
+}
+
+fn universal_strategy_sequence_work_estimate(
+    source_relation_ids: &[RelationId],
+    exported_variables: &[VariableId],
+    eliminated_variables: &[VariableId],
+    support_plan: &KernelSupportPlan,
+) -> AlgebraicWorkEstimate {
+    let mut predicted_work_units = SaturatingCount::ZERO;
+    let mut predicted_output_terms = SaturatingCount::ZERO;
+    let mut predicted_intermediate_terms = SaturatingCount::ZERO;
+    let mut predicted_coefficient_height_bits = SaturatingCount::ZERO;
+    let mut matrix_rows = 0_usize;
+    let mut matrix_cols = 0_usize;
+    let mut quotient_rank_estimate = 0_usize;
+    let mut max_total_degree = support_plan.degree_bound.max(1);
+    let mut max_keep_variable_count = exported_variables.len().max(1);
+
+    for step in &support_plan.universal_strategy_sequence {
+        let estimate = &step.algebraic_work_estimate;
+        predicted_work_units =
+            predicted_work_units.saturating_add(step.route_budget.max_work_units);
+        predicted_output_terms =
+            predicted_output_terms.saturating_add(estimate.predicted_output_terms.unwrap_or_else(
+                || SaturatingCount::from_usize(step.route_budget.max_output_terms),
+            ));
+        predicted_intermediate_terms = predicted_intermediate_terms.saturating_add(
+            estimate.predicted_intermediate_terms.unwrap_or_else(|| {
+                SaturatingCount::from_usize(step.route_budget.max_intermediate_terms)
+            }),
+        );
+        predicted_coefficient_height_bits = predicted_coefficient_height_bits.max(
+            estimate
+                .predicted_coefficient_height_bits
+                .unwrap_or_else(|| {
+                    SaturatingCount::from_usize(step.route_budget.max_coefficient_height_bits)
+                }),
+        );
+        matrix_rows = matrix_rows.saturating_add(estimate.matrix_rows.unwrap_or(1));
+        matrix_cols = matrix_cols.max(estimate.matrix_cols.unwrap_or(1));
+        quotient_rank_estimate =
+            quotient_rank_estimate.max(estimate.quotient_rank_estimate.unwrap_or(1));
+        max_total_degree = max_total_degree.max(estimate.max_total_degree);
+        max_keep_variable_count = max_keep_variable_count
+            .max(estimate.max_keep_variable_count)
+            .max(step.route_budget.max_keep_variables);
+    }
+
+    AlgebraicWorkEstimate::new(
+        eliminated_variables
+            .len()
+            .saturating_add(exported_variables.len()),
+        source_relation_ids.len(),
+        exported_variables.len(),
+        0,
+        0,
+        max_total_degree,
+        max_keep_variable_count,
+        Some(matrix_rows.max(1)),
+        Some(matrix_cols.max(1)),
+        Some(quotient_rank_estimate.max(1)),
+        Some(predicted_output_terms),
+        Some(predicted_intermediate_terms),
+        Some(predicted_coefficient_height_bits.max(SaturatingCount::from_usize(256))),
+        predicted_work_units.max(SaturatingCount::ONE),
     )
 }
 

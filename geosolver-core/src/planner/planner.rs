@@ -302,15 +302,10 @@ fn record_dense_relation_search_admission_diagnostics(
     admissions: &[KernelAdmission],
     ctx: &mut SolverContext,
 ) {
-    let Some(reason) = admissions
+    if !admissions
         .iter()
-        .find(|admission| admission.kind == KernelKind::TargetRelationSearch)
-        .map(|admission| &admission.status)
-        .and_then(cost_prohibited_or_declined_reason)
-    else {
-        return;
-    };
-    if !reason.contains("CostProhibitedDenseRoute") {
+        .any(|admission| admission.kind == KernelKind::TargetRelationSearch)
+    {
         return;
     }
     let relation_polys = block
@@ -331,6 +326,9 @@ fn record_dense_relation_search_admission_diagnostics(
         &exported_variables,
         &ctx.options,
     );
+    if preflight.materialization_allowed {
+        return;
+    }
     let mut diagnostic = DiagnosticRecord::new(
         "CostProhibitedDenseRoute",
         dense_relation_search_decline_reason(&preflight),
@@ -392,14 +390,6 @@ fn record_dense_relation_search_admission_diagnostics(
             .insert("first_prohibited_stage".to_owned(), stage.to_string());
     }
     ctx.diagnostics.push(diagnostic);
-}
-
-fn cost_prohibited_or_declined_reason(status: &KernelAdmissionStatus) -> Option<&str> {
-    match status {
-        KernelAdmissionStatus::Declined { reason } => Some(reason),
-        KernelAdmissionStatus::CostProhibited { reason, .. } => Some(reason),
-        _ => None,
-    }
 }
 
 fn postorder_key(
@@ -492,6 +482,27 @@ mod tests {
                 .unwrap()
                 .schedule_hash,
             expected_schedule.schedule_hash
+        );
+    }
+
+    #[test]
+    fn acr_p9_explicit_universal_priority_is_respected() {
+        let (compressed, dag) = one_large_block_case();
+        let mut ctx = new_context(SolverOptions {
+            kernel_priority: vec![KernelKind::UniversalTargetElimination],
+            ..SolverOptions::default()
+        });
+
+        let plans = plan_all_blocks(&dag, &compressed, &mut ctx).unwrap();
+
+        assert_eq!(plans.len(), 1);
+        assert_eq!(
+            plans[0].declared_ladder[0].kernel_kind,
+            KernelKind::UniversalTargetElimination
+        );
+        assert_eq!(
+            plans[0].selected_first,
+            KernelKind::UniversalTargetElimination
         );
     }
 

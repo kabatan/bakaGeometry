@@ -343,7 +343,7 @@ fn ccc_p12_red_team_runs_sixteen_fresh_public_inputs() {
         ),
         false,
         GlobalSupportProofRoute::TargetOnlyRootRelationProduct,
-        &[KernelKind::TargetRelationSearch],
+        &[KernelKind::TargetActionKrylov],
     );
 
     let t = VariableId(717);
@@ -411,7 +411,7 @@ fn ccc_p12_red_team_runs_sixteen_fresh_public_inputs() {
         ),
         false,
         GlobalSupportProofRoute::TargetOnlyRootRelationProduct,
-        &[KernelKind::TargetRelationSearch],
+        &[KernelKind::TargetActionKrylov],
     );
 
     let t = VariableId(726);
@@ -476,7 +476,7 @@ fn ccc_p12_red_team_runs_sixteen_fresh_public_inputs() {
         ),
         false,
         GlobalSupportProofRoute::TargetOnlyRootRelationProduct,
-        &[KernelKind::TargetRelationSearch],
+        &[KernelKind::NormTraceProjection],
     );
 
     let t = VariableId(734);
@@ -495,7 +495,7 @@ fn ccc_p12_red_team_runs_sixteen_fresh_public_inputs() {
         ),
         false,
         GlobalSupportProofRoute::TargetOnlyRootRelationProduct,
-        &[KernelKind::TargetRelationSearch],
+        &[KernelKind::TargetActionKrylov],
     );
 
     let target = VariableId(737);

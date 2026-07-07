@@ -243,6 +243,7 @@ fn p14_stage_trace_executes_appendix_29_pipeline_in_order() {
     let roots = step_roots(&support, target, &mut ctx).expect("roots");
     let certificate = step_core_certificate(
         &problem,
+        &ctx.options,
         &canonical,
         &compressed,
         &graphs,

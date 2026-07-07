@@ -344,7 +344,12 @@ fn probe_regular_chain_plan(
             "regular-chain projection plan requires local relations and exported variables",
         ));
     }
-    let max_degree = relations.iter().map(poly_total_degree).max().unwrap_or(1) as usize;
+    let max_input_degree = relations.iter().map(poly_total_degree).max().unwrap_or(1) as usize;
+    let max_degree = (0..relations.len().max(1))
+        .fold(1_usize, |acc, _| {
+            acc.saturating_mul(max_input_degree.max(1))
+        })
+        .max(max_input_degree);
     Ok(RegularChainPlanProbe {
         row_count: relations.len().max(1),
         column_count: exported.len().max(1),
@@ -371,14 +376,13 @@ fn build_regular_chain_trace(
         .iter()
         .map(|chain| project_chain_to_variables(chain, exported))
         .collect::<Result<Vec<_>, _>>()?;
-    let generators = combine_chain_projections(&projections, dag.semantics)?
-        .into_iter()
-        .filter(|generator| !generator.terms.is_empty())
-        .map(|generator| clear_denominators_primitive(&generator))
-        .collect::<Vec<_>>();
+    let generators = normalize_regular_chain_output_generators(combine_chain_projections(
+        &projections,
+        dag.semantics,
+    )?);
     if generators.is_empty() {
         return Err(algorithmic_hard_case(
-            "regular-chain projection produced no exported generator",
+            "regular-chain projection found no nonzero exported relation",
         ));
     }
     validate_exported_generators(&generators, exported)?;
@@ -535,6 +539,16 @@ fn validate_source_hash_coverage(
         ));
     }
     Ok(())
+}
+
+fn normalize_regular_chain_output_generators(
+    relations: Vec<SparsePolynomialQ>,
+) -> Vec<SparsePolynomialQ> {
+    relations
+        .into_iter()
+        .filter(|generator| !generator.terms.is_empty())
+        .map(|generator| clear_denominators_primitive(&generator))
+        .collect::<Vec<_>>()
 }
 
 fn validate_exported_generators(

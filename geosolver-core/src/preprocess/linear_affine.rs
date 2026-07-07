@@ -305,7 +305,6 @@ mod tests {
     use crate::problem::canonicalize::canonicalize_system;
     use crate::problem::input::make_problem;
     use crate::problem::validate::validate_input;
-    use crate::types::ids::RelationId;
     use crate::types::polynomial::{
         clear_denominators_primitive, constant_poly, poly_add, poly_mul, poly_scale, poly_sub,
         variable_poly,
@@ -390,24 +389,25 @@ mod tests {
             &poly_add(&variable_poly(t), &variable_poly(x)),
         );
         let y_minus_two = poly_sub(&variable_poly(y), &constant_poly(int_q(2)));
-        let state = state_from_relations(vec![witness, affine, y_minus_two]);
+        let state =
+            state_from_relations(vec![witness.clone(), affine.clone(), y_minus_two.clone()]);
         let witness_relation = state
             .relations
             .iter()
-            .find(|relation| relation.id == RelationId(0))
-            .expect("witness relation is assigned the first canonical id")
+            .find(|relation| relation.polynomial == clear_denominators_primitive(&witness))
+            .expect("witness relation is present after canonicalization")
             .clone();
         let pivot_relation = state
             .relations
             .iter()
-            .find(|relation| relation.id == RelationId(1))
-            .expect("affine pivot relation is assigned the second canonical id")
+            .find(|relation| relation.polynomial == clear_denominators_primitive(&affine))
+            .expect("affine pivot relation is present after canonicalization")
             .clone();
         let y_minus_two_relation = state
             .relations
             .iter()
-            .find(|relation| relation.id == RelationId(2))
-            .expect("y - 2 relation is assigned the third canonical id")
+            .find(|relation| relation.polynomial == clear_denominators_primitive(&y_minus_two))
+            .expect("y - 2 relation is present after canonicalization")
             .clone();
         let candidates = find_linear_affine_candidates(&state);
         let rational_candidate = candidates

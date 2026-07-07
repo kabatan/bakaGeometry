@@ -31,7 +31,7 @@ use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::VariableId;
 use crate::types::polynomial::{
     clear_denominators_primitive, constant_poly, poly_add, poly_mul, poly_scale, poly_variables,
-    substitute_poly, SparsePolynomialQ, SubstitutionMap,
+    substitute_poly, zero_poly, SparsePolynomialQ, SubstitutionMap,
 };
 use crate::types::rational::{div_q, int_q, is_zero_q, neg_q, RationalQ};
 use crate::types::univariate::UniPolynomialQ;
@@ -502,6 +502,18 @@ fn verify_universal_strategy_trace(
             "universal failed strategy hashes do not match replayed attempted stage prefix",
         ));
     }
+    let executed_failed = proof
+        .strategy_records
+        .iter()
+        .take(chosen_index)
+        .filter(|record| record.enabled && record.cost_class != RouteCostClass::CostProhibited)
+        .map(|record| record.stage_hash)
+        .collect::<Vec<_>>();
+    if proof.executed_failed_strategy_hashes != executed_failed {
+        return Err(implementation_bug(
+            "universal executed failed strategy hashes do not match replayed enabled failure prefix",
+        ));
+    }
     Ok(())
 }
 
@@ -901,17 +913,27 @@ fn verify_regular_chain_payload(
     }
     let recomputed = combine_chain_projections(&projections, dag.semantics)
         .map_err(|_| implementation_bug("regular chain projection combination replay failed"))?;
-    let recomputed = recomputed
-        .into_iter()
-        .filter(|relation| !relation.terms.is_empty())
-        .map(|relation| clear_denominators_primitive(&relation))
-        .collect::<Vec<_>>();
+    let recomputed = normalize_regular_chain_output_relations(recomputed);
     if recomputed != proof.output_relations {
         return Err(implementation_bug(
             "regular chain payload does not replay to message outputs",
         ));
     }
     Ok(())
+}
+
+fn normalize_regular_chain_output_relations(
+    relations: Vec<SparsePolynomialQ>,
+) -> Vec<SparsePolynomialQ> {
+    let mut normalized = relations
+        .into_iter()
+        .filter(|relation| !relation.terms.is_empty())
+        .map(|relation| clear_denominators_primitive(&relation))
+        .collect::<Vec<_>>();
+    if normalized.is_empty() {
+        normalized.push(zero_poly());
+    }
+    normalized
 }
 
 fn target_support_from_relations(

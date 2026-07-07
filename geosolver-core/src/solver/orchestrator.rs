@@ -162,6 +162,7 @@ pub fn solve_with_context(
             };
             let certificate = step_core_certificate(
                 &problem,
+                &ctx.options,
                 &canonical,
                 &compressed,
                 &graphs,

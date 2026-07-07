@@ -172,6 +172,7 @@ pub struct UniversalProjectionCertificate {
     pub skipped_cost_prohibited_strategy_hashes: Vec<Hash>,
     pub chosen_strategy: UniversalStrategy,
     pub failed_strategy_hashes: Vec<Hash>,
+    pub executed_failed_strategy_hashes: Vec<Hash>,
     pub output_relations: Vec<SparsePolynomialQ>,
     pub inner_payload: Option<Box<KernelCertificatePayload>>,
     pub output_memberships: Vec<MembershipCertificate>,

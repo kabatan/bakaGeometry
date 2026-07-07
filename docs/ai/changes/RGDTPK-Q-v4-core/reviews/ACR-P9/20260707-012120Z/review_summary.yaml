@@ -1,0 +1,53 @@
+schema_version: alg-cost-review-v1
+phase_id: ACR-P9
+review_status: PASS
+phase_closable: true
+algorithmic_sufficiency: sufficient
+source_spec_alignment: aligned
+blocking_findings: []
+required_fixes: []
+reviewed_files:
+  - docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_COMPLETION_REPAIR_BASE_SPEC.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_COMPLETION_REPAIR_PLAN.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/ALG_COST_COMPLETION_REVIEWER_PROMPTS.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/evidence/ACR-P9/MECH_EVIDENCE.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/evidence/ACR-P9/stress_matrix.yaml
+  - geosolver-core/tests/acr_p9_large_footprint_stress.rs
+  - geosolver-core/src/verify/certificates.rs
+  - geosolver-core/src/kernels/universal_elimination.rs
+  - geosolver-core/src/verify/verify_message.rs
+  - geosolver-core/src/algebra/resultant.rs
+reviewed_tests:
+  - cargo fmt --manifest-path geosolver-core\Cargo.toml --check
+  - cargo test --manifest-path geosolver-core\Cargo.toml --test acr_p9_large_footprint_stress acr_p9_s6_universal_after_internal_failures -- --test-threads=1 --nocapture
+  - cargo test --manifest-path geosolver-core\Cargo.toml --test acr_p9_large_footprint_stress -- --test-threads=1 --nocapture
+  - cargo test --manifest-path geosolver-core\Cargo.toml -- --test-threads=1
+adversarial_counterexamples:
+  - name: small_resultant_matrix_large_entry_swell
+    algebraic_footprint: "two low-degree eliminated-variable relations whose coefficients contain many keep-variable terms"
+    expected_behavior: "SparseResultantProjection must be CostProhibited before expression swell and a later bounded route may produce support"
+    reviewer_result: "covered for ACR-P9 by S4/S5 stress"
+  - name: s6_skipped_stage_hash_false_count
+    algebraic_footprint: "Universal ladder where dense TRS and sparse resultant are CostProhibited before bounded local elimination success"
+    expected_behavior: "skipped or CostProhibited stages must not count as executed failed internal stages"
+    reviewer_result: "executed_failed_strategy_hashes excludes disabled and CostProhibited records and is replay-checked"
+dominant_cost_checks:
+  dense_trs_materialization_bounded: true
+  sparse_resultant_swell_bounded: true
+  route_budget_enforced: true
+  ladder_non_monopolizing: true
+  graph_decomposition_cost_aware: true
+support_producing_checks:
+  public_or_near_public_pipeline_used: true
+  projection_message_verified: true
+  support_verified: true
+  replay_accepted: true
+anti_overfit_checks:
+  no_diagnostic_problem_fixture: true
+  no_geometry_name_dispatch: true
+  no_expected_answer_dispatch: true
+claim_ceiling:
+  scope_limited_to_acr_p9: true
+  forbids_final_readiness_claims: true
+  forbids_exact_image_acceptance_claims: true
+

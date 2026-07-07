@@ -363,9 +363,16 @@ pub fn execute_sparse_resultant(
             "sparse resultant swell preflight hash is stale",
         ));
     }
-    if trace.swell_preflight.preflight_hash != probe.swell_preflight.preflight_hash {
-        return Err(implementation_bug(
-            "sparse resultant execution route trace diverged from planned swell preflight",
+    if !trace_swell_within_planned_preflight(&trace, &probe) {
+        return Err(sparse_resultant_guard_failure(
+            plan,
+            "SparseResultantPlannedSwellPreflight",
+            trace.matrix_rows,
+            trace.matrix_cols,
+            trace
+                .swell_preflight
+                .coefficient_height_growth_bits
+                .as_usize_saturating(),
         ));
     }
     let Some(template) = &plan.support_plan.template_plan else {
@@ -467,7 +474,7 @@ fn probe_sparse_resultant_plan(
         matrix_rows = matrix_rows.saturating_add(template.matrix_rows);
         matrix_cols = matrix_cols.saturating_add(template.matrix_cols);
         template_hashes.push(template.template_hash);
-        let surrogate = simulated_resultant_relation(&pair.input, &pair.footprint);
+        let surrogate = simulated_resultant_surrogate(&pair);
         let mut next = current
             .into_iter()
             .enumerate()
@@ -507,6 +514,31 @@ fn probe_sparse_resultant_plan(
         template_trace_hash,
         output_support_hash: planned_resultant_output_support_hash(exported, max_degree),
     })
+}
+
+fn trace_swell_within_planned_preflight(
+    trace: &SparseResultantTrace,
+    probe: &SparseResultantPlanProbe,
+) -> bool {
+    trace.matrix_rows <= probe.matrix_rows
+        && trace.matrix_cols <= probe.matrix_cols
+        && trace.swell_preflight.max_pair_input_terms <= probe.swell_preflight.max_pair_input_terms
+        && trace
+            .swell_preflight
+            .max_term_count_after_coefficient_multiplication
+            <= probe
+                .swell_preflight
+                .max_term_count_after_coefficient_multiplication
+        && trace.swell_preflight.estimated_resultant_template_support
+            <= probe.swell_preflight.estimated_resultant_template_support
+        && trace.swell_preflight.keep_variable_count <= probe.swell_preflight.keep_variable_count
+        && trace.swell_preflight.coefficient_height_growth_bits
+            <= probe.swell_preflight.coefficient_height_growth_bits
+        && trace.swell_preflight.predicted_intermediate_terms
+            <= probe.swell_preflight.predicted_intermediate_terms
+        && trace.swell_preflight.predicted_output_terms
+            <= probe.swell_preflight.predicted_output_terms
+        && trace.swell_preflight.route_work_units <= probe.swell_preflight.route_work_units
 }
 
 fn build_sparse_resultant_trace(
@@ -637,45 +669,6 @@ fn build_sparse_resultant_trace(
     })
 }
 
-fn simulated_resultant_relation(
-    input: &ResultantInput,
-    cost: &ResultantPairCost,
-) -> SparsePolynomialQ {
-    if input.keep_variables.is_empty() {
-        return normalize_poly(SparsePolynomialQ {
-            terms: vec![TermQ {
-                coeff: int_q(1),
-                monomial: normalize_monomial(Vec::new()),
-            }],
-            hash: hash_sequence("poly", &[]),
-        });
-    }
-    let term_limit = cost
-        .predicted_output_terms
-        .as_usize_saturating()
-        .max(1)
-        .min(8_192);
-    let degree_cap = cost.max_total_degree.max(1).min(u32::MAX as usize);
-    let mut terms = Vec::with_capacity(term_limit);
-    for idx in 0..term_limit {
-        let primary = input.keep_variables[0];
-        let mut exponents = vec![(primary, (idx + 1).min(u32::MAX as usize) as u32)];
-        if input.keep_variables.len() > 1 {
-            let secondary = input.keep_variables[idx % input.keep_variables.len()];
-            let exp = ((idx % degree_cap) + 1).min(u32::MAX as usize) as u32;
-            exponents.push((secondary, exp));
-        }
-        terms.push(TermQ {
-            coeff: int_q(1),
-            monomial: normalize_monomial(exponents),
-        });
-    }
-    normalize_poly(SparsePolynomialQ {
-        terms,
-        hash: hash_sequence("poly", &[]),
-    })
-}
-
 fn planned_resultant_output_support_hash(exported: &[VariableId], max_degree: usize) -> Hash {
     let mut chunks = Vec::new();
     for variable in exported {
@@ -750,6 +743,35 @@ fn selectable_resultant_pair(
                 footprint,
             },
         )
+}
+
+fn simulated_resultant_surrogate(pair: &SelectedResultantPair) -> SparsePolynomialQ {
+    let degree = pair
+        .footprint
+        .left_degree
+        .saturating_mul(pair.footprint.right_degree)
+        .max(pair.footprint.max_total_degree)
+        .max(1)
+        .min(u32::MAX as usize) as u32;
+    let mut terms = pair
+        .input
+        .keep_variables
+        .iter()
+        .map(|variable| TermQ {
+            coeff: int_q(1),
+            monomial: normalize_monomial(vec![(*variable, degree)]),
+        })
+        .collect::<Vec<_>>();
+    if terms.is_empty() {
+        terms.push(TermQ {
+            coeff: int_q(1),
+            monomial: normalize_monomial(Vec::new()),
+        });
+    }
+    normalize_poly(SparsePolynomialQ {
+        terms,
+        hash: hash_sequence("sparse-resultant-plan-surrogate", &[]),
+    })
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

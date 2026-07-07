@@ -7,9 +7,12 @@ use crate::kernels::target_relation_search::{
 };
 use crate::kernels::traits::KernelContext;
 use crate::planner::admission::KernelAdmissionStatus;
+use crate::planner::kernel_plan::KernelExecutionPlan;
 use crate::preprocess::compression::{relation_with_polynomial, CompressedSystemQ};
 use crate::problem::canonicalize::RelationSource;
-use crate::problem::context::SolverContext;
+use crate::problem::context::{
+    begin_route_budget, check_resource, end_route_budget, ActiveRouteBudget, SolverContext,
+};
 use crate::result::status::{AlgebraicReason, FailureKind, SolverError, SolverErrorKind, StageId};
 use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::{BlockId, RelationId, VariableId};
@@ -69,7 +72,14 @@ pub fn eliminate_separators_from_message_relations(
                     "separator elimination admission lacked execution plan",
                 ));
             };
-            execute_target_relation_search(&plan, &mut kctx, ctx)
+            begin_route_budget(ctx, active_route_budget_from_plan(&plan));
+            let result = check_resource(
+                ctx,
+                StageId("SeparatorEliminationRouteExecuteStart".to_owned()),
+            )
+            .and_then(|_| execute_target_relation_search(&plan, &mut kctx, ctx));
+            end_route_budget(ctx);
+            result
         }
         KernelAdmissionStatus::Declined { reason }
         | KernelAdmissionStatus::CostProhibited { reason, .. }
@@ -78,6 +88,20 @@ pub fn eliminate_separators_from_message_relations(
             block.block_hash,
             &format!("separator target-direct kernel declined: {reason}"),
         )),
+    }
+}
+
+fn active_route_budget_from_plan(plan: &KernelExecutionPlan) -> ActiveRouteBudget {
+    ActiveRouteBudget {
+        block_id: plan.block_id,
+        kernel_kind: format!("{:?}", plan.kernel_kind),
+        plan_hash: plan.plan_hash,
+        route_budget_hash: plan.route_budget.budget_hash,
+        algebraic_work_estimate_hash: plan.algebraic_work_estimate.estimate_hash,
+        max_elapsed_steps: plan.route_budget.max_elapsed_steps.max(1),
+        max_work_units: plan.route_budget.max_work_units.0.max(1),
+        consumed_steps: 0,
+        consumed_work_units: 0,
     }
 }
 

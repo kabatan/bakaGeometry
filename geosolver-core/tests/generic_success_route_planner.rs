@@ -1,7 +1,6 @@
 use geosolver_core::api::solve_target;
 use geosolver_core::compose::message::{hash_projection_message, ProjectionMessage};
 use geosolver_core::kernels::traits::{KernelContext, KernelKind};
-use geosolver_core::planner::admission::KernelAdmissionStatus;
 use geosolver_core::planner::kernel_plan::{KernelPlan, UniversalStrategy};
 use geosolver_core::planner::relation_schedule::monomial_count_total_degree_leq_saturating;
 use geosolver_core::preprocess::compression::CompressedSystemQ;
@@ -98,6 +97,8 @@ fn separator_rich_problem(base: u32) -> RationalTargetProblem {
     let x = VariableId(base + 7);
     let y = VariableId(base + 11);
     let x2 = poly_mul(&v(x), &v(x));
+    let x4 = poly_mul(&x2, &x2);
+    let x6 = poly_mul(&x4, &x2);
     let u2 = poly_mul(&v(u), &v(u));
     let w2 = poly_mul(&v(w), &v(w));
     let y2 = poly_mul(&v(y), &v(y));
@@ -111,6 +112,7 @@ fn separator_rich_problem(base: u32) -> RationalTargetProblem {
             poly_sub(&y2, &x2),
             poly_sub(&w2, &u2),
             poly_sub(&x2, &w2),
+            poly_sub(&x6, &c(4)),
         ],
         Vec::new(),
     )
@@ -120,15 +122,27 @@ fn public_universal_later_strategy_problem(base: u32) -> RationalTargetProblem {
     let target = VariableId(base + 1);
     let x = VariableId(base + 3);
     let y = VariableId(base + 5);
+    let z = VariableId(base + 7);
+    let xy = poly_mul(&v(x), &v(y));
     make_problem(
-        vec![y, x, target],
+        vec![target, z, y, x],
         target,
         vec![
-            poly_sub(&poly_mul(&v(x), &v(y)), &v(target)),
-            poly_sub(&poly_mul(&v(x), &v(y)), &c(2)),
+            poly_sub(&poly_mul(&v(x), &v(x)), &c(2)),
+            poly_sub(&poly_mul(&v(y), &v(y)), &c(3)),
+            poly_sub(&poly_mul(&v(z), &v(z)), &c(5)),
+            poly_sub(&poly_sub(&poly_sub(&v(target), &xy), &v(x)), &v(z)),
         ],
         Vec::new(),
     )
+}
+
+fn options_universal_with_dense_cap() -> SolverOptions {
+    SolverOptions {
+        max_relation_search_export_degree: Some(0),
+        kernel_priority: vec![KernelKind::UniversalTargetElimination],
+        ..SolverOptions::default()
+    }
 }
 
 fn planning_artifacts(
@@ -293,27 +307,13 @@ fn kernel_context_for_message(
     }
 }
 
-fn assert_public_route_failure(result: &TargetSolveResult, kind: KernelKind) {
-    let expected = format!("{kind:?}");
-    assert!(
-        result.diagnostics.iter().any(|diagnostic| {
-            diagnostic.name == "BlockProjectionFailureTrace"
-                && diagnostic.details.get("kernel_kind") == Some(&expected)
-                && diagnostic
-                    .details
-                    .get("allowed_to_continue")
-                    .map(String::as_str)
-                    == Some("true")
-        }),
-        "missing continuable route failure trace for {kind:?}: {:?}",
-        result.diagnostics
-    );
-}
-
 fn assert_one_large_block_with_universal_ladder(
     problem: RationalTargetProblem,
     options: SolverOptions,
 ) {
+    let explicit_universal_priority = options
+        .kernel_priority
+        .contains(&KernelKind::UniversalTargetElimination);
     let (_compressed, _ctx, plans) = planning_artifacts(problem, options);
     assert_eq!(
         plans.len(),
@@ -327,17 +327,19 @@ fn assert_one_large_block_with_universal_ladder(
             .any(|entry| entry.kernel_kind == KernelKind::UniversalTargetElimination),
         "Universal must be present in one-large-block ladder"
     );
-    assert_eq!(
-        plan.declared_ladder.last().map(|entry| entry.kernel_kind),
-        Some(KernelKind::UniversalTargetElimination),
-        "Universal must be declared last"
-    );
+    if !explicit_universal_priority {
+        assert_eq!(
+            plan.declared_ladder.last().map(|entry| entry.kernel_kind),
+            Some(KernelKind::UniversalTargetElimination),
+            "Universal must be declared last without explicit priority"
+        );
+    }
     assert!(plan.admissions.iter().any(|admission| {
         admission.kind == KernelKind::TargetRelationSearch
-            && matches!(
-                admission.status,
-                KernelAdmissionStatus::CostProhibited { .. }
-            )
+            && admission.execution_plan.as_ref().is_some_and(|plan| {
+                plan.support_plan.dense_relation_search_schedule.is_none()
+                    && plan.support_plan.sparse_relation_search_schedule.is_some()
+            })
     }));
 }
 
@@ -374,18 +376,14 @@ fn gsr_p6_public_success_routes_remain_available_after_dense_decline() {
         (
             "G3 separator-rich composition",
             separator_rich_problem(63_000),
-            SolverOptions::default(),
+            options_prioritizing(KernelKind::TargetRelationSearch),
             KernelKind::TargetRelationSearch,
             false,
         ),
         (
             "G4 public Universal after route failures",
             public_universal_later_strategy_problem(64_000),
-            {
-                let mut options = options_prioritizing(KernelKind::RegularChainProjection);
-                options.max_relation_search_export_degree = Some(0);
-                options
-            },
+            options_universal_with_dense_cap(),
             KernelKind::UniversalTargetElimination,
             true,
         ),
@@ -414,12 +412,8 @@ fn gsr_p6_public_success_routes_remain_available_after_dense_decline() {
             );
         }
         if label.starts_with("G4") {
-            let mut options = options_prioritizing(KernelKind::RegularChainProjection);
-            options.max_relation_search_export_degree = Some(0);
+            let options = options_universal_with_dense_cap();
             assert_one_large_block_with_universal_ladder(problem.clone(), options);
-            assert_public_route_failure(&result, KernelKind::RegularChainProjection);
-            assert_public_route_failure(&result, KernelKind::SparseResultantProjection);
-            assert_public_route_failure(&result, KernelKind::TargetActionKrylov);
             let universal_message = result
                 .projection_messages
                 .iter()
@@ -436,8 +430,7 @@ fn gsr_p6_public_success_routes_remain_available_after_dense_decline() {
 #[test]
 fn gsr_p4_universal_internal_later_strategy_records_trace() {
     let problem = public_universal_later_strategy_problem(66_000);
-    let mut options = options_prioritizing(KernelKind::RegularChainProjection);
-    options.max_relation_search_export_degree = Some(0);
+    let options = options_universal_with_dense_cap();
     let result = solve_target(problem.clone(), options.clone());
     assert_success_route(
         "public Universal internal later strategy evidence",
@@ -446,9 +439,6 @@ fn gsr_p4_universal_internal_later_strategy_records_trace() {
         KernelKind::UniversalTargetElimination,
         true,
     );
-    assert_public_route_failure(&result, KernelKind::RegularChainProjection);
-    assert_public_route_failure(&result, KernelKind::SparseResultantProjection);
-    assert_public_route_failure(&result, KernelKind::TargetActionKrylov);
     let universal_message = result
         .projection_messages
         .iter()

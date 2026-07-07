@@ -1,0 +1,11 @@
+cargo fmt --manifest-path geosolver-core\Cargo.toml --check
+rg -n -i "diagnostic problem|imported file|mixtilinear|\bmixt\b|circumcircle|incircle|tangent_solver|expected_cos|expected target value|expected support polynomial|known_support_polynomial|problem hash|diagnostic_problem|geometry name" geosolver-core\src geosolver-core\tests\acr_p9_large_footprint_stress.rs geosolver-core\tests\generic_success_route_planner.rs geosolver-core\tests\gpsr_generic_planner_success_route.rs geosolver-core\tests\p14_full_pipeline_integration.rs geosolver-core\tests\fcr_p10_acceptance_suite.rs geosolver-core\tests\ccc_candidate_cover_completion.rs
+cargo test --manifest-path geosolver-core\Cargo.toml --test acr_p9_large_footprint_stress acr_p9_s6_universal_after_internal_failures -- --test-threads=1 --nocapture
+cargo test --manifest-path geosolver-core\Cargo.toml --test acr_p9_large_footprint_stress -- --test-threads=1 --nocapture
+cargo test --manifest-path geosolver-core\Cargo.toml algebra::resultant::tests:: -- --test-threads=1
+cargo test --manifest-path geosolver-core\Cargo.toml --test generic_success_route_planner -- --test-threads=1
+cargo test --manifest-path geosolver-core\Cargo.toml --test gpsr_generic_planner_success_route -- --test-threads=1
+cargo test --manifest-path geosolver-core\Cargo.toml --test fcr_p10_acceptance_suite -- --test-threads=1
+cargo test --manifest-path geosolver-core\Cargo.toml --test ccc_candidate_cover_completion -- --test-threads=1
+cargo test --manifest-path geosolver-core\Cargo.toml --test p14_full_pipeline_integration -- --test-threads=1
+cargo test --manifest-path geosolver-core\Cargo.toml -- --test-threads=1

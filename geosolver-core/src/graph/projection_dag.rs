@@ -272,6 +272,7 @@ fn materialize_blocks(
         .iter()
         .map(|child| {
             let mut child_export = node.separator.clone();
+            child_export.extend(exported_to_parent.iter().copied());
             child_export.insert(target);
             materialize_blocks(child, Some(block_id), target, &child_export, blocks)
         })

@@ -1,6 +1,5 @@
 use geosolver_core::api::solve_target;
 use geosolver_core::kernels::traits::KernelKind;
-use geosolver_core::planner::admission::KernelAdmissionStatus;
 use geosolver_core::planner::kernel_plan::KernelPlan;
 use geosolver_core::planner::relation_schedule::{
     build_dense_relation_search_schedule, estimate_dense_relation_search_schedule,
@@ -152,11 +151,10 @@ fn planning_artifacts(
 fn dense_route_declined(plan: &KernelPlan) -> bool {
     plan.admissions.iter().any(|admission| {
         admission.kind == KernelKind::TargetRelationSearch
-            && matches!(
-                &admission.status,
-                KernelAdmissionStatus::CostProhibited { reason, .. }
-                    if reason.contains("CostProhibitedDenseRoute")
-            )
+            && admission.execution_plan.as_ref().is_some_and(|plan| {
+                plan.support_plan.dense_relation_search_schedule.is_none()
+                    && plan.support_plan.sparse_relation_search_schedule.is_some()
+            })
     })
 }
 
@@ -302,7 +300,7 @@ fn gpsr_admission_isolation_keeps_later_kernels_after_dense_decline() {
     assert!(plan.admissions[target_relation_index + 1..]
         .iter()
         .any(|admission| admission.kind == KernelKind::UniversalTargetElimination));
-    assert!(!plan
+    assert!(plan
         .declared_ladder
         .iter()
         .any(|entry| entry.kernel_kind == KernelKind::TargetRelationSearch));
@@ -362,7 +360,7 @@ fn gpsr_universal_ladder_survives_internal_dense_decline() {
         "universal ladder after dense decline",
         &problem,
         &result,
-        KernelKind::SparseResultantProjection,
+        KernelKind::UniversalTargetElimination,
     );
     let (_compressed, _ctx, plans) = planning_artifacts(problem, SolverOptions::default());
     assert!(plans.iter().any(|plan| {

@@ -44,6 +44,8 @@ pub enum RelationSource {
 
 pub fn canonicalize_system(validated: ValidatedProblem) -> Result<CanonicalSystemQ, SolverError> {
     let variables = validated.problem.variables.clone();
+    let target = validated.problem.target;
+    let semantic_encodings = validated.problem.semantic_encodings;
     let mut relations = Vec::new();
     let mut diagnostics = Vec::new();
     for (idx, polynomial) in validated.problem.equations.into_iter().enumerate() {
@@ -58,11 +60,21 @@ pub fn canonicalize_system(validated: ValidatedProblem) -> Result<CanonicalSyste
         }
         if is_nonzero_constant(&relation.polynomial) {
             return Err(SolverError::invalid_input(
-                Some(validated.problem.target),
+                Some(target),
                 "nonzero constant relation makes the algebraic system contradictory",
             ));
         }
         relations.push(relation);
+    }
+    relations.sort_by_key(|relation| relation.polynomial.hash);
+    if semantic_encodings.is_empty() {
+        relations = relations
+            .into_iter()
+            .enumerate()
+            .map(|(idx, relation)| {
+                canonicalize_relation(RelationId(idx as u32), relation.polynomial)
+            })
+            .collect();
     }
     let relation_order = relations
         .iter()
@@ -77,11 +89,11 @@ pub fn canonicalize_system(validated: ValidatedProblem) -> Result<CanonicalSyste
     );
     Ok(CanonicalSystemQ {
         variables: variables.clone(),
-        target: validated.problem.target,
+        target,
         relations,
         relation_order,
-        variable_order: canonical_variable_order(&variables, validated.problem.target),
-        semantic_encodings: validated.problem.semantic_encodings,
+        variable_order: canonical_variable_order(&variables, target),
+        semantic_encodings,
         canonical_hash,
         diagnostics,
     })
@@ -173,5 +185,36 @@ mod tests {
             Vec::new(),
         );
         assert!(canonicalize_system(validate_input(problem).unwrap()).is_err());
+    }
+
+    #[test]
+    fn relation_order_is_content_canonicalized() {
+        let x = VariableId(0);
+        let y = VariableId(1);
+        let first = variable_poly(x);
+        let second = variable_poly(y);
+        let forward = make_problem(
+            vec![x, y],
+            x,
+            vec![first.clone(), second.clone()],
+            Vec::new(),
+        );
+        let reversed = make_problem(vec![x, y], x, vec![second, first], Vec::new());
+
+        let forward = canonicalize_system(validate_input(forward).unwrap()).unwrap();
+        let reversed = canonicalize_system(validate_input(reversed).unwrap()).unwrap();
+
+        assert_eq!(
+            forward
+                .relations
+                .iter()
+                .map(|relation| relation.polynomial.hash)
+                .collect::<Vec<_>>(),
+            reversed
+                .relations
+                .iter()
+                .map(|relation| relation.polynomial.hash)
+                .collect::<Vec<_>>()
+        );
     }
 }

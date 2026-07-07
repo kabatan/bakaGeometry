@@ -1,0 +1,25 @@
+schema_version: alg-cost-review-evidence-v1
+phase_id: ACR-P9
+timestamp_utc: 20260706-235548Z
+review_result: FAIL_FIXABLE
+phase_closable: false
+historical: true
+superseded_by: docs/ai/changes/RGDTPK-Q-v4-core/reviews/ACR-P9/20260707-012120Z
+evidence_files:
+  - docs/ai/changes/RGDTPK-Q-v4-core/reviews/ACR-P9/20260706-235548Z/prompt.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/reviews/ACR-P9/20260706-235548Z/response.md
+  - docs/ai/changes/RGDTPK-Q-v4-core/reviews/ACR-P9/20260706-235548Z/review_summary.yaml
+commands:
+  - command: cargo fmt --manifest-path geosolver-core\Cargo.toml --check
+    result: PASS
+  - command: cargo test --manifest-path geosolver-core\Cargo.toml --test acr_p9_large_footprint_stress -- --test-threads=1
+    result: PASS_8_TESTS_BUT_REVIEW_FAILED_S6_EVIDENCE
+claim_ceiling:
+  allowed: historical_fail_fixable_review_only
+  disallowed:
+    - ACR-P9_MECH_CLOSABLE
+    - CANDIDATE_COVER_CORE_READY
+    - SOURCE_FAITHFUL_TO_V4_CANDIDATE_COVER_LAYER
+    - SOURCE_FAITHFUL_TO_SUPPLIED_V4_SPEC
+    - RGDTPK_Q_V4_ACCEPTANCE_COMPLETE
+

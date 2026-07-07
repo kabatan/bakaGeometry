@@ -14,7 +14,9 @@ use crate::result::cost_trace::CompositionCostTrace;
 use crate::result::status::{AlgebraicReason, FailureKind, SolverError, SolverErrorKind, StageId};
 use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::{BlockId, VariableId};
-use crate::types::polynomial::{poly_variables, SparsePolynomialQ};
+use crate::types::polynomial::{
+    poly_monomial_count, poly_total_degree, poly_variables, SparsePolynomialQ,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ComposedProjection {
@@ -75,7 +77,12 @@ pub fn compose_projection_messages(
         }
         validate_message_binding(&message)?;
         message_hashes.push(message.package_hash);
-        relations.extend(message.relation_generators);
+        relations.extend(
+            message
+                .relation_generators
+                .into_iter()
+                .filter(|relation| !relation.terms.is_empty()),
+        );
     }
     let relation_count_before = relations.len();
     let mut root_relations = target_only_relations(&relations, target);
@@ -253,6 +260,18 @@ fn message_relations_have_target_eliminant(
         .copied()
         .filter(|var| *var != target)
         .collect::<Vec<_>>();
+    if relations.len() <= eliminate.len()
+        || relations.iter().map(poly_monomial_count).sum::<usize>() > 64
+        || relations
+            .iter()
+            .map(|relation| poly_total_degree(relation) as usize)
+            .max()
+            .unwrap_or(0)
+            > 8
+        || eliminate.len() > 4
+    {
+        return false;
+    }
     let keep = BTreeSet::from([target]);
     let order = elimination_order(&eliminate, &[target]);
     groebner_elimination_basis(relations, &order, GroebnerOptions::default())

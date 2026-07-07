@@ -144,8 +144,14 @@ pub fn estimate_kernel_cost_for_admission(
     let Some(plan) = execution_plan else {
         return estimate_kernel_cost(block, system, kernel, probes);
     };
-    if kernel != KernelKind::TargetRelationSearch
-        || plan.support_plan.sparse_relation_search_schedule.is_none()
+    let scheduled_target_relation = kernel == KernelKind::TargetRelationSearch
+        && (plan.support_plan.dense_relation_search_schedule.is_some()
+            || plan.support_plan.sparse_relation_search_schedule.is_some());
+    let plan_bound_sparse_resultant = kernel == KernelKind::SparseResultantProjection
+        && plan.support_plan.template_plan.is_some();
+    let internally_budgeted_universal = kernel == KernelKind::UniversalTargetElimination
+        && !plan.support_plan.universal_strategy_sequence.is_empty();
+    if !scheduled_target_relation && !plan_bound_sparse_resultant && !internally_budgeted_universal
     {
         return estimate_kernel_cost(block, system, kernel, probes);
     }

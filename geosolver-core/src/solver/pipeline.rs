@@ -359,7 +359,13 @@ pub fn step_cost_trace(
         verification_trace: VerificationCostTrace {
             checked_relation_count: messages
                 .iter()
-                .map(|message| message.relation_generators.len())
+                .map(|message| {
+                    message
+                        .relation_generators
+                        .iter()
+                        .filter(|relation| !relation.terms.is_empty())
+                        .count()
+                })
                 .sum(),
         },
     }
@@ -504,6 +510,7 @@ fn core_certificate_size_kappa(cert: &CoreRunCertificate) -> usize {
 
 pub fn step_core_certificate(
     problem: &RationalTargetProblem,
+    options: &crate::solver::options::SolverOptions,
     canonical: &CanonicalSystemQ,
     compressed: &CompressedSystemQ,
     graphs: &GraphBundle,
@@ -533,6 +540,7 @@ pub fn step_core_certificate(
     );
     build_core_run_certificate(CoreRunCertificateInput {
         input_hash: problem.input_hash,
+        solver_options: options,
         canonical_hash: canonical.canonical_hash,
         target_variable: compressed.target,
         compression_hash: compressed.compressed_hash,
@@ -1639,6 +1647,12 @@ mod tests {
             .contains(&sparse.stage_hash));
         assert!(proof.failed_strategy_hashes.contains(&dense.stage_hash));
         assert!(proof.failed_strategy_hashes.contains(&sparse.stage_hash));
+        assert!(!proof
+            .executed_failed_strategy_hashes
+            .contains(&dense.stage_hash));
+        assert!(!proof
+            .executed_failed_strategy_hashes
+            .contains(&sparse.stage_hash));
         assert_eq!(
             proof.chosen_strategy,
             UniversalStrategy::TargetActionKrylovIfQuotientCertifiable
@@ -1733,6 +1747,7 @@ mod tests {
         let roots = step_roots(&support, target, &mut ctx).unwrap();
         let certificate = step_core_certificate(
             &problem,
+            &ctx.options,
             &canonical,
             &compressed,
             &graphs,
@@ -2016,6 +2031,7 @@ mod tests {
         let roots = step_roots(&support, target, &mut ctx).unwrap();
         let certificate = step_core_certificate(
             &problem,
+            &ctx.options,
             &canonical,
             &compressed,
             &graphs,
@@ -2081,6 +2097,7 @@ mod tests {
         let roots = step_roots(&support, target, &mut ctx).unwrap();
         let certificate = step_core_certificate(
             &problem,
+            &ctx.options,
             &canonical,
             &compressed,
             &graphs,

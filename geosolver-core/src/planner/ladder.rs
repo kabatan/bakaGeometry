@@ -36,12 +36,14 @@ pub fn build_declared_ladder(
         plans = prioritized;
     }
 
-    if let Some(index) = plans
-        .iter()
-        .position(|plan| plan.kernel_kind == KernelKind::UniversalTargetElimination)
-    {
-        let universal = plans.remove(index);
-        plans.push(universal);
+    if !preferred_order.contains(&KernelKind::UniversalTargetElimination) {
+        if let Some(index) = plans
+            .iter()
+            .position(|plan| plan.kernel_kind == KernelKind::UniversalTargetElimination)
+        {
+            let universal = plans.remove(index);
+            plans.push(universal);
+        }
     }
     plans
 }

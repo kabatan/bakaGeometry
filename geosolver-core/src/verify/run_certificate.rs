@@ -10,6 +10,7 @@ use crate::preprocess::compression::CompressedSystemQ;
 use crate::result::status::{FailureKind, SolverError, SolverErrorKind};
 use crate::roots::decode::TargetCandidate;
 use crate::roots::isolate::RealRootRecord;
+use crate::solver::options::{CertificateLevel, RootIsolationMethod, SolverOptions};
 use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::{BlockId, RelationId, VariableId};
 use crate::types::rational::rational_to_bytes;
@@ -21,6 +22,8 @@ use crate::verify::verify_message::payload_source_hashes;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CoreRunCertificate {
     pub input_hash: Hash,
+    pub solver_options: SolverOptions,
+    pub solver_options_hash: Hash,
     pub canonical_system_hash: Hash,
     pub target_variable: VariableId,
     pub compression_hash: Hash,
@@ -98,6 +101,7 @@ impl CoreInvariantFlags {
 
 pub struct CoreRunCertificateInput<'a> {
     pub input_hash: Hash,
+    pub solver_options: &'a SolverOptions,
     pub canonical_hash: Hash,
     pub target_variable: VariableId,
     pub compression_hash: Hash,
@@ -121,6 +125,8 @@ pub fn build_core_run_certificate(input: CoreRunCertificateInput<'_>) -> CoreRun
         .map(|evidence| evidence.evidence_hash);
     let mut cert = CoreRunCertificate {
         input_hash: input.input_hash,
+        solver_options: input.solver_options.clone(),
+        solver_options_hash: hash_solver_options(input.solver_options),
         canonical_system_hash: input.canonical_hash,
         target_variable: input.target_variable,
         compression_hash: input.compression_hash,
@@ -480,6 +486,50 @@ pub fn hash_decoded_candidates(candidates: &[TargetCandidate]) -> Hash {
     hash_sequence("decoded-target-candidates", &chunks)
 }
 
+pub fn hash_solver_options(options: &SolverOptions) -> Hash {
+    fn opt_usize(value: Option<usize>) -> Vec<u8> {
+        match value {
+            Some(inner) => [vec![1], inner.to_be_bytes().to_vec()].concat(),
+            None => vec![0],
+        }
+    }
+    fn opt_u64(value: Option<u64>) -> Vec<u8> {
+        match value {
+            Some(inner) => [vec![1], inner.to_be_bytes().to_vec()].concat(),
+            None => vec![0],
+        }
+    }
+    let root_method = match options.root_isolation_method {
+        RootIsolationMethod::Sturm => b"Sturm".to_vec(),
+        RootIsolationMethod::Descartes => b"Descartes".to_vec(),
+    };
+    let certificate_level = match options.certificate_level {
+        CertificateLevel::Minimal => b"Minimal".to_vec(),
+        CertificateLevel::Full => b"Full".to_vec(),
+    };
+    let kernel_priority = options
+        .kernel_priority
+        .iter()
+        .map(|kind| format!("{kind:?}").into_bytes())
+        .collect::<Vec<_>>();
+    hash_sequence(
+        "solver-options",
+        &[
+            vec![options.exact_image_mode as u8],
+            opt_usize(options.max_relation_search_export_degree),
+            opt_u64(options.max_memory_bytes),
+            opt_usize(options.max_matrix_rows),
+            opt_usize(options.max_matrix_cols),
+            opt_usize(options.max_coefficient_height_bits),
+            root_method,
+            certificate_level,
+            hash_sequence("solver-options-kernel-priority", &kernel_priority)
+                .0
+                .to_vec(),
+        ],
+    )
+}
+
 #[cfg(test)]
 pub fn hash_projection_message_dag_binding(
     target: VariableId,
@@ -689,6 +739,7 @@ fn payload_forbids_coordinate_export(payload: &KernelCertificatePayload) -> bool
 pub fn hash_core_run_certificate(cert: &CoreRunCertificate) -> Hash {
     let mut chunks = vec![
         cert.input_hash.0.to_vec(),
+        cert.solver_options_hash.0.to_vec(),
         cert.canonical_system_hash.0.to_vec(),
         cert.target_variable.0.to_be_bytes().to_vec(),
         cert.compression_hash.0.to_vec(),
@@ -1073,6 +1124,8 @@ mod tests {
     ) -> CoreRunCertificate {
         let mut cert = CoreRunCertificate {
             input_hash: hash_sequence("input", &[]),
+            solver_options: SolverOptions::default(),
+            solver_options_hash: hash_solver_options(&SolverOptions::default()),
             canonical_system_hash: hash_sequence("canonical", &[]),
             target_variable: VariableId(0),
             compression_hash: hash_sequence("compression", &[]),
