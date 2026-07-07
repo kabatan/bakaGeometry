@@ -4,20 +4,23 @@ Active change: `docs/ai/changes/RGDTPK-Q-v4-core/`
 
 Current instruction pack: `alg_cost_completion_repair_pack_v1`.
 
-Active claim ceiling for this repair:
+Current algebraic-cost completion claim boundary:
 
 ```text
-CANDIDATE_COVER_PIPELINE_PRESENT_BUT_ALGEBRAIC_COST_INCOMPLETE
+CANDIDATE_COVER_CORE_READY
+SOURCE_FAITHFUL_TO_V4_CANDIDATE_COVER_LAYER
 ```
+
+These labels are restored only for the candidate-cover algebraic-cost layer after ACR-P10 closure
+review. They do not imply exact-image acceptance or full supplied-v4 acceptance.
 
 Candidate-cover means every true finite target value is contained in `roots(S)`. It does not mean
 `roots(S)` equals the exact target image. Extra real roots are allowed and must not be treated as a
 candidate-cover failure.
 
 This repair is algebraic-cost completion work. It must not use the prior timeout input as a fixture,
-gate, benchmark, expected-answer target, or implementation branch. The prior
-`CANDIDATE_COVER_CORE_READY` and `SOURCE_FAITHFUL_TO_V4_CANDIDATE_COVER_LAYER` claims are suspended
-until all `ALG_COST_COMPLETION_REPAIR_PLAN.md` phases pass.
+gate, benchmark, expected-answer target, or implementation branch. ACR-P10 closure is recorded in
+`ALG_COST_COMPLETION_CLOSURE.md` and remains bounded to candidate-cover algebraic-cost readiness.
 
 Read first:
 
@@ -35,9 +38,13 @@ Read first:
 
 Current implementation evidence:
 
-- `ALG_COST_P8_MECH_EVIDENCE.md` records sparse/lazy TargetRelationSearch implementation evidence.
-- `evidence/ACR-P9/MECH_EVIDENCE.md` records the generic large-footprint stress-suite evidence
-  pending reviewer closure.
+- `ALG_COST_COMPLETION_CLOSURE.md` records ACR-P10 closure and the exact claim boundary.
+- `ALG_COST_FINAL_RED_TEAM_RESULTS.md` records closure red-team evidence.
+- `ALG_COST_ROUTE_BUDGET_AUDIT.md`, `ALG_COST_DECOMPOSITION_AUDIT.md`, and
+  `ALG_COST_NO_OVERFIT_AUDIT.md` record the final boundedness, decomposition, and anti-overfit
+  audits.
+- `evidence/ACR-P9/MECH_EVIDENCE.md` records the generic large-footprint stress-suite evidence and
+  `reviews/ACR-P9/20260707-012120Z/` records reviewer PASS.
 
 Related diagnostic reports:
 
@@ -48,7 +55,8 @@ Related diagnostic reports:
 - `MIXTILINEAR_POST_GSR_CORE_REPAIR_TIMEOUT_REPORT.md` records the post-GSR core repair timeout
   diagnosis for the same user-supplied external diagnostic input. It is not an acceptance item or
   permanent fixture.
-- Earlier candidate-cover and generic-success closures are historical evidence only during this
-  repair. They are not current readiness authority until algebraic-cost completion closes.
+- Earlier candidate-cover and generic-success closures remain historical background. Current
+  readiness authority for the algebraic-cost candidate-cover layer is the ACR-P10 closure packet,
+  not those earlier closures.
 
 Authority note: this file is navigation only. It does not add, remove, or weaken requirements.

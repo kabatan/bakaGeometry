@@ -260,3 +260,9 @@ You must fail closure unless all previous reviews are PASS and the final artifac
 ```
 
 Do not PASS merely because the repo says `CANDIDATE_COVER_CORE_READY`.
+
+Reviewer must also construct at least 10 fresh algebraic challenge shapes and record how each is
+covered by public or near-public pipeline evidence. The challenges must be generic algebraic
+footprints, not diagnostic-problem names, expected answers, or known support polynomials. Closure
+must FAIL if the reviewer-created challenges cannot be tied to executed public or near-public
+evidence.

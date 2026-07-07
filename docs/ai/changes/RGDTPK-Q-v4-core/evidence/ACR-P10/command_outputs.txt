@@ -1,0 +1,31 @@
+cargo fmt --manifest-path geosolver-core\Cargo.toml --check
+RESULT: PASS
+
+cargo test --manifest-path geosolver-core\Cargo.toml --test ccc_candidate_cover_completion ccc_p12_red_team_runs_sixteen_fresh_public_inputs -- --test-threads=1 --nocapture
+RESULT: PASS
+DETAIL: 1 passed; 0 failed; 16 fresh public inputs exercised; finished in 0.36s
+
+cargo test --manifest-path geosolver-core\Cargo.toml --test fcr_p11_red_team_suite -- --test-threads=1 --nocapture
+RESULT: PASS
+DETAIL: 10 passed; 0 failed; finished in 3.71s
+
+cargo test --manifest-path geosolver-core\Cargo.toml --test acr_p9_large_footprint_stress -- --test-threads=1 --nocapture
+RESULT: PASS
+DETAIL: 8 passed; 0 failed; 24 variants executed; finished in 69.13s
+
+cargo test --manifest-path geosolver-core\Cargo.toml -- --test-threads=1
+RESULT: PASS
+DETAIL: lib 253 passed; ACR-P9 8 passed; CCC 2 passed; FCR-P11 red-team 10 passed; P15 6 passed; all integration/doc tests passed
+
+rg -n -i "mixtilinear|mixtilinear_candidate_cover_problem|circumcircle|incircle|tangent_solver|expected_cos|expected target value|expected support polynomial|known_support_polynomial|diagnostic_problem|problem hash|geometry name" geosolver-core\src geosolver-core\tests
+RESULT: PASS_NO_MATCHES
+
+rg -n "CoreInvariantFlags|invariants|no_qe_cad|no_full_coordinate_rur|no_dispatch|scan_hash" geosolver-core\src\verify\run_certificate.rs geosolver-core\tests\p14_full_pipeline_integration.rs geosolver-core\tests\p15_acceptance_stress.rs
+RESULT: PASS_EXPECTED_REFERENCES_ONLY
+
+rg -n "struct RouteBudget|RouteBudget|route_budget|budget_hash|max_work_units|max_elapsed_steps|route_failure|KernelRouteTrace" geosolver-core\src\planner geosolver-core\src\solver geosolver-core\src\kernels
+RESULT: PASS_EXPECTED_BUDGET_BINDING_AND_ENFORCEMENT_REFERENCES
+
+rg -n "separator|Separator|cost_aware|algebraic.*cost|large_block|decomposition" geosolver-core\src\graph geosolver-core\tests\acr_p9_large_footprint_stress.rs
+RESULT: PASS_EXPECTED_DECOMPOSITION_AND_STRESS_REFERENCES
+
