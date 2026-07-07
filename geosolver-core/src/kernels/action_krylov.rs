@@ -1269,6 +1269,7 @@ fn finish_admission(
     KernelAdmission {
         kind: KernelKind::TargetActionKrylov,
         block_id: block.block_id,
+        admission_evidence: crate::planner::admission::KernelAdmissionEvidence::empty(),
         status,
         exported_variables: block.exported_variables.iter().copied().collect(),
         eliminated_variables: block
@@ -1326,7 +1327,7 @@ mod tests {
     use crate::types::ids::{BlockId, VariableId};
     use crate::types::polynomial::{constant_poly, poly_add, poly_mul, poly_sub, variable_poly};
     use crate::types::rational::int_q;
-    use crate::verify::certificates::KernelCertificatePayload;
+    use crate::verify::certificates::{kernel_certificate_binding_hash, KernelCertificatePayload};
 
     use super::*;
 
@@ -1492,6 +1493,39 @@ mod tests {
             .execute(&plan, &mut kctx, &mut solver_ctx)
             .unwrap_err();
         assert_eq!(err.public_status(), SolverStatus::ImplementationBug);
+    }
+
+    #[test]
+    fn p11_action_krylov_replay_rejects_tampered_coverage_after_rehash() {
+        let t = VariableId(0);
+        let relation = poly_mul(
+            &poly_sub(&variable_poly(t), &constant_poly(int_q(1))),
+            &poly_sub(&variable_poly(t), &constant_poly(int_q(2))),
+        );
+        let compressed = compressed_system(t, vec![relation]);
+        let block = test_block(&compressed, [t], [t]);
+        let mut solver_ctx = new_context(SolverOptions::default());
+        let mut kctx = KernelContext {
+            block,
+            system: compressed,
+            child_messages: Vec::new(),
+        };
+        let kernel = TargetActionKrylovKernel;
+        let admission = kernel.admit(&kctx.block, &kctx);
+        let plan = kernel.plan(&admission, &kctx, &solver_ctx).unwrap();
+        let mut message = kernel.execute(&plan, &mut kctx, &mut solver_ctx).unwrap();
+
+        let proof = target_action_payload_mut(&mut message);
+        proof.coverage.characteristic_polynomial.coeffs_low_to_high = vec![int_q(-1), int_q(1)];
+        proof.coverage.characteristic_polynomial =
+            normalize_univariate(proof.coverage.characteristic_polynomial.clone());
+        proof.coverage.characteristic_polynomial_hash =
+            proof.coverage.characteristic_polynomial.hash;
+        proof.annihilator.polynomial_hash = proof.coverage.characteristic_polynomial.hash;
+        message.certificate.binding_hash = kernel_certificate_binding_hash(&message.certificate);
+        message.package_hash = projection_message_hash(&message);
+
+        assert_rejected_action_message(&kernel, &message, &kctx);
     }
 
     #[test]

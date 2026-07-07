@@ -1,0 +1,9 @@
+geosolver-core/scripts/audit_v4_conformance.py
+geosolver-core/src/kernels/action_krylov.rs
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P11/source_to_code_map.md
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P11/algorithm_evidence.md
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P11/commands.log
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P11/static_audit.log
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P11/changed_files.txt
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P11/review_request.md
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P11/review_result.md

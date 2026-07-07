@@ -1,0 +1,25 @@
+Purpose: P17 implementation evidence index
+Status: evidence, non-authoritative
+Authority: BASE_SPEC.md and PLAN.md remain authoritative
+
+P17 production files implemented or inspected:
+- geosolver-core/src/solver/options.rs
+- geosolver-core/src/solver/pipeline.rs
+- geosolver-core/src/solver/orchestrator.rs
+- geosolver-core/src/result/output.rs
+- geosolver-core/src/result/cost_trace.rs
+- geosolver-core/src/verify/run_certificate.rs
+- geosolver-core/src/verify/replay.rs
+- geosolver-core/scripts/audit_v4_conformance.py
+
+P17 supporting behavior tests exercised:
+- geosolver-core/tests/p14_full_pipeline_integration.rs
+- geosolver-core/tests/p15_acceptance_stress.rs
+
+P17 evidence files:
+- docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P17/changed_files.txt
+- docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P17/source_to_code_map.md
+- docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P17/commands.log
+- docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P17/static_audit.log
+- docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P17/algorithm_evidence.md
+- docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P17/review_request.md

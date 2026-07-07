@@ -1,0 +1,42 @@
+# P14 Commands
+
+Working directory: `C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry`
+
+1. `cargo fmt --manifest-path geosolver-core\Cargo.toml --check`
+   - Exit: 0
+
+2. `python geosolver-core\scripts\audit_v4_conformance.py --phase P14 --strict`
+   - Exit: 0
+   - Output: `findings: 0`
+
+3. `cargo test --manifest-path geosolver-core\Cargo.toml --lib compose -- --nocapture`
+   - Exit: 0
+   - Result: 12 passed; 0 failed
+
+4. `cargo test --manifest-path geosolver-core\Cargo.toml --lib verify_support -- --nocapture`
+   - Exit: 0
+   - Result: 3 passed; 0 failed
+
+5. `cargo test --manifest-path geosolver-core\Cargo.toml --lib replay -- --nocapture`
+   - Exit: 0
+   - Result: 27 passed; 0 failed
+
+6. `cargo test --manifest-path geosolver-core\Cargo.toml --lib run_certificate -- --nocapture`
+   - Exit: 0
+   - Result: 6 passed; 0 failed
+
+7. `cargo test --manifest-path geosolver-core\Cargo.toml --test fcr_final_nonfinite_semantics -- --nocapture`
+   - Exit: 0
+   - Result: 2 passed; 0 failed
+
+8. `cargo test --manifest-path geosolver-core\Cargo.toml --test p14_full_pipeline_integration -- --nocapture`
+   - Exit: 0
+   - Result: 10 passed; 0 failed
+
+9. `cargo test --manifest-path geosolver-core\Cargo.toml --test p13_exact_image_semantics -- --nocapture`
+   - Exit: 0
+   - Result: 7 passed; 0 failed
+
+10. `cargo test --manifest-path geosolver-core\Cargo.toml --no-run`
+   - Exit: 0
+   - Result: all library and integration test targets compiled

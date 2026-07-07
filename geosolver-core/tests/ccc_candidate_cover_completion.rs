@@ -127,8 +127,10 @@ fn assert_candidate_cover(
         result.certificate.is_some(),
         "{label}: missing run certificate"
     );
-    assert!(result.exact_image_certificate.is_none());
-    assert!(result.nonfinite_certificate.is_none());
+    assert!(result
+        .certificate
+        .as_ref()
+        .is_some_and(|cert| cert.exact_image_certificate_hash.is_none()));
     assert!(result
         .diagnostics
         .iter()
@@ -439,7 +441,7 @@ fn ccc_p12_red_team_runs_sixteen_fresh_public_inputs() {
         SolverOptions::default(),
     );
     assert_eq!(result.status, SolverStatus::CertifiedNonFiniteTargetImage);
-    assert!(result.nonfinite_certificate.is_some());
+    assert!(result.certificate.is_none());
     assert!(replay_run_certificate(&result, &scaled_problem(vec![t], t, Vec::new())).accepted);
 
     let t = VariableId(730);

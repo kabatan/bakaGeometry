@@ -205,6 +205,17 @@ fn basis_polys(basis: &[CertifiedPolynomialQ]) -> Vec<SparsePolynomialQ> {
     basis.iter().map(|entry| entry.polynomial.clone()).collect()
 }
 
+pub(crate) fn certified_s_pair(
+    f: &CertifiedPolynomialQ,
+    g: &CertifiedPolynomialQ,
+    order: &MonomialOrder,
+) -> Result<CertifiedPolynomialQ, SolverError> {
+    Ok(CertifiedPolynomialQ {
+        polynomial: s_polynomial(&f.polynomial, &g.polynomial, order),
+        certificate: s_pair_certificate(f, g, order)?,
+    })
+}
+
 fn s_pair_certificate(
     f: &CertifiedPolynomialQ,
     g: &CertifiedPolynomialQ,
@@ -228,7 +239,7 @@ fn s_pair_certificate(
     Ok(subtract_cert(&left, &right))
 }
 
-fn scale_cert(
+pub(crate) fn scale_membership_certificate(
     cert: &MembershipCertificate,
     multiplier: &SparsePolynomialQ,
 ) -> MembershipCertificate {
@@ -244,7 +255,10 @@ fn scale_cert(
     }
 }
 
-fn subtract_cert(a: &MembershipCertificate, b: &MembershipCertificate) -> MembershipCertificate {
+pub(crate) fn subtract_membership_certificate(
+    a: &MembershipCertificate,
+    b: &MembershipCertificate,
+) -> MembershipCertificate {
     let mut terms = a.combination_terms.clone();
     terms.extend(b.combination_terms.iter().map(|term| MembershipTerm {
         relation_id: term.relation_id,
@@ -253,6 +267,17 @@ fn subtract_cert(a: &MembershipCertificate, b: &MembershipCertificate) -> Member
     MembershipCertificate {
         combination_terms: terms,
     }
+}
+
+fn scale_cert(
+    cert: &MembershipCertificate,
+    multiplier: &SparsePolynomialQ,
+) -> MembershipCertificate {
+    scale_membership_certificate(cert, multiplier)
+}
+
+fn subtract_cert(a: &MembershipCertificate, b: &MembershipCertificate) -> MembershipCertificate {
+    subtract_membership_certificate(a, b)
 }
 
 fn add_cert(a: &MembershipCertificate, b: &MembershipCertificate) -> MembershipCertificate {

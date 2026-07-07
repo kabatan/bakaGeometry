@@ -1,0 +1,11 @@
+geosolver-core/scripts/audit_v4_conformance.py
+geosolver-core/src/algebra/regular_chain.rs
+geosolver-core/src/kernels/regular_chain_projection.rs
+geosolver-core/src/verify/verify_message.rs
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P13/source_to_code_map.md
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P13/algorithm_evidence.md
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P13/commands.log
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P13/static_audit.log
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P13/changed_files.txt
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P13/review_request.md
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P13/review_result.md

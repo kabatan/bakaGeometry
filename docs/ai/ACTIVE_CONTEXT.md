@@ -1,62 +1,61 @@
-# Active Context - GeoSolver R-GDTPK-Q-v4-core
+# Active Context - RGDTPK-Q-v4 Finite Candidate-Cover
 
-Active change: `docs/ai/changes/RGDTPK-Q-v4-core/`
+Active change: `docs/ai/changes/RGDTPK-Q-v4-complete-conformance/`
+Active Spec ID: `RGDTPK-Q-v4-finite-candidate-cover`
 
-Current instruction pack: `alg_cost_completion_repair_pack_v1`.
+Current instruction pack: `RGDTPK_Q_v4_GUARDIAN_PACKET.zip`.
 
-Current algebraic-cost completion claim boundary:
+Current source authority:
+
+- Canonical source: `docs/ai/sources/geosolver_core_r_gdtpk_q_algorithm_spec_v4.md`
+- User-attached alias copy: `docs/ai/sources/geosolver_core_r_gdtpk_q_algorithm_spec_v4_algebraic_cost_compression.md`
+- Both files have the same SHA-256 at import time; the canonical source path remains the packet authority.
+
+Current claim boundary:
 
 ```text
-CANDIDATE_COVER_CORE_READY
-SOURCE_FAITHFUL_TO_V4_CANDIDATE_COVER_LAYER
+FINITE_CANDIDATE_COVER_COMPLETE is allowed for the active finite candidate-cover scope.
+SOURCE_FAITHFUL_TO_V4_FINITE_CANDIDATE_COVER_LAYER is allowed for the active finite candidate-cover scope.
+VERIFIED_FOR_FINITE_CANDIDATE_COVER is allowed for the active finite candidate-cover scope.
+Full-v4, exact-image, production-safe, and benchmark-proven claims remain forbidden.
 ```
 
-These labels are restored only for the candidate-cover algebraic-cost layer after ACR-P10 closure
-review. They do not imply exact-image acceptance or full supplied-v4 acceptance.
+The imported packet has scoped user implementation approval for finite candidate-cover work. Evidence
+is recorded in `evidence/P0/implementation_authority.md`. Execute phases under Guardian Lane with
+required reviewer archives.
 
-Candidate-cover means every true finite target value is contained in `roots(S)`. It does not mean
-`roots(S)` equals the exact target image. Extra real roots are allowed and must not be treated as a
-candidate-cover failure.
+Current execution state: P0 through P18 are complete for the finite candidate-cover scope. Final
+reviewers passed in order:
 
-This repair is algebraic-cost completion work. It must not use the prior timeout input as a fixture,
-gate, benchmark, expected-answer target, or implementation branch. ACR-P10 closure is recorded in
-`ALG_COST_COMPLETION_CLOSURE.md` and remains bounded to candidate-cover algebraic-cost readiness.
+1. `guardian_boundary_reviewer`: PASS
+2. `spec_verifier`: PASS
+3. `quality_reviewer`: PASS
+
+Final closure: `docs/ai/changes/RGDTPK-Q-v4-complete-conformance/CLOSURE.md`.
+Final evidence: `docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/final/`.
+
+User-stated success target: finite candidate-cover output is sufficient. The active Base Spec, Plan,
+Source Map, and Reviewer Prompts have been amended to make exact-image equality/classification
+`OUT_OF_SCOPE` and to forbid full-v4 or exact-image completion claims from this repair.
 
 Read first:
 
-1. `ALG_COST_COMPLETION_REPAIR_BASE_SPEC.md`
-2. `ALG_COST_COMPLETION_REPAIR_PLAN.md`
-3. `ALG_COST_COMPLETION_REVIEWER_PROMPTS.md`
-4. `ALG_COST_ACCEPTANCE_MATRIX.yaml`
-5. `ALG_COST_CURRENT_DEFECT_AUDIT.md`
-6. `ALG_COST_REPAIR_STATUS.md`
-7. `ALG_COST_AGENT_RESET.md`
-8. `ALG_COST_QUICK_GUARDIAN_PROMPT.md`
-9. `BASE_SPEC.md`
-10. `PLAN.md`
-11. `SOURCE_MAP.md`
+1. `BASE_SPEC.md`
+2. `PLAN.md`
+3. `SOURCE_MAP.md`
+4. `REVIEWER_PROMPTS.md`
+5. `SCOPE_AMENDMENT_FINITE_CANDIDATE_COVER.md`
+6. `PACKET_IMPORT_MANIFEST.sha256`
+7. `docs/ai/sources/geosolver_core_r_gdtpk_q_algorithm_spec_v4.md`
 
-Current implementation evidence:
+Phase 0 starts with source lock, current-gap audit, and conformance harness. Required P0 evidence
+belongs under:
 
-- `ALG_COST_COMPLETION_CLOSURE.md` records ACR-P10 closure and the exact claim boundary.
-- `ALG_COST_FINAL_RED_TEAM_RESULTS.md` records closure red-team evidence.
-- `ALG_COST_ROUTE_BUDGET_AUDIT.md`, `ALG_COST_DECOMPOSITION_AUDIT.md`, and
-  `ALG_COST_NO_OVERFIT_AUDIT.md` record the final boundedness, decomposition, and anti-overfit
-  audits.
-- `evidence/ACR-P9/MECH_EVIDENCE.md` records the generic large-footprint stress-suite evidence and
-  `reviews/ACR-P9/20260707-012120Z/` records reviewer PASS.
+```text
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P0/
+```
 
-Related diagnostic reports:
-
-- A prior timeout investigation report exists in this folder as non-authoritative background only.
-  Its concrete input is not an acceptance item for this repair.
-- `MIXTILINEAR_POST_GPSR_TIMEOUT_ROOT_CAUSE_REPORT.md` records the post-GPSR timeout diagnosis for
-  the user-supplied external diagnostic input. It is not an acceptance item or permanent fixture.
-- `MIXTILINEAR_POST_GSR_CORE_REPAIR_TIMEOUT_REPORT.md` records the post-GSR core repair timeout
-  diagnosis for the same user-supplied external diagnostic input. It is not an acceptance item or
-  permanent fixture.
-- Earlier candidate-cover and generic-success closures remain historical background. Current
-  readiness authority for the algebraic-cost candidate-cover layer is the ACR-P10 closure packet,
-  not those earlier closures.
+Previous work under `docs/ai/changes/RGDTPK-Q-v4-core/` is historical background only for this
+packet. It is not authority over the active finite candidate-cover Base Spec.
 
 Authority note: this file is navigation only. It does not add, remove, or weaken requirements.

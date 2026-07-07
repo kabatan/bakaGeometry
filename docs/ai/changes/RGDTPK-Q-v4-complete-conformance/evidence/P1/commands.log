@@ -1,0 +1,302 @@
+COMMAND: cargo fmt --manifest-path geosolver-core\Cargo.toml --check
+
+EXIT_CODE: 0
+
+COMMAND: python geosolver-core\scripts\audit_v4_conformance.py --phase P1 --strict
+RGDTPK-Q v4 finite candidate-cover static audit
+root: C:\Users\bakat\OneDrive\�h�L�������g\bakaGeometry\geosolver-core
+phase: P1
+production_rust_files: 103
+findings: 0
+EXIT_CODE: 0
+
+COMMAND: cargo test --manifest-path geosolver-core\Cargo.toml types -- --nocapture
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running unittests src\lib.rs (geosolver-core\target\debug\deps\geosolver_core-bcb5dad8bd0bd994.exe)
+
+running 15 tests
+test types::ids::tests::fresh_ids_are_monotone ... ok
+test types::interval::tests::interval_invariants_hold ... ok
+test types::rational::tests::exact_arithmetic_identity ... ok
+test types::ids::tests::stable_ids_are_namespace_bound ... ok
+test types::monomial::tests::monomial_normalization_sorts_and_combines ... ok
+test types::rational::tests::normalizes_sign_and_gcd ... ok
+test types::matrix::tests::matrix_shape_density_and_hash_are_deterministic ... ok
+test types::polynomial::tests::normalization_merges_terms_and_hashes_deterministically ... ok
+test types::polynomial::tests::clear_denominators_makes_primitive_integer_poly ... ok
+test types::monomial::tests::monomial_division_is_exact_when_possible ... ok
+test types::univariate::tests::derivative_and_eval_are_exact ... ok
+test types::univariate::tests::hash_is_stable_for_equal_polynomials ... ok
+test types::polynomial::tests::derivative_and_substitution_are_exact ... ok
+test types::rational::tests::zero_is_canonical ... ok
+test types::univariate::tests::gcd_and_squarefree_are_monic ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 238 filtered out; finished in 0.00s
+
+     Running tests\acr_p9_large_footprint_stress.rs (geosolver-core\target\debug\deps\acr_p9_large_footprint_stress-d72b06ed936a7f0a.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 8 filtered out; finished in 0.00s
+
+     Running tests\ccc_candidate_cover_completion.rs (geosolver-core\target\debug\deps\ccc_candidate_cover_completion-b2066b5080c58f98.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+
+     Running tests\fcr_final_nonfinite_semantics.rs (geosolver-core\target\debug\deps\fcr_final_nonfinite_semantics-c514ba55ce00b2a6.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+
+     Running tests\fcr_p10_acceptance_suite.rs (geosolver-core\target\debug\deps\fcr_p10_acceptance_suite-5970c60a1d3e9063.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+
+     Running tests\fcr_p11_red_team_suite.rs (geosolver-core\target\debug\deps\fcr_p11_red_team_suite-e1dd418dc1297530.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s
+
+     Running tests\fcr_p4_pure_planning.rs (geosolver-core\target\debug\deps\fcr_p4_pure_planning-142573a3d25564c7.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s
+
+     Running tests\generic_success_route_planner.rs (geosolver-core\target\debug\deps\generic_success_route_planner-29532d9e349241cf.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+     Running tests\gpsr_generic_planner_success_route.rs (geosolver-core\target\debug\deps\gpsr_generic_planner_success_route-41c954b5c7c12937.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.00s
+
+     Running tests\p12_roots_decode_integration.rs (geosolver-core\target\debug\deps\p12_roots_decode_integration-4e90515da8472ef5.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+     Running tests\p12g_generality_stress.rs (geosolver-core\target\debug\deps\p12g_generality_stress-d61201cac8fff8da.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+     Running tests\p13_exact_image_semantics.rs (geosolver-core\target\debug\deps\p13_exact_image_semantics-fe883d22d1654bcd.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s
+
+     Running tests\p14_full_pipeline_integration.rs (geosolver-core\target\debug\deps\p14_full_pipeline_integration-306bdb9a5946f116.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s
+
+     Running tests\p15_acceptance_stress.rs (geosolver-core\target\debug\deps\p15_acceptance_stress-33ceddf3a321d653.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.00s
+
+     Running tests\p3_public_pipeline_integration.rs (geosolver-core\target\debug\deps\p3_public_pipeline_integration-63ae78aa01480412.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+EXIT_CODE: 0
+
+COMMAND: cargo test --manifest-path geosolver-core\Cargo.toml result -- --nocapture
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running unittests src\lib.rs (geosolver-core\target\debug\deps\geosolver_core-bcb5dad8bd0bd994.exe)
+
+running 25 tests
+test algebra::resultant::tests::resultant_template_rejects_non_keep_variables ... ok
+test algebra::resultant::tests::resultant_template_rejects_overlapping_or_duplicate_keep_variables ... ok
+test kernels::sparse_resultant::tests::acr_p3_probe_records_swell_preflight_and_binds_it_to_plan_hash ... ok
+test algebra::resultant::tests::resultant_certificate_rejects_nonprime_trace_modulus ... ok
+test algebra::resultant::tests::resultant_template_rejects_noncanonical_keep_order ... ok
+test algebra::resultant::tests::resultant_certificate_rejects_tampered_trace_prime_without_panic ... ok
+test algebra::resultant::tests::resultant_certificate_rejects_tampered_relation_hash ... ok
+test algebra::resultant::tests::resultant_support_template_and_certificate_are_exact ... ok
+test planner::cost_model::tests::acr_p2_sparse_resultant_small_matrix_large_entries_is_cost_prohibited ... ok
+test kernels::sparse_resultant::tests::p12g_sparse_resultant_template_plan_does_not_overclaim_binary_chain ... ok
+test algebra::resultant::tests::acr_p9_quadratic_subresultant_backend_is_exact_and_replayable ... ok
+test kernels::sparse_resultant::tests::p8b_sparse_resultant_rejects_source_hash_tamper ... ok
+test kernels::sparse_resultant::tests::acr_p4_runtime_output_guard_returns_route_local_finite_resource_failure ... ok
+test algebra::resultant::tests::acr_p4_recursive_determinant_rejects_large_polynomial_entries ... ok
+test kernels::sparse_resultant::tests::acr_p4_huge_intermediate_guard_stops_before_next_resultant_step ... ok
+test kernels::sparse_resultant::tests::p8b_sparse_resultant_consumes_child_message_relations_and_rejects_tamper ... ok
+test kernels::sparse_resultant::tests::p8b_sparse_resultant_kernel_produces_exact_exported_relation ... ok
+test verify::replay::tests::p11_rejects_forged_sparse_resultant_payload_in_message_and_kernel_replay ... ok
+test kernels::sparse_resultant::tests::acr_p4_runtime_pair_guards_cover_declared_budget_classes ... ok
+test kernels::sparse_resultant::tests::acr_p2_sparse_resultant_pair_scoring_rejects_large_entry_small_matrix ... ok
+test kernels::sparse_resultant::tests::acr_p3_pair_selection_ranks_huge_intermediate_behind_safe_pair ... ok
+test solver::pipeline::tests::acr_p4_declared_ladder_continues_after_sparse_resultant_guard_failure ... ok
+test algebra::resultant::tests::acr_p4_linear_subresultant_backend_handles_large_entries_exactly ... ok
+test kernels::specialization_interpolation::tests::p8b_planner_admits_sparse_resultant_and_specialization_plans ... ok
+test kernels::sparse_resultant::tests::acr_p3_larger_matrix_tiny_sparse_resultant_is_feasible_with_exact_verification ... ok
+
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 228 filtered out; finished in 0.10s
+
+     Running tests\acr_p9_large_footprint_stress.rs (geosolver-core\target\debug\deps\acr_p9_large_footprint_stress-d72b06ed936a7f0a.exe)
+
+running 2 tests
+running S3_sparse_resultant_feasible::variant_0
+running S4_sparse_resultant_prohibited_later_route::variant_0
+running S3_sparse_resultant_feasible::variant_1
+running S3_sparse_resultant_feasible::variant_2
+test acr_p9_s3_sparse_resultant_feasible ... ok
+running S4_sparse_resultant_prohibited_later_route::variant_1
+running S4_sparse_resultant_prohibited_later_route::variant_2
+test acr_p9_s4_sparse_resultant_prohibited_later_route ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.69s
+
+     Running tests\ccc_candidate_cover_completion.rs (geosolver-core\target\debug\deps\ccc_candidate_cover_completion-b2066b5080c58f98.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+
+     Running tests\fcr_final_nonfinite_semantics.rs (geosolver-core\target\debug\deps\fcr_final_nonfinite_semantics-c514ba55ce00b2a6.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+
+     Running tests\fcr_p10_acceptance_suite.rs (geosolver-core\target\debug\deps\fcr_p10_acceptance_suite-5970c60a1d3e9063.exe)
+
+running 1 test
+test fcr_p10_a4_public_sparse_resultant_eliminant_without_target_only_input ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 0.05s
+
+     Running tests\fcr_p11_red_team_suite.rs (geosolver-core\target\debug\deps\fcr_p11_red_team_suite-e1dd418dc1297530.exe)
+
+running 1 test
+test fcr_p11_red_team_03_sparse_resultant_higher_degree_eliminant ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.06s
+
+     Running tests\fcr_p4_pure_planning.rs (geosolver-core\target\debug\deps\fcr_p4_pure_planning-142573a3d25564c7.exe)
+
+running 1 test
+test fcr_plan_sparse_resultant_does_not_construct_output_relation ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.00s
+
+     Running tests\generic_success_route_planner.rs (geosolver-core\target\debug\deps\generic_success_route_planner-29532d9e349241cf.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+     Running tests\gpsr_generic_planner_success_route.rs (geosolver-core\target\debug\deps\gpsr_generic_planner_success_route-41c954b5c7c12937.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.00s
+
+     Running tests\p12_roots_decode_integration.rs (geosolver-core\target\debug\deps\p12_roots_decode_integration-4e90515da8472ef5.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+     Running tests\p12g_generality_stress.rs (geosolver-core\target\debug\deps\p12g_generality_stress-d61201cac8fff8da.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+     Running tests\p13_exact_image_semantics.rs (geosolver-core\target\debug\deps\p13_exact_image_semantics-fe883d22d1654bcd.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s
+
+     Running tests\p14_full_pipeline_integration.rs (geosolver-core\target\debug\deps\p14_full_pipeline_integration-306bdb9a5946f116.exe)
+
+running 3 tests
+test p14_public_invalid_input_maps_to_result_not_panic ... ok
+test p14_sparse_resultant_resource_error_carries_coefficient_height ... ok
+test p14_public_candidate_cover_success_has_all_result_fields_and_trace ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.01s
+
+     Running tests\p15_acceptance_stress.rs (geosolver-core\target\debug\deps\p15_acceptance_stress-33ceddf3a321d653.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.00s
+
+     Running tests\p3_public_pipeline_integration.rs (geosolver-core\target\debug\deps\p3_public_pipeline_integration-63ae78aa01480412.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+EXIT_CODE: 0
+
+COMMAND: cargo fmt --manifest-path geosolver-core\Cargo.toml --check
+EXIT_CODE: 0
+
+COMMAND: python geosolver-core\scripts\audit_v4_conformance.py --phase P1 --strict
+RGDTPK-Q v4 finite candidate-cover static audit
+root: C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry\geosolver-core
+phase: P1
+production_rust_files: 103
+findings: 0
+EXIT_CODE: 0
+
+COMMAND: cargo test --manifest-path geosolver-core\Cargo.toml --lib types -- --nocapture
+RESULT: 16 passed; 0 failed; 0 ignored; 0 measured; 238 filtered out.
+EXIT_CODE: 0
+
+COMMAND: cargo test --manifest-path geosolver-core\Cargo.toml --lib result -- --nocapture
+RESULT: 25 passed; 0 failed; 0 ignored; 0 measured; 229 filtered out.
+EXIT_CODE: 0
+
+COMMAND: cargo test --manifest-path geosolver-core\Cargo.toml --no-run
+RESULT: all lib and integration test executables compiled.
+EXIT_CODE: 0
+
+COMMAND: cargo test --manifest-path geosolver-core\Cargo.toml --no-fail-fast
+RESULT: timed out after 304039 ms before completion; use --no-run evidence above for P1 public type compile coverage.
+EXIT_CODE: 124
+
+COMMAND: cargo fmt --manifest-path geosolver-core\Cargo.toml --check
+RESULT: passed after SparseMatrixFp duplicate-order remediation.
+EXIT_CODE: 0
+
+COMMAND: python geosolver-core\scripts\audit_v4_conformance.py --phase P1 --strict
+RGDTPK-Q v4 finite candidate-cover static audit
+root: C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry\geosolver-core
+phase: P1
+production_rust_files: 103
+findings: 0
+EXIT_CODE: 0
+
+COMMAND: cargo test --manifest-path geosolver-core\Cargo.toml --lib types -- --nocapture
+RESULT: 16 passed; 0 failed; 0 ignored; 0 measured; 238 filtered out.
+EXIT_CODE: 0
+
+COMMAND: cargo test --manifest-path geosolver-core\Cargo.toml --lib result -- --nocapture
+RESULT: 25 passed; 0 failed; 0 ignored; 0 measured; 229 filtered out.
+EXIT_CODE: 0
+
+COMMAND: cargo test --manifest-path geosolver-core\Cargo.toml --no-run
+RESULT: all lib and integration test executables compiled after SparseMatrixFp duplicate-order remediation.
+EXIT_CODE: 0

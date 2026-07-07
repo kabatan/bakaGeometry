@@ -14,9 +14,11 @@ use crate::planner::kernel_plan::{
     hash_kernel_execution_plan, AffineEliminationStep, CertificateRoute, KernelExecutionPlan,
     UniversalStrategy,
 };
-use crate::types::hash::Hash;
+use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::RelationId;
 use crate::types::ids::VariableId;
+use crate::types::matrix::VectorQ;
+use crate::types::monomial::{monomial_to_bytes, Monomial};
 use crate::types::polynomial::SparsePolynomialQ;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -111,6 +113,28 @@ pub struct TargetOnlySupportCertificate {
 pub struct MembershipProjectionCertificate {
     pub source_relations: Vec<SparsePolynomialQ>,
     pub output_memberships: Vec<MembershipCertificate>,
+    pub target_relation_search: Option<TargetRelationSearchCertificate>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TargetRelationSearchCertificate {
+    pub source_relation_ids: Vec<RelationId>,
+    pub source_relation_hashes: Vec<Hash>,
+    pub export_support: Vec<Monomial>,
+    pub multiplier_supports: Vec<Vec<Monomial>>,
+    pub row_monomials: Vec<Monomial>,
+    pub accepted_candidate_vector: VectorQ,
+    pub exported_variables_hash: Hash,
+    pub eliminated_variables_hash: Hash,
+    pub export_support_hash: Hash,
+    pub multiplier_support_hashes: Vec<Hash>,
+    pub multiplier_support_hash: Hash,
+    pub membership_matrix_hash: Hash,
+    pub primes_used: Vec<u64>,
+    pub rational_reconstruction_hash: Hash,
+    pub relation_hash: Hash,
+    pub multipliers_hash: Hash,
+    pub exact_identity_hash: Hash,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -212,4 +236,64 @@ pub fn kernel_certificate_binding_hash(cert: &KernelCertificate) -> Hash {
     }
     chunks.push(format!("{:?}", cert.payload).into_bytes());
     crate::types::hash::hash_sequence("kernel-certificate-binding", &chunks)
+}
+
+pub fn target_relation_variable_hash(tag: &str, variables: &[VariableId]) -> Hash {
+    hash_sequence(
+        tag,
+        &variables
+            .iter()
+            .map(|variable| variable.0.to_be_bytes().to_vec())
+            .collect::<Vec<_>>(),
+    )
+}
+
+pub fn target_relation_hash_list(tag: &str, hashes: &[Hash]) -> Hash {
+    hash_sequence(
+        tag,
+        &hashes
+            .iter()
+            .map(|hash| hash.0.to_vec())
+            .collect::<Vec<_>>(),
+    )
+}
+
+pub fn target_relation_monomial_support_hash(tag: &str, monomials: &[Monomial]) -> Hash {
+    hash_sequence(
+        tag,
+        &monomials.iter().map(monomial_to_bytes).collect::<Vec<_>>(),
+    )
+}
+
+pub fn target_relation_multipliers_hash(multipliers: &[SparsePolynomialQ]) -> Hash {
+    target_relation_hash_list(
+        "target-relation-search-multiplier-hashes",
+        &multipliers
+            .iter()
+            .map(|multiplier| multiplier.hash)
+            .collect::<Vec<_>>(),
+    )
+}
+
+pub fn target_relation_exact_identity_hash(
+    relation: &SparsePolynomialQ,
+    multipliers: &[SparsePolynomialQ],
+    source_relations: &[SparsePolynomialQ],
+) -> Hash {
+    let multiplier_hash = target_relation_multipliers_hash(multipliers);
+    let source_hash = target_relation_hash_list(
+        "target-relation-search-source-relation-hashes",
+        &source_relations
+            .iter()
+            .map(|relation| relation.hash)
+            .collect::<Vec<_>>(),
+    );
+    hash_sequence(
+        "target-relation-search-exact-q-identity",
+        &[
+            relation.hash.0.to_vec(),
+            multiplier_hash.0.to_vec(),
+            source_hash.0.to_vec(),
+        ],
+    )
 }

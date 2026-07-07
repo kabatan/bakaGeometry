@@ -2,6 +2,7 @@ use std::collections::BTreeSet;
 
 use serde::{Deserialize, Serialize};
 
+use crate::algebra::f4::{f4_elimination_local, F4Options};
 use crate::algebra::groebner::{
     extract_certified_elimination_generators, groebner_elimination_basis, implementation_bug,
     polynomial_in_keep_variables, CertifiedPolynomialQ, GroebnerBasisResult, GroebnerOptions,
@@ -10,24 +11,25 @@ use crate::algebra::monomial_order::elimination_order;
 use crate::algebra::normal_form::{verify_membership_by_certificate, MembershipCertificate};
 use crate::problem::context::SolverContext;
 use crate::result::status::SolverError;
-#[cfg(test)]
-use crate::result::status::{FailureKind, SolverErrorKind};
-#[cfg(test)]
-use crate::types::hash::hash_sequence;
 use crate::types::ids::VariableId;
 use crate::types::polynomial::{poly_variables, SparsePolynomialQ};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum EliminationStrategy {
-    LocalGroebner(GroebnerOptions),
-    #[cfg(test)]
-    NonProductionGroebnerBatchForTests(crate::algebra::f4::GroebnerBackedBatchOptions),
+    EliminationGroebnerLocal(GroebnerOptions),
+    F4EliminationLocal(F4Options),
+    TargetRelationSearchEscalated,
+    ResultantIfSquareOrOverdetermined,
+    SpecializeProjectInterpolateVerify,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LocalEliminationStrategyName {
-    LocalGroebner,
-    NonProductionGroebnerBatch,
+    EliminationGroebnerLocal,
+    F4EliminationLocal,
+    TargetRelationSearchEscalated,
+    ResultantIfSquareOrOverdetermined,
+    SpecializeProjectInterpolateVerify,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -55,19 +57,25 @@ pub fn eliminate_to_keep_variables(
 ) -> Result<EliminationResult, SolverError> {
     ensure_disjoint(eliminate, keep)?;
     let result = match strategy {
-        EliminationStrategy::LocalGroebner(options) => {
+        EliminationStrategy::EliminationGroebnerLocal(options) => {
             let order = elimination_order(eliminate, keep);
             let basis = groebner_elimination_basis(relations, &order, options)?;
             local_result_from_groebner(
                 relations,
                 keep,
                 basis,
-                LocalEliminationStrategyName::LocalGroebner,
+                LocalEliminationStrategyName::EliminationGroebnerLocal,
             )?
         }
-        #[cfg(test)]
-        EliminationStrategy::NonProductionGroebnerBatchForTests(_) => {
-            return Err(non_production_batch_not_admitted());
+        EliminationStrategy::F4EliminationLocal(options) => {
+            f4_elimination_local(relations, eliminate, keep, options)?
+        }
+        EliminationStrategy::TargetRelationSearchEscalated
+        | EliminationStrategy::ResultantIfSquareOrOverdetermined
+        | EliminationStrategy::SpecializeProjectInterpolateVerify => {
+            return Err(implementation_bug(
+                "declared elimination strategy is handled by a later planner/kernel phase",
+            ));
         }
     };
     validate_local_elimination_result(&result, keep, relations)?;
@@ -80,8 +88,27 @@ pub fn local_result_from_groebner(
     basis: GroebnerBasisResult,
     strategy: LocalEliminationStrategyName,
 ) -> Result<LocalEliminationResult, SolverError> {
+    let matrix_cols = basis.basis.len();
+    local_result_from_certified_basis(
+        relations,
+        keep,
+        basis.basis,
+        strategy,
+        basis.pairs_processed,
+        matrix_cols,
+    )
+}
+
+pub fn local_result_from_certified_basis(
+    relations: &[SparsePolynomialQ],
+    keep: &[VariableId],
+    basis: Vec<CertifiedPolynomialQ>,
+    strategy: LocalEliminationStrategyName,
+    matrix_rows: usize,
+    matrix_cols: usize,
+) -> Result<LocalEliminationResult, SolverError> {
     let keep_set: BTreeSet<_> = keep.iter().copied().collect();
-    let certified = extract_certified_elimination_generators(&basis.basis, &keep_set);
+    let certified = extract_certified_elimination_generators(&basis, &keep_set);
     let generators = certified
         .into_iter()
         .map(|entry| certified_generator_from_basis_entry(entry, relations))
@@ -89,8 +116,8 @@ pub fn local_result_from_groebner(
     Ok(LocalEliminationResult {
         generators,
         strategy,
-        matrix_rows: basis.pairs_processed,
-        matrix_cols: basis.basis.len(),
+        matrix_rows,
+        matrix_cols,
     })
 }
 
@@ -145,21 +172,6 @@ fn ensure_disjoint(eliminate: &[VariableId], keep: &[VariableId]) -> Result<(), 
     Ok(())
 }
 
-#[cfg(test)]
-fn non_production_batch_not_admitted() -> SolverError {
-    SolverError {
-        target: None,
-        kind: SolverErrorKind::Failure(FailureKind::CertificateDesignGap {
-            constructed_object_hash: hash_sequence(
-                "non-production-groebner-batch",
-                &[b"not-production-f4".to_vec()],
-            ),
-            missing_certificate_kind: "real local F4 batch matrix reduction is not implemented"
-                .to_string(),
-        }),
-    }
-}
-
 #[allow(dead_code)]
 fn generator_variables(result: &LocalEliminationResult) -> BTreeSet<VariableId> {
     result
@@ -171,7 +183,6 @@ fn generator_variables(result: &LocalEliminationResult) -> BTreeSet<VariableId> 
 
 #[cfg(test)]
 mod tests {
-    use crate::algebra::f4::GroebnerBackedBatchOptions;
     use crate::algebra::normal_form::MembershipTerm;
     use crate::problem::context::new_context;
     use crate::solver::options::SolverOptions;
@@ -188,7 +199,7 @@ mod tests {
             &[],
             &[x],
             &[x],
-            EliminationStrategy::LocalGroebner(GroebnerOptions::default()),
+            EliminationStrategy::EliminationGroebnerLocal(GroebnerOptions::default()),
             &mut ctx,
         )
         .unwrap_err();
@@ -211,7 +222,7 @@ mod tests {
             &relations,
             &[y],
             &[x],
-            EliminationStrategy::LocalGroebner(GroebnerOptions::default()),
+            EliminationStrategy::EliminationGroebnerLocal(GroebnerOptions::default()),
             &mut ctx,
         )
         .unwrap();
@@ -234,7 +245,7 @@ mod tests {
                     }],
                 },
             }],
-            strategy: LocalEliminationStrategyName::LocalGroebner,
+            strategy: LocalEliminationStrategyName::EliminationGroebnerLocal,
             matrix_rows: 0,
             matrix_cols: 0,
         };
@@ -246,7 +257,7 @@ mod tests {
     }
 
     #[test]
-    fn production_dispatch_rejects_non_production_groebner_batch_strategy() {
+    fn dispatcher_executes_declared_f4_strategy_without_groebner_fallback() {
         let x = VariableId(1);
         let y = VariableId(2);
         let relations = vec![
@@ -254,19 +265,20 @@ mod tests {
             poly_sub(&variable_poly(y), &constant_poly(int_q(1))),
         ];
         let mut ctx = new_context(SolverOptions::default());
-        let err = eliminate_to_keep_variables(
+        let result = eliminate_to_keep_variables(
             &relations,
             &[y],
             &[x],
-            EliminationStrategy::NonProductionGroebnerBatchForTests(
-                GroebnerBackedBatchOptions::default(),
-            ),
+            EliminationStrategy::F4EliminationLocal(F4Options::default()),
             &mut ctx,
         )
-        .unwrap_err();
+        .unwrap();
         assert_eq!(
-            err.public_status(),
-            crate::result::status::SolverStatus::CertificateDesignGap
+            result.strategy,
+            LocalEliminationStrategyName::F4EliminationLocal
         );
+        validate_local_elimination_result(&result, &[x], &relations).unwrap();
+        assert!(result.matrix_rows > 0);
+        assert!(result.matrix_cols > 0);
     }
 }

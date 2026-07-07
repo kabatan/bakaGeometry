@@ -1,0 +1,39 @@
+COMMAND: cargo fmt --manifest-path geosolver-core\Cargo.toml --check
+EXIT_CODE: 0
+
+COMMAND: python geosolver-core\scripts\audit_v4_conformance.py --phase P13 --strict
+RGDTPK-Q v4 finite candidate-cover static audit
+root: C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry\geosolver-core
+phase: P13
+production_rust_files: 103
+findings: 0
+EXIT_CODE: 0
+
+COMMAND: cargo test --manifest-path geosolver-core\Cargo.toml --lib regular_chain -- --nocapture
+RESULT: 9 passed; 0 failed; 0 ignored; 0 measured; 276 filtered out.
+EXIT_CODE: 0
+
+COMMAND: cargo test --manifest-path geosolver-core\Cargo.toml --lib norm_trace -- --nocapture
+RESULT: 10 passed; 0 failed; 0 ignored; 0 measured; 275 filtered out.
+EXIT_CODE: 0
+
+COMMAND: cargo test --manifest-path geosolver-core\Cargo.toml --lib specialization_interpolation -- --nocapture
+RESULT: 5 passed; 0 failed; 0 ignored; 0 measured; 280 filtered out.
+EXIT_CODE: 0
+
+COMMAND: cargo test --manifest-path geosolver-core\Cargo.toml --lib interpolation -- --nocapture
+RESULT: 11 passed; 0 failed; 0 ignored; 0 measured; 274 filtered out.
+EXIT_CODE: 0
+
+COMMAND: cargo test --manifest-path geosolver-core\Cargo.toml --test p13_exact_image_semantics -- --nocapture
+RESULT: 6 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out.
+EXIT_CODE: 1
+NOTE: non-P13 exact-image/nonfinite failure carried forward to P14.
+
+COMMAND: cargo test --manifest-path geosolver-core\Cargo.toml --lib verify_message -- --nocapture
+RESULT: 0 passed; 0 failed; 0 ignored; 0 measured; 285 filtered out.
+EXIT_CODE: 0
+
+COMMAND: cargo test --manifest-path geosolver-core\Cargo.toml --no-run
+RESULT: all lib and integration test executables compiled.
+EXIT_CODE: 0

@@ -119,13 +119,11 @@ pub struct UniversalStrategyPlanStep {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum UniversalStrategy {
+    EliminationGroebnerLocal,
+    F4EliminationLocal,
     TargetRelationSearchEscalated,
-    SparseResultantIfSquareOrOverdetermined,
-    TargetActionKrylovIfQuotientCertifiable,
+    ResultantIfSquareOrOverdetermined,
     SpecializeProjectInterpolateVerify,
-    RegularChainIfTriangular,
-    NormTraceIfTower,
-    LocalGroebnerEliminationToKeepZ,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

@@ -40,7 +40,11 @@ pub struct TargetEliminationZeroCertificate {
     pub target: VariableId,
     pub composed_hash: Hash,
     pub root_relation_hashes: Vec<Hash>,
+    pub target_free_groebner_basis_hashes: Vec<Hash>,
     pub rational_consistency_witness: Vec<(VariableId, RationalQ)>,
+    pub proper_ideal_witness_hash: Hash,
+    pub target_algebraic_independence_hash: Hash,
+    pub dimension_lower_bound: usize,
     pub elimination_basis_hash: Hash,
     pub certificate_hash: Hash,
 }
@@ -158,8 +162,16 @@ pub fn certify_nonfinite_target_image_with_system(
                 !system.semantic_encodings.is_empty()
                     || !system.guards.is_empty()
                     || !system.saturations.is_empty()
+                    || !system.feasibility_obligations.is_empty()
+                    || system.relations.iter().any(|relation| {
+                        looks_like_unregistered_nonzero_witness(&relation.polynomial, system.target)
+                    })
             })
             .unwrap_or(false)
+            || composed
+                .root_relations
+                .iter()
+                .any(|relation| looks_like_unregistered_nonzero_witness(relation, composed.target))
         {
             return Err(certificate_gap(
                 composed.target,
@@ -219,6 +231,27 @@ pub fn certify_zero_target_elimination_ideal(
             "TargetEliminationZeroCertificate requires an exact consistency witness",
         ));
     };
+    let target_free_groebner_basis_hashes =
+        target_free_groebner_basis_hashes(composed).map_err(|_| {
+            certificate_gap(
+                composed.target,
+                composed.composed_hash,
+                "TargetAlgebraicIndependenceDimensionCertificate",
+            )
+        })?;
+    let proper_ideal_witness_hash =
+        hash_proper_ideal_witness(composed.target, composed.composed_hash, &witness);
+    let target_algebraic_independence_hash = hash_target_algebraic_independence(
+        composed.target,
+        composed.composed_hash,
+        &composed
+            .root_relations
+            .iter()
+            .map(|relation| relation.hash)
+            .collect::<Vec<_>>(),
+        &target_free_groebner_basis_hashes,
+        1,
+    );
     let mut cert = TargetEliminationZeroCertificate {
         target: composed.target,
         composed_hash: composed.composed_hash,
@@ -227,17 +260,18 @@ pub fn certify_zero_target_elimination_ideal(
             .iter()
             .map(|relation| relation.hash)
             .collect(),
+        target_free_groebner_basis_hashes,
         rational_consistency_witness: witness,
-        elimination_basis_hash: hash_sequence("target-elimination-zero-basis", &[]),
+        proper_ideal_witness_hash,
+        target_algebraic_independence_hash,
+        dimension_lower_bound: 1,
+        elimination_basis_hash: hash_sequence("target-free-dimension-basis", &[]),
         certificate_hash: hash_sequence("target-elimination-zero-certificate", &[]),
     };
-    cert.elimination_basis_hash = hash_sequence(
-        "target-elimination-zero-basis",
-        &cert
-            .root_relation_hashes
-            .iter()
-            .map(|hash| hash.0.to_vec())
-            .collect::<Vec<_>>(),
+    cert.elimination_basis_hash = hash_target_free_dimension_basis(
+        composed.target,
+        composed.composed_hash,
+        &cert.target_free_groebner_basis_hashes,
     );
     cert.certificate_hash = hash_zero_certificate(&cert);
     verify_zero_target_elimination_certificate(&cert, composed)?;
@@ -308,8 +342,6 @@ pub fn finalize_nonfinite_result(
         decoded_candidates: Vec::<TargetCandidate>::new(),
         projection_messages,
         certificate: None::<CoreRunCertificate>,
-        exact_image_certificate: None,
-        nonfinite_certificate: Some(cert.clone()),
         diagnostics: vec![DiagnosticRecord::new(
             "CertifiedNonFiniteTargetImage",
             format!(
@@ -376,8 +408,6 @@ pub fn finalize_candidate_cover_result(
         decoded_candidates,
         projection_messages,
         certificate: None::<CoreRunCertificate>,
-        exact_image_certificate: None,
-        nonfinite_certificate: None,
         diagnostics,
         cost_trace,
     })
@@ -558,11 +588,52 @@ fn verify_zero_target_elimination_certificate(
             "zero target elimination certificate has target-bearing generator",
         ));
     }
+    let target_free_groebner_basis_hashes =
+        target_free_groebner_basis_hashes(composed).map_err(|_| {
+            implementation_bug(
+                composed.target,
+                "zero target elimination dimension certificate failed Groebner replay",
+            )
+        })?;
+    if cert.target_free_groebner_basis_hashes != target_free_groebner_basis_hashes
+        || cert.elimination_basis_hash
+            != hash_target_free_dimension_basis(
+                composed.target,
+                composed.composed_hash,
+                &target_free_groebner_basis_hashes,
+            )
+        || cert.dimension_lower_bound < 1
+        || cert.target_algebraic_independence_hash
+            != hash_target_algebraic_independence(
+                composed.target,
+                composed.composed_hash,
+                &cert.root_relation_hashes,
+                &target_free_groebner_basis_hashes,
+                cert.dimension_lower_bound,
+            )
+    {
+        return Err(implementation_bug(
+            composed.target,
+            "target algebraic-independence dimension certificate binding mismatch",
+        ));
+    }
     let assignment = cert
         .rational_consistency_witness
         .iter()
         .cloned()
         .collect::<BTreeMap<_, _>>();
+    if cert.proper_ideal_witness_hash
+        != hash_proper_ideal_witness(
+            composed.target,
+            composed.composed_hash,
+            &cert.rational_consistency_witness,
+        )
+    {
+        return Err(implementation_bug(
+            composed.target,
+            "proper ideal witness hash mismatch",
+        ));
+    }
     if composed
         .root_relations
         .iter()
@@ -574,6 +645,39 @@ fn verify_zero_target_elimination_certificate(
         ));
     }
     Ok(())
+}
+
+fn target_free_groebner_basis_hashes(
+    composed: &ComposedProjection,
+) -> Result<Vec<Hash>, SolverError> {
+    if composed.root_relations.is_empty() {
+        return Ok(Vec::new());
+    }
+    let eliminate = composed
+        .root_relations
+        .iter()
+        .flat_map(poly_variables)
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>();
+    let order = elimination_order(&eliminate, &[composed.target]);
+    let basis =
+        groebner_elimination_basis(&composed.root_relations, &order, GroebnerOptions::default())?;
+    if basis
+        .basis
+        .iter()
+        .any(|entry| poly_variables(&entry.polynomial).contains(&composed.target))
+    {
+        return Err(implementation_bug(
+            composed.target,
+            "target-free dimension basis introduced target variable",
+        ));
+    }
+    Ok(basis
+        .basis
+        .iter()
+        .map(|entry| entry.polynomial.hash)
+        .collect())
 }
 
 fn verify_real_nonfinite_certificate(
@@ -622,6 +726,30 @@ fn find_rational_consistency_witness(
     let mut assignment = BTreeMap::new();
     search_witness(0, &variables, &candidates, relations, &mut assignment)
         .then(|| assignment.into_iter().collect())
+}
+
+fn looks_like_unregistered_nonzero_witness(
+    relation: &SparsePolynomialQ,
+    target: VariableId,
+) -> bool {
+    if poly_variables(relation).contains(&target) {
+        return false;
+    }
+    let has_nonzero_constant = relation
+        .terms
+        .iter()
+        .any(|term| term.monomial.exponents.is_empty() && !is_zero_q(&term.coeff));
+    let has_product_witness_term = relation.terms.iter().any(|term| {
+        term.monomial.exponents.len() >= 2
+            && term
+                .monomial
+                .exponents
+                .iter()
+                .map(|(_, exp)| *exp as usize)
+                .sum::<usize>()
+                >= 2
+    });
+    has_nonzero_constant && has_product_witness_term
 }
 
 fn search_witness(
@@ -678,8 +806,15 @@ fn hash_zero_certificate(cert: &TargetEliminationZeroCertificate) -> Hash {
         cert.target.0.to_be_bytes().to_vec(),
         cert.composed_hash.0.to_vec(),
         cert.elimination_basis_hash.0.to_vec(),
+        cert.proper_ideal_witness_hash.0.to_vec(),
+        cert.target_algebraic_independence_hash.0.to_vec(),
+        cert.dimension_lower_bound.to_be_bytes().to_vec(),
     ];
     for hash in &cert.root_relation_hashes {
+        chunks.push(hash.0.to_vec());
+    }
+    chunks.push(Vec::new());
+    for hash in &cert.target_free_groebner_basis_hashes {
         chunks.push(hash.0.to_vec());
     }
     chunks.push(Vec::new());
@@ -688,6 +823,53 @@ fn hash_zero_certificate(cert: &TargetEliminationZeroCertificate) -> Hash {
         chunks.push(rational_to_bytes(value));
     }
     hash_sequence("target-elimination-zero-certificate", &chunks)
+}
+
+fn hash_target_free_dimension_basis(
+    target: VariableId,
+    composed_hash: Hash,
+    basis_hashes: &[Hash],
+) -> Hash {
+    let mut chunks = vec![target.0.to_be_bytes().to_vec(), composed_hash.0.to_vec()];
+    for hash in basis_hashes {
+        chunks.push(hash.0.to_vec());
+    }
+    hash_sequence("target-free-dimension-basis", &chunks)
+}
+
+fn hash_target_algebraic_independence(
+    target: VariableId,
+    composed_hash: Hash,
+    relation_hashes: &[Hash],
+    basis_hashes: &[Hash],
+    dimension_lower_bound: usize,
+) -> Hash {
+    let mut chunks = vec![
+        target.0.to_be_bytes().to_vec(),
+        composed_hash.0.to_vec(),
+        dimension_lower_bound.to_be_bytes().to_vec(),
+    ];
+    for hash in relation_hashes {
+        chunks.push(hash.0.to_vec());
+    }
+    chunks.push(Vec::new());
+    for hash in basis_hashes {
+        chunks.push(hash.0.to_vec());
+    }
+    hash_sequence("target-algebraic-independence", &chunks)
+}
+
+fn hash_proper_ideal_witness(
+    target: VariableId,
+    composed_hash: Hash,
+    witness: &[(VariableId, RationalQ)],
+) -> Hash {
+    let mut chunks = vec![target.0.to_be_bytes().to_vec(), composed_hash.0.to_vec()];
+    for (var, value) in witness {
+        chunks.push(var.0.to_be_bytes().to_vec());
+        chunks.push(rational_to_bytes(value));
+    }
+    hash_sequence("proper-ideal-witness", &chunks)
 }
 
 pub fn hash_nonfinite_certificate(cert: &NonFiniteCertificate) -> Hash {

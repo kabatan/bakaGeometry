@@ -1,0 +1,42 @@
+# P16 Commands
+
+Working directory: `C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry`
+
+1. `cargo fmt --manifest-path geosolver-core\Cargo.toml --check`
+   - Exit: 0
+
+2. `python geosolver-core\scripts\audit_v4_conformance.py --phase P16 --strict`
+   - Exit: 0
+   - Output: `findings: 0`
+
+3. `cargo test --manifest-path geosolver-core\Cargo.toml --test p13_exact_image_semantics -- --nocapture`
+   - Exit: 0
+   - Result: 7 passed; 0 failed
+   - Re-run after nonfinite exact-image scope remediation: 7 passed; 0 failed
+
+4. `cargo test --manifest-path geosolver-core\Cargo.toml --test p14_full_pipeline_integration -- --nocapture`
+   - Exit: 0
+   - Result: 10 passed; 0 failed
+   - Re-run after nonfinite exact-image scope remediation: 10 passed; 0 failed
+
+5. `cargo test --manifest-path geosolver-core\Cargo.toml --test p15_acceptance_stress -- --nocapture`
+   - Exit: 0
+   - Result: 6 passed; 0 failed
+   - Time: 241.87 seconds reported by test harness
+
+6. `cargo test --manifest-path geosolver-core\Cargo.toml --lib orchestrator -- --nocapture`
+   - Exit: 0
+   - Result: 0 passed; 0 failed; target compiled
+
+7. `cargo test --manifest-path geosolver-core\Cargo.toml --lib replay -- --nocapture`
+   - Exit: 0
+   - Result: 27 passed; 0 failed
+
+8. `cargo test --manifest-path geosolver-core\Cargo.toml --lib run_certificate -- --nocapture`
+   - Exit: 0
+   - Result: 6 passed; 0 failed
+
+9. `cargo test --manifest-path geosolver-core\Cargo.toml --no-run`
+   - Exit: 0
+   - Result: all library and integration test targets compiled
+   - Re-run after nonfinite exact-image scope remediation: all targets compiled

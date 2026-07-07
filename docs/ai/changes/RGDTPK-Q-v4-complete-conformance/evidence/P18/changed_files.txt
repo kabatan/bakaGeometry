@@ -1,0 +1,24 @@
+Purpose: P18 changed-files evidence
+Status: evidence, non-authoritative
+
+P18 code/test/audit files:
+- geosolver-core/scripts/audit_v4_conformance.py
+- geosolver-core/src/algebra/crt.rs
+- geosolver-core/src/kernels/sparse_resultant.rs
+- geosolver-core/src/planner/relation_schedule.rs
+- geosolver-core/tests/acr_p9_large_footprint_stress.rs
+- geosolver-core/tests/generic_success_route_planner.rs
+- geosolver-core/tests/v4_candidate_cover_conformance.rs
+
+P18 evidence/final documents:
+- docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P18/algorithm_evidence.md
+- docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P18/changed_files.txt
+- docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P18/commands.log
+- docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P18/review_request.md
+- docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P18/source_to_code_map.md
+- docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P18/static_audit.log
+- docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/final/final_commands.log
+- docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/final/git_status_short.txt
+- docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/final/changed_files_full_diff.txt
+- docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/final/source_to_code_conformance_matrix.md
+- docs/ai/changes/RGDTPK-Q-v4-complete-conformance/CLOSURE.md

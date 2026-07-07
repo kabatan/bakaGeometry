@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::problem::semantic::RealConstraintEncoding;
+use crate::problem::semantic::{verify_semantic_references, RealConstraintEncoding};
 use crate::problem::validate::ValidatedProblem;
 use crate::result::diagnostics::DiagnosticRecord;
 use crate::result::status::{SolverError, StageId};
@@ -80,23 +80,56 @@ pub fn canonicalize_system(validated: ValidatedProblem) -> Result<CanonicalSyste
         .iter()
         .map(|relation| relation.id)
         .collect::<Vec<_>>();
-    let canonical_hash = hash_sequence(
-        "canonical-system",
-        &relations
-            .iter()
-            .map(|relation| relation.hash.0.to_vec())
-            .collect::<Vec<_>>(),
+    verify_semantic_references(&semantic_encodings, &relation_order, &variables).map_err(|_| {
+        SolverError::invalid_input(
+            Some(target),
+            "semantic encoding became inconsistent during canonicalization",
+        )
+    })?;
+    let variable_order = canonical_variable_order(&variables, target);
+    let canonical_hash = hash_canonical_system(
+        &variable_order,
+        &relation_order,
+        &relations,
+        &semantic_encodings,
     );
     Ok(CanonicalSystemQ {
         variables: variables.clone(),
         target,
         relations,
         relation_order,
-        variable_order: canonical_variable_order(&variables, target),
+        variable_order,
         semantic_encodings,
         canonical_hash,
         diagnostics,
     })
+}
+
+fn hash_canonical_system(
+    variable_order: &VariableOrder,
+    relation_order: &[RelationId],
+    relations: &[CanonicalRelationQ],
+    semantic_encodings: &[RealConstraintEncoding],
+) -> Hash {
+    let mut chunks = Vec::new();
+    chunks.push(
+        variable_order
+            .variables
+            .iter()
+            .flat_map(|variable| variable.0.to_be_bytes())
+            .collect(),
+    );
+    for relation_id in relation_order {
+        chunks.push(relation_id.0.to_be_bytes().to_vec());
+    }
+    for relation in relations {
+        chunks.push(relation.id.0.to_be_bytes().to_vec());
+        chunks.push(relation.hash.0.to_vec());
+    }
+    for encoding in semantic_encodings {
+        chunks.push(encoding.semantic_hash.0.to_vec());
+    }
+    hash_sequence("canonical-system", &chunks)
 }
 
 pub fn canonicalize_relation(id: RelationId, p: SparsePolynomialQ) -> CanonicalRelationQ {
@@ -131,8 +164,9 @@ fn is_nonzero_constant(p: &SparsePolynomialQ) -> bool {
 mod tests {
     use super::*;
     use crate::problem::input::make_problem;
+    use crate::problem::semantic::{register_slack_encoding, RealConstraintKind};
     use crate::problem::validate::validate_input;
-    use crate::types::ids::VariableId;
+    use crate::types::ids::{RelationId, VariableId};
     use crate::types::polynomial::{constant_poly, variable_poly};
     use crate::types::rational::{int_q, new_q};
     use num_bigint::BigInt;
@@ -185,6 +219,44 @@ mod tests {
             Vec::new(),
         );
         assert!(canonicalize_system(validate_input(problem).unwrap()).is_err());
+    }
+
+    #[test]
+    fn zero_relation_removal_cannot_drop_semantic_provenance() {
+        let t = VariableId(0);
+        let s = VariableId(1);
+        let semantic =
+            register_slack_encoding(RealConstraintKind::Positive, vec![RelationId(0)], vec![s]);
+        let problem = make_problem(vec![t, s], t, vec![constant_poly(int_q(0))], vec![semantic]);
+
+        assert!(canonicalize_system(validate_input(problem).unwrap()).is_err());
+    }
+
+    #[test]
+    fn canonical_hash_binds_semantic_provenance() {
+        let t = VariableId(0);
+        let s = VariableId(1);
+        let equation = variable_poly(t);
+        let without_semantic = make_problem(vec![t, s], t, vec![equation.clone()], Vec::new());
+        let with_semantic = make_problem(
+            vec![t, s],
+            t,
+            vec![equation],
+            vec![register_slack_encoding(
+                RealConstraintKind::NonNegative,
+                vec![RelationId(0)],
+                vec![s],
+            )],
+        );
+
+        let without_semantic =
+            canonicalize_system(validate_input(without_semantic).unwrap()).unwrap();
+        let with_semantic = canonicalize_system(validate_input(with_semantic).unwrap()).unwrap();
+        assert_ne!(
+            without_semantic.canonical_hash,
+            with_semantic.canonical_hash
+        );
+        assert_eq!(with_semantic.semantic_encodings.len(), 1);
     }
 
     #[test]

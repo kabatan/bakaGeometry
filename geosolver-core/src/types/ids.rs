@@ -43,6 +43,24 @@ pub fn fresh_relation_id(counter: &mut IdCounter) -> RelationId {
     id
 }
 
+pub fn fresh_block_id(counter: &mut IdCounter) -> BlockId {
+    let id = BlockId(counter.next);
+    counter.next = counter.next.checked_add(1).expect("id counter overflow");
+    id
+}
+
+pub fn fresh_package_id(counter: &mut IdCounter) -> PackageId {
+    let id = PackageId(counter.next);
+    counter.next = counter.next.checked_add(1).expect("id counter overflow");
+    id
+}
+
+pub fn fresh_kernel_plan_id(counter: &mut IdCounter) -> KernelPlanId {
+    let id = KernelPlanId(counter.next);
+    counter.next = counter.next.checked_add(1).expect("id counter overflow");
+    id
+}
+
 pub fn stable_id_from_name(name: &str, namespace: &str) -> StableId {
     let mut bytes = Vec::new();
     bytes.extend_from_slice(namespace.as_bytes());
@@ -60,6 +78,10 @@ mod tests {
         let mut counter = IdCounter::new(7);
         assert_eq!(fresh_variable_id(&mut counter), VariableId(7));
         assert_eq!(fresh_variable_id(&mut counter), VariableId(8));
+        assert_eq!(fresh_relation_id(&mut counter), RelationId(9));
+        assert_eq!(fresh_block_id(&mut counter), BlockId(10));
+        assert_eq!(fresh_package_id(&mut counter), PackageId(11));
+        assert_eq!(fresh_kernel_plan_id(&mut counter), KernelPlanId(12));
     }
 
     #[test]

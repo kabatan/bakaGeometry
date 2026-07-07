@@ -47,7 +47,7 @@ impl SaturatingCount {
         }
     }
 
-    pub fn add(self, rhs: Self) -> Self {
+    pub fn checked_add_count(self, rhs: Self) -> Self {
         match (self.value, rhs.value) {
             (Some(lhs), Some(rhs_value)) if !self.saturated && !rhs.saturated => lhs
                 .checked_add(rhs_value)
@@ -138,6 +138,12 @@ pub enum SupportDescriptor {
         support_hash: Hash,
         estimated_count: SaturatingCount,
     },
+    SpecializedInterpolationFootprint {
+        variables: Vec<VariableId>,
+        support_hash: Hash,
+        sample_count: usize,
+        estimated_count: SaturatingCount,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -182,7 +188,7 @@ impl DenseRelationSearchPreflight {
             self.stage_estimates
                 .iter()
                 .find_map(|stage| stage.prohibition_reason.as_deref())
-                .or_else(|| {
+                .or({
                     if !self.materialization_allowed {
                         Some("stage count exceeds dense TargetRelationSearch materialization cap")
                     } else {
@@ -509,7 +515,7 @@ pub fn estimate_sparse_relation_search_schedule(
     let matrix_cols = export_support_count.saturating_add(total_multiplier_support_count);
     let matrix_rows = row_monomials.len();
     let estimated_memory_bytes = SaturatingCount::from_usize(matrix_rows)
-        .add(SaturatingCount::from_usize(matrix_cols))
+        .checked_add_count(SaturatingCount::from_usize(matrix_cols))
         .mul_u128(128);
     let mut reasons = Vec::new();
     if export_support_count > caps.max_export_cols {
@@ -651,6 +657,19 @@ pub fn build_sparse_relation_search_schedule(
     schedule
 }
 
+pub fn specialized_interpolation_footprint_descriptor(
+    variables: &[VariableId],
+    support: &[Monomial],
+    sample_count: usize,
+) -> SupportDescriptor {
+    SupportDescriptor::SpecializedInterpolationFootprint {
+        variables: sorted_variables(variables),
+        support_hash: hash_monomials("rgq042-specialized-interpolation-footprint", support),
+        sample_count,
+        estimated_count: SaturatingCount::from_usize(support.len()),
+    }
+}
+
 pub fn hash_dense_relation_search_schedule(schedule: &DenseRelationSearchSchedule) -> Hash {
     let mut chunks = vec![
         schedule.z_seed.to_be_bytes().to_vec(),
@@ -734,21 +753,24 @@ fn estimate_relation_search_stage(
             monomial_count_total_degree_leq(all_variables.len(), multiplier_degree)
         })
         .collect::<Vec<_>>();
-    let total_multiplier_cols = multiplier_col_counts
-        .iter()
-        .copied()
-        .fold(SaturatingCount::exact(0), SaturatingCount::add);
-    let estimated_matrix_cols = export_cols.add(total_multiplier_cols);
-    let estimated_rows_upper_bound = export_cols.add(
+    let total_multiplier_cols = multiplier_col_counts.iter().copied().fold(
+        SaturatingCount::exact(0),
+        SaturatingCount::checked_add_count,
+    );
+    let estimated_matrix_cols = export_cols.checked_add_count(total_multiplier_cols);
+    let estimated_rows_upper_bound = export_cols.checked_add_count(
         multiplier_col_counts
             .iter()
             .copied()
             .zip(relations.iter())
             .map(|(count, relation)| count.mul_u128(relation.terms.len() as u128))
-            .fold(SaturatingCount::exact(0), SaturatingCount::add),
+            .fold(
+                SaturatingCount::exact(0),
+                SaturatingCount::checked_add_count,
+            ),
     );
     let estimated_memory_bytes_upper_bound = estimated_rows_upper_bound
-        .add(estimated_matrix_cols)
+        .checked_add_count(estimated_matrix_cols)
         .mul_u128(128);
     let mut reasons = Vec::new();
     if export_cols.exceeds_usize(caps.max_export_cols) {
@@ -1031,6 +1053,23 @@ fn hash_support_descriptor(descriptor: &SupportDescriptor) -> Hash {
             let mut chunks = vec![
                 b"SparseFootprint".to_vec(),
                 support_hash.0.to_vec(),
+                count_to_bytes(*estimated_count),
+            ];
+            for variable in variables {
+                chunks.push(variable.0.to_be_bytes().to_vec());
+            }
+            hash_sequence("support-descriptor", &chunks)
+        }
+        SupportDescriptor::SpecializedInterpolationFootprint {
+            variables,
+            support_hash,
+            sample_count,
+            estimated_count,
+        } => {
+            let mut chunks = vec![
+                b"SpecializedInterpolationFootprint".to_vec(),
+                support_hash.0.to_vec(),
+                sample_count.to_be_bytes().to_vec(),
                 count_to_bytes(*estimated_count),
             ];
             for variable in variables {

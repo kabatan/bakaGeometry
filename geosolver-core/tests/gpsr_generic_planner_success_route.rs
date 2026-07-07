@@ -223,7 +223,10 @@ fn assert_support_success(
         "{label}: no squarefree support"
     );
     assert!(!result.root_isolation.is_empty(), "{label}: no real roots");
-    assert!(result.exact_image_certificate.is_none());
+    assert!(result
+        .certificate
+        .as_ref()
+        .is_some_and(|cert| cert.exact_image_certificate_hash.is_none()));
     assert!(
         result
             .projection_messages

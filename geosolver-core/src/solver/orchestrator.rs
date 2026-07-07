@@ -7,6 +7,7 @@ use crate::problem::input::RationalTargetProblem;
 use crate::result::diagnostics::DiagnosticRecord;
 use crate::result::output::{finalize_success_result, FinalizeSuccessInput, TargetSolveResult};
 use crate::result::status::{SolverError, SolverStatus, StageId};
+use crate::solver::options::SolverOptions;
 use crate::solver::pipeline::{
     finalize_nonfinite_pipeline_result, step_build_dag, step_build_graphs, step_canonicalize,
     step_compose, step_compress, step_core_certificate, step_cost_trace, step_execute,
@@ -16,6 +17,15 @@ use crate::solver::pipeline::{
 use crate::types::ids::VariableId;
 use crate::types::univariate::UniPolynomialQ;
 use crate::verify::run_certificate::CoreRunCertificate;
+
+pub fn solve_target(problem: RationalTargetProblem, options: SolverOptions) -> TargetSolveResult {
+    let target = problem.target;
+    let ctx = SolverContext::new(options);
+    match solve_with_context(problem, ctx) {
+        Ok(result) => result,
+        Err(err) => TargetSolveResult::from_solver_error_for_target(err, target),
+    }
+}
 
 pub fn solve_with_context(
     problem: RationalTargetProblem,
@@ -118,7 +128,7 @@ pub fn solve_with_context(
                         ))
                     }
                 };
-            let mut roots = match step_roots(&support, target, &mut ctx) {
+            let roots = match step_roots(&support, target, &mut ctx) {
                 Ok(roots) => roots,
                 Err(err) => {
                     return Ok(finalize_pipeline_error(
@@ -133,33 +143,6 @@ pub fn solve_with_context(
                     ))
                 }
             };
-            let exact_image_certificate = if ctx.options.exact_image_mode {
-                let classification = match crate::fiber::exact_image::classify_real_target_image(
-                    &compressed,
-                    &roots.squarefree_support,
-                    &roots.decoded_candidates,
-                    &mut ctx,
-                ) {
-                    Ok(classification) => classification,
-                    Err(err) => {
-                        return Ok(finalize_pipeline_error(
-                            err,
-                            target,
-                            &compressed,
-                            &dag,
-                            &messages,
-                            Some(&composed),
-                            Some(&support),
-                            None,
-                        ))
-                    }
-                };
-                roots.root_isolation = classification.exact_root_isolation.clone();
-                roots.decoded_candidates = classification.exact_candidates.clone();
-                Some(classification)
-            } else {
-                None
-            };
             let certificate = step_core_certificate(
                 &problem,
                 &ctx.options,
@@ -171,7 +154,7 @@ pub fn solve_with_context(
                 &messages,
                 Some(&support),
                 &roots,
-                exact_image_certificate.as_ref(),
+                None,
                 Some(&support_certificate),
             );
             let cost_trace = step_cost_trace(
@@ -184,7 +167,17 @@ pub fn solve_with_context(
             );
             let mut diagnostics = compressed.diagnostics.clone();
             diagnostics.extend(ctx.diagnostics.clone());
-            if !ctx.options.exact_image_mode {
+            if ctx.options.exact_image_mode {
+                diagnostics.push(exact_image_out_of_scope_diagnostic(
+                    &problem, &support, &roots,
+                ));
+                diagnostics.push(DiagnosticRecord::new(
+                    "CandidateCoverMayContainSpuriousRoots",
+                    "exact-image filtering is out of scope; returned candidates are an unfiltered certified candidate cover"
+                        .to_owned(),
+                    Some(StageId("P16ExactImageScopeGuard".to_owned())),
+                ));
+            } else {
                 diagnostics.push(DiagnosticRecord::new(
                     "ExactImageFilteringNotRequested",
                     "candidate-cover mode returns roots of S(T) without exact-image filtering"
@@ -200,30 +193,14 @@ pub fn solve_with_context(
             }
             if roots.root_isolation.is_empty() {
                 diagnostics.push(DiagnosticRecord::new(
-                    if ctx.options.exact_image_mode {
-                        "CertifiedEmptyRealTargetImage"
-                    } else {
-                        "EmptyRealCandidateCover"
-                    },
-                    if ctx.options.exact_image_mode {
-                        "exact-image classification rejected every real target candidate".to_owned()
-                    } else {
-                        "support has no real roots; certified candidate cover is empty".to_owned()
-                    },
-                    Some(StageId(if ctx.options.exact_image_mode {
-                        "P13ExactImage".to_owned()
-                    } else {
-                        "P12RootDecode".to_owned()
-                    })),
+                    "EmptyRealCandidateCover",
+                    "support has no real roots; certified candidate cover is empty".to_owned(),
+                    Some(StageId("P12RootDecode".to_owned())),
                 ));
             }
             let result = TargetSolveResult {
                 status: if ctx.options.exact_image_mode {
-                    if roots.decoded_candidates.is_empty() {
-                        SolverStatus::CertifiedEmptyRealTargetImage
-                    } else {
-                        SolverStatus::CertifiedExactTargetImage
-                    }
+                    SolverStatus::CertificateDesignGap
                 } else {
                     SolverStatus::CertifiedCandidateCover
                 },
@@ -234,8 +211,6 @@ pub fn solve_with_context(
                 decoded_candidates: roots.decoded_candidates,
                 projection_messages: messages,
                 certificate: Some(certificate),
-                exact_image_certificate,
-                nonfinite_certificate: None,
                 diagnostics,
                 cost_trace,
             };
@@ -244,9 +219,88 @@ pub fn solve_with_context(
         crate::compose::final_support::FinalSupportComputation::CertifiedNonFinite(cert) => {
             let cost_trace =
                 step_cost_trace(&compressed, &dag, &messages, Some(&composed), None, None);
+            if ctx.options.exact_image_mode {
+                let mut diagnostics = compressed.diagnostics.clone();
+                diagnostics.extend(ctx.diagnostics.clone());
+                diagnostics.push(exact_image_out_of_scope_nonfinite_diagnostic(
+                    &problem,
+                    cert.certificate_hash,
+                ));
+                return Ok(finalize_success_result(FinalizeSuccessInput {
+                    result: TargetSolveResult {
+                        status: SolverStatus::CertificateDesignGap,
+                        target,
+                        support_polynomial: None,
+                        squarefree_support_polynomial: None,
+                        root_isolation: Vec::new(),
+                        decoded_candidates: Vec::new(),
+                        projection_messages: messages,
+                        certificate: None,
+                        diagnostics,
+                        cost_trace,
+                    },
+                }));
+            }
             finalize_nonfinite_pipeline_result(target, cert, &composed, messages, cost_trace)
         }
     }
+}
+
+fn exact_image_out_of_scope_diagnostic(
+    problem: &RationalTargetProblem,
+    support: &UniPolynomialQ,
+    roots: &crate::solver::pipeline::RootCandidateBundle,
+) -> DiagnosticRecord {
+    let mut diagnostic = DiagnosticRecord::new(
+        "ExactImageOutOfScope",
+        "exact-image classification is out of scope for this finite candidate-cover repair; support roots are returned unfiltered"
+            .to_owned(),
+        Some(StageId("P16ExactImageScopeGuard".to_owned())),
+    );
+    diagnostic
+        .details
+        .insert("input_hash".to_owned(), format!("{:?}", problem.input_hash));
+    diagnostic
+        .details
+        .insert("support_hash".to_owned(), format!("{:?}", support.hash));
+    diagnostic.details.insert(
+        "squarefree_support_hash".to_owned(),
+        format!("{:?}", roots.squarefree_support.hash),
+    );
+    diagnostic.details.insert(
+        "candidate_hashes".to_owned(),
+        roots
+            .decoded_candidates
+            .iter()
+            .map(|candidate| format!("{:?}", candidate.candidate_hash))
+            .collect::<Vec<_>>()
+            .join(","),
+    );
+    diagnostic.details.insert(
+        "candidate_count".to_owned(),
+        roots.decoded_candidates.len().to_string(),
+    );
+    diagnostic
+}
+
+fn exact_image_out_of_scope_nonfinite_diagnostic(
+    problem: &RationalTargetProblem,
+    nonfinite_certificate_hash: crate::types::hash::Hash,
+) -> DiagnosticRecord {
+    let mut diagnostic = DiagnosticRecord::new(
+        "ExactImageOutOfScope",
+        "exact-image classification is out of scope for this finite candidate-cover repair; nonfinite target-image success is not exposed for exact-image requests"
+            .to_owned(),
+        Some(StageId("P16ExactImageScopeGuard".to_owned())),
+    );
+    diagnostic
+        .details
+        .insert("input_hash".to_owned(), format!("{:?}", problem.input_hash));
+    diagnostic.details.insert(
+        "nonfinite_certificate_hash".to_owned(),
+        format!("{:?}", nonfinite_certificate_hash),
+    );
+    diagnostic
 }
 
 fn finalize_pipeline_error(

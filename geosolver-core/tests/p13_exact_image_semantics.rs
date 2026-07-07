@@ -1,11 +1,8 @@
-use geosolver_core::algebra::sign::SignDetermination;
 use geosolver_core::api::solve_target;
-use geosolver_core::fiber::exact_image::{FiberCandidateDisposition, SemanticGuardSource};
 use geosolver_core::problem::input::{make_problem, RationalTargetProblem};
 use geosolver_core::problem::semantic::{register_slack_encoding, RealConstraintKind};
 use geosolver_core::result::status::SolverStatus;
 use geosolver_core::solver::options::SolverOptions;
-use geosolver_core::types::hash::hash_sequence;
 use geosolver_core::types::ids::{RelationId, VariableId};
 use geosolver_core::types::interval::interval_contains_q;
 use geosolver_core::types::polynomial::{
@@ -78,7 +75,10 @@ fn p13_candidate_cover_mode_does_not_claim_exact_image_for_semantic_problem() {
     let result = solve_target(problem.clone(), SolverOptions::default());
 
     assert_eq!(result.status, SolverStatus::CertifiedCandidateCover);
-    assert!(result.exact_image_certificate.is_none());
+    assert!(result
+        .certificate
+        .as_ref()
+        .is_some_and(|cert| cert.exact_image_certificate_hash.is_none()));
     assert!(result.decoded_candidates.len() >= 2);
     assert!(result
         .diagnostics
@@ -92,7 +92,7 @@ fn p13_candidate_cover_mode_does_not_claim_exact_image_for_semantic_problem() {
 }
 
 #[test]
-fn p13_exact_image_filters_spurious_slack_root_with_certificates() {
+fn p16_exact_image_request_returns_scope_guard_without_filtering_slack_root() {
     let target = VariableId(0);
     let slack = VariableId(1);
     let problem = problem_with_semantic(
@@ -107,59 +107,32 @@ fn p13_exact_image_filters_spurious_slack_root_with_certificates() {
 
     assert_eq!(
         result.status,
-        SolverStatus::CertifiedExactTargetImage,
+        SolverStatus::CertificateDesignGap,
         "diagnostics={:?}",
         result.diagnostics
     );
-    assert_eq!(result.decoded_candidates.len(), 1);
-    assert!(interval_contains_q(
-        &result.decoded_candidates[0].isolating_interval,
-        &int_q(1)
-    ));
+    assert_eq!(result.decoded_candidates.len(), 2);
+    assert!(result
+        .decoded_candidates
+        .iter()
+        .any(|candidate| interval_contains_q(&candidate.isolating_interval, &int_q(0))));
+    assert!(result
+        .decoded_candidates
+        .iter()
+        .any(|candidate| interval_contains_q(&candidate.isolating_interval, &int_q(1))));
     assert!(replay_run_certificate(&result, &problem).accepted);
-
-    let mut classification_tamper = result.clone();
-    classification_tamper
-        .exact_image_certificate
-        .as_mut()
-        .expect("P13 certificate")
-        .classification_hash = hash_sequence("p13-classification-tamper", &[]);
-    assert!(!replay_run_certificate(&classification_tamper, &problem).accepted);
-
-    let classification = result
-        .exact_image_certificate
+    assert!(result
+        .certificate
         .as_ref()
-        .expect("P13 certificate");
-    assert_eq!(classification.records.len(), 2);
-    assert_eq!(classification.exact_candidates.len(), 1);
-    assert_eq!(classification.rejected_candidates.len(), 1);
-    assert!(classification.records.iter().any(|record| {
-        record.disposition == FiberCandidateDisposition::RejectedBySemantic
-            && record.semantic_decisions.iter().any(|decision| {
-                decision.guard_source == SemanticGuardSource::SquareSlackEquation
-                    && decision.sign_certificate.sign == SignDetermination::Zero
-                    && !decision.accepted
-            })
-    }));
-    assert!(
-        classification.records.iter().any(|record| {
-            record.disposition == FiberCandidateDisposition::Realizable
-                && record
-                    .hermite_certificate
-                    .as_ref()
-                    .is_some_and(|cert| cert.real_root_count == 2)
-                && record
-                    .semantic_decisions
-                    .iter()
-                    .any(|decision| decision.sign_certificate.sign == SignDetermination::Positive)
-        }),
-        "records={:?}",
-        classification.records
-    );
+        .is_some_and(|cert| cert.exact_image_certificate_hash.is_none()));
+    assert!(result
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.name == "ExactImageOutOfScope"));
 }
 
 #[test]
-fn p13_exact_image_distinguishes_empty_real_target_image() {
+fn p16_exact_image_empty_case_keeps_unfiltered_candidate_cover() {
     let target = VariableId(0);
     let slack = VariableId(1);
     let negative_square_guard = poly_scale(&poly_mul(&v(target.0), &v(target.0)), &int_q(-1));
@@ -175,30 +148,25 @@ fn p13_exact_image_distinguishes_empty_real_target_image() {
 
     assert_eq!(
         result.status,
-        SolverStatus::CertifiedEmptyRealTargetImage,
+        SolverStatus::CertificateDesignGap,
         "diagnostics={:?}",
         result.diagnostics
     );
-    assert!(result.decoded_candidates.is_empty());
-    assert!(result.root_isolation.is_empty());
+    assert_eq!(result.decoded_candidates.len(), 2);
+    assert_eq!(result.root_isolation.len(), 2);
     assert!(replay_run_certificate(&result, &problem).accepted);
-    let classification = result
-        .exact_image_certificate
+    assert!(result
+        .certificate
         .as_ref()
-        .expect("P13 certificate");
-    assert_eq!(classification.exact_candidates.len(), 0);
-    assert_eq!(classification.rejected_candidates.len(), 2);
-    assert!(classification.records.iter().all(|record| {
-        record.disposition == FiberCandidateDisposition::RejectedBySemantic
-            && record
-                .semantic_decisions
-                .iter()
-                .any(|decision| decision.sign_certificate.sign == SignDetermination::Negative)
-    }));
+        .is_some_and(|cert| cert.exact_image_certificate_hash.is_none()));
+    assert!(result
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.name == "ExactImageOutOfScope"));
 }
 
 #[test]
-fn p13_branch_choice_semantics_affect_exact_classification() {
+fn p16_branch_choice_semantics_do_not_filter_candidate_cover() {
     let target = VariableId(0);
     let slack = VariableId(1);
     let problem = problem_with_semantic(
@@ -213,21 +181,19 @@ fn p13_branch_choice_semantics_affect_exact_classification() {
 
     assert_eq!(
         result.status,
-        SolverStatus::CertifiedExactTargetImage,
+        SolverStatus::CertificateDesignGap,
         "diagnostics={:?}",
         result.diagnostics
     );
-    let classification = result
-        .exact_image_certificate
+    assert_eq!(result.decoded_candidates.len(), 2);
+    assert!(result
+        .certificate
         .as_ref()
-        .expect("P13 certificate");
-    assert!(classification.records.iter().any(|record| {
-        record
-            .semantic_decisions
-            .iter()
-            .any(|decision| decision.kind == RealConstraintKind::BranchChoice)
-    }));
-    assert_eq!(classification.exact_candidates.len(), 1);
+        .is_some_and(|cert| cert.exact_image_certificate_hash.is_none()));
+    assert!(result
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.name == "ExactImageOutOfScope"));
 }
 
 #[test]
@@ -243,18 +209,15 @@ fn p13_exact_image_nonfinite_requires_real_nonfinite_certificate() {
 
     let result = solve_target(problem.clone(), exact_options());
 
-    assert_eq!(result.status, SolverStatus::CertifiedNonFiniteTargetImage);
+    assert_eq!(result.status, SolverStatus::CertificateDesignGap);
     assert!(result.support_polynomial.is_none());
     assert!(result.certificate.is_none());
-    assert!(result.exact_image_certificate.is_none());
-    assert!(result.nonfinite_certificate.is_some());
-    assert!(replay_run_certificate(&result, &problem).accepted);
+    assert!(!replay_run_certificate(&result, &problem).accepted);
     assert!(result.diagnostics.iter().any(|diagnostic| {
-        diagnostic.name == "CertifiedNonFiniteTargetImage"
+        diagnostic.name == "ExactImageOutOfScope"
             && diagnostic
-                .message
-                .contains("ZeroTargetEliminationWithRealWitness")
-            && diagnostic.message.contains("real_certificate_hash Some")
+                .details
+                .contains_key("nonfinite_certificate_hash")
     }));
 }
 

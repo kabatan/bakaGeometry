@@ -1,0 +1,17 @@
+RGDTPK-Q v4 finite candidate-cover static audit
+root: C:\Users\bakat\OneDrive\�h�L�������g\bakaGeometry\geosolver-core
+production_rust_files: 103
+findings: 12
+ERROR missing_required_symbol preprocess/compression.rs :: In-scope required symbol `compress_system` is not visible in production code
+ERROR missing_required_symbol planner/planner.rs :: In-scope required symbol `plan_projection_messages` is not visible in production code
+ERROR missing_required_symbol solver/pipeline.rs :: In-scope required symbol `run_pipeline` is not visible in production code
+ERROR test_only_required_symbol solver/orchestrator.rs :: In-scope required symbol `solve_target` is not visible in production code
+ERROR possible_coordinate_rur_path src/algebra/quotient.rs:531 :: "quotient handle must not expose coordinate roots or full coordinate RUR",
+ERROR possible_coordinate_rur_path src/algebra/quotient.rs:603 :: "quotient handle must not expose coordinate roots or full coordinate RUR",
+ERROR possible_coordinate_rur_path src/kernels/action_krylov.rs:421 :: "target-action-krylov quotient exported coordinate roots or RUR",
+ERROR kernel_not_ready_error src/kernels/traits.rs:89 :: pub fn kernel_not_ready_error(kind: KernelKind) -> SolverError {
+ERROR exact_image_success_in_scoped_repair src/result/status.rs:11 :: CertifiedExactTargetImage,
+ERROR exact_image_success_in_scoped_repair src/solver/orchestrator.rs:225 :: SolverStatus::CertifiedExactTargetImage
+ERROR exact_image_success_in_scoped_repair src/verify/replay.rs:162 :: SolverStatus::CertifiedExactTargetImage | SolverStatus::CertifiedEmptyRealTargetImage
+ERROR descartes_delegates_to_sturm src/algebra/real_root.rs:88 :: Descartes/Vincent isolation appears to call or delegate to Sturm
+STRICT_EXIT_CODE: 1

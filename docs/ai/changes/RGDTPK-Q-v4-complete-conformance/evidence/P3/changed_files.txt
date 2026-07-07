@@ -1,0 +1,9 @@
+geosolver-core/src/algebra/monomial_order.rs
+geosolver-core/src/algebra/crt.rs
+geosolver-core/scripts/audit_v4_conformance.py
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P3/changed_files.txt
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P3/source_to_code_map.md
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P3/algorithm_evidence.md
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P3/static_audit.log
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P3/commands.log
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P3/review_request.md

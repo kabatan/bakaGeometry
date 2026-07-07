@@ -6,7 +6,9 @@ use crate::algebra::groebner::{
     groebner_elimination_basis, polynomial_in_keep_variables, GroebnerOptions,
 };
 use crate::algebra::monomial_order::elimination_order;
-use crate::compose::message::{hash_projection_message, ProjectionMessage};
+use crate::compose::message::{
+    hash_projection_message, merge_messages, message_to_relations, ProjectionMessage,
+};
 use crate::compose::separator_elimination::eliminate_separators_from_message_relations;
 use crate::graph::projection_dag::TargetProjectionDAG;
 use crate::problem::context::SolverContext;
@@ -14,9 +16,7 @@ use crate::result::cost_trace::CompositionCostTrace;
 use crate::result::status::{AlgebraicReason, FailureKind, SolverError, SolverErrorKind, StageId};
 use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::{BlockId, VariableId};
-use crate::types::polynomial::{
-    poly_monomial_count, poly_total_degree, poly_variables, SparsePolynomialQ,
-};
+use crate::types::polynomial::{poly_variables, SparsePolynomialQ};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ComposedProjection {
@@ -61,6 +61,7 @@ pub fn compose_projection_messages(
         return Ok(composed);
     }
 
+    let merged_ideal = merge_messages(&messages);
     let mut relations = Vec::new();
     let mut message_hashes = Vec::new();
     let mut seen_blocks = BTreeSet::new();
@@ -78,11 +79,15 @@ pub fn compose_projection_messages(
         validate_message_binding(&message)?;
         message_hashes.push(message.package_hash);
         relations.extend(
-            message
-                .relation_generators
+            message_to_relations(&message)
                 .into_iter()
                 .filter(|relation| !relation.terms.is_empty()),
         );
+    }
+    if message_hashes != merged_ideal.source_message_hashes {
+        return Err(implementation_bug(
+            "merged message ideal source hashes do not match validated messages",
+        ));
     }
     let relation_count_before = relations.len();
     let mut root_relations = target_only_relations(&relations, target);
@@ -120,7 +125,7 @@ pub fn compose_projection_messages(
                 return Err(err);
             }
             Err(_err) => {
-                if !message_relations_have_target_eliminant(&relations, target) {
+                if !message_relations_have_target_eliminant(&relations, target, dag.dag_hash)? {
                     return Err(_err);
                 }
                 // Final support construction has a separate composed-ideal membership route.
@@ -128,7 +133,9 @@ pub fn compose_projection_messages(
             }
         }
     }
-    if root_relations.is_empty() && !message_relations_have_target_eliminant(&relations, target) {
+    if root_relations.is_empty()
+        && !message_relations_have_target_eliminant(&relations, target, dag.dag_hash)?
+    {
         return Err(algorithmic_hard_case(
             target,
             dag.dag_hash,
@@ -244,34 +251,23 @@ fn target_only_relations(
 fn message_relations_have_target_eliminant(
     relations: &[SparsePolynomialQ],
     target: VariableId,
-) -> bool {
+    minimal_block_hash: Hash,
+) -> Result<bool, SolverError> {
     if relations.is_empty() {
-        return false;
+        return Ok(false);
     }
     let all_variables = relations
         .iter()
         .flat_map(poly_variables)
         .collect::<BTreeSet<_>>();
     if !all_variables.contains(&target) {
-        return false;
+        return Ok(false);
     }
     let eliminate = all_variables
         .iter()
         .copied()
         .filter(|var| *var != target)
         .collect::<Vec<_>>();
-    if relations.len() <= eliminate.len()
-        || relations.iter().map(poly_monomial_count).sum::<usize>() > 64
-        || relations
-            .iter()
-            .map(|relation| poly_total_degree(relation) as usize)
-            .max()
-            .unwrap_or(0)
-            > 8
-        || eliminate.len() > 4
-    {
-        return false;
-    }
     let keep = BTreeSet::from([target]);
     let order = elimination_order(&eliminate, &[target]);
     groebner_elimination_basis(relations, &order, GroebnerOptions::default())
@@ -282,7 +278,13 @@ fn message_relations_have_target_eliminant(
                     && poly_variables(&entry.polynomial).contains(&target)
             })
         })
-        .unwrap_or(false)
+        .map_err(|_| {
+            certificate_gap(
+                target,
+                minimal_block_hash,
+                "ComposedIdealTargetEliminantCertificate",
+            )
+        })
 }
 
 fn algorithmic_hard_case(
@@ -305,6 +307,16 @@ fn implementation_bug(message: &str) -> SolverError {
         target: None,
         kind: SolverErrorKind::Failure(FailureKind::ImplementationBug {
             invariant_violated: message.to_owned(),
+        }),
+    }
+}
+
+fn certificate_gap(target: VariableId, hash: Hash, missing: &str) -> SolverError {
+    SolverError {
+        target: Some(target),
+        kind: SolverErrorKind::Failure(FailureKind::CertificateDesignGap {
+            constructed_object_hash: hash,
+            missing_certificate_kind: missing.to_owned(),
         }),
     }
 }

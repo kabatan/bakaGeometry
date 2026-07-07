@@ -1,0 +1,35 @@
+# P15 Commands
+
+Working directory: `C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry`
+
+1. `cargo fmt --manifest-path geosolver-core\Cargo.toml --check`
+   - Exit: 0
+
+2. `python geosolver-core\scripts\audit_v4_conformance.py --phase P15 --strict`
+   - Exit: 0
+   - Output: `findings: 0`
+
+3. `cargo test --manifest-path geosolver-core\Cargo.toml --lib real_root -- --nocapture`
+   - Exit: 0
+   - Result: 4 passed; 0 failed
+
+4. `cargo test --manifest-path geosolver-core\Cargo.toml --lib roots -- --nocapture`
+   - Exit: 0
+   - Result: 10 passed; 0 failed
+
+5. `cargo test --manifest-path geosolver-core\Cargo.toml --lib sign -- --nocapture`
+   - Exit: 0
+   - Result: 3 passed; 0 failed
+
+6. `cargo test --manifest-path geosolver-core\Cargo.toml --test p12_roots_decode_integration -- --nocapture`
+   - Exit: 0
+   - Result: 1 passed; 0 failed
+
+7. `cargo test --manifest-path geosolver-core\Cargo.toml --test p15_acceptance_stress -- --nocapture`
+   - Exit: 0
+   - Result: 6 passed; 0 failed
+   - Time: 215.23 seconds reported by test harness
+
+8. `cargo test --manifest-path geosolver-core\Cargo.toml --no-run`
+   - Exit: 0
+   - Result: all library and integration test targets compiled

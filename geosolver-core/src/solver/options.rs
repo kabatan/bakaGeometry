@@ -4,6 +4,7 @@ use crate::kernels::traits::KernelKind;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SolverOptions {
+    pub finite_candidate_cover_mode: bool,
     pub exact_image_mode: bool,
     pub max_relation_search_export_degree: Option<usize>,
     pub max_memory_bytes: Option<u64>,
@@ -31,6 +32,7 @@ pub enum CertificateLevel {
 impl Default for SolverOptions {
     fn default() -> Self {
         SolverOptions {
+            finite_candidate_cover_mode: true,
             exact_image_mode: false,
             max_relation_search_export_degree: None,
             max_memory_bytes: None,

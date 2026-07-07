@@ -238,6 +238,13 @@ pub fn pre_kernel_compress(
     Ok(state.to_compressed_system())
 }
 
+pub fn compress_system(
+    system: CanonicalSystemQ,
+    ctx: &mut SolverContext,
+) -> Result<CompressedSystemQ, SolverError> {
+    pre_kernel_compress(system, ctx)
+}
+
 impl CompressionState {
     pub fn from_system(system: CanonicalSystemQ) -> Self {
         let next_relation_id = system
@@ -509,6 +516,9 @@ impl CompressionState {
         }
         for relation in &self.relations {
             chunks.push(relation.hash.0.to_vec());
+        }
+        for encoding in &self.semantic_encodings {
+            chunks.push(encoding.semantic_hash.0.to_vec());
         }
         for substitution in &self.substitutions {
             chunks.push(substitution.substitution_hash.0.to_vec());
@@ -889,9 +899,10 @@ fn hash_saturation(
 mod tests {
     use crate::problem::canonicalize::canonicalize_system;
     use crate::problem::input::make_problem;
+    use crate::problem::semantic::{register_slack_encoding, RealConstraintKind};
     use crate::problem::validate::validate_input;
     use crate::solver::options::SolverOptions;
-    use crate::types::ids::VariableId;
+    use crate::types::ids::{RelationId, VariableId};
     use crate::types::polynomial::{constant_poly, poly_mul, poly_sub, variable_poly};
     use crate::types::rational::int_q;
 
@@ -948,12 +959,48 @@ mod tests {
                     &constant_poly(int_q(2)),
                 ),
             ],
-            Vec::new(),
+            vec![register_slack_encoding(
+                RealConstraintKind::NonZero,
+                vec![RelationId(0)],
+                vec![s],
+            )],
         );
         let canonical = canonicalize_system(validate_input(problem).unwrap()).unwrap();
         let mut ctx = crate::problem::context::new_context(SolverOptions::default());
         let compressed = pre_kernel_compress(canonical, &mut ctx).unwrap();
         assert!(!compressed.saturations.is_empty());
         assert!(!compressed.feasibility_obligations.is_empty());
+    }
+
+    #[test]
+    fn compression_hash_binds_semantic_provenance() {
+        let t = VariableId(0);
+        let s = VariableId(1);
+        let equation = variable_poly(t);
+        let without_semantic = make_problem(vec![t, s], t, vec![equation.clone()], Vec::new());
+        let with_semantic = make_problem(
+            vec![t, s],
+            t,
+            vec![equation],
+            vec![register_slack_encoding(
+                RealConstraintKind::Positive,
+                vec![RelationId(0)],
+                vec![s],
+            )],
+        );
+
+        let without_semantic =
+            canonicalize_system(validate_input(without_semantic).unwrap()).unwrap();
+        let with_semantic = canonicalize_system(validate_input(with_semantic).unwrap()).unwrap();
+        let mut ctx = crate::problem::context::new_context(SolverOptions::default());
+        let compressed_without = pre_kernel_compress(without_semantic, &mut ctx).unwrap();
+        let mut ctx = crate::problem::context::new_context(SolverOptions::default());
+        let compressed_with = pre_kernel_compress(with_semantic, &mut ctx).unwrap();
+
+        assert_ne!(
+            compressed_without.compressed_hash,
+            compressed_with.compressed_hash
+        );
+        assert_eq!(compressed_with.semantic_encodings.len(), 1);
     }
 }

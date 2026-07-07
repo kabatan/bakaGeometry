@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use serde::{Deserialize, Serialize};
 
@@ -133,6 +133,7 @@ pub fn validate_projection_dag(
     if !blocks_by_id.contains_key(&dag.root_block_id) {
         return Err(implementation_bug("projection DAG root block is missing"));
     }
+    validate_projection_dag_topology(dag, &blocks_by_id)?;
 
     let relations_by_id = system
         .relations
@@ -221,6 +222,64 @@ pub fn validate_projection_dag(
 
     if hash_dag(dag.root_block_id, &dag.blocks) != dag.dag_hash {
         return Err(implementation_bug("projection DAG hash mismatch"));
+    }
+    Ok(())
+}
+
+fn validate_projection_dag_topology(
+    dag: &TargetProjectionDAG,
+    blocks_by_id: &BTreeMap<BlockId, &ProjectionBlock>,
+) -> Result<(), SolverError> {
+    let root = blocks_by_id
+        .get(&dag.root_block_id)
+        .expect("root presence checked before topology validation");
+    if root.parent_block_id.is_some() {
+        return Err(implementation_bug(
+            "projection DAG root block has a parent block",
+        ));
+    }
+    for block in &dag.blocks {
+        if block.block_id == dag.root_block_id {
+            continue;
+        }
+        let Some(parent_id) = block.parent_block_id else {
+            return Err(implementation_bug(
+                "projection DAG non-root block has no parent",
+            ));
+        };
+        let Some(parent) = blocks_by_id.get(&parent_id) else {
+            return Err(implementation_bug(
+                "projection DAG non-root parent block is missing",
+            ));
+        };
+        if !parent.child_block_ids.contains(&block.block_id) {
+            return Err(implementation_bug(
+                "projection DAG parent does not list non-root child",
+            ));
+        }
+    }
+
+    let mut reachable = BTreeSet::new();
+    let mut queue = VecDeque::from([dag.root_block_id]);
+    while let Some(block_id) = queue.pop_front() {
+        if !reachable.insert(block_id) {
+            return Err(implementation_bug(
+                "projection DAG block is reachable more than once from root",
+            ));
+        }
+        let Some(block) = blocks_by_id.get(&block_id) else {
+            return Err(implementation_bug(
+                "projection DAG reachable block is missing",
+            ));
+        };
+        for child_id in &block.child_block_ids {
+            queue.push_back(*child_id);
+        }
+    }
+    if reachable.len() != dag.blocks.len() {
+        return Err(implementation_bug(
+            "projection DAG contains a block unreachable from root",
+        ));
     }
     Ok(())
 }
@@ -435,6 +494,58 @@ mod tests {
         let (compressed, influence, tree) = no_separator_case();
         let mut dag = build_target_projection_dag(&compressed, &influence, &tree).unwrap();
         dag.blocks[0].relation_ids.clear();
+        refresh_hashes(&mut dag, &compressed);
+        let err = validate_projection_dag(&dag, &compressed).unwrap_err();
+        assert_eq!(err.public_status(), SolverStatus::ImplementationBug);
+    }
+
+    #[test]
+    fn extra_parentless_non_root_block_fails_validation() {
+        let (compressed, influence, tree) = no_separator_case();
+        let mut dag = build_target_projection_dag(&compressed, &influence, &tree).unwrap();
+        let root = dag.blocks[0].clone();
+        dag.blocks.push(ProjectionBlock::new(
+            BlockId(99),
+            None,
+            root.local_variables,
+            BTreeSet::new(),
+        ));
+        refresh_hashes(&mut dag, &compressed);
+        let err = validate_projection_dag(&dag, &compressed).unwrap_err();
+        assert_eq!(err.public_status(), SolverStatus::ImplementationBug);
+    }
+
+    #[test]
+    fn parent_must_list_non_root_child() {
+        let (compressed, influence, tree) = no_separator_case();
+        let mut dag = build_target_projection_dag(&compressed, &influence, &tree).unwrap();
+        let root_id = dag.root_block_id;
+        let root = dag.blocks[0].clone();
+        dag.blocks.push(ProjectionBlock::new(
+            BlockId(100),
+            Some(root_id),
+            root.local_variables,
+            BTreeSet::new(),
+        ));
+        refresh_hashes(&mut dag, &compressed);
+        let err = validate_projection_dag(&dag, &compressed).unwrap_err();
+        assert_eq!(err.public_status(), SolverStatus::ImplementationBug);
+    }
+
+    #[test]
+    fn duplicate_root_reachability_fails_validation() {
+        let (compressed, influence, tree) = no_separator_case();
+        let mut dag = build_target_projection_dag(&compressed, &influence, &tree).unwrap();
+        let root_id = dag.root_block_id;
+        let root = dag.blocks[0].clone();
+        let child_id = BlockId(101);
+        dag.blocks[0].child_block_ids = vec![child_id, child_id];
+        dag.blocks.push(ProjectionBlock::new(
+            child_id,
+            Some(root_id),
+            root.local_variables,
+            BTreeSet::new(),
+        ));
         refresh_hashes(&mut dag, &compressed);
         let err = validate_projection_dag(&dag, &compressed).unwrap_err();
         assert_eq!(err.public_status(), SolverStatus::ImplementationBug);

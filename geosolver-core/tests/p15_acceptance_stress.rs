@@ -16,7 +16,6 @@ use geosolver_core::solver::pipeline::{
 };
 use geosolver_core::types::hash::{hash_sequence, Hash};
 use geosolver_core::types::ids::{RelationId, VariableId};
-use geosolver_core::types::interval::interval_contains_q;
 use geosolver_core::types::polynomial::{
     constant_poly, poly_add, poly_mul, poly_scale, poly_sub, variable_poly, SparsePolynomialQ,
 };
@@ -326,7 +325,10 @@ fn p15_support_producing_candidate_cover_suite() {
         None,
         false,
     );
-    assert!(semantic_positive.exact_image_certificate.is_none());
+    assert!(semantic_positive
+        .certificate
+        .as_ref()
+        .is_some_and(|cert| cert.exact_image_certificate_hash.is_none()));
     assert!(semantic_positive.decoded_candidates.len() >= 2);
 
     let t = VariableId(2017);
@@ -344,7 +346,10 @@ fn p15_support_producing_candidate_cover_suite() {
         None,
         false,
     );
-    assert!(semantic_branch.exact_image_certificate.is_none());
+    assert!(semantic_branch
+        .certificate
+        .as_ref()
+        .is_some_and(|cert| cert.exact_image_certificate_hash.is_none()));
 
     let t = VariableId(2039);
     let a = VariableId(2053);
@@ -583,7 +588,7 @@ fn semantic_problem(
 }
 
 #[test]
-fn p15_exact_image_semantics_suite() {
+fn p16_exact_image_scope_guard_suite() {
     let t = VariableId(503);
     let s = VariableId(509);
     let result = solve_target(
@@ -596,13 +601,16 @@ fn p15_exact_image_semantics_suite() {
         ),
         exact_options(),
     );
-    assert_eq!(result.status, SolverStatus::CertifiedExactTargetImage);
-    assert_eq!(result.decoded_candidates.len(), 1);
-    assert!(interval_contains_q(
-        &result.decoded_candidates[0].isolating_interval,
-        &int_q(1)
-    ));
-    assert!(result.exact_image_certificate.is_some());
+    assert_eq!(result.status, SolverStatus::CertificateDesignGap);
+    assert_eq!(result.decoded_candidates.len(), 2);
+    assert!(result
+        .certificate
+        .as_ref()
+        .is_some_and(|cert| cert.exact_image_certificate_hash.is_none()));
+    assert!(result
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.name == "ExactImageOutOfScope"));
 
     let t = VariableId(521);
     let s = VariableId(523);
@@ -616,10 +624,13 @@ fn p15_exact_image_semantics_suite() {
         ),
         exact_options(),
     );
-    assert_eq!(result.status, SolverStatus::CertifiedEmptyRealTargetImage);
+    assert_eq!(result.status, SolverStatus::CertificateDesignGap);
     assert!(result.support_polynomial.is_some());
-    assert!(result.decoded_candidates.is_empty());
-    assert!(result.exact_image_certificate.is_some());
+    assert_eq!(result.decoded_candidates.len(), 2);
+    assert!(result
+        .certificate
+        .as_ref()
+        .is_some_and(|cert| cert.exact_image_certificate_hash.is_none()));
 
     let t = VariableId(541);
     let s = VariableId(547);
@@ -633,9 +644,12 @@ fn p15_exact_image_semantics_suite() {
         ),
         exact_options(),
     );
-    assert_eq!(result.status, SolverStatus::CertifiedExactTargetImage);
-    assert_eq!(result.decoded_candidates.len(), 1);
-    assert!(result.exact_image_certificate.is_some());
+    assert_eq!(result.status, SolverStatus::CertificateDesignGap);
+    assert_eq!(result.decoded_candidates.len(), 2);
+    assert!(result
+        .certificate
+        .as_ref()
+        .is_some_and(|cert| cert.exact_image_certificate_hash.is_none()));
 }
 
 #[test]
@@ -682,7 +696,6 @@ fn p15_failure_and_nonfinite_semantics_suite() {
     assert_eq!(result.status, SolverStatus::CertifiedNonFiniteTargetImage);
     assert!(result.support_polynomial.is_none());
     assert!(result.certificate.is_none());
-    assert!(result.nonfinite_certificate.is_some());
     assert!(
         replay_run_certificate(
             &result,

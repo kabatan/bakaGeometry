@@ -1,0 +1,25 @@
+Purpose: P17 static audit evidence
+Status: evidence, non-authoritative
+
+Command:
+`python geosolver-core\scripts\audit_v4_conformance.py --phase P17 --strict`
+
+Output:
+```text
+RGDTPK-Q v4 finite candidate-cover static audit
+root: C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry\geosolver-core
+phase: P17
+production_rust_files: 103
+findings: 0
+```
+
+P17 audit coverage:
+- SolverOptions includes finite candidate-cover mode and exact-image mode.
+- SolverOptions includes route/resource/root/certificate controls.
+- Pipeline exposes named stage functions.
+- Orchestrator order matches the finite candidate-cover source path.
+- Message verification precedes composition.
+- Global support verification precedes root isolation/decode.
+- Failure finalization carries cost trace evidence.
+- GlobalCostTrace contains source cost-compression fields including final support degree and certificate size.
+- CoreRunCertificate binds solver options, support, squarefree support, root isolation, decoded candidates, support certificate, and final DAG replay evidence.

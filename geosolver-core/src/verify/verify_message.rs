@@ -6,6 +6,7 @@ use crate::algebra::krylov::{
     block_krylov_sequence, certify_krylov_coverage, recover_recurrence, verify_annihilator,
     KrylovPlan,
 };
+use crate::algebra::linear_solve::{solve_homogeneous_modular, MatrixBuilder, ModularSolvePlan};
 use crate::algebra::norm_trace::verify_norm_tower_plan_relation;
 use crate::algebra::normal_form::verify_membership_by_certificate;
 use crate::algebra::quotient::{
@@ -13,7 +14,7 @@ use crate::algebra::quotient::{
 };
 use crate::algebra::regular_chain::{
     combine_chain_projections, local_regular_chain_decomposition, project_chain_to_variables,
-    RegularChainInput,
+    verify_regular_chain_dag_evidence, RegularChainInput,
 };
 use crate::algebra::resultant::{
     build_sparse_resultant_template, compute_resultant_relation, verify_resultant_certificate,
@@ -21,6 +22,7 @@ use crate::algebra::resultant::{
 };
 use crate::compose::message::{hash_projection_message, ProjectionMessage};
 use crate::compose::message::{MessageRepresentation, ProjectionStrength};
+use crate::kernels::target_relation_search::build_membership_matrix;
 use crate::kernels::target_univariate::target_only_support_from_polynomials;
 use crate::kernels::traits::{KernelContext, KernelKind};
 use crate::planner::cost_model::RouteCostClass;
@@ -29,14 +31,19 @@ use crate::preprocess::compression::{affine_parts_in_variable, substitute_ration
 use crate::result::status::{FailureKind, SolverError, SolverErrorKind};
 use crate::types::hash::{hash_sequence, Hash};
 use crate::types::ids::VariableId;
+use crate::types::matrix::{hash_matrix, VectorQ};
+use crate::types::monomial::Monomial;
 use crate::types::polynomial::{
-    clear_denominators_primitive, constant_poly, poly_add, poly_mul, poly_scale, poly_variables,
-    substitute_poly, zero_poly, SparsePolynomialQ, SubstitutionMap,
+    clear_denominators_primitive, constant_poly, normalize_poly, poly_add, poly_mul, poly_scale,
+    poly_variables, substitute_poly, zero_poly, SparsePolynomialQ, SubstitutionMap, TermQ,
 };
 use crate::types::rational::{div_q, int_q, is_zero_q, neg_q, RationalQ};
 use crate::types::univariate::UniPolynomialQ;
 use crate::verify::certificates::{
-    kernel_certificate_binding_hash, KernelCertificate, KernelCertificatePayload,
+    kernel_certificate_binding_hash, target_relation_exact_identity_hash,
+    target_relation_hash_list, target_relation_monomial_support_hash,
+    target_relation_multipliers_hash, target_relation_variable_hash, KernelCertificate,
+    KernelCertificatePayload, MembershipProjectionCertificate, TargetRelationSearchCertificate,
 };
 
 pub fn verify_projection_message(
@@ -136,6 +143,7 @@ fn verify_payload_exact(
         cert.certificate_route,
         &message.relation_generators,
         ctx,
+        Some(message),
     )
 }
 
@@ -249,6 +257,7 @@ fn verify_payload_for_outputs(
     route: CertificateRoute,
     output_relations: &[SparsePolynomialQ],
     ctx: &KernelContext,
+    message: Option<&ProjectionMessage>,
 ) -> Result<(), SolverError> {
     match (route, payload) {
         (
@@ -275,11 +284,7 @@ fn verify_payload_for_outputs(
         (
             CertificateRoute::DenseRelationSearchMembership,
             KernelCertificatePayload::Membership(proof),
-        ) => verify_membership_outputs(
-            &proof.source_relations,
-            output_relations,
-            &proof.output_memberships,
-        ),
+        ) => verify_membership_projection_outputs(proof, output_relations, ctx, cert, message),
         (
             CertificateRoute::GuardedAffineProjectionCertificate,
             KernelCertificatePayload::GuardedAffine(proof),
@@ -287,7 +292,7 @@ fn verify_payload_for_outputs(
             if output_relations != proof.output_relations {
                 return Err(implementation_bug("guarded affine output mismatch"));
             }
-            let recomputed = replay_guarded_affine_outputs(proof)?;
+            let recomputed = replay_guarded_affine_outputs(proof, ctx)?;
             if recomputed != proof.output_relations {
                 return Err(implementation_bug(
                     "guarded affine payload does not replay to message outputs",
@@ -387,6 +392,7 @@ fn verify_payload_for_outputs(
                     })?,
                     output_relations,
                     ctx,
+                    message,
                 )?;
             }
             if !proof.output_memberships.is_empty() {
@@ -423,13 +429,11 @@ fn verify_universal_strategy_trace(
     ctx: &KernelContext,
 ) -> Result<(), SolverError> {
     let expected = [
+        UniversalStrategy::EliminationGroebnerLocal,
+        UniversalStrategy::F4EliminationLocal,
         UniversalStrategy::TargetRelationSearchEscalated,
-        UniversalStrategy::SparseResultantIfSquareOrOverdetermined,
-        UniversalStrategy::TargetActionKrylovIfQuotientCertifiable,
+        UniversalStrategy::ResultantIfSquareOrOverdetermined,
         UniversalStrategy::SpecializeProjectInterpolateVerify,
-        UniversalStrategy::RegularChainIfTriangular,
-        UniversalStrategy::NormTraceIfTower,
-        UniversalStrategy::LocalGroebnerEliminationToKeepZ,
     ];
     if proof.attempted_strategies != expected {
         return Err(implementation_bug(
@@ -456,8 +460,13 @@ fn verify_universal_strategy_trace(
         universal_strategy_for_inner_payload(inner).ok_or_else(|| {
             implementation_bug("universal inner payload has no declared strategy mapping")
         })?
-    } else if !proof.output_memberships.is_empty() {
-        UniversalStrategy::LocalGroebnerEliminationToKeepZ
+    } else if !proof.output_memberships.is_empty()
+        && matches!(
+            proof.chosen_strategy,
+            UniversalStrategy::EliminationGroebnerLocal | UniversalStrategy::F4EliminationLocal
+        )
+    {
+        proof.chosen_strategy
     } else {
         return Err(certificate_gap(
             proof.stage_certificate_hash,
@@ -612,18 +621,11 @@ fn universal_strategy_for_inner_payload(
             Some(UniversalStrategy::TargetRelationSearchEscalated)
         }
         KernelCertificatePayload::SparseResultant(_) => {
-            Some(UniversalStrategy::SparseResultantIfSquareOrOverdetermined)
-        }
-        KernelCertificatePayload::TargetAction(_) => {
-            Some(UniversalStrategy::TargetActionKrylovIfQuotientCertifiable)
+            Some(UniversalStrategy::ResultantIfSquareOrOverdetermined)
         }
         KernelCertificatePayload::SpecializationInterpolation(_) => {
             Some(UniversalStrategy::SpecializeProjectInterpolateVerify)
         }
-        KernelCertificatePayload::RegularChain(_) => {
-            Some(UniversalStrategy::RegularChainIfTriangular)
-        }
-        KernelCertificatePayload::NormTrace(_) => Some(UniversalStrategy::NormTraceIfTower),
         _ => None,
     }
 }
@@ -819,6 +821,267 @@ fn verify_membership_outputs(
     Ok(())
 }
 
+fn verify_membership_projection_outputs(
+    proof: &MembershipProjectionCertificate,
+    output_relations: &[SparsePolynomialQ],
+    ctx: &KernelContext,
+    cert: &KernelCertificate,
+    message: Option<&ProjectionMessage>,
+) -> Result<(), SolverError> {
+    verify_membership_outputs(
+        &proof.source_relations,
+        output_relations,
+        &proof.output_memberships,
+    )?;
+    if let Some(target_relation_search) = &proof.target_relation_search {
+        verify_target_relation_search_certificate(
+            proof,
+            target_relation_search,
+            output_relations,
+            ctx,
+            cert,
+            message,
+        )?;
+    }
+    Ok(())
+}
+
+fn verify_target_relation_search_certificate(
+    proof: &MembershipProjectionCertificate,
+    target_relation_search: &TargetRelationSearchCertificate,
+    output_relations: &[SparsePolynomialQ],
+    ctx: &KernelContext,
+    cert: &KernelCertificate,
+    message: Option<&ProjectionMessage>,
+) -> Result<(), SolverError> {
+    if output_relations.len() != 1 || proof.output_memberships.len() != 1 {
+        return Err(implementation_bug(
+            "target relation search certificate must bind one output relation",
+        ));
+    }
+    let relation = &output_relations[0];
+    if target_relation_search.relation_hash != relation.hash {
+        return Err(implementation_bug(
+            "target relation search certificate relation hash mismatch",
+        ));
+    }
+    if let Some(message) = message {
+        if target_relation_search.source_relation_ids != message.source_relation_ids {
+            return Err(implementation_bug(
+                "target relation search source relation ids mismatch",
+            ));
+        }
+    }
+    let source_relation_hashes = proof
+        .source_relations
+        .iter()
+        .map(|relation| relation.hash)
+        .collect::<Vec<_>>();
+    if target_relation_search.source_relation_hashes != source_relation_hashes {
+        return Err(implementation_bug(
+            "target relation search certificate source hashes mismatch",
+        ));
+    }
+    if target_relation_search.exported_variables_hash
+        != target_relation_variable_hash(
+            "target-relation-search-exported-variables",
+            &cert.exported_variables,
+        )
+    {
+        return Err(implementation_bug(
+            "target relation search exported variable hash mismatch",
+        ));
+    }
+    let exported = cert
+        .exported_variables
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    let eliminated = ctx
+        .block
+        .local_variables
+        .difference(&exported)
+        .copied()
+        .collect::<Vec<_>>();
+    if target_relation_search.eliminated_variables_hash
+        != target_relation_variable_hash("target-relation-search-eliminated-variables", &eliminated)
+    {
+        return Err(implementation_bug(
+            "target relation search eliminated variable hash mismatch",
+        ));
+    }
+    let support_hash = target_relation_hash_list(
+        "target-relation-search-multiplier-support-hash-list",
+        &target_relation_search.multiplier_support_hashes,
+    );
+    let export_support_hash = target_relation_monomial_support_hash(
+        "rgq042-export-support",
+        &target_relation_search.export_support,
+    );
+    if target_relation_search.export_support_hash != export_support_hash {
+        return Err(implementation_bug(
+            "target relation search export support hash mismatch",
+        ));
+    }
+    let multiplier_support_hashes = target_relation_search
+        .multiplier_supports
+        .iter()
+        .map(|support| target_relation_monomial_support_hash("rgq042-multiplier-support", support))
+        .collect::<Vec<_>>();
+    if target_relation_search.multiplier_support_hashes != multiplier_support_hashes {
+        return Err(implementation_bug(
+            "target relation search multiplier support hashes mismatch",
+        ));
+    }
+    if target_relation_search.multiplier_support_hash != support_hash {
+        return Err(implementation_bug(
+            "target relation search multiplier support hash mismatch",
+        ));
+    }
+    let matrix = build_membership_matrix(
+        &proof.source_relations,
+        &target_relation_search.export_support,
+        &target_relation_search.multiplier_supports,
+        &target_relation_search.row_monomials,
+    );
+    if target_relation_search.membership_matrix_hash != hash_matrix(&matrix) {
+        return Err(implementation_bug(
+            "target relation search membership matrix hash mismatch",
+        ));
+    }
+    let recomputed_modular = solve_homogeneous_modular(
+        MatrixBuilder {
+            matrix: matrix.clone(),
+        },
+        ModularSolvePlan {
+            seed: 101,
+            max_primes: 4,
+            stable_rank_after: 2,
+            reconstruction_height_bound: None,
+        },
+    );
+    let primes_used = recomputed_modular
+        .traces
+        .iter()
+        .map(|trace| trace.prime)
+        .collect::<Vec<_>>();
+    if target_relation_search.primes_used != primes_used {
+        return Err(implementation_bug(
+            "target relation search modular prime trace mismatch",
+        ));
+    }
+    let multipliers =
+        membership_multipliers(proof.source_relations.len(), &proof.output_memberships[0])?;
+    let (candidate_relation, candidate_multipliers) = relation_and_multipliers_from_candidate(
+        &target_relation_search.accepted_candidate_vector,
+        &target_relation_search.export_support,
+        &target_relation_search.multiplier_supports,
+    )?;
+    if candidate_relation != *relation || candidate_multipliers != multipliers {
+        return Err(implementation_bug(
+            "target relation search accepted candidate vector mismatch",
+        ));
+    }
+    let rational_reconstruction_hash = hash_sequence(
+        "target-relation-search-rational-reconstruction",
+        &[rational_vector_bytes(
+            &target_relation_search.accepted_candidate_vector,
+        )],
+    );
+    if target_relation_search.rational_reconstruction_hash != rational_reconstruction_hash {
+        return Err(implementation_bug(
+            "target relation search rational reconstruction hash mismatch",
+        ));
+    }
+    if target_relation_search.multipliers_hash != target_relation_multipliers_hash(&multipliers) {
+        return Err(implementation_bug(
+            "target relation search multipliers hash mismatch",
+        ));
+    }
+    if target_relation_search.exact_identity_hash
+        != target_relation_exact_identity_hash(relation, &multipliers, &proof.source_relations)
+    {
+        return Err(implementation_bug(
+            "target relation search exact identity hash mismatch",
+        ));
+    }
+    Ok(())
+}
+
+fn relation_and_multipliers_from_candidate(
+    vector: &VectorQ,
+    export_support: &[Monomial],
+    multiplier_supports: &[Vec<Monomial>],
+) -> Result<(SparsePolynomialQ, Vec<SparsePolynomialQ>), SolverError> {
+    let expected_len = export_support.len()
+        + multiplier_supports
+            .iter()
+            .map(|support| support.len())
+            .sum::<usize>();
+    if vector.entries.len() != expected_len {
+        return Err(implementation_bug(
+            "target relation search accepted candidate vector has wrong width",
+        ));
+    }
+    let relation = polynomial_from_support_coefficients(
+        export_support,
+        &vector.entries[..export_support.len()],
+    );
+    let mut offset = export_support.len();
+    let mut multipliers = Vec::new();
+    for support in multiplier_supports {
+        let end = offset + support.len();
+        multipliers.push(polynomial_from_support_coefficients(
+            support,
+            &vector.entries[offset..end],
+        ));
+        offset = end;
+    }
+    Ok((relation, multipliers))
+}
+
+fn polynomial_from_support_coefficients(
+    support: &[Monomial],
+    coeffs: &[RationalQ],
+) -> SparsePolynomialQ {
+    normalize_poly(SparsePolynomialQ {
+        terms: support
+            .iter()
+            .zip(coeffs.iter())
+            .filter(|(_, coeff)| !is_zero_q(coeff))
+            .map(|(monomial, coeff)| TermQ {
+                coeff: coeff.clone(),
+                monomial: monomial.clone(),
+            })
+            .collect(),
+        hash: hash_sequence("poly", &[]),
+    })
+}
+
+fn rational_vector_bytes(vector: &VectorQ) -> Vec<u8> {
+    vector
+        .entries
+        .iter()
+        .flat_map(crate::types::rational::rational_to_bytes)
+        .collect()
+}
+
+fn membership_multipliers(
+    source_count: usize,
+    membership: &crate::algebra::normal_form::MembershipCertificate,
+) -> Result<Vec<SparsePolynomialQ>, SolverError> {
+    let mut multipliers = vec![zero_poly(); source_count];
+    for term in &membership.combination_terms {
+        let Some(slot) = multipliers.get_mut(term.relation_id) else {
+            return Err(implementation_bug(
+                "target relation search membership references missing source relation",
+            ));
+        };
+        *slot = poly_add(slot, &term.multiplier);
+    }
+    Ok(multipliers)
+}
+
 fn verify_target_action_payload(
     proof: &crate::verify::certificates::TargetActionProjectionCertificate,
     output_relations: &[SparsePolynomialQ],
@@ -897,6 +1160,11 @@ fn verify_regular_chain_payload(
         semantics: proof.dag.semantics,
     })
     .map_err(|_| implementation_bug("regular chain DAG replay failed"))?;
+    if !verify_regular_chain_dag_evidence(&proof.dag) {
+        return Err(implementation_bug(
+            "regular chain regularity or guard evidence failed replay",
+        ));
+    }
     if dag != proof.dag {
         return Err(implementation_bug("regular chain DAG hash replay mismatch"));
     }
@@ -958,6 +1226,7 @@ fn univariate_to_sparse(poly: &UniPolynomialQ) -> SparsePolynomialQ {
 
 fn replay_guarded_affine_outputs(
     proof: &crate::verify::certificates::GuardedAffineProjectionCertificate,
+    ctx: &KernelContext,
 ) -> Result<Vec<SparsePolynomialQ>, SolverError> {
     if proof.source_relation_ids.len() != proof.source_relations.len() {
         return Err(implementation_bug(
@@ -1004,9 +1273,17 @@ fn replay_guarded_affine_outputs(
                 })
                 .collect::<Vec<_>>()
         } else {
-            if step.denominator_guard_hash.is_none() {
+            let Some(denominator_guard_hash) = step.denominator_guard_hash else {
                 return Err(implementation_bug(
                     "guarded affine nonconstant pivot lacks guard hash",
+                ));
+            };
+            let guard_matches = ctx.system.guards.iter().any(|guard| {
+                guard.guard_hash == denominator_guard_hash && guard.factor.hash == pivot.hash
+            });
+            if !guard_matches {
+                return Err(implementation_bug(
+                    "guarded affine denominator guard is not authorized for pivot",
                 ));
             }
             let numerator = poly_scale(&rest, &int_q(-1));

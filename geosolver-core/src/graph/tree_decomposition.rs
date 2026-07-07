@@ -198,8 +198,8 @@ fn choose_useful_separator(
 ) -> SeparatorDecision {
     let mut candidates = articulation_variable_candidates(g);
     candidates.extend(min_fill_separator_candidates(g, target));
+    candidates.extend(bounded_min_cut_separator_candidates(g, target));
     if g.variables.len() >= 6 {
-        candidates.extend(bounded_min_cut_separator_candidates(g, target));
         candidates.extend(algebraic_intermediate_separator_candidates(g, target));
         candidates.extend(low_degree_definitional_affine_candidates(g, target));
     }
@@ -436,6 +436,38 @@ mod tests {
         assert!(tree.diagnostics.iter().any(|diagnostic| diagnostic.selected
             && diagnostic.best_candidate_vars == vec![s1, s2]
             && diagnostic.reason == "selected_cost_improving_separator"));
+    }
+
+    #[test]
+    fn bounded_min_cut_is_tried_for_sub_six_variable_blocks() {
+        let t = VariableId(70);
+        let s1 = VariableId(71);
+        let s2 = VariableId(72);
+        let b = VariableId(73);
+        let c = VariableId(74);
+        let problem = make_problem(
+            vec![t, s1, s2, b, c],
+            t,
+            vec![
+                dense_pair_relation(t, s1, 96),
+                dense_pair_relation(b, c, 96),
+                poly_mul(&variable_poly(t), &variable_poly(s2)),
+                poly_mul(&variable_poly(b), &variable_poly(s1)),
+                poly_mul(&variable_poly(c), &variable_poly(s2)),
+            ],
+            Vec::new(),
+        );
+        let canonical = canonicalize_system(validate_input(problem).unwrap()).unwrap();
+        let compressed = CompressionState::from_system(canonical).to_compressed_system();
+        let h = build_relation_variable_hypergraph(&compressed);
+        let influence = build_target_influence_graph(&h, t);
+        let g = build_weighted_primal_graph(&compressed, &influence);
+        let tree = build_target_rooted_decomposition(&g, t, &CostModel::default());
+
+        assert_eq!(tree.root.separator.len(), 2);
+        assert!(tree.diagnostics.iter().any(|diagnostic| diagnostic.selected
+            && diagnostic.variable_count == 5
+            && diagnostic.best_candidate_kind == Some(SeparatorCandidateKind::BoundedMinCut)));
     }
 
     #[test]

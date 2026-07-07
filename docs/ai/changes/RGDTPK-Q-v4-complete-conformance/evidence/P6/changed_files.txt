@@ -1,0 +1,12 @@
+geosolver-core/src/graph/hypergraph.rs
+geosolver-core/src/graph/influence.rs
+geosolver-core/src/graph/tree_decomposition.rs
+geosolver-core/src/graph/projection_dag.rs
+geosolver-core/scripts/audit_v4_conformance.py
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P6/source_to_code_map.md
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P6/algorithm_evidence.md
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P6/commands.log
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P6/static_audit.log
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P6/changed_files.txt
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P6/review_request.md
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P6/review_result.md

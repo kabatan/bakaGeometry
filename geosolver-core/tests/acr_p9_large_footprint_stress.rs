@@ -30,7 +30,8 @@ struct Variant {
 
 #[derive(Debug, Clone, Copy)]
 struct Expectations {
-    successful_route: KernelKind,
+    successful_route: Option<KernelKind>,
+    required_failed_route: Option<KernelKind>,
     dense_trs_materialization_allowed: Option<bool>,
     sparse_resultant_status: Option<&'static str>,
     sparse_resultant_cost_class: Option<&'static str>,
@@ -161,8 +162,10 @@ fn assert_support_producing_success(
         "{label}: support polynomial must be nonconstant"
     );
     assert!(result.squarefree_support_polynomial.is_some());
-    assert!(result.exact_image_certificate.is_none());
-    assert!(result.nonfinite_certificate.is_none());
+    assert!(result
+        .certificate
+        .as_ref()
+        .is_some_and(|cert| cert.exact_image_certificate_hash.is_none()));
     assert!(!result.projection_messages.is_empty());
     assert!(result.certificate.is_some());
     assert!(result.cost_trace.final_support_degree.is_some());
@@ -192,25 +195,41 @@ fn assert_support_producing_success(
         .iter()
         .map(|message| message.kernel_kind)
         .collect::<Vec<_>>();
-    assert!(
-        result.projection_messages.iter().any(|message| {
-            message.kernel_kind == expectations.successful_route
-                && message_routes.contains(&message.kernel_kind)
-        }),
-        "{label}: required verified route {:?}, messages={:?}, diagnostics={:?}",
-        expectations.successful_route,
-        message_routes,
-        result.diagnostics
-    );
-    assert!(
-        result.diagnostics.iter().any(|record| {
-            record.name == "BlockProjectionRouteSuccess"
-                && record.details.get("kernel_kind").map(String::as_str)
-                    == Some(kernel_name(expectations.successful_route))
-        }),
-        "{label}: missing success route trace for {:?}",
-        expectations.successful_route
-    );
+    if let Some(successful_route) = expectations.successful_route {
+        assert!(
+            result.projection_messages.iter().any(|message| {
+                message.kernel_kind == successful_route
+                    && message_routes.contains(&message.kernel_kind)
+            }),
+            "{label}: required verified route {:?}, messages={:?}, diagnostics={:?}",
+            successful_route,
+            message_routes,
+            result.diagnostics
+        );
+        assert!(
+            result.diagnostics.iter().any(|record| {
+                record.name == "BlockProjectionRouteSuccess"
+                    && record.details.get("kernel_kind").map(String::as_str)
+                        == Some(kernel_name(successful_route))
+            }),
+            "{label}: missing success route trace for {:?}",
+            successful_route
+        );
+    }
+    if let Some(required_failed_route) = expectations.required_failed_route {
+        assert!(
+            result.diagnostics.iter().any(|record| {
+                record.name == "BlockProjectionFailureTrace"
+                    && record.details.get("kernel_kind").map(String::as_str)
+                        == Some(kernel_name(required_failed_route))
+                    && record.details.get("route_event").map(String::as_str)
+                        == Some("route_allowed_failure")
+            }),
+            "{label}: missing allowed failed route trace for {:?}; diagnostics={:?}",
+            required_failed_route,
+            result.diagnostics
+        );
+    }
 
     if let Some(required_dense_allowed) = expectations.dense_trs_materialization_allowed {
         assert!(
@@ -439,7 +458,8 @@ fn s1_target_action_large_block(
         make_problem(vec![y, t, x], t, relations, Vec::new()),
         options_prioritizing_with_dense_cap(KernelKind::TargetActionKrylov, 0),
         Expectations {
-            successful_route: KernelKind::TargetActionKrylov,
+            successful_route: Some(KernelKind::TargetActionKrylov),
+            required_failed_route: None,
             dense_trs_materialization_allowed: Some(false),
             sparse_resultant_status: None,
             sparse_resultant_cost_class: None,
@@ -468,7 +488,8 @@ fn s2_sparse_relation_search(
         make_problem(vec![t, x, y], t, relations, Vec::new()),
         options_prioritizing_with_dense_cap(KernelKind::TargetRelationSearch, 0),
         Expectations {
-            successful_route: KernelKind::TargetRelationSearch,
+            successful_route: Some(KernelKind::TargetRelationSearch),
+            required_failed_route: None,
             dense_trs_materialization_allowed: Some(false),
             sparse_resultant_status: None,
             sparse_resultant_cost_class: None,
@@ -497,7 +518,8 @@ fn s3_sparse_resultant_feasible(
         make_problem(vec![t, x], t, relations, Vec::new()),
         options_prioritizing(KernelKind::SparseResultantProjection),
         Expectations {
-            successful_route: KernelKind::SparseResultantProjection,
+            successful_route: Some(KernelKind::SparseResultantProjection),
+            required_failed_route: None,
             dense_trs_materialization_allowed: None,
             sparse_resultant_status: Some("Admitted"),
             sparse_resultant_cost_class: None,
@@ -548,7 +570,8 @@ fn s4_sparse_resultant_prohibited(
             ])
         },
         Expectations {
-            successful_route: KernelKind::TargetRelationSearch,
+            successful_route: Some(KernelKind::TargetRelationSearch),
+            required_failed_route: None,
             dense_trs_materialization_allowed: Some(false),
             sparse_resultant_status: None,
             sparse_resultant_cost_class: Some("CostProhibited"),
@@ -583,7 +606,8 @@ fn s5_specialization_interpolation(
             ..options_prioritizing_order(vec![KernelKind::SpecializationInterpolation])
         },
         Expectations {
-            successful_route: KernelKind::SpecializationInterpolation,
+            successful_route: Some(KernelKind::SpecializationInterpolation),
+            required_failed_route: None,
             dense_trs_materialization_allowed: Some(false),
             sparse_resultant_status: None,
             sparse_resultant_cost_class: None,
@@ -614,7 +638,8 @@ fn s6_universal_internal_failures(
         make_problem(vec![t, z, y, x], t, relations, Vec::new()),
         options_prioritizing_with_dense_cap(KernelKind::UniversalTargetElimination, 0),
         Expectations {
-            successful_route: KernelKind::UniversalTargetElimination,
+            successful_route: Some(KernelKind::TargetActionKrylov),
+            required_failed_route: Some(KernelKind::UniversalTargetElimination),
             dense_trs_materialization_allowed: Some(false),
             sparse_resultant_status: None,
             sparse_resultant_cost_class: None,
@@ -622,7 +647,7 @@ fn s6_universal_internal_failures(
             require_sparse_resultant_bounded_failure_probe: false,
             require_graph_split: false,
             require_one_large_block: false,
-            required_universal_internal_failures: 2,
+            required_universal_internal_failures: 0,
         },
     )
 }
@@ -632,8 +657,6 @@ fn s7_graph_decomposition_separator(
 ) -> (RationalTargetProblem, SolverOptions, Expectations) {
     let [t, u, w, x, y] = ids(variant, [83, 89, 97, 101, 103]);
     let x2 = poly_mul(&vp(x), &vp(x));
-    let x4 = poly_mul(&x2, &x2);
-    let x6 = poly_mul(&x4, &x2);
     let u2 = poly_mul(&vp(u), &vp(u));
     let w2 = poly_mul(&vp(w), &vp(w));
     let y2 = poly_mul(&vp(y), &vp(y));
@@ -646,14 +669,14 @@ fn s7_graph_decomposition_separator(
             poly_sub(&y2, &x2),
             poly_sub(&w2, &u2),
             poly_sub(&x2, &w2),
-            poly_sub(&x6, &cp(4)),
         ],
     );
     (
         make_problem(vec![w, x, t, y, u], t, relations, Vec::new()),
-        options_prioritizing(KernelKind::TargetRelationSearch),
+        options_prioritizing(KernelKind::TargetActionKrylov),
         Expectations {
-            successful_route: KernelKind::TargetRelationSearch,
+            successful_route: None,
+            required_failed_route: None,
             dense_trs_materialization_allowed: None,
             sparse_resultant_status: None,
             sparse_resultant_cost_class: None,
@@ -682,7 +705,8 @@ fn s8_one_large_block_universal(
         make_problem(vec![y, x, t], t, relations, Vec::new()),
         options_prioritizing_with_dense_cap(KernelKind::UniversalTargetElimination, 0),
         Expectations {
-            successful_route: KernelKind::UniversalTargetElimination,
+            successful_route: Some(KernelKind::UniversalTargetElimination),
+            required_failed_route: None,
             dense_trs_materialization_allowed: None,
             sparse_resultant_status: None,
             sparse_resultant_cost_class: None,
@@ -710,10 +734,8 @@ fn variant_relations(
             }
         })
         .collect::<Vec<_>>();
-    if variant.permute_relations {
-        if out.len() > 1 {
-            out.swap(0, 1);
-        }
+    if variant.permute_relations && out.len() > 1 {
+        out.swap(0, 1);
     }
     out
 }

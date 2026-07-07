@@ -1,0 +1,11 @@
+geosolver-core/src/preprocess/compression.rs
+geosolver-core/src/preprocess/binomial.rs
+geosolver-core/src/preprocess/linear_affine.rs
+geosolver-core/src/preprocess/saturation.rs
+geosolver-core/scripts/audit_v4_conformance.py
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P5/source_to_code_map.md
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P5/algorithm_evidence.md
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P5/commands.log
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P5/static_audit.log
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P5/changed_files.txt
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P5/review_request.md

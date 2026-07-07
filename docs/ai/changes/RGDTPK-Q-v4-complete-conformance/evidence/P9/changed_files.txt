@@ -1,0 +1,13 @@
+geosolver-core/src/kernels/target_relation_search.rs
+geosolver-core/src/planner/relation_schedule.rs
+geosolver-core/src/algebra/linear_solve.rs
+geosolver-core/src/verify/certificates.rs
+geosolver-core/src/verify/verify_message.rs
+geosolver-core/scripts/audit_v4_conformance.py
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P9/source_to_code_map.md
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P9/algorithm_evidence.md
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P9/commands.log
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P9/static_audit.log
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P9/changed_files.txt
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P9/review_request.md
+docs/ai/changes/RGDTPK-Q-v4-complete-conformance/evidence/P9/review_result.md

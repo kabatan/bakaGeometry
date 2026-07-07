@@ -33,6 +33,9 @@ pub fn build_relation_variable_hypergraph(
         variable_to_relations: BTreeMap::new(),
         hypergraph_hash: hash_sequence("relation-variable-hypergraph", &[]),
     };
+    for variable in &system.variables {
+        h.variables.insert(*variable);
+    }
     for relation in &system.relations {
         h.relations.insert(relation.id);
         let vars = poly_variables(&relation.polynomial);
@@ -156,6 +159,10 @@ mod tests {
         let mut ctx = crate::problem::context::new_context(SolverOptions::default());
         let compressed = pre_kernel_compress(canonical, &mut ctx).unwrap();
         let h = build_relation_variable_hypergraph(&compressed);
+        assert!(compressed
+            .variables
+            .iter()
+            .all(|variable| h.variables.contains(variable)));
         for relation in &compressed.relations {
             assert_eq!(
                 relation_variables(&h, relation.id),

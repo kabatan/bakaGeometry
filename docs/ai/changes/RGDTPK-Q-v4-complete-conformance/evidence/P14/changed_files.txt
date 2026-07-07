@@ -1,0 +1,9 @@
+geosolver-core/src/compose/message.rs
+geosolver-core/src/compose/compose.rs
+geosolver-core/src/compose/final_support.rs
+geosolver-core/src/verify/verify_support.rs
+geosolver-core/src/verify/replay.rs
+geosolver-core/src/verify/run_certificate.rs
+geosolver-core/tests/p13_exact_image_semantics.rs
+geosolver-core/tests/p14_full_pipeline_integration.rs
+geosolver-core/scripts/audit_v4_conformance.py

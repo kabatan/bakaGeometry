@@ -1,0 +1,38 @@
+COMMAND: cargo fmt --manifest-path geosolver-core\Cargo.toml --check
+EXIT_CODE: 0
+
+COMMAND: python geosolver-core\scripts\audit_v4_conformance.py --phase P5 --strict
+RGDTPK-Q v4 finite candidate-cover static audit
+root: C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry\geosolver-core
+phase: P5
+production_rust_files: 103
+findings: 0
+EXIT_CODE: 0
+
+COMMAND: python geosolver-core\scripts\audit_v4_conformance.py --phase P6 --strict
+RGDTPK-Q v4 finite candidate-cover static audit
+root: C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry\geosolver-core
+phase: P6
+production_rust_files: 103
+findings: 0
+EXIT_CODE: 0
+
+COMMAND: cargo test --manifest-path geosolver-core\Cargo.toml --lib graph -- --nocapture
+RESULT: 22 passed; 0 failed; 0 ignored; 0 measured; 249 filtered out.
+EXIT_CODE: 0
+
+COMMAND: cargo test --manifest-path geosolver-core\Cargo.toml --lib projection_dag -- --nocapture
+RESULT: 7 passed; 0 failed; 0 ignored; 0 measured; 264 filtered out.
+EXIT_CODE: 0
+
+COMMAND: cargo test --manifest-path geosolver-core\Cargo.toml --lib metrics -- --nocapture
+RESULT: 1 passed; 0 failed; 0 ignored; 0 measured; 270 filtered out.
+EXIT_CODE: 0
+
+COMMAND: cargo test --manifest-path geosolver-core\Cargo.toml --lib separators -- --nocapture
+RESULT: 3 passed; 0 failed; 0 ignored; 0 measured; 268 filtered out.
+EXIT_CODE: 0
+
+COMMAND: cargo test --manifest-path geosolver-core\Cargo.toml --no-run
+RESULT: all lib and integration test executables compiled.
+EXIT_CODE: 0

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::preprocess::compression::{CompressionState, GuardKind};
 use crate::problem::context::SolverContext;
-use crate::problem::semantic::RealConstraintEncoding;
+use crate::problem::semantic::{RealConstraintEncoding, RealConstraintKind};
 use crate::result::status::SolverError;
 use crate::types::ids::{RelationId, VariableId};
 use crate::types::monomial::normalize_monomial;
@@ -56,18 +56,39 @@ pub fn find_explicit_nonzero_witness(
 }
 
 pub fn explicit_nonzero_witnesses(state: &CompressionState) -> Vec<ExplicitNonzeroWitness> {
+    let encoded_witnesses = state
+        .semantic_encodings
+        .iter()
+        .filter(|encoding| encoding.original_kind == RealConstraintKind::NonZero)
+        .flat_map(|encoding| {
+            encoding
+                .encoded_relation_ids
+                .iter()
+                .flat_map(move |relation_id| {
+                    encoding
+                        .slack_variables
+                        .iter()
+                        .map(move |slack| (*relation_id, *slack))
+                })
+        })
+        .collect::<std::collections::BTreeSet<_>>();
     let mut witnesses = state
         .relations
         .iter()
         .filter_map(|relation| {
             extract_nonzero_witness(&relation.polynomial).map(|(factor, slack_variable)| {
-                ExplicitNonzeroWitness {
-                    factor,
-                    witness_relation_id: relation.id,
-                    slack_variable,
+                if encoded_witnesses.contains(&(relation.id, slack_variable)) {
+                    Some(ExplicitNonzeroWitness {
+                        factor,
+                        witness_relation_id: relation.id,
+                        slack_variable,
+                    })
+                } else {
+                    None
                 }
             })
         })
+        .flatten()
         .collect::<Vec<_>>();
     witnesses.sort_by_key(|witness| {
         (
@@ -180,6 +201,7 @@ mod tests {
     use super::*;
     use crate::problem::canonicalize::canonicalize_system;
     use crate::problem::input::make_problem;
+    use crate::problem::semantic::{register_slack_encoding, RealConstraintKind};
     use crate::problem::validate::validate_input;
     use crate::solver::options::SolverOptions;
     use crate::types::ids::VariableId;
@@ -196,7 +218,17 @@ mod tests {
             &constant_poly(int_q(1)),
         );
         let canonical = canonicalize_system(
-            validate_input(make_problem(vec![t, a, s], t, vec![witness], Vec::new())).unwrap(),
+            validate_input(make_problem(
+                vec![t, a, s],
+                t,
+                vec![witness],
+                vec![register_slack_encoding(
+                    RealConstraintKind::NonZero,
+                    vec![RelationId(0)],
+                    vec![s],
+                )],
+            ))
+            .unwrap(),
         )
         .unwrap();
         let state = CompressionState::from_system(canonical);
@@ -204,5 +236,25 @@ mod tests {
         let state = apply_explicit_saturations(state, &mut ctx).unwrap();
         assert_eq!(state.saturations.len(), 1);
         assert_eq!(state.guards.len(), 1);
+    }
+
+    #[test]
+    fn saturation_ignores_unencoded_nonzero_shape() {
+        let t = VariableId(0);
+        let a = VariableId(1);
+        let s = VariableId(2);
+        let witness = poly_sub(
+            &poly_mul(&variable_poly(a), &variable_poly(s)),
+            &constant_poly(int_q(1)),
+        );
+        let canonical = canonicalize_system(
+            validate_input(make_problem(vec![t, a, s], t, vec![witness], Vec::new())).unwrap(),
+        )
+        .unwrap();
+        let state = CompressionState::from_system(canonical);
+        let mut ctx = crate::problem::context::new_context(SolverOptions::default());
+        let state = apply_explicit_saturations(state, &mut ctx).unwrap();
+        assert!(state.saturations.is_empty());
+        assert!(state.guards.is_empty());
     }
 }

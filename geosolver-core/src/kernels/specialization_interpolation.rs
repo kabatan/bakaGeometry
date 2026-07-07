@@ -484,7 +484,7 @@ fn build_specialization_interpolation_trace(
         relations,
         eliminated,
         exported,
-        EliminationStrategy::LocalGroebner(GroebnerOptions::default()),
+        EliminationStrategy::EliminationGroebnerLocal(GroebnerOptions::default()),
         solver_ctx,
     )?;
     crate::problem::context::check_resource_work(
@@ -904,6 +904,7 @@ fn finish_admission(
     KernelAdmission {
         kind: KernelKind::SpecializationInterpolation,
         block_id: block.block_id,
+        admission_evidence: crate::planner::admission::KernelAdmissionEvidence::empty(),
         status,
         exported_variables,
         eliminated_variables,

@@ -27,10 +27,12 @@ pub fn plan_all_blocks(
     let mut plans = Vec::new();
     for block in blocks {
         if block.relation_ids.is_empty() {
+            record_structural_empty_block(block, ctx);
             continue;
         }
         let probes = run_cost_probes(block, system, ctx);
         let admissions = collect_kernel_admissions(block, system, &probes, ctx);
+        ensure_universal_admitted_for_relation_block(block, system, &admissions)?;
         let cost_estimates = admissions
             .iter()
             .map(|admission| {
@@ -63,6 +65,63 @@ pub fn plan_all_blocks(
         plans.push(plan);
     }
     Ok(plans)
+}
+
+pub fn plan_projection_messages(
+    dag: &TargetProjectionDAG,
+    system: &CompressedSystemQ,
+    ctx: &mut SolverContext,
+) -> Result<Vec<KernelPlan>, SolverError> {
+    plan_all_blocks(dag, system, ctx)
+}
+
+fn ensure_universal_admitted_for_relation_block(
+    block: &crate::graph::projection_dag::ProjectionBlock,
+    system: &CompressedSystemQ,
+    admissions: &[KernelAdmission],
+) -> Result<(), SolverError> {
+    if block.relation_ids.is_empty()
+        || admissions.iter().any(|admission| {
+            admission.kind == KernelKind::UniversalTargetElimination && admission.is_admitted()
+        })
+    {
+        return Ok(());
+    }
+    Err(SolverError {
+        target: Some(system.target),
+        kind: SolverErrorKind::Failure(FailureKind::ImplementationBug {
+            invariant_violated: "relation block has no admitted UniversalTargetElimination kernel"
+                .to_owned(),
+        }),
+    })
+}
+
+fn record_structural_empty_block(
+    block: &crate::graph::projection_dag::ProjectionBlock,
+    ctx: &mut SolverContext,
+) {
+    let mut diagnostic = DiagnosticRecord::new(
+        "StructuralProjectionBlock",
+        format!(
+            "block_id={} has no authorized relations; no projection route required",
+            block.block_id.0
+        ),
+        Some(StageId("PlanProjectionMessages".to_owned())),
+    );
+    diagnostic
+        .details
+        .insert("block_id".to_owned(), block.block_id.0.to_string());
+    diagnostic
+        .details
+        .insert("block_hash".to_owned(), format!("{:?}", block.block_hash));
+    diagnostic
+        .details
+        .insert("relation_count".to_owned(), "0".to_owned());
+    diagnostic.details.insert(
+        "structural_record".to_owned(),
+        "empty relation block; no projection message needed".to_owned(),
+    );
+    ctx.diagnostics.push(diagnostic);
 }
 
 fn record_kernel_route_admission_diagnostics(
@@ -100,6 +159,48 @@ fn record_kernel_route_admission_diagnostics(
             "admission_hash".to_owned(),
             format!("{:?}", admission.admission_hash),
         );
+        diagnostic.details.insert(
+            "admission_evidence_hash".to_owned(),
+            format!("{:?}", admission.admission_evidence.evidence_hash),
+        );
+        if let Some(runtime_hash) = admission.admission_evidence.runtime_admission_hash {
+            diagnostic.details.insert(
+                "runtime_admission_hash".to_owned(),
+                format!("{:?}", runtime_hash),
+            );
+        }
+        diagnostic.details.insert(
+            "source_relation_count".to_owned(),
+            admission
+                .admission_evidence
+                .source_relation_ids
+                .len()
+                .to_string(),
+        );
+        if let Some(bounds) = &admission.admission_evidence.initial_resource_bounds {
+            diagnostic.details.insert(
+                "initial_bounds_hash".to_owned(),
+                format!("{:?}", bounds.bounds_hash),
+            );
+        }
+        if let Some(rows) = admission.admission_evidence.estimated_matrix_rows {
+            diagnostic.details.insert(
+                "admission_estimated_matrix_rows".to_owned(),
+                rows.to_string(),
+            );
+        }
+        if let Some(cols) = admission.admission_evidence.estimated_matrix_cols {
+            diagnostic.details.insert(
+                "admission_estimated_matrix_cols".to_owned(),
+                cols.to_string(),
+            );
+        }
+        if let Some(template_size) = admission.admission_evidence.estimated_template_size {
+            diagnostic.details.insert(
+                "admission_estimated_template_size".to_owned(),
+                template_size.to_string(),
+            );
+        }
         diagnostic.details.insert(
             "exported_variables".to_owned(),
             admission.exported_variables.len().to_string(),
@@ -423,7 +524,9 @@ mod tests {
     use crate::graph::tree_decomposition::build_target_rooted_decomposition;
     use crate::graph::weighted_primal::build_weighted_primal_graph;
     use crate::kernels::traits::KernelKind;
-    use crate::planner::admission::all_planner_kernel_kinds;
+    use crate::planner::admission::{
+        all_planner_kernel_kinds, KernelAdmission, KernelAdmissionStatus,
+    };
     use crate::planner::kernel_plan::require_declared_kernel_plan;
     use crate::planner::relation_schedule::build_dense_relation_search_schedule;
     use crate::preprocess::compression::CompressionState;
@@ -433,10 +536,14 @@ mod tests {
     use crate::problem::validate::validate_input;
     use crate::result::status::SolverStatus;
     use crate::solver::options::SolverOptions;
+    use crate::types::hash::hash_sequence;
     use crate::types::ids::VariableId;
     use crate::types::polynomial::{poly_add, poly_mul, poly_sub, variable_poly};
 
-    use super::plan_all_blocks;
+    use super::{
+        ensure_universal_admitted_for_relation_block, plan_all_blocks,
+        record_structural_empty_block,
+    };
 
     #[test]
     fn p6_planning_is_deterministic_and_declares_universal_last() {
@@ -579,6 +686,57 @@ mod tests {
                 .public_status(),
             SolverStatus::ImplementationBug
         );
+    }
+
+    #[test]
+    fn p7_relation_block_without_universal_admission_is_implementation_bug() {
+        let (compressed, dag) = one_large_block_case();
+        let block = &dag.blocks[0];
+        let admissions = all_planner_kernel_kinds()
+            .into_iter()
+            .filter(|kind| *kind != KernelKind::UniversalTargetElimination)
+            .map(|kind| KernelAdmission {
+                kind,
+                block_id: block.block_id,
+                admission_evidence: crate::planner::admission::KernelAdmissionEvidence::empty(),
+                status: KernelAdmissionStatus::Declined {
+                    reason: "synthetic non-universal admission".to_owned(),
+                },
+                exported_variables: block.exported_variables.iter().copied().collect(),
+                eliminated_variables: block
+                    .local_variables
+                    .difference(&block.exported_variables)
+                    .copied()
+                    .collect(),
+                execution_plan: None,
+                admission_hash: hash_sequence(
+                    "synthetic-admission",
+                    &[format!("{kind:?}").into_bytes()],
+                ),
+            })
+            .collect::<Vec<_>>();
+
+        let err = ensure_universal_admitted_for_relation_block(block, &compressed, &admissions)
+            .unwrap_err();
+        assert_eq!(err.public_status(), SolverStatus::ImplementationBug);
+    }
+
+    #[test]
+    fn p7_empty_relation_block_records_structural_no_projection_diagnostic() {
+        let (_compressed, dag) = one_large_block_case();
+        let mut block = dag.blocks[0].clone();
+        block.relation_ids.clear();
+        let mut ctx = new_context(SolverOptions::default());
+
+        record_structural_empty_block(&block, &mut ctx);
+
+        assert!(ctx.diagnostics.iter().any(|diagnostic| {
+            diagnostic.name == "StructuralProjectionBlock"
+                && diagnostic
+                    .details
+                    .get("structural_record")
+                    .is_some_and(|value| value.contains("no projection message needed"))
+        }));
     }
 
     fn one_large_block_case() -> (

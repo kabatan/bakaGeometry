@@ -1,0 +1,7 @@
+COMMAND: python geosolver-core\scripts\audit_v4_conformance.py --phase P7 --strict
+RGDTPK-Q v4 finite candidate-cover static audit
+root: C:\Users\bakat\OneDrive\ドキュメント\bakaGeometry\geosolver-core
+phase: P7
+production_rust_files: 103
+findings: 0
+EXIT_CODE: 0

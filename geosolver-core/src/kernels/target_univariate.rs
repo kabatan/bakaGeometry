@@ -620,6 +620,7 @@ fn finish_admission(
     KernelAdmission {
         kind: KernelKind::TargetUnivariate,
         block_id: block.block_id,
+        admission_evidence: crate::planner::admission::KernelAdmissionEvidence::empty(),
         status,
         exported_variables: block.exported_variables.iter().copied().collect(),
         eliminated_variables: block

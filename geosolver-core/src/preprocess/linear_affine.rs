@@ -9,7 +9,9 @@ use crate::preprocess::compression::{
 };
 use crate::preprocess::saturation::{find_explicit_nonzero_witness, ExplicitNonzeroWitness};
 use crate::problem::context::SolverContext;
+use crate::result::diagnostics::DiagnosticRecord;
 use crate::result::status::SolverError;
+use crate::result::status::StageId;
 use crate::types::ids::{RelationId, VariableId};
 use crate::types::polynomial::{
     constant_poly, poly_scale, poly_variables, zero_poly, SparsePolynomialQ,
@@ -165,6 +167,16 @@ pub fn eliminate_linear_affine_variables(
             .into_iter()
             .find(|pivot| state.variables.contains(&pivot.variable))
         else {
+            if candidates.iter().any(|candidate| {
+                !candidate.denominator_is_constant_nonzero
+                    && !candidate.denominator_has_recorded_nonzero_semantics
+            }) {
+                state.diagnostics.push(DiagnosticRecord::new(
+                    "UnsafeAffinePivotRejected",
+                    "linear affine elimination rejected nonconstant denominator without recorded nonzero guard",
+                    Some(StageId("PreKernelAlgebraicCompression::LinearAffineElimination".to_owned())),
+                ));
+            }
             break;
         };
         let guard_record = if pivot.denominator_is_constant_nonzero {
@@ -304,6 +316,7 @@ mod tests {
     };
     use crate::problem::canonicalize::canonicalize_system;
     use crate::problem::input::make_problem;
+    use crate::problem::semantic::{register_slack_encoding, RealConstraintKind};
     use crate::problem::validate::validate_input;
     use crate::types::polynomial::{
         clear_denominators_primitive, constant_poly, poly_add, poly_mul, poly_scale, poly_sub,
@@ -324,6 +337,30 @@ mod tests {
     ) -> CompressionState {
         let canonical = canonicalize_system(
             validate_input(make_problem(vars, target, relations, Vec::new())).unwrap(),
+        )
+        .unwrap();
+        CompressionState::from_system(canonical)
+    }
+
+    fn state_from_relations_with_nonzero_semantic(
+        relations: Vec<SparsePolynomialQ>,
+        witness_relation: RelationId,
+        slack: VariableId,
+    ) -> CompressionState {
+        let t = VariableId(0);
+        let vars = vec![t, VariableId(1), VariableId(2), VariableId(3)];
+        let canonical = canonicalize_system(
+            validate_input(make_problem(
+                vars,
+                t,
+                relations,
+                vec![register_slack_encoding(
+                    RealConstraintKind::NonZero,
+                    vec![witness_relation],
+                    vec![slack],
+                )],
+            ))
+            .unwrap(),
         )
         .unwrap();
         CompressionState::from_system(canonical)
@@ -359,7 +396,8 @@ mod tests {
             &factor,
             &poly_sub(&variable_poly(y), &constant_poly(int_q(2))),
         );
-        let state = state_from_relations(vec![witness, relation]);
+        let state =
+            state_from_relations_with_nonzero_semantic(vec![witness, relation], RelationId(0), s);
         let mut ctx =
             crate::problem::context::new_context(crate::solver::options::SolverOptions::default());
         let state = eliminate_linear_affine_variables(state, &mut ctx).unwrap();
@@ -389,8 +427,11 @@ mod tests {
             &poly_add(&variable_poly(t), &variable_poly(x)),
         );
         let y_minus_two = poly_sub(&variable_poly(y), &constant_poly(int_q(2)));
-        let state =
-            state_from_relations(vec![witness.clone(), affine.clone(), y_minus_two.clone()]);
+        let state = state_from_relations_with_nonzero_semantic(
+            vec![witness.clone(), affine.clone(), y_minus_two.clone()],
+            RelationId(0),
+            s,
+        );
         let witness_relation = state
             .relations
             .iter()
@@ -533,12 +574,11 @@ mod tests {
             &constant_poly(int_q(2)),
         );
         let x_minus_one = poly_sub(&variable_poly(x), &constant_poly(int_q(1)));
-        let state = state_from_relations(vec![
-            witness,
-            affine,
-            y_square_minus_two,
-            x_minus_one.clone(),
-        ]);
+        let state = state_from_relations_with_nonzero_semantic(
+            vec![witness, affine, y_square_minus_two, x_minus_one.clone()],
+            RelationId(0),
+            s,
+        );
 
         let mut ctx =
             crate::problem::context::new_context(crate::solver::options::SolverOptions::default());
@@ -733,6 +773,10 @@ mod tests {
             crate::problem::context::new_context(crate::solver::options::SolverOptions::default());
         let state = eliminate_linear_affine_variables(state, &mut ctx).unwrap();
         assert!(state.substitutions.is_empty());
+        assert!(state
+            .diagnostics
+            .iter()
+            .any(|diag| diag.name == "UnsafeAffinePivotRejected"));
         assert!(state.relations.iter().any(|relation| {
             let vars = poly_variables(&relation.polynomial);
             vars.contains(&y) && vars.contains(&x) && vars.contains(&t)

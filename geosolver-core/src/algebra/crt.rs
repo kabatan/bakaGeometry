@@ -21,33 +21,41 @@ pub fn crt_combine(a_mod_m: ModInteger, b_mod_n: ModInteger) -> ModInteger {
 }
 
 pub fn crt_vector_combine(v1: ModVector, mod1: BigInt, v2: ModVector, mod2: BigInt) -> ModVector {
-    assert_eq!(
-        v1.entries.len(),
-        v2.entries.len(),
-        "CRT vector length mismatch"
-    );
+    try_crt_vector_combine(&v1, &mod1, &v2, &mod2)
+        .expect("CRT vector inputs must be compatible and have matching length")
+}
+
+pub fn try_crt_vector_combine(
+    v1: &ModVector,
+    mod1: &BigInt,
+    v2: &ModVector,
+    mod2: &BigInt,
+) -> Option<ModVector> {
+    if v1.entries.len() != v2.entries.len() {
+        return None;
+    }
     let entries = v1
         .entries
         .iter()
         .zip(v2.entries.iter())
         .map(|(a, b)| {
-            crt_combine(
-                ModInteger {
+            try_crt_combine(
+                &ModInteger {
                     value: a.clone(),
                     modulus: mod1.clone(),
                 },
-                ModInteger {
+                &ModInteger {
                     value: b.clone(),
                     modulus: mod2.clone(),
                 },
             )
-            .value
+            .map(|combined| combined.value)
         })
-        .collect();
-    ModVector {
+        .collect::<Option<Vec<_>>>()?;
+    Some(ModVector {
         entries,
-        modulus: mod1.lcm(&mod2),
-    }
+        modulus: mod1.lcm(mod2),
+    })
 }
 
 pub fn try_crt_combine(a_mod_m: &ModInteger, b_mod_n: &ModInteger) -> Option<ModInteger> {
@@ -133,5 +141,27 @@ mod tests {
             },
         )
         .is_none());
+    }
+
+    #[test]
+    fn checked_vector_crt_rejects_mismatch_and_incompatibility() {
+        let v1 = ModVector {
+            entries: vec![BigInt::from(1), BigInt::from(2)],
+            modulus: BigInt::from(4),
+        };
+        let short = ModVector {
+            entries: vec![BigInt::from(1)],
+            modulus: BigInt::from(5),
+        };
+        assert!(try_crt_vector_combine(&v1, &BigInt::from(4), &short, &BigInt::from(5),).is_none());
+
+        let incompatible = ModVector {
+            entries: vec![BigInt::from(2), BigInt::from(2)],
+            modulus: BigInt::from(6),
+        };
+        assert!(
+            try_crt_vector_combine(&v1, &BigInt::from(4), &incompatible, &BigInt::from(6),)
+                .is_none()
+        );
     }
 }

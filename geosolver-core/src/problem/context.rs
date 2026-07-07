@@ -111,3 +111,50 @@ pub fn check_resource_work(
 pub fn push_diagnostic(ctx: &mut SolverContext, diag: DiagnosticRecord) {
     ctx.diagnostics.push(diag);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::kernels::traits::KernelKind;
+    use crate::types::hash::hash_sequence;
+
+    #[test]
+    fn route_budget_failure_carries_evidence() {
+        let mut ctx = new_context(SolverOptions {
+            kernel_priority: vec![KernelKind::TargetRelationSearch],
+            ..SolverOptions::default()
+        });
+        begin_route_budget(
+            &mut ctx,
+            ActiveRouteBudget {
+                block_id: BlockId(7),
+                kernel_kind: "TargetRelationSearch".to_string(),
+                plan_hash: hash_sequence("plan", &[]),
+                route_budget_hash: hash_sequence("budget", &[]),
+                algebraic_work_estimate_hash: hash_sequence("estimate", &[]),
+                max_elapsed_steps: 1,
+                max_work_units: 1,
+                consumed_steps: 0,
+                consumed_work_units: 0,
+            },
+        );
+
+        check_resource_work(&mut ctx, StageId("first".to_string()), 1).unwrap();
+        let err = check_resource_work(&mut ctx, StageId("second".to_string()), 1).unwrap_err();
+        let SolverErrorKind::Failure(FailureKind::FiniteResourceFailure {
+            stage,
+            block_id,
+            memory_bytes,
+            ..
+        }) = err.kind
+        else {
+            panic!("expected finite resource failure");
+        };
+        assert_eq!(block_id, Some(BlockId(7)));
+        assert_eq!(memory_bytes, Some(1));
+        assert!(stage.0.contains("TargetRelationSearch"));
+        assert!(stage.0.contains("plan_hash"));
+        assert!(stage.0.contains("budget_hash"));
+        assert!(stage.0.contains("estimate_hash"));
+    }
+}

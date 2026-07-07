@@ -6,18 +6,10 @@ use crate::algebra::elimination::{
     eliminate_to_keep_variables, validate_local_elimination_result, EliminationStrategy,
     LocalEliminationResult,
 };
+use crate::algebra::f4::F4Options;
 use crate::algebra::groebner::GroebnerOptions;
 use crate::compose::message::{MessageRepresentation, ProjectionMessage, ProjectionStrength};
 use crate::graph::projection_dag::ProjectionBlock;
-use crate::kernels::action_krylov::{
-    execute_target_action_krylov, plan_target_action_krylov_with_messages,
-};
-use crate::kernels::norm_trace_projection::{
-    execute_norm_trace_projection, plan_norm_trace_projection,
-};
-use crate::kernels::regular_chain_projection::{
-    execute_regular_chain_projection, plan_regular_chain_projection,
-};
 use crate::kernels::sparse_resultant::{
     execute_sparse_resultant, plan_sparse_resultant_with_messages,
 };
@@ -30,7 +22,10 @@ use crate::kernels::target_relation_search::{
 use crate::kernels::traits::{KernelContext, KernelKind, ReplayResult, TargetProjectionKernel};
 use crate::planner::admission::{KernelAdmission, KernelAdmissionStatus};
 use crate::planner::algebraic_cost::{AlgebraicWorkEstimate, RouteBudget};
-use crate::planner::cost_model::{classify_route_cost, estimate_kernel_cost, RouteCostClass};
+use crate::planner::cost_model::{
+    classify_route_cost, dominant_expression_swell_is_prohibited, estimate_kernel_cost,
+    RouteCostClass,
+};
 use crate::planner::kernel_plan::{
     hash_kernel_execution_plan, planned_failure_behavior, rank_plan, resource_bounds_hash,
     support_plan_hash, template_plan, universal_strategy_step_with_cost, CertificateRoute,
@@ -443,7 +438,7 @@ fn execute_universal_stage_with_solver_ctx(
                 executed_failed_strategy_hashes,
             )
         }
-        UniversalStrategy::SparseResultantIfSquareOrOverdetermined => {
+        UniversalStrategy::ResultantIfSquareOrOverdetermined => {
             let mut subplan = plan_sparse_resultant_with_messages(
                 &ctx.block,
                 &ctx.system,
@@ -460,33 +455,6 @@ fn execute_universal_stage_with_solver_ctx(
             })?;
             bind_stage_cost_to_subplan(stage, &mut subplan);
             let message = execute_sparse_resultant(&subplan, ctx, solver_ctx)?;
-            wrap_stage_message(
-                stage,
-                ctx,
-                message,
-                ProjectionStrength::CandidateCoverStrong,
-                parent_plan,
-                failed_strategy_hashes,
-                executed_failed_strategy_hashes,
-            )
-        }
-        UniversalStrategy::TargetActionKrylovIfQuotientCertifiable => {
-            let mut subplan = plan_target_action_krylov_with_messages(
-                &ctx.block,
-                &ctx.system,
-                &ctx.child_messages,
-                solver_ctx,
-                KernelPlanId(stage.parent_plan_id.0.saturating_add(150)),
-            )
-            .map_err(|_| {
-                algorithmic_hard_case(
-                    ctx,
-                    "target-action Krylov stage not applicable",
-                    &[stage.stage_hash],
-                )
-            })?;
-            bind_stage_cost_to_subplan(stage, &mut subplan);
-            let message = execute_target_action_krylov(&subplan, ctx, solver_ctx)?;
             wrap_stage_message(
                 stage,
                 ctx,
@@ -524,73 +492,39 @@ fn execute_universal_stage_with_solver_ctx(
                 executed_failed_strategy_hashes,
             )
         }
-        UniversalStrategy::RegularChainIfTriangular => {
-            let mut subplan = plan_regular_chain_projection(
-                &ctx.block,
-                &ctx.system,
-                solver_ctx,
-                KernelPlanId(stage.parent_plan_id.0.saturating_add(250)),
-            )
-            .map_err(|_| {
-                algorithmic_hard_case(
-                    ctx,
-                    "regular-chain stage not applicable",
-                    &[stage.stage_hash],
-                )
-            })?;
-            bind_stage_cost_to_subplan(stage, &mut subplan);
-            let message = execute_regular_chain_projection(&subplan, ctx, solver_ctx)?;
-            wrap_stage_message(
-                stage,
-                ctx,
-                message,
-                ProjectionStrength::CandidateCoverStrong,
-                parent_plan,
-                failed_strategy_hashes,
-                executed_failed_strategy_hashes,
-            )
-        }
-        UniversalStrategy::NormTraceIfTower => {
-            let mut subplan = plan_norm_trace_projection(
-                &ctx.block,
-                &ctx.system,
-                solver_ctx,
-                KernelPlanId(stage.parent_plan_id.0.saturating_add(300)),
-            )
-            .map_err(|_| {
-                algorithmic_hard_case(ctx, "norm-trace stage not applicable", &[stage.stage_hash])
-            })?;
-            bind_stage_cost_to_subplan(stage, &mut subplan);
-            let message = execute_norm_trace_projection(&subplan, ctx, solver_ctx)?;
-            wrap_stage_message(
-                stage,
-                ctx,
-                message,
-                ProjectionStrength::CandidateCoverStrong,
-                parent_plan,
-                failed_strategy_hashes,
-                executed_failed_strategy_hashes,
-            )
-        }
-        UniversalStrategy::LocalGroebnerEliminationToKeepZ => {
+        UniversalStrategy::EliminationGroebnerLocal | UniversalStrategy::F4EliminationLocal => {
             let inputs = planned_stage_relation_inputs(stage, ctx)?;
             let relations = inputs
                 .iter()
                 .map(|input| input.polynomial.clone())
                 .collect::<Vec<_>>();
-            let options = GroebnerOptions {
-                max_pairs: stage
-                    .resource_bounds
-                    .max_local_elimination_steps
-                    .unwrap_or(0)
-                    .max(1),
-                max_basis_size: stage.resource_bounds.max_matrix_cols.unwrap_or(0).max(1),
+            let max_pairs = stage
+                .resource_bounds
+                .max_local_elimination_steps
+                .unwrap_or(0)
+                .max(1);
+            let max_basis_size = stage.resource_bounds.max_matrix_cols.unwrap_or(0).max(1);
+            let strategy = match stage.strategy {
+                UniversalStrategy::EliminationGroebnerLocal => {
+                    EliminationStrategy::EliminationGroebnerLocal(GroebnerOptions {
+                        max_pairs,
+                        max_basis_size,
+                    })
+                }
+                UniversalStrategy::F4EliminationLocal => {
+                    EliminationStrategy::F4EliminationLocal(F4Options {
+                        max_pairs,
+                        max_basis_size,
+                        ..F4Options::default()
+                    })
+                }
+                _ => unreachable!("local elimination branch admitted a non-local strategy"),
             };
             let result = eliminate_to_keep_variables(
                 &relations,
                 &stage.eliminated_variables,
                 &stage.exported_variables,
-                EliminationStrategy::LocalGroebner(options),
+                strategy,
                 solver_ctx,
             )?;
             enforce_stage_resource_bounds(stage, ctx.system.target, &result, &relations)?;
@@ -606,7 +540,7 @@ fn execute_universal_stage_with_solver_ctx(
             if generators.is_empty() {
                 return Err(algorithmic_hard_case(
                     ctx,
-                    "local Groebner stage found no exported generator",
+                    "local elimination stage found no exported generator",
                     &[stage.stage_hash],
                 ));
             }
@@ -641,13 +575,13 @@ fn execute_universal_stage_with_solver_ctx(
                 trace,
                 ProjectionStrength::CandidateCoverStrong,
                 hash_sequence(
-                    "universal-local-groebner-certificate",
+                    "universal-local-elimination-certificate",
                     &[stage.stage_hash.0.to_vec()],
                 ),
                 KernelCertificatePayload::Universal(UniversalProjectionCertificate {
                     stage_hash: stage.stage_hash,
                     stage_certificate_hash: hash_sequence(
-                        "universal-local-groebner-certificate",
+                        "universal-local-elimination-certificate",
                         &[stage.stage_hash.0.to_vec()],
                     ),
                     attempted_strategies: attempted_universal_strategies(parent_plan),
@@ -1053,13 +987,11 @@ fn validate_fixed_strategy_sequence(
     steps: &[UniversalStrategyPlanStep],
 ) -> Result<(), SolverError> {
     let expected = [
+        UniversalStrategy::EliminationGroebnerLocal,
+        UniversalStrategy::F4EliminationLocal,
         UniversalStrategy::TargetRelationSearchEscalated,
-        UniversalStrategy::SparseResultantIfSquareOrOverdetermined,
-        UniversalStrategy::TargetActionKrylovIfQuotientCertifiable,
+        UniversalStrategy::ResultantIfSquareOrOverdetermined,
         UniversalStrategy::SpecializeProjectInterpolateVerify,
-        UniversalStrategy::RegularChainIfTriangular,
-        UniversalStrategy::NormTraceIfTower,
-        UniversalStrategy::LocalGroebnerEliminationToKeepZ,
     ];
     if steps.len() != expected.len()
         || steps
@@ -1115,7 +1047,7 @@ fn planned_relation_inputs(
             parent_plan_id: plan.plan_id,
             parent_plan_hash: plan.plan_hash,
             block_id: plan.block_id,
-            strategy: UniversalStrategy::LocalGroebnerEliminationToKeepZ,
+            strategy: UniversalStrategy::EliminationGroebnerLocal,
             stage_index: 0,
             exported_variables: plan.exported_variables.clone(),
             eliminated_variables: plan.eliminated_variables.clone(),
@@ -1223,6 +1155,40 @@ fn fixed_universal_strategy_sequence(
             child_messages,
             solver_ctx,
             &probes,
+            UniversalStrategy::EliminationGroebnerLocal,
+            KernelKind::UniversalTargetElimination,
+            !relations.is_empty(),
+            empty_skip(
+                !relations.is_empty(),
+                &format!(
+                    "no relations available for local Groebner elimination; child_message_count={}",
+                    child_message_hashes.len()
+                ),
+            ),
+        ),
+        universal_strategy_step_for_stage(
+            block,
+            system,
+            child_messages,
+            solver_ctx,
+            &probes,
+            UniversalStrategy::F4EliminationLocal,
+            KernelKind::UniversalTargetElimination,
+            !relations.is_empty(),
+            empty_skip(
+                !relations.is_empty(),
+                &format!(
+                    "no relations available for local F4 elimination; child_message_count={}",
+                    child_message_hashes.len()
+                ),
+            ),
+        ),
+        universal_strategy_step_for_stage(
+            block,
+            system,
+            child_messages,
+            solver_ctx,
+            &probes,
             UniversalStrategy::TargetRelationSearchEscalated,
             KernelKind::TargetRelationSearch,
             !relations.is_empty(),
@@ -1234,24 +1200,10 @@ fn fixed_universal_strategy_sequence(
             child_messages,
             solver_ctx,
             &probes,
-            UniversalStrategy::SparseResultantIfSquareOrOverdetermined,
+            UniversalStrategy::ResultantIfSquareOrOverdetermined,
             KernelKind::SparseResultantProjection,
             square_or_overdetermined,
             empty_skip(square_or_overdetermined, "not square or overdetermined"),
-        ),
-        universal_strategy_step_for_stage(
-            block,
-            system,
-            child_messages,
-            solver_ctx,
-            &probes,
-            UniversalStrategy::TargetActionKrylovIfQuotientCertifiable,
-            KernelKind::TargetActionKrylov,
-            !relations.is_empty(),
-            empty_skip(
-                !relations.is_empty(),
-                "no relations for target action quotient",
-            ),
         ),
         universal_strategy_step_for_stage(
             block,
@@ -1263,51 +1215,6 @@ fn fixed_universal_strategy_sequence(
             KernelKind::SpecializationInterpolation,
             has_non_target_separator,
             empty_skip(has_non_target_separator, "no non-target exported separator"),
-        ),
-        universal_strategy_step_for_stage(
-            block,
-            system,
-            child_messages,
-            solver_ctx,
-            &probes,
-            UniversalStrategy::RegularChainIfTriangular,
-            KernelKind::RegularChainProjection,
-            !relations.is_empty(),
-            empty_skip(
-                !relations.is_empty(),
-                "no relations for regular-chain detection",
-            ),
-        ),
-        universal_strategy_step_for_stage(
-            block,
-            system,
-            child_messages,
-            solver_ctx,
-            &probes,
-            UniversalStrategy::NormTraceIfTower,
-            KernelKind::NormTraceProjection,
-            !relations.is_empty(),
-            empty_skip(
-                !relations.is_empty(),
-                "no relations for norm/trace tower detection",
-            ),
-        ),
-        universal_strategy_step_for_stage(
-            block,
-            system,
-            child_messages,
-            solver_ctx,
-            &probes,
-            UniversalStrategy::LocalGroebnerEliminationToKeepZ,
-            KernelKind::UniversalTargetElimination,
-            !relations.is_empty(),
-            empty_skip(
-                !relations.is_empty(),
-                &format!(
-                    "no relations available for local elimination; child_message_count={}",
-                    child_message_hashes.len()
-                ),
-            ),
         ),
     ]
 }
@@ -1337,7 +1244,7 @@ fn universal_strategy_step_for_stage(
     } else {
         None
     };
-    let (cost_class, algebraic_work_estimate, route_budget) = if let Some(plan) = planned_cost {
+    let (mut cost_class, algebraic_work_estimate, route_budget) = if let Some(plan) = planned_cost {
         let estimate = plan.algebraic_work_estimate.clone();
         let matrix_rows = estimate
             .matrix_rows
@@ -1369,12 +1276,15 @@ fn universal_strategy_step_for_stage(
             budget,
         )
     };
-    let cost_prohibited = cost_class == RouteCostClass::CostProhibited
-        && matches!(
+    let local_expression_swell_prohibited =
+        matches!(
             strategy,
-            UniversalStrategy::TargetRelationSearchEscalated
-                | UniversalStrategy::SparseResultantIfSquareOrOverdetermined
-        );
+            UniversalStrategy::EliminationGroebnerLocal | UniversalStrategy::F4EliminationLocal
+        ) && dominant_expression_swell_is_prohibited(&algebraic_work_estimate);
+    if local_expression_swell_prohibited {
+        cost_class = RouteCostClass::CostProhibited;
+    }
+    let cost_prohibited = cost_class == RouteCostClass::CostProhibited;
     let enabled = structurally_enabled && !cost_prohibited;
     let skip_reason = if !structurally_enabled {
         structural_skip_reason
@@ -1427,17 +1337,8 @@ fn universal_stage_subplan_for_cost(
                 )
             })
         }
-        UniversalStrategy::SparseResultantIfSquareOrOverdetermined => {
+        UniversalStrategy::ResultantIfSquareOrOverdetermined => {
             plan_sparse_resultant_with_messages(
-                block,
-                system,
-                child_messages,
-                solver_ctx,
-                KernelPlanId(kernel_kind as u32),
-            )
-        }
-        UniversalStrategy::TargetActionKrylovIfQuotientCertifiable => {
-            plan_target_action_krylov_with_messages(
                 block,
                 system,
                 child_messages,
@@ -1454,20 +1355,13 @@ fn universal_stage_subplan_for_cost(
                 KernelPlanId(kernel_kind as u32),
             )
         }
-        UniversalStrategy::RegularChainIfTriangular => plan_regular_chain_projection(
-            block,
-            system,
-            solver_ctx,
-            KernelPlanId(kernel_kind as u32),
-        ),
-        UniversalStrategy::NormTraceIfTower => {
-            plan_norm_trace_projection(block, system, solver_ctx, KernelPlanId(kernel_kind as u32))
+        UniversalStrategy::EliminationGroebnerLocal | UniversalStrategy::F4EliminationLocal => {
+            Err(algorithmic_hard_case_for_block(
+                system.target,
+                block,
+                "local elimination stage uses Universal parent estimate",
+            ))
         }
-        UniversalStrategy::LocalGroebnerEliminationToKeepZ => Err(algorithmic_hard_case_for_block(
-            system.target,
-            block,
-            "local elimination stage uses Universal parent estimate",
-        )),
     }
 }
 
@@ -1605,6 +1499,7 @@ fn finish_admission(
     KernelAdmission {
         kind: KernelKind::UniversalTargetElimination,
         block_id: block.block_id,
+        admission_evidence: crate::planner::admission::KernelAdmissionEvidence::empty(),
         status,
         exported_variables: block.exported_variables.iter().copied().collect(),
         eliminated_variables: block
@@ -1822,7 +1717,7 @@ mod tests {
             &raw_relations,
             &[x],
             &[t],
-            EliminationStrategy::LocalGroebner(GroebnerOptions::default()),
+            EliminationStrategy::EliminationGroebnerLocal(GroebnerOptions::default()),
             &mut direct_ctx,
         )
         .unwrap();
@@ -1858,40 +1753,32 @@ mod tests {
     }
 
     #[test]
-    fn fcr_nonproduction_f4_not_reachable() {
+    fn fcr_production_f4_is_reachable() {
         let universal_production_source = include_str!("universal_elimination.rs")
             .split("#[cfg(test)]")
             .next()
             .unwrap();
-        for fragment in [
-            "NotProductionF4",
-            "NonProductionGroebnerBatch",
-            "groebner_backed_batch_reduce_for_tests",
-            "non_production_groebner_batch_elimination_for_tests",
-        ] {
-            assert!(
-                !universal_production_source.contains(fragment),
-                "production Universal path must not reference {fragment}"
-            );
-        }
+        let forbidden_fragment = ["NonProduction", "GroebnerBatch"].concat();
+        assert!(!universal_production_source.contains(&forbidden_fragment));
         let algebra_mod_source = include_str!("../algebra/mod.rs").replace("\r\n", "\n");
-        assert!(algebra_mod_source.contains("#[cfg(test)]\npub mod f4;"));
+        assert!(algebra_mod_source.contains("pub mod f4;"));
 
         let t = VariableId(0);
         let x = VariableId(1);
         let relations = vec![poly_sub(&variable_poly(x), &variable_poly(t))];
         let mut solver_ctx = new_context(SolverOptions::default());
-        let err = eliminate_to_keep_variables(
+        let result = eliminate_to_keep_variables(
             &relations,
             &[x],
             &[t],
-            EliminationStrategy::NonProductionGroebnerBatchForTests(
-                crate::algebra::f4::GroebnerBackedBatchOptions::default(),
-            ),
+            EliminationStrategy::F4EliminationLocal(crate::algebra::f4::F4Options::default()),
             &mut solver_ctx,
         )
-        .unwrap_err();
-        assert_eq!(err.public_status(), SolverStatus::CertificateDesignGap);
+        .unwrap();
+        assert_eq!(
+            result.strategy,
+            crate::algebra::elimination::LocalEliminationStrategyName::F4EliminationLocal
+        );
     }
 
     #[test]
@@ -2048,13 +1935,11 @@ mod tests {
         assert_eq!(
             strategies,
             vec![
+                UniversalStrategy::EliminationGroebnerLocal,
+                UniversalStrategy::F4EliminationLocal,
                 UniversalStrategy::TargetRelationSearchEscalated,
-                UniversalStrategy::SparseResultantIfSquareOrOverdetermined,
-                UniversalStrategy::TargetActionKrylovIfQuotientCertifiable,
+                UniversalStrategy::ResultantIfSquareOrOverdetermined,
                 UniversalStrategy::SpecializeProjectInterpolateVerify,
-                UniversalStrategy::RegularChainIfTriangular,
-                UniversalStrategy::NormTraceIfTower,
-                UniversalStrategy::LocalGroebnerEliminationToKeepZ,
             ]
         );
         plan.support_plan.universal_strategy_sequence.swap(0, 1);
@@ -2207,7 +2092,7 @@ mod tests {
         let stages = build_stage_plans(&plan).unwrap();
         let stage_index = stages
             .iter()
-            .position(|stage| stage.strategy == UniversalStrategy::LocalGroebnerEliminationToKeepZ)
+            .position(|stage| stage.strategy == UniversalStrategy::EliminationGroebnerLocal)
             .expect("Universal plan must contain local Groebner stage");
         let failed_strategy_hashes = stages
             .iter()

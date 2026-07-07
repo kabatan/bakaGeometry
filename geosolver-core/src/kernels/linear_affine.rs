@@ -536,6 +536,7 @@ fn finish_admission(
     KernelAdmission {
         kind: KernelKind::LinearAffine,
         block_id: block.block_id,
+        admission_evidence: crate::planner::admission::KernelAdmissionEvidence::empty(),
         status,
         exported_variables: block.exported_variables.iter().copied().collect(),
         eliminated_variables: block
@@ -569,7 +570,7 @@ mod tests {
     };
     use crate::kernels::traits::{KernelKind, TargetProjectionKernel};
     use crate::planner::kernel_plan::hash_kernel_execution_plan;
-    use crate::preprocess::compression::CompressionState;
+    use crate::preprocess::compression::{CompressionState, GuardKind};
     use crate::problem::canonicalize::canonicalize_system;
     use crate::problem::context::new_context;
     use crate::problem::input::make_problem;
@@ -578,8 +579,10 @@ mod tests {
     use crate::solver::options::SolverOptions;
     use crate::types::hash::hash_sequence;
     use crate::types::ids::{BlockId, VariableId};
-    use crate::types::polynomial::{constant_poly, poly_mul, poly_sub, variable_poly};
+    use crate::types::polynomial::{constant_poly, poly_add, poly_mul, poly_sub, variable_poly};
     use crate::types::rational::int_q;
+    use crate::verify::certificates::{kernel_certificate_binding_hash, KernelCertificatePayload};
+    use crate::verify::verify_message::verify_projection_message;
 
     #[test]
     fn p7_linear_affine_exports_only_allowed_variables_with_safe_constant_pivot() {
@@ -699,6 +702,45 @@ mod tests {
         assert_eq!(err.public_status(), SolverStatus::ImplementationBug);
     }
 
+    #[test]
+    fn p8_guarded_affine_replay_rejects_tampered_denominator_guard_hash() {
+        let t = VariableId(0);
+        let x = VariableId(1);
+        let a = VariableId(2);
+        let relations = vec![
+            poly_add(
+                &poly_mul(&variable_poly(a), &variable_poly(x)),
+                &variable_poly(t),
+            ),
+            poly_sub(&variable_poly(t), &variable_poly(a)),
+        ];
+        let compressed = compressed_system_with_affine_guard(vec![t, x, a], t, relations, x);
+        let block = test_block(&compressed, [t, x, a], [t, a]);
+        let order = find_triangular_affine_order(&block, &compressed).unwrap();
+        assert_eq!(order.steps.len(), 1);
+        assert!(order.steps[0].denominator_guard_hash.is_some());
+        let mut ctx = new_context(SolverOptions::default());
+        let plan = plan_linear_affine(&block, &compressed, &order, &ctx).unwrap();
+        let mut kctx = crate::kernels::traits::KernelContext {
+            block,
+            system: compressed,
+            child_messages: Vec::new(),
+        };
+        let message = execute_linear_affine(&plan, &mut kctx, &mut ctx).unwrap();
+        assert!(verify_projection_message(&message, &kctx).is_ok());
+
+        let mut tampered = message.clone();
+        let KernelCertificatePayload::GuardedAffine(proof) = &mut tampered.certificate.payload
+        else {
+            panic!("linear affine message must carry guarded affine certificate");
+        };
+        proof.steps[0].denominator_guard_hash = Some(hash_sequence("tampered-guard-hash", &[]));
+        tampered.certificate.binding_hash = kernel_certificate_binding_hash(&tampered.certificate);
+        tampered.package_hash = crate::compose::message::hash_projection_message(&tampered);
+        let err = verify_projection_message(&tampered, &kctx).unwrap_err();
+        assert_eq!(err.public_status(), SolverStatus::ImplementationBug);
+    }
+
     fn compressed_system(
         variables: Vec<VariableId>,
         target: VariableId,
@@ -709,6 +751,36 @@ mod tests {
         )
         .unwrap();
         CompressionState::from_system(canonical).to_compressed_system()
+    }
+
+    fn compressed_system_with_affine_guard(
+        variables: Vec<VariableId>,
+        target: VariableId,
+        relations: Vec<crate::types::polynomial::SparsePolynomialQ>,
+        eliminated_variable: VariableId,
+    ) -> crate::preprocess::compression::CompressedSystemQ {
+        let canonical = canonicalize_system(
+            validate_input(make_problem(variables, target, relations, Vec::new())).unwrap(),
+        )
+        .unwrap();
+        let mut state = CompressionState::from_system(canonical);
+        let (source_relation_id, guard_factor) = state
+            .relations
+            .iter()
+            .find_map(|relation| {
+                crate::preprocess::compression::affine_parts_in_variable(
+                    &relation.polynomial,
+                    eliminated_variable,
+                )
+                .map(|(pivot, _)| (relation.id, pivot))
+            })
+            .unwrap();
+        state.add_guard(
+            guard_factor,
+            vec![source_relation_id],
+            GuardKind::AffineDenominator,
+        );
+        state.to_compressed_system()
     }
 
     fn test_block<const N: usize, const M: usize>(

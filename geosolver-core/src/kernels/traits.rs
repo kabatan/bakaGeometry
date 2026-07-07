@@ -5,7 +5,7 @@ use crate::graph::projection_dag::ProjectionBlock;
 use crate::planner::admission::{KernelAdmission, KernelAdmissionStatus};
 use crate::planner::kernel_plan::KernelExecutionPlan;
 use crate::problem::context::SolverContext;
-use crate::result::status::{FailureKind, SolverError, SolverErrorKind};
+use crate::result::status::SolverError;
 use crate::types::hash::hash_sequence;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -15,10 +15,10 @@ pub enum KernelKind {
     TargetRelationSearch,
     SparseResultantProjection,
     TargetActionKrylov,
-    UniversalTargetElimination,
-    RegularChainProjection,
     NormTraceProjection,
+    RegularChainProjection,
     SpecializationInterpolation,
+    UniversalTargetElimination,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -67,6 +67,7 @@ pub fn declined_kernel_admission(
     KernelAdmission {
         kind,
         block_id: block.block_id,
+        admission_evidence: crate::planner::admission::KernelAdmissionEvidence::empty(),
         status: status.clone(),
         exported_variables: block.exported_variables.iter().copied().collect(),
         eliminated_variables: block
@@ -83,19 +84,6 @@ pub fn declined_kernel_admission(
                 format!("{status:?}").into_bytes(),
             ],
         ),
-    }
-}
-
-pub fn kernel_not_ready_error(kind: KernelKind) -> SolverError {
-    SolverError {
-        target: None,
-        kind: SolverErrorKind::Failure(FailureKind::CertificateDesignGap {
-            constructed_object_hash: hash_sequence(
-                "kernel-not-ready",
-                &[format!("{kind:?}").into_bytes()],
-            ),
-            missing_certificate_kind: format!("{kind:?} execution is owned by a later phase"),
-        }),
     }
 }
 

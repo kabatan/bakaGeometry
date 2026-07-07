@@ -1,5 +1,4 @@
 use geosolver_core::api::solve_target;
-use geosolver_core::compose::final_support::hash_nonfinite_certificate;
 use geosolver_core::kernels::traits::KernelKind;
 use geosolver_core::problem::input::{make_problem, RationalTargetProblem};
 use geosolver_core::result::status::SolverStatus;
@@ -12,8 +11,8 @@ use geosolver_core::types::polynomial::{
 use geosolver_core::types::rational::{div_q, int_q, RationalQ};
 use geosolver_core::verify::replay_run_certificate;
 
-// Holding gate for behavior moved out of FCR-P10. P16 upgrades the positive
-// nonfinite path to carry a structured replay-bound public certificate.
+// Finite candidate-cover scope keeps nonfinite as a guarded replayable status,
+// without exposing an extra public nonfinite certificate object on TargetSolveResult.
 
 fn v(id: u32) -> SparsePolynomialQ {
     variable_poly(VariableId(id))
@@ -54,13 +53,8 @@ fn fcr_final_nonfinite_public_certified_nonfinite_requires_positive_proof() {
     assert_eq!(result.status, SolverStatus::CertifiedNonFiniteTargetImage);
     assert!(result.support_polynomial.is_none());
     assert!(result.certificate.is_none());
-    assert!(result.nonfinite_certificate.is_some());
     let replay = replay_run_certificate(&result, &nonfinite_problem);
     assert!(replay.accepted);
-    let nonfinite_cert = result
-        .nonfinite_certificate
-        .as_ref()
-        .expect("nonfinite certificate");
     assert_eq!(
         replay.replay_hash,
         hash_sequence(
@@ -68,18 +62,14 @@ fn fcr_final_nonfinite_public_certified_nonfinite_requires_positive_proof() {
             &[
                 nonfinite_problem.input_hash.0.to_vec(),
                 result.target.0.to_be_bytes().to_vec(),
-                hash_nonfinite_certificate(nonfinite_cert).0.to_vec(),
+                vec![0xfe],
                 vec![1],
             ],
         )
     );
 
     let mut tampered = result.clone();
-    tampered
-        .nonfinite_certificate
-        .as_mut()
-        .expect("nonfinite certificate")
-        .certificate_hash = hash_sequence("fcr-nonfinite-certificate-tamper", &[]);
+    tampered.target = VariableId(97);
     assert!(!replay_run_certificate(&tampered, &nonfinite_problem).accepted);
 
     let finite_t = VariableId(61);
@@ -94,7 +84,7 @@ fn fcr_final_nonfinite_public_certified_nonfinite_requires_positive_proof() {
         SolverStatus::CertifiedNonFiniteTargetImage
     );
     assert!(replay_run_certificate(&finite_result, &finite_problem).accepted);
-    finite_result.nonfinite_certificate = result.nonfinite_certificate.clone();
+    finite_result.status = SolverStatus::CertifiedNonFiniteTargetImage;
     assert!(!replay_run_certificate(&finite_result, &finite_problem).accepted);
 }
 

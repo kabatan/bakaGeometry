@@ -1,7 +1,6 @@
 use std::collections::BTreeSet;
 
-use crate::compose::compose::{compose_projection_messages, hash_composed_projection};
-use crate::compose::final_support::{hash_nonfinite_certificate, verify_nonfinite_certificate};
+use crate::compose::compose::compose_projection_messages;
 use crate::compose::message::ProjectionMessage;
 use crate::graph::hypergraph::build_relation_variable_hypergraph;
 use crate::graph::influence::build_target_influence_graph;
@@ -16,7 +15,7 @@ use crate::kernels::traits::ReplayResult;
 use crate::preprocess::compression::pre_kernel_compress;
 use crate::problem::canonicalize::canonicalize_system;
 use crate::problem::context::new_context;
-use crate::problem::input::RationalTargetProblem;
+use crate::problem::input::{hash_problem_input, RationalTargetProblem};
 use crate::problem::validate::validate_input;
 use crate::result::output::TargetSolveResult;
 use crate::result::status::SolverStatus;
@@ -53,9 +52,9 @@ pub fn replay_run_certificate(
 fn replay_certificate_binding(result: &TargetSolveResult) -> Vec<u8> {
     if result.status == SolverStatus::CertifiedNonFiniteTargetImage {
         return result
-            .nonfinite_certificate
+            .certificate
             .as_ref()
-            .map(|cert| hash_nonfinite_certificate(cert).0.to_vec())
+            .map(|cert| cert.run_hash.0.to_vec())
             .unwrap_or_else(|| vec![0xfe]);
     }
     result
@@ -68,9 +67,6 @@ fn replay_certificate_binding(result: &TargetSolveResult) -> Vec<u8> {
 fn replay_checks(result: &TargetSolveResult, problem: &RationalTargetProblem) -> bool {
     if result.status == SolverStatus::CertifiedNonFiniteTargetImage {
         return replay_nonfinite_result(result, problem);
-    }
-    if result.nonfinite_certificate.is_some() {
-        return false;
     }
     let Some(cert) = &result.certificate else {
         return false;
@@ -143,25 +139,13 @@ fn replay_checks(result: &TargetSolveResult, problem: &RationalTargetProblem) ->
     if cert.decoded_candidate_hash != Some(hash_decoded_candidates(&result.decoded_candidates)) {
         return false;
     }
-    let exact_image_certificate_hash = match &result.exact_image_certificate {
-        Some(classification) => {
-            let expected_hash =
-                crate::fiber::exact_image::hash_fiber_classification_result(classification);
-            if classification.classification_hash != expected_hash {
-                return false;
-            }
-            Some(expected_hash)
-        }
-        None => None,
-    };
-    if cert.exact_image_certificate_hash != exact_image_certificate_hash {
+    if cert.exact_image_certificate_hash.is_some() {
         return false;
     }
     if matches!(
         result.status,
         SolverStatus::CertifiedExactTargetImage | SolverStatus::CertifiedEmptyRealTargetImage
-    ) && exact_image_certificate_hash.is_none()
-    {
+    ) {
         return false;
     }
     let expected_replay_evidence = build_final_dag_replay_evidence_from_dag(
@@ -229,14 +213,7 @@ fn replay_nonfinite_result(result: &TargetSolveResult, problem: &RationalTargetP
         || result.squarefree_support_polynomial.is_some()
         || !result.root_isolation.is_empty()
         || !result.decoded_candidates.is_empty()
-        || result.exact_image_certificate.is_some()
     {
-        return false;
-    }
-    let Some(cert) = &result.nonfinite_certificate else {
-        return false;
-    };
-    if cert.certificate_hash != hash_nonfinite_certificate(cert) {
         return false;
     }
     let Ok(validated) = validate_input(problem.clone()) else {
@@ -260,10 +237,7 @@ fn replay_nonfinite_result(result: &TargetSolveResult, problem: &RationalTargetP
     ) else {
         return false;
     };
-    if composed.composed_hash != hash_composed_projection(&composed) {
-        return false;
-    }
-    verify_nonfinite_certificate(cert, &composed).is_ok()
+    composed.root_relations.is_empty()
 }
 
 #[allow(dead_code)]
@@ -526,18 +500,13 @@ fn verify_roots_and_candidates(result: &TargetSolveResult) -> bool {
 }
 
 fn recompute_input_hash(problem: &RationalTargetProblem) -> Hash {
-    let mut chunks = problem
-        .equations
-        .iter()
-        .map(|p| p.hash.0.to_vec())
-        .collect::<Vec<_>>();
-    chunks.extend(
-        problem
-            .semantic_encodings
-            .iter()
-            .map(|encoding| encoding.semantic_hash.0.to_vec()),
-    );
-    hash_sequence("problem-input", &chunks)
+    hash_problem_input(
+        &problem.variables,
+        problem.target,
+        &problem.equations,
+        &problem.semantic_encodings,
+        &problem.variable_roles,
+    )
 }
 
 #[cfg(test)]
@@ -825,7 +794,7 @@ mod tests {
         let root = RealRootRecord {
             support_hash: support.hash,
             root_index: 0,
-            isolating_interval: interval_new(int_q(1), int_q(1)).unwrap(),
+            isolating_interval: interval_new(int_q(0), int_q(2)).unwrap(),
         };
         let candidate = TargetCandidate {
             target: t,
@@ -884,7 +853,7 @@ mod tests {
         let root = RealRootRecord {
             support_hash: support.hash,
             root_index: 0,
-            isolating_interval: interval_new(int_q(1), int_q(1)).unwrap(),
+            isolating_interval: interval_new(int_q(0), int_q(2)).unwrap(),
         };
         let candidate = TargetCandidate {
             target: t,
@@ -1285,17 +1254,15 @@ mod tests {
             stage_hash: hash_sequence("forged-universal-stage", &[]),
             stage_certificate_hash: hash_sequence("forged-universal-stage-cert", &[]),
             attempted_strategies: vec![
+                UniversalStrategy::EliminationGroebnerLocal,
+                UniversalStrategy::F4EliminationLocal,
                 UniversalStrategy::TargetRelationSearchEscalated,
-                UniversalStrategy::SparseResultantIfSquareOrOverdetermined,
-                UniversalStrategy::TargetActionKrylovIfQuotientCertifiable,
+                UniversalStrategy::ResultantIfSquareOrOverdetermined,
                 UniversalStrategy::SpecializeProjectInterpolateVerify,
-                UniversalStrategy::RegularChainIfTriangular,
-                UniversalStrategy::NormTraceIfTower,
-                UniversalStrategy::LocalGroebnerEliminationToKeepZ,
             ],
             strategy_records: Vec::new(),
             skipped_cost_prohibited_strategy_hashes: Vec::new(),
-            chosen_strategy: UniversalStrategy::LocalGroebnerEliminationToKeepZ,
+            chosen_strategy: UniversalStrategy::EliminationGroebnerLocal,
             failed_strategy_hashes: Vec::new(),
             executed_failed_strategy_hashes: Vec::new(),
             output_relations: vec![forged_source.clone()],
@@ -2045,8 +2012,6 @@ mod tests {
             decoded_candidates: Vec::new(),
             projection_messages: messages,
             certificate: Some(certificate),
-            exact_image_certificate: None,
-            nonfinite_certificate: None,
             diagnostics: Vec::new(),
             cost_trace: GlobalCostTrace::default(),
         }

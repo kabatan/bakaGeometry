@@ -5,46 +5,59 @@ use std::panic::{catch_unwind, AssertUnwindSafe};
 use serde::{Deserialize, Serialize};
 
 use crate::graph::projection_dag::ProjectionBlock;
-use crate::kernels::action_krylov::plan_target_action_krylov;
-use crate::kernels::linear_affine::{find_triangular_affine_order, plan_linear_affine};
-use crate::kernels::norm_trace_projection::plan_norm_trace_projection;
-use crate::kernels::regular_chain_projection::plan_regular_chain_projection;
-use crate::kernels::sparse_resultant::plan_sparse_resultant;
-use crate::kernels::specialization_interpolation::plan_specialization_interpolation;
+use crate::kernels::all_kernels;
+use crate::kernels::traits::KernelContext;
 use crate::kernels::traits::KernelKind;
-use crate::kernels::universal_elimination::plan_universal_elimination;
 use crate::planner::algebraic_cost::RouteBudget;
 use crate::planner::cost_model::{
     estimate_kernel_cost, estimate_kernel_cost_for_admission, RouteCostClass,
 };
 use crate::planner::kernel_plan::{
-    hash_kernel_execution_plan, planned_failure_behavior, rank_plan, resource_bounds_hash,
-    support_plan_hash, template_plan, CertificateRoute, KernelExecutionPlan, KernelSupportPlan,
-    LocalNonfinitePolicy, ResourceBounds,
+    hash_kernel_execution_plan, resource_bounds_hash, KernelExecutionPlan, ResourceBounds,
 };
 use crate::planner::probes::ProbeResults;
-use crate::planner::relation_schedule::{
-    build_dense_relation_search_schedule, build_sparse_relation_search_schedule,
-    dense_relation_search_decline_reason, estimate_dense_relation_search_schedule,
-    estimate_sparse_relation_search_schedule, sparse_relation_search_decline_reason,
-    DenseRelationSearchSchedule, RelationSearchStage, SparseRelationSearchSchedule,
-};
 use crate::preprocess::compression::CompressedSystemQ;
 use crate::problem::context::SolverContext;
-use crate::result::status::SolverStatus;
 use crate::types::hash::{hash_sequence, Hash};
-use crate::types::ids::{KernelPlanId, RelationId, VariableId};
-use crate::types::polynomial::poly_variables;
+use crate::types::ids::{RelationId, VariableId};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct KernelAdmission {
     pub kind: KernelKind,
     pub block_id: crate::types::ids::BlockId,
+    pub admission_evidence: KernelAdmissionEvidence,
     pub status: KernelAdmissionStatus,
     pub exported_variables: Vec<VariableId>,
     pub eliminated_variables: Vec<VariableId>,
     pub execution_plan: Option<KernelExecutionPlan>,
     pub admission_hash: Hash,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct KernelAdmissionEvidence {
+    pub runtime_admission_hash: Option<Hash>,
+    pub source_relation_ids: Vec<RelationId>,
+    pub source_relation_hashes: Vec<Hash>,
+    pub initial_resource_bounds: Option<ResourceBounds>,
+    pub estimated_matrix_rows: Option<usize>,
+    pub estimated_matrix_cols: Option<usize>,
+    pub estimated_template_size: Option<usize>,
+    pub evidence_hash: Hash,
+}
+
+impl KernelAdmissionEvidence {
+    pub fn empty() -> Self {
+        Self {
+            runtime_admission_hash: None,
+            source_relation_ids: Vec::new(),
+            source_relation_hashes: Vec::new(),
+            initial_resource_bounds: None,
+            estimated_matrix_rows: None,
+            estimated_matrix_cols: None,
+            estimated_template_size: None,
+            evidence_hash: hash_sequence("kernel-admission-evidence", &[]),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -89,336 +102,94 @@ pub fn collect_kernel_admissions(
     probes: &ProbeResults,
     ctx: &SolverContext,
 ) -> Vec<KernelAdmission> {
-    let relation_map = system
-        .relations
-        .iter()
-        .map(|relation| (relation.id, relation))
-        .collect::<BTreeMap<_, _>>();
-    all_planner_kernel_kinds()
+    let kernel_context = KernelContext {
+        block: block.clone(),
+        system: system.clone(),
+        child_messages: Vec::new(),
+    };
+    all_kernels()
         .into_iter()
-        .enumerate()
-        .map(|(index, kind)| {
-            let plan_id = KernelPlanId(index as u32);
-            let admission = match catch_unwind(AssertUnwindSafe(|| {
-                build_kernel_admission(plan_id, kind, block, system, &relation_map, probes, ctx)
-            })) {
-                Ok(admission) => admission,
-                Err(payload) => route_panic_admission(kind, block, panic_message(payload)),
-            };
-            bind_admission_algebraic_cost(admission, block, system, probes)
+        .map(|kernel| {
+            let kind = kernel.kind();
+            let admission =
+                match catch_unwind(AssertUnwindSafe(|| kernel.admit(block, &kernel_context))) {
+                    Ok(mut admission) => {
+                        if admission.kind != kind {
+                            route_panic_admission(
+                                kind,
+                                block,
+                                format!(
+                                    "registered kernel returned mismatched admission kind {:?}",
+                                    admission.kind
+                                ),
+                            )
+                        } else if admission.is_admitted()
+                            && (admission.execution_plan.is_none()
+                                || kind == KernelKind::TargetRelationSearch)
+                        {
+                            match catch_unwind(AssertUnwindSafe(|| {
+                                kernel.plan(&admission, &kernel_context, ctx)
+                            })) {
+                                Ok(Ok(plan)) => {
+                                    admission.execution_plan = Some(plan);
+                                    admission
+                                }
+                                Ok(Err(err)) => runtime_plan_error_admission(kind, block, &err),
+                                Err(payload) => {
+                                    route_panic_admission(kind, block, panic_message(payload))
+                                }
+                            }
+                        } else {
+                            admission
+                        }
+                    }
+                    Err(payload) => route_panic_admission(kind, block, panic_message(payload)),
+                };
+            let runtime_admission_hash = Some(admission.admission_hash);
+            bind_admission_algebraic_cost(
+                admission,
+                block,
+                system,
+                probes,
+                ctx,
+                runtime_admission_hash,
+            )
         })
         .collect()
 }
 
-fn build_kernel_admission(
-    plan_id: KernelPlanId,
+fn runtime_plan_error_admission(
     kind: KernelKind,
-    block: &ProjectionBlock,
-    system: &CompressedSystemQ,
-    relations_by_id: &BTreeMap<RelationId, &crate::problem::canonicalize::CanonicalRelationQ>,
-    probes: &ProbeResults,
-    ctx: &SolverContext,
-) -> KernelAdmission {
-    let exported_variables = sorted_set(&block.exported_variables);
-    let eliminated_variables = block
-        .local_variables
-        .difference(&block.exported_variables)
-        .copied()
-        .collect::<Vec<_>>();
-    let local_relations = block_relations(block, relations_by_id);
-    let relation_polys = local_relations
-        .iter()
-        .map(|relation| relation.polynomial.clone())
-        .collect::<Vec<_>>();
-    let relation_hashes = local_relations
-        .iter()
-        .map(|relation| relation.hash)
-        .collect::<Vec<_>>();
-    let source_relation_ids = local_relations
-        .iter()
-        .map(|relation| relation.id)
-        .collect::<Vec<_>>();
-    let status_and_plan = match kind {
-        KernelKind::TargetUnivariate => {
-            let target_set = [system.target].into_iter().collect::<BTreeSet<_>>();
-            let target_relations = local_relations
-                .iter()
-                .filter(|relation| poly_variables(&relation.polynomial).is_subset(&target_set))
-                .collect::<Vec<_>>();
-            if !target_relations.is_empty() {
-                let target_relation_ids = target_relations
-                    .iter()
-                    .map(|relation| relation.id)
-                    .collect::<Vec<_>>();
-                let target_relation_hashes = target_relations
-                    .iter()
-                    .map(|relation| relation.hash)
-                    .collect::<Vec<_>>();
-                let target_degree_bound = target_relations
-                    .iter()
-                    .map(|relation| {
-                        crate::types::polynomial::poly_total_degree(&relation.polynomial) as usize
-                    })
-                    .max()
-                    .unwrap_or(1);
-                admitted_with_plan(
-                    plan_id,
-                    kind,
-                    block,
-                    target_relation_ids,
-                    target_relation_hashes,
-                    vec![system.target],
-                    eliminated_variables.clone(),
-                    basic_support_plan(None, None, probes, target_degree_bound),
-                    resource_bounds(ctx, Some(target_degree_bound), probes),
-                    CertificateRoute::SourceMembershipCertificate,
-                    LocalNonfinitePolicy::NotApplicable,
-                )
-            } else {
-                declined("no authorized target-only relation")
-            }
-        }
-        KernelKind::TargetRelationSearch => {
-            if relation_polys.is_empty() {
-                declined("no authorized local relations for dense relation search")
-            } else {
-                let dense_preflight = estimate_dense_relation_search_schedule(
-                    &relation_polys,
-                    &eliminated_variables,
-                    &exported_variables,
-                    &ctx.options,
-                );
-                if dense_preflight.materialization_allowed {
-                    let schedule = build_dense_relation_search_schedule(
-                        &relation_polys,
-                        &eliminated_variables,
-                        &exported_variables,
-                        &ctx.options,
-                    );
-                    let degree_bound = schedule.e_cap;
-                    let stage = dominant_dense_relation_stage(&schedule).cloned();
-                    admitted_with_plan(
-                        plan_id,
-                        kind,
-                        block,
-                        source_relation_ids,
-                        relation_hashes,
-                        exported_variables.clone(),
-                        eliminated_variables.clone(),
-                        basic_support_plan(Some(schedule), None, probes, degree_bound),
-                        stage
-                            .as_ref()
-                            .map(|stage| relation_search_resource_bounds(ctx, stage, degree_bound))
-                            .unwrap_or_else(|| resource_bounds(ctx, Some(degree_bound), probes)),
-                        CertificateRoute::DenseRelationSearchMembership,
-                        LocalNonfinitePolicy::NotApplicable,
-                    )
-                } else {
-                    let sparse_preflight = estimate_sparse_relation_search_schedule(
-                        &relation_polys,
-                        &eliminated_variables,
-                        &exported_variables,
-                        &ctx.options,
-                    );
-                    if !sparse_preflight.feasible {
-                        let reason = format!(
-                            "{}; {}",
-                            dense_relation_search_decline_reason(&dense_preflight),
-                            sparse_relation_search_decline_reason(&sparse_preflight),
-                        );
-                        cost_prohibited(
-                            &reason,
-                            hash_sequence(
-                                "target-relation-search-dense-and-sparse-preflight",
-                                &[
-                                    dense_preflight.preflight_hash.0.to_vec(),
-                                    sparse_preflight.preflight_hash.0.to_vec(),
-                                ],
-                            ),
-                        )
-                    } else {
-                        let schedule = build_sparse_relation_search_schedule(
-                            &relation_polys,
-                            &eliminated_variables,
-                            &exported_variables,
-                            &ctx.options,
-                        );
-                        let degree_bound = schedule.stage.export_degree;
-                        let stage = schedule.stage.clone();
-                        admitted_with_plan(
-                            plan_id,
-                            kind,
-                            block,
-                            source_relation_ids,
-                            relation_hashes,
-                            exported_variables.clone(),
-                            eliminated_variables.clone(),
-                            basic_support_plan(None, Some(schedule), probes, degree_bound),
-                            relation_search_resource_bounds(ctx, &stage, degree_bound),
-                            CertificateRoute::DenseRelationSearchMembership,
-                            LocalNonfinitePolicy::NotApplicable,
-                        )
-                    }
-                }
-            }
-        }
-        KernelKind::UniversalTargetElimination => {
-            match plan_universal_elimination(block, system, ctx, plan_id) {
-                Ok(plan) => (KernelAdmissionStatus::Admitted, Some(plan)),
-                Err(err) => route_plan_error("universal projection planning", block, &err),
-            }
-        }
-        KernelKind::LinearAffine => {
-            if let Some(order) = find_triangular_affine_order(block, system) {
-                match plan_linear_affine(block, system, &order, ctx) {
-                    Ok(plan) => (KernelAdmissionStatus::Admitted, Some(plan)),
-                    Err(err) => route_plan_error("linear affine planning", block, &err),
-                }
-            } else {
-                declined("no complete safe triangular affine elimination order")
-            }
-        }
-        KernelKind::SparseResultantProjection => {
-            match plan_sparse_resultant(block, system, ctx, plan_id) {
-                Ok(plan) => (KernelAdmissionStatus::Admitted, Some(plan)),
-                Err(err) => route_plan_error("sparse resultant planning", block, &err),
-            }
-        }
-        KernelKind::TargetActionKrylov => {
-            match plan_target_action_krylov(block, system, ctx, plan_id) {
-                Ok(plan) => (KernelAdmissionStatus::Admitted, Some(plan)),
-                Err(err) => route_plan_error("target action Krylov planning", block, &err),
-            }
-        }
-        KernelKind::NormTraceProjection => {
-            match plan_norm_trace_projection(block, system, ctx, plan_id) {
-                Ok(plan) => (KernelAdmissionStatus::Admitted, Some(plan)),
-                Err(err) => route_plan_error("norm/trace projection planning", block, &err),
-            }
-        }
-        KernelKind::RegularChainProjection => {
-            match plan_regular_chain_projection(block, system, ctx, plan_id) {
-                Ok(plan) => (KernelAdmissionStatus::Admitted, Some(plan)),
-                Err(err) => route_plan_error("regular-chain projection planning", block, &err),
-            }
-        }
-        KernelKind::SpecializationInterpolation => {
-            match plan_specialization_interpolation(block, system, ctx, plan_id) {
-                Ok(plan) => (KernelAdmissionStatus::Admitted, Some(plan)),
-                Err(err) => route_plan_error("specialization-interpolation planning", block, &err),
-            }
-        }
-    };
-    finish_admission(
-        kind,
-        block.block_id,
-        exported_variables,
-        eliminated_variables,
-        status_and_plan.0,
-        status_and_plan.1,
-    )
-}
-
-fn admitted_with_plan(
-    plan_id: KernelPlanId,
-    kind: KernelKind,
-    block: &ProjectionBlock,
-    source_relation_ids: Vec<RelationId>,
-    source_relation_hashes: Vec<Hash>,
-    exported_variables: Vec<VariableId>,
-    eliminated_variables: Vec<VariableId>,
-    support_plan: KernelSupportPlan,
-    resource_bounds: ResourceBounds,
-    certificate_route: CertificateRoute,
-    local_nonfinite_policy: LocalNonfinitePolicy,
-) -> (KernelAdmissionStatus, Option<KernelExecutionPlan>) {
-    let failure_behavior = planned_failure_behavior(
-        vec![
-            SolverStatus::AlgorithmicHardCase,
-            SolverStatus::FiniteResourceFailure,
-            SolverStatus::CertificateDesignGap,
-        ],
-        local_nonfinite_policy,
-    );
-    let execution_plan = KernelExecutionPlan::new(
-        plan_id,
-        block.block_id,
-        kind,
-        block.authorization_hash,
-        source_relation_ids,
-        source_relation_hashes,
-        block.child_block_ids.clone(),
-        Vec::new(),
-        exported_variables,
-        eliminated_variables,
-        support_plan,
-        resource_bounds,
-        certificate_route,
-        failure_behavior,
-    );
-    (KernelAdmissionStatus::Admitted, Some(execution_plan))
-}
-
-fn declined(reason: &str) -> (KernelAdmissionStatus, Option<KernelExecutionPlan>) {
-    (
-        KernelAdmissionStatus::Declined {
-            reason: reason.to_owned(),
-        },
-        None,
-    )
-}
-
-fn cost_prohibited(
-    reason: &str,
-    estimate_hash: Hash,
-) -> (KernelAdmissionStatus, Option<KernelExecutionPlan>) {
-    (
-        KernelAdmissionStatus::CostProhibited {
-            reason: reason.to_owned(),
-            estimate_hash,
-        },
-        None,
-    )
-}
-
-fn plan_probe_failed(
-    reason: &str,
-    constructed_object_hash: Hash,
-) -> (KernelAdmissionStatus, Option<KernelExecutionPlan>) {
-    (
-        KernelAdmissionStatus::PlanProbeFailed {
-            reason: reason.to_owned(),
-            constructed_object_hash,
-        },
-        None,
-    )
-}
-
-fn route_plan_error(
-    label: &str,
     block: &ProjectionBlock,
     err: &crate::result::status::SolverError,
-) -> (KernelAdmissionStatus, Option<KernelExecutionPlan>) {
-    let class = if err.public_status() == SolverStatus::ImplementationBug {
-        "route-local invariant failure"
-    } else {
-        "route-local planning failure"
-    };
-    plan_probe_failed(
-        &format!(
-            "{label} {class}; status={:?}; error={:?}",
+) -> KernelAdmission {
+    let status = KernelAdmissionStatus::PlanProbeFailed {
+        reason: format!(
+            "runtime kernel plan failed after admitted runtime admission; status={:?}; error={:?}",
             err.public_status(),
             err.kind
         ),
-        hash_sequence(
-            "route-plan-probe-failed",
+        constructed_object_hash: hash_sequence(
+            "runtime-kernel-plan-failed",
             &[
-                label.as_bytes().to_vec(),
+                format!("{kind:?}").into_bytes(),
                 block.block_hash.0.to_vec(),
                 format!("{:?}", err.public_status()).into_bytes(),
                 format!("{:?}", err.kind).into_bytes(),
             ],
         ),
+    };
+    finish_admission(
+        kind,
+        block.block_id,
+        sorted_set(&block.exported_variables),
+        block
+            .local_variables
+            .difference(&block.exported_variables)
+            .copied()
+            .collect(),
+        status,
+        None,
     )
 }
 
@@ -472,9 +243,11 @@ fn finish_admission(
     status: KernelAdmissionStatus,
     execution_plan: Option<KernelExecutionPlan>,
 ) -> KernelAdmission {
+    let admission_evidence = KernelAdmissionEvidence::empty();
     let admission_hash = kernel_admission_hash(
         kind,
         block_id,
+        &admission_evidence,
         &exported_variables,
         &eliminated_variables,
         &status,
@@ -483,6 +256,7 @@ fn finish_admission(
     KernelAdmission {
         kind,
         block_id,
+        admission_evidence,
         status,
         exported_variables,
         eliminated_variables,
@@ -496,7 +270,10 @@ fn bind_admission_algebraic_cost(
     block: &ProjectionBlock,
     system: &CompressedSystemQ,
     probes: &ProbeResults,
+    ctx: &SolverContext,
+    runtime_admission_hash: Option<Hash>,
 ) -> KernelAdmission {
+    let mut evidence_cost = None;
     let scheduled_target_relation_plan = admission.kind == KernelKind::TargetRelationSearch
         && admission.execution_plan.as_ref().is_some_and(|plan| {
             plan.support_plan.dense_relation_search_schedule.is_some()
@@ -523,6 +300,7 @@ fn bind_admission_algebraic_cost(
             probes,
             admission.execution_plan.as_ref(),
         );
+        evidence_cost = Some(cost.clone());
         if plan_bound_sparse_resultant && cost.cost_class == RouteCostClass::CostProhibited {
             admission.status = KernelAdmissionStatus::CostProhibited {
                 reason: "dominant sparse resultant expression swell prohibited before execution"
@@ -535,55 +313,158 @@ fn bind_admission_algebraic_cost(
             plan.route_budget = RouteBudget::from_estimate(&plan.algebraic_work_estimate);
             plan.plan_hash = hash_kernel_execution_plan(plan);
         }
-        admission.admission_hash = kernel_admission_hash(
-            admission.kind,
-            admission.block_id,
-            &admission.exported_variables,
-            &admission.eliminated_variables,
-            &admission.status,
-            admission.execution_plan.as_ref(),
+        bind_admission_evidence_and_hash(
+            &mut admission,
+            block,
+            system,
+            probes,
+            ctx,
+            runtime_admission_hash,
+            evidence_cost.as_ref(),
         );
         return admission;
     }
     if admission.execution_plan.is_some() {
         let cost = estimate_kernel_cost(block, system, admission.kind, probes);
+        evidence_cost = Some(cost.clone());
         if cost.cost_class == RouteCostClass::CostProhibited {
             admission.status = KernelAdmissionStatus::CostProhibited {
                 reason: "dominant algebraic route budget prohibited before execution".to_owned(),
                 estimate_hash: cost.estimate_hash,
             };
             admission.execution_plan = None;
-            admission.admission_hash = kernel_admission_hash(
-                admission.kind,
-                admission.block_id,
-                &admission.exported_variables,
-                &admission.eliminated_variables,
-                &admission.status,
-                None,
+            bind_admission_evidence_and_hash(
+                &mut admission,
+                block,
+                system,
+                probes,
+                ctx,
+                runtime_admission_hash,
+                evidence_cost.as_ref(),
             );
             return admission;
         }
     }
     if let Some(plan) = admission.execution_plan.as_mut() {
-        let cost = estimate_kernel_cost(block, system, admission.kind, probes);
+        let cost = evidence_cost
+            .clone()
+            .unwrap_or_else(|| estimate_kernel_cost(block, system, admission.kind, probes));
+        evidence_cost = Some(cost.clone());
         plan.algebraic_work_estimate = cost.algebraic_work_estimate;
         plan.route_budget = RouteBudget::from_estimate(&plan.algebraic_work_estimate);
         plan.plan_hash = hash_kernel_execution_plan(plan);
-        admission.admission_hash = kernel_admission_hash(
-            admission.kind,
-            admission.block_id,
-            &admission.exported_variables,
-            &admission.eliminated_variables,
-            &admission.status,
-            admission.execution_plan.as_ref(),
-        );
     }
+    bind_admission_evidence_and_hash(
+        &mut admission,
+        block,
+        system,
+        probes,
+        ctx,
+        runtime_admission_hash,
+        evidence_cost.as_ref(),
+    );
     admission
+}
+
+fn bind_admission_evidence_and_hash(
+    admission: &mut KernelAdmission,
+    block: &ProjectionBlock,
+    system: &CompressedSystemQ,
+    probes: &ProbeResults,
+    ctx: &SolverContext,
+    runtime_admission_hash: Option<Hash>,
+    cost: Option<&crate::planner::cost_model::KernelCostEstimate>,
+) {
+    admission.admission_evidence = build_admission_evidence(
+        admission,
+        block,
+        system,
+        probes,
+        ctx,
+        runtime_admission_hash,
+        cost,
+    );
+    admission.admission_hash = kernel_admission_hash(
+        admission.kind,
+        admission.block_id,
+        &admission.admission_evidence,
+        &admission.exported_variables,
+        &admission.eliminated_variables,
+        &admission.status,
+        admission.execution_plan.as_ref(),
+    );
+}
+
+fn build_admission_evidence(
+    admission: &KernelAdmission,
+    block: &ProjectionBlock,
+    system: &CompressedSystemQ,
+    probes: &ProbeResults,
+    ctx: &SolverContext,
+    runtime_admission_hash: Option<Hash>,
+    cost: Option<&crate::planner::cost_model::KernelCostEstimate>,
+) -> KernelAdmissionEvidence {
+    let relations_by_id = system
+        .relations
+        .iter()
+        .map(|relation| (relation.id, relation.hash))
+        .collect::<BTreeMap<_, _>>();
+    let source_relation_ids = admission
+        .execution_plan
+        .as_ref()
+        .map(|plan| plan.source_relation_ids.clone())
+        .unwrap_or_else(|| block.relation_ids.clone());
+    let source_relation_hashes = admission
+        .execution_plan
+        .as_ref()
+        .map(|plan| plan.source_relation_hashes.clone())
+        .unwrap_or_else(|| {
+            source_relation_ids
+                .iter()
+                .filter_map(|id| relations_by_id.get(id).copied())
+                .collect::<Vec<_>>()
+        });
+    let initial_resource_bounds = admission
+        .execution_plan
+        .as_ref()
+        .map(|plan| plan.resource_bounds.clone())
+        .or_else(|| Some(resource_bounds(ctx, None, probes)));
+    let estimated_matrix_rows = cost.map(|cost| cost.matrix_rows).or_else(|| {
+        admission
+            .execution_plan
+            .as_ref()
+            .and_then(|plan| plan.resource_bounds.max_matrix_rows)
+    });
+    let estimated_matrix_cols = cost.map(|cost| cost.matrix_cols).or_else(|| {
+        admission
+            .execution_plan
+            .as_ref()
+            .and_then(|plan| plan.resource_bounds.max_matrix_cols)
+    });
+    let estimated_template_size = admission
+        .execution_plan
+        .as_ref()
+        .and_then(|plan| plan.support_plan.template_plan.as_ref())
+        .map(|template| template.matrix_rows.saturating_mul(template.matrix_cols))
+        .or_else(|| cost.map(|cost| cost.matrix_rows.saturating_mul(cost.matrix_cols)));
+    let mut evidence = KernelAdmissionEvidence {
+        runtime_admission_hash,
+        source_relation_ids,
+        source_relation_hashes,
+        initial_resource_bounds,
+        estimated_matrix_rows,
+        estimated_matrix_cols,
+        estimated_template_size,
+        evidence_hash: hash_sequence("kernel-admission-evidence", &[]),
+    };
+    evidence.evidence_hash = kernel_admission_evidence_hash(&evidence);
+    evidence
 }
 
 fn kernel_admission_hash(
     kind: KernelKind,
     block_id: crate::types::ids::BlockId,
+    admission_evidence: &KernelAdmissionEvidence,
     exported_variables: &[VariableId],
     eliminated_variables: &[VariableId],
     status: &KernelAdmissionStatus,
@@ -593,6 +474,7 @@ fn kernel_admission_hash(
         format!("{kind:?}").into_bytes(),
         block_id.0.to_be_bytes().to_vec(),
         format!("{status:?}").into_bytes(),
+        admission_evidence.evidence_hash.0.to_vec(),
     ];
     for variable in exported_variables {
         chunks.push(variable.0.to_be_bytes().to_vec());
@@ -607,77 +489,64 @@ fn kernel_admission_hash(
     hash_sequence("kernel-admission", &chunks)
 }
 
-fn basic_support_plan(
-    schedule: Option<DenseRelationSearchSchedule>,
-    sparse_schedule: Option<SparseRelationSearchSchedule>,
-    probes: &ProbeResults,
-    degree_bound: usize,
-) -> KernelSupportPlan {
-    let sparse_stage = sparse_schedule.as_ref().map(|schedule| &schedule.stage);
-    let dense_stage = schedule.as_ref().and_then(dominant_dense_relation_stage);
-    let template = if let Some(stage) = sparse_stage.or(dense_stage) {
-        template_plan(
-            stage.matrix_rows.max(1),
-            stage.matrix_cols.max(1),
-            stage.row_monomial_hash,
-            stage.export_support_hash,
-        )
-    } else {
-        template_plan(
-            probes.local_macaulay_size.template_estimate.row_count,
-            probes.local_macaulay_size.template_estimate.column_count,
-            probes.local_macaulay_size.template_estimate.estimate_hash,
-            probes.mixed_support.probe_hash,
-        )
-    };
-    let rank = rank_plan(
-        sparse_stage
-            .or(dense_stage)
-            .map_or(probes.modular_rank.rank_estimate.estimated_rank, |stage| {
-                stage.matrix_cols.max(1)
-            }),
+fn kernel_admission_evidence_hash(evidence: &KernelAdmissionEvidence) -> Hash {
+    let mut chunks = Vec::new();
+    if let Some(runtime_hash) = evidence.runtime_admission_hash {
+        chunks.push(runtime_hash.0.to_vec());
+    }
+    chunks.push(Vec::new());
+    for relation_id in &evidence.source_relation_ids {
+        chunks.push(relation_id.0.to_be_bytes().to_vec());
+    }
+    chunks.push(Vec::new());
+    for relation_hash in &evidence.source_relation_hashes {
+        chunks.push(relation_hash.0.to_vec());
+    }
+    chunks.push(Vec::new());
+    if let Some(bounds) = &evidence.initial_resource_bounds {
+        chunks.push(bounds.bounds_hash.0.to_vec());
+        chunks.push(bounds.max_matrix_rows.unwrap_or(0).to_be_bytes().to_vec());
+        chunks.push(bounds.max_matrix_cols.unwrap_or(0).to_be_bytes().to_vec());
+        chunks.push(bounds.max_export_degree.unwrap_or(0).to_be_bytes().to_vec());
+        chunks.push(
+            bounds
+                .max_multiplier_total_degree
+                .unwrap_or(0)
+                .to_be_bytes()
+                .to_vec(),
+        );
+        chunks.push(
+            bounds
+                .max_local_elimination_steps
+                .unwrap_or(0)
+                .to_be_bytes()
+                .to_vec(),
+        );
+        chunks.push(bounds.max_memory_bytes.unwrap_or(0).to_be_bytes().to_vec());
+    }
+    chunks.push(Vec::new());
+    chunks.push(
+        evidence
+            .estimated_matrix_rows
+            .unwrap_or(0)
+            .to_be_bytes()
+            .to_vec(),
     );
-    let mut support_plan = KernelSupportPlan {
-        dense_relation_search_schedule: schedule,
-        sparse_relation_search_schedule: sparse_schedule,
-        affine_elimination_order: None,
-        template_plan: Some(template),
-        rank_plan: Some(rank),
-        universal_strategy_sequence: Vec::new(),
-        degree_bound,
-        support_hash: hash_sequence("kernel-support-plan", &[]),
-    };
-    support_plan.support_hash = support_plan_hash(&support_plan);
-    support_plan
-}
-
-fn dominant_dense_relation_stage(
-    schedule: &DenseRelationSearchSchedule,
-) -> Option<&RelationSearchStage> {
-    schedule.stages.iter().max_by_key(|stage| {
-        stage
-            .matrix_rows
-            .max(1)
-            .saturating_mul(stage.matrix_cols.max(1))
-    })
-}
-
-fn relation_search_resource_bounds(
-    ctx: &SolverContext,
-    stage: &RelationSearchStage,
-    degree_bound: usize,
-) -> ResourceBounds {
-    let mut bounds = ResourceBounds {
-        max_matrix_rows: Some(stage.matrix_rows.max(1)),
-        max_matrix_cols: Some(stage.matrix_cols.max(1)),
-        max_export_degree: Some(degree_bound),
-        max_multiplier_total_degree: Some(stage.multiplier_total_degree),
-        max_local_elimination_steps: Some(0),
-        max_memory_bytes: ctx.options.max_memory_bytes,
-        bounds_hash: hash_sequence("planner-resource-bounds", &[]),
-    };
-    bounds.bounds_hash = resource_bounds_hash(&bounds);
-    bounds
+    chunks.push(
+        evidence
+            .estimated_matrix_cols
+            .unwrap_or(0)
+            .to_be_bytes()
+            .to_vec(),
+    );
+    chunks.push(
+        evidence
+            .estimated_template_size
+            .unwrap_or(0)
+            .to_be_bytes()
+            .to_vec(),
+    );
+    hash_sequence("kernel-admission-evidence", &chunks)
 }
 
 fn resource_bounds(
@@ -709,20 +578,10 @@ fn resource_bounds(
     bounds
 }
 
-fn block_relations<'a>(
-    block: &ProjectionBlock,
-    relations_by_id: &'a BTreeMap<RelationId, &'a crate::problem::canonicalize::CanonicalRelationQ>,
-) -> Vec<&'a crate::problem::canonicalize::CanonicalRelationQ> {
-    block
-        .relation_ids
-        .iter()
-        .filter_map(|id| relations_by_id.get(id).copied())
-        .collect()
-}
-
 #[cfg(test)]
 mod tests {
     use super::all_planner_kernel_kinds;
+    use crate::kernels::all_kernels;
     use crate::kernels::traits::KernelKind;
 
     #[test]
@@ -742,6 +601,17 @@ mod tests {
                 KernelKind::UniversalTargetElimination,
             ]
         );
+    }
+
+    #[test]
+    fn p7_planner_kernel_list_matches_runtime_registry_order() {
+        let planner_kinds = all_planner_kernel_kinds();
+        let runtime_kinds = all_kernels()
+            .into_iter()
+            .map(|kernel| kernel.kind())
+            .collect::<Vec<_>>();
+
+        assert_eq!(planner_kinds, runtime_kinds);
     }
 }
 

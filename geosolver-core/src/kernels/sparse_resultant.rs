@@ -1451,6 +1451,7 @@ fn finish_admission(
     KernelAdmission {
         kind: KernelKind::SparseResultantProjection,
         block_id: block.block_id,
+        admission_evidence: crate::planner::admission::KernelAdmissionEvidence::empty(),
         status,
         exported_variables,
         eliminated_variables,
@@ -1576,7 +1577,7 @@ mod tests {
         SparsePolynomialQ, TermQ,
     };
     use crate::types::rational::int_q;
-    use crate::verify::certificates::KernelCertificate;
+    use crate::verify::certificates::{kernel_certificate_binding_hash, KernelCertificate};
 
     use super::*;
 
@@ -1647,6 +1648,39 @@ mod tests {
             .unwrap_err();
 
         assert_eq!(err.public_status(), SolverStatus::ImplementationBug);
+    }
+
+    #[test]
+    fn p10_sparse_resultant_replay_rejects_missing_modular_traces_after_rehash() {
+        let t = VariableId(0);
+        let y = VariableId(1);
+        let relations = vec![
+            poly_sub(&variable_poly(y), &variable_poly(t)),
+            poly_sub(&variable_poly(y), &constant_poly(int_q(1))),
+        ];
+        let compressed = compressed_system(vec![t, y], t, relations);
+        let block = test_block(&compressed, [t, y], [t]);
+        let solver_ctx = new_context(SolverOptions::default());
+        let mut kctx = KernelContext {
+            block,
+            system: compressed,
+            child_messages: Vec::new(),
+        };
+        let kernel = SparseResultantProjectionKernel;
+        let admission = kernel.admit(&kctx.block, &kctx);
+        let plan = kernel.plan(&admission, &kctx, &solver_ctx).unwrap();
+        let mut message = kernel
+            .execute(&plan, &mut kctx, &mut new_context(SolverOptions::default()))
+            .unwrap();
+        let KernelCertificatePayload::SparseResultant(proof) = &mut message.certificate.payload
+        else {
+            panic!("SparseResultant must emit sparse resultant payload");
+        };
+        proof.resultant_certificates[0].modular_traces.clear();
+        message.certificate.binding_hash = kernel_certificate_binding_hash(&message.certificate);
+        message.package_hash = crate::compose::message::hash_projection_message(&message);
+
+        assert!(!kernel.replay(&message, &kctx).accepted);
     }
 
     #[test]
@@ -1870,7 +1904,9 @@ mod tests {
 
     #[test]
     fn acr_p4_runtime_pair_guards_cover_declared_budget_classes() {
-        let cases: Vec<(&str, Box<dyn Fn(&mut KernelExecutionPlan)>)> = vec![
+        type PlanMutation = Box<dyn Fn(&mut KernelExecutionPlan)>;
+
+        let cases: Vec<(&str, PlanMutation)> = vec![
             (
                 "SparseResultantPairInputTermBudget",
                 Box::new(|plan| plan.route_budget.max_input_terms_per_pair = 1),

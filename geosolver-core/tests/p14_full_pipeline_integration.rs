@@ -112,7 +112,10 @@ fn assert_public_candidate_success(result: &TargetSolveResult, problem: &Rationa
     assert_eq!(result.root_isolation.len(), result.decoded_candidates.len());
     assert!(!result.projection_messages.is_empty());
     assert!(result.certificate.is_some());
-    assert!(result.exact_image_certificate.is_none());
+    assert!(result
+        .certificate
+        .as_ref()
+        .is_some_and(|cert| cert.exact_image_certificate_hash.is_none()));
     assert!(replay_run_certificate(result, problem).accepted);
     assert_result_cost_trace(result, problem.variables.len(), problem.equations.len());
     assert_truthful_runtime_invariants(result);
@@ -382,28 +385,35 @@ fn p14_public_candidate_cover_success_has_all_result_fields_and_trace() {
 }
 
 #[test]
-fn p14_public_exact_image_success_is_not_candidate_cover() {
+fn p16_public_exact_image_request_returns_scope_guard_with_candidates() {
     let problem = exact_semantic_problem(RealConstraintKind::Positive, v(0));
     let result = solve_target(problem.clone(), exact_options());
 
     assert_eq!(
         result.status,
-        SolverStatus::CertifiedExactTargetImage,
+        SolverStatus::CertificateDesignGap,
         "diagnostics={:?}",
         result.diagnostics
     );
     assert!(result.support_polynomial.is_some());
     assert!(result.squarefree_support_polynomial.is_some());
-    assert_eq!(result.root_isolation.len(), 1);
-    assert_eq!(result.decoded_candidates.len(), 1);
-    assert!(result.exact_image_certificate.is_some());
+    assert_eq!(result.root_isolation.len(), 2);
+    assert_eq!(result.decoded_candidates.len(), 2);
+    assert!(result
+        .certificate
+        .as_ref()
+        .is_some_and(|cert| cert.exact_image_certificate_hash.is_none()));
     assert!(result.certificate.is_some());
     assert!(replay_run_certificate(&result, &problem).accepted);
+    assert!(result
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.name == "ExactImageOutOfScope"));
     assert_result_cost_trace(&result, problem.variables.len(), problem.equations.len());
 }
 
 #[test]
-fn p14_public_exact_image_empty_keeps_support_but_no_candidates() {
+fn p16_public_exact_image_empty_semantics_do_not_filter_candidates() {
     let negative_square_guard = poly_scale(&poly_mul(&v(0), &v(0)), &int_q(-1));
     let support = poly_sub(&poly_mul(&v(0), &v(0)), &c(1));
     let problem = exact_semantic_problem_with_support(
@@ -415,17 +425,24 @@ fn p14_public_exact_image_empty_keeps_support_but_no_candidates() {
 
     assert_eq!(
         result.status,
-        SolverStatus::CertifiedEmptyRealTargetImage,
+        SolverStatus::CertificateDesignGap,
         "diagnostics={:?}",
         result.diagnostics
     );
     assert!(result.support_polynomial.is_some());
     assert!(result.squarefree_support_polynomial.is_some());
-    assert!(result.root_isolation.is_empty());
-    assert!(result.decoded_candidates.is_empty());
-    assert!(result.exact_image_certificate.is_some());
+    assert_eq!(result.root_isolation.len(), 2);
+    assert_eq!(result.decoded_candidates.len(), 2);
+    assert!(result
+        .certificate
+        .as_ref()
+        .is_some_and(|cert| cert.exact_image_certificate_hash.is_none()));
     assert!(result.certificate.is_some());
     assert!(replay_run_certificate(&result, &problem).accepted);
+    assert!(result
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.name == "ExactImageOutOfScope"));
     assert_result_cost_trace(&result, problem.variables.len(), problem.equations.len());
 }
 
@@ -444,8 +461,6 @@ fn p14_public_certified_nonfinite_is_finalized_without_panic() {
     assert!(result.root_isolation.is_empty());
     assert!(result.decoded_candidates.is_empty());
     assert!(result.certificate.is_none());
-    assert!(result.exact_image_certificate.is_none());
-    assert!(result.nonfinite_certificate.is_some());
     assert!(replay_run_certificate(&result, &problem).accepted);
     assert!(result.diagnostics.iter().any(|diagnostic| {
         diagnostic.name == "CertifiedNonFiniteTargetImage"
@@ -528,7 +543,6 @@ fn p14_public_invalid_input_maps_to_result_not_panic() {
     assert!(result.decoded_candidates.is_empty());
     assert!(result.projection_messages.is_empty());
     assert!(result.certificate.is_none());
-    assert!(result.exact_image_certificate.is_none());
     assert_eq!(result.cost_trace, GlobalCostTrace::default());
     assert!(result
         .diagnostics

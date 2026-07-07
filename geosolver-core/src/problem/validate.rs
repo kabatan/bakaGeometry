@@ -55,23 +55,23 @@ pub fn validate_input(problem: RationalTargetProblem) -> Result<ValidatedProblem
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::problem::input::{make_problem, VariableRoleRecord};
+    use crate::problem::input::{make_problem, make_problem_with_roles, VariableRoleRecord};
     use crate::problem::semantic::{register_slack_encoding, RealConstraintKind};
     use crate::types::ids::VariableId;
     use crate::types::polynomial::variable_poly;
 
     #[test]
     fn roles_do_not_affect_validation() {
-        let mut problem = make_problem(
+        let problem = make_problem_with_roles(
             vec![VariableId(0), VariableId(1)],
             VariableId(0),
             vec![variable_poly(VariableId(1))],
             Vec::new(),
+            vec![VariableRoleRecord {
+                variable: VariableId(1),
+                role_name: "coordinate".to_string(),
+            }],
         );
-        problem.variable_roles.push(VariableRoleRecord {
-            variable: VariableId(1),
-            role_name: "coordinate".to_string(),
-        });
         assert!(validate_input(problem).is_ok());
     }
 

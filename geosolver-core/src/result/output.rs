@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::compose::final_support::NonFiniteCertificate;
 use crate::compose::message::ProjectionMessage;
-use crate::fiber::exact_image::FiberClassificationResult;
 use crate::kernels::traits::KernelKind;
 use crate::result::cost_trace::{GlobalCostTrace, ProjectionCostTrace};
 use crate::result::diagnostics::DiagnosticRecord;
@@ -24,10 +22,6 @@ pub struct TargetSolveResult {
     pub decoded_candidates: Vec<TargetCandidate>,
     pub projection_messages: Vec<ProjectionMessage>,
     pub certificate: Option<CoreRunCertificate>,
-    #[serde(default)]
-    pub exact_image_certificate: Option<FiberClassificationResult>,
-    #[serde(default)]
-    pub nonfinite_certificate: Option<NonFiniteCertificate>,
     pub diagnostics: Vec<DiagnosticRecord>,
     pub cost_trace: GlobalCostTrace,
 }
@@ -82,8 +76,6 @@ impl TargetSolveResult {
             decoded_candidates: Vec::new(),
             projection_messages: Vec::new(),
             certificate: None,
-            exact_image_certificate: None,
-            nonfinite_certificate: None,
             diagnostics: vec![DiagnosticRecord::from_solver_error(&err)],
             cost_trace,
         }

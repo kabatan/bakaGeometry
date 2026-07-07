@@ -11,12 +11,12 @@ pub struct RationalInterval {
 
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum IntervalError {
-    #[error("interval lower bound exceeds upper bound")]
+    #[error("interval lower bound must be strictly less than upper bound")]
     Empty,
 }
 
 pub fn interval_new(lo: RationalQ, hi: RationalQ) -> Result<RationalInterval, IntervalError> {
-    if lo > hi {
+    if lo >= hi {
         return Err(IntervalError::Empty);
     }
     Ok(RationalInterval { lo, hi })
@@ -43,5 +43,6 @@ mod tests {
         let j = interval_new(int_q(4), int_q(5)).unwrap();
         assert!(interval_disjoint(&i, &j));
         assert!(interval_new(int_q(5), int_q(4)).is_err());
+        assert!(interval_new(int_q(5), int_q(5)).is_err());
     }
 }

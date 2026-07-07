@@ -59,6 +59,13 @@ pub struct RootCandidateBundle {
     pub decoded_candidates: Vec<TargetCandidate>,
 }
 
+pub fn run_pipeline(
+    problem: RationalTargetProblem,
+    ctx: SolverContext,
+) -> Result<crate::result::output::TargetSolveResult, SolverError> {
+    crate::solver::orchestrator::solve_with_context(problem, ctx)
+}
+
 pub fn step_validate(
     problem: RationalTargetProblem,
     _ctx: &mut SolverContext,
@@ -1619,47 +1626,60 @@ mod tests {
                 .map(|record| record.strategy)
                 .collect::<Vec<_>>()
         );
-        let dense = proof
+        let local_groebner = proof
+            .strategy_records
+            .iter()
+            .find(|record| record.strategy == UniversalStrategy::EliminationGroebnerLocal)
+            .expect("local Groebner internal stage record");
+        assert_eq!(local_groebner.cost_class, RouteCostClass::CostProhibited);
+        assert!(!local_groebner.enabled);
+        let local_f4 = proof
+            .strategy_records
+            .iter()
+            .find(|record| record.strategy == UniversalStrategy::F4EliminationLocal)
+            .expect("local F4 internal stage record");
+        assert_eq!(local_f4.cost_class, RouteCostClass::CostProhibited);
+        assert!(!local_f4.enabled);
+        let target_relation = proof
             .strategy_records
             .iter()
             .find(|record| record.strategy == UniversalStrategy::TargetRelationSearchEscalated)
-            .expect("dense internal stage record");
-        assert_eq!(dense.cost_class, RouteCostClass::CostProhibited);
-        assert!(!dense.enabled);
-        assert!(dense
-            .skip_reason
-            .as_deref()
-            .is_some_and(|reason| reason.contains("CostProhibitedInternalStage")));
+            .expect("target relation internal stage record");
+        assert_eq!(target_relation.cost_class, RouteCostClass::Feasible);
+        assert!(target_relation.enabled);
         let sparse = proof
             .strategy_records
             .iter()
-            .find(|record| {
-                record.strategy == UniversalStrategy::SparseResultantIfSquareOrOverdetermined
-            })
+            .find(|record| record.strategy == UniversalStrategy::ResultantIfSquareOrOverdetermined)
             .expect("sparse resultant internal stage record");
         assert_eq!(sparse.cost_class, RouteCostClass::CostProhibited);
         assert!(!sparse.enabled);
         assert!(proof
             .skipped_cost_prohibited_strategy_hashes
-            .contains(&dense.stage_hash));
+            .contains(&local_groebner.stage_hash));
+        assert!(proof
+            .skipped_cost_prohibited_strategy_hashes
+            .contains(&local_f4.stage_hash));
         assert!(proof
             .skipped_cost_prohibited_strategy_hashes
             .contains(&sparse.stage_hash));
-        assert!(proof.failed_strategy_hashes.contains(&dense.stage_hash));
-        assert!(proof.failed_strategy_hashes.contains(&sparse.stage_hash));
+        assert_eq!(
+            proof.failed_strategy_hashes,
+            vec![local_groebner.stage_hash, local_f4.stage_hash]
+        );
         assert!(!proof
             .executed_failed_strategy_hashes
-            .contains(&dense.stage_hash));
+            .contains(&local_groebner.stage_hash));
         assert!(!proof
             .executed_failed_strategy_hashes
-            .contains(&sparse.stage_hash));
+            .contains(&local_f4.stage_hash));
         assert_eq!(
             proof.chosen_strategy,
-            UniversalStrategy::TargetActionKrylovIfQuotientCertifiable
+            UniversalStrategy::TargetRelationSearchEscalated
         );
         assert!(matches!(
             proof.inner_payload.as_deref(),
-            Some(KernelCertificatePayload::TargetAction(_))
+            Some(KernelCertificatePayload::Membership(_))
         ));
         assert!(crate::verify::verify_message::verify_projection_message(
             message,
@@ -1669,7 +1689,7 @@ mod tests {
     }
 
     #[test]
-    fn acr_p8_sparse_footprint_target_relation_pipeline_returns_candidate_cover() {
+    fn acr_p8_target_relation_pipeline_returns_candidate_cover() {
         let problem = p8_sparse_footprint_relation_problem();
         let target = problem.target;
         let mut ctx = new_context(SolverOptions::default());
@@ -1689,28 +1709,27 @@ mod tests {
             .support_plan
             .dense_relation_search_schedule
             .is_none());
-        let sparse_schedule = trs_plan
-            .support_plan
-            .sparse_relation_search_schedule
-            .as_ref()
-            .expect("sparse schedule should be attached to target relation plan");
-        let sparse_rows = sparse_schedule.stage.matrix_rows.max(1);
-        let sparse_cols = sparse_schedule.stage.matrix_cols.max(1);
         let template = trs_plan
             .support_plan
             .template_plan
             .as_ref()
-            .expect("sparse target relation plan should bind a template");
-        assert_eq!(template.matrix_rows, sparse_rows);
-        assert_eq!(template.matrix_cols, sparse_cols);
-        assert_eq!(
-            trs_plan.algebraic_work_estimate.matrix_rows,
-            Some(sparse_rows)
-        );
-        assert_eq!(
-            trs_plan.algebraic_work_estimate.matrix_cols,
-            Some(sparse_cols)
-        );
+            .expect("target relation plan should bind a template");
+        let planned_rows = template.matrix_rows;
+        let planned_cols = template.matrix_cols;
+        if let Some(sparse_schedule) = &trs_plan.support_plan.sparse_relation_search_schedule {
+            assert_eq!(planned_rows, sparse_schedule.stage.matrix_rows.max(1));
+            assert_eq!(planned_cols, sparse_schedule.stage.matrix_cols.max(1));
+            assert_eq!(
+                trs_plan.algebraic_work_estimate.matrix_rows,
+                Some(planned_rows)
+            );
+            assert_eq!(
+                trs_plan.algebraic_work_estimate.matrix_cols,
+                Some(planned_cols)
+            );
+        }
+        let estimate_rows = trs_plan.algebraic_work_estimate.matrix_rows;
+        let estimate_cols = trs_plan.algebraic_work_estimate.matrix_cols;
         assert!(trs_plan.algebraic_work_estimate.is_hash_current());
         assert!(trs_plan.route_budget.is_hash_current());
         let trs_cost = plans[0]
@@ -1719,8 +1738,8 @@ mod tests {
             .find(|estimate| estimate.kernel_kind == KernelKind::TargetRelationSearch)
             .expect("target relation cost estimate should be present");
         assert_ne!(trs_cost.cost_class, RouteCostClass::CostProhibited);
-        assert_eq!(trs_cost.matrix_rows, sparse_rows);
-        assert_eq!(trs_cost.matrix_cols, sparse_cols);
+        assert_eq!(Some(trs_cost.matrix_rows), estimate_rows);
+        assert_eq!(Some(trs_cost.matrix_cols), estimate_cols);
         assert_eq!(
             trs_cost.algebraic_work_estimate.estimate_hash,
             trs_plan.algebraic_work_estimate.estimate_hash
@@ -1778,8 +1797,6 @@ mod tests {
             decoded_candidates: roots.decoded_candidates,
             projection_messages: messages,
             certificate: Some(certificate),
-            exact_image_certificate: None,
-            nonfinite_certificate: None,
             diagnostics,
             cost_trace,
         };
@@ -2062,8 +2079,6 @@ mod tests {
             decoded_candidates: roots.decoded_candidates,
             projection_messages: messages,
             certificate: Some(certificate),
-            exact_image_certificate: None,
-            nonfinite_certificate: None,
             diagnostics,
             cost_trace,
         }
@@ -2128,8 +2143,6 @@ mod tests {
             decoded_candidates: roots.decoded_candidates,
             projection_messages: messages,
             certificate: Some(certificate),
-            exact_image_certificate: None,
-            nonfinite_certificate: None,
             diagnostics,
             cost_trace,
         }

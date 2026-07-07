@@ -78,6 +78,30 @@ mod tests {
     }
 
     #[test]
+    fn p7_kernel_kind_discriminants_match_source_order_registry() {
+        let kinds = [
+            KernelKind::TargetUnivariate,
+            KernelKind::LinearAffine,
+            KernelKind::TargetRelationSearch,
+            KernelKind::SparseResultantProjection,
+            KernelKind::TargetActionKrylov,
+            KernelKind::NormTraceProjection,
+            KernelKind::RegularChainProjection,
+            KernelKind::SpecializationInterpolation,
+            KernelKind::UniversalTargetElimination,
+        ];
+        let registry = all_kernels()
+            .into_iter()
+            .map(|kernel| kernel.kind())
+            .collect::<Vec<_>>();
+
+        assert_eq!(registry, kinds);
+        for (index, kind) in kinds.into_iter().enumerate() {
+            assert_eq!(kind as usize, index);
+        }
+    }
+
+    #[test]
     fn fcr_p10_advanced_projection_kernels_are_completion_registry_reachable() {
         let kinds = all_kernels()
             .into_iter()

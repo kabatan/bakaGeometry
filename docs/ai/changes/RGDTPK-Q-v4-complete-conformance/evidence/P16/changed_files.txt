@@ -1,0 +1,5 @@
+geosolver-core/src/solver/orchestrator.rs
+geosolver-core/tests/p13_exact_image_semantics.rs
+geosolver-core/tests/p14_full_pipeline_integration.rs
+geosolver-core/tests/p15_acceptance_stress.rs
+geosolver-core/scripts/audit_v4_conformance.py

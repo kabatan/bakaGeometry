@@ -90,3 +90,51 @@ fn compare_grevlex(a: &Monomial, b: &Monomial, vars: &[VariableId]) -> Ordering 
         ord => ord,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::monomial::normalize_monomial;
+
+    #[test]
+    fn elimination_order_places_eliminated_variables_above_keep_variables() {
+        let y = VariableId(1);
+        let z = VariableId(2);
+        let t = VariableId(3);
+        let order = elimination_order(&[y, z], &[t]);
+        let eliminated = normalize_monomial(vec![(z, 1)]);
+        let kept_high_degree = normalize_monomial(vec![(t, 9)]);
+
+        assert_eq!(
+            order.compare(&eliminated, &kept_high_degree),
+            Ordering::Greater
+        );
+    }
+
+    #[test]
+    fn block_order_uses_earlier_blocks_first() {
+        let x = VariableId(1);
+        let y = VariableId(2);
+        let order = block_order(vec![vec![x], vec![y]]);
+        let first_block = normalize_monomial(vec![(x, 1)]);
+        let second_block = normalize_monomial(vec![(y, 5)]);
+
+        assert_eq!(
+            order.compare(&first_block, &second_block),
+            Ordering::Greater
+        );
+    }
+
+    #[test]
+    fn grevlex_uses_total_degree_then_reverse_lex() {
+        let x = VariableId(1);
+        let y = VariableId(2);
+        let order = grevlex_order(&[x, y]);
+        let x2 = normalize_monomial(vec![(x, 2)]);
+        let xy = normalize_monomial(vec![(x, 1), (y, 1)]);
+        let x = normalize_monomial(vec![(x, 1)]);
+
+        assert_eq!(order.compare(&x2, &x), Ordering::Greater);
+        assert_eq!(order.compare(&x2, &xy), Ordering::Greater);
+    }
+}

@@ -223,12 +223,19 @@ pub fn verify_resultant_certificate(cert: &SparseResultantCertificate) -> bool {
     {
         return false;
     }
-    cert.modular_traces.iter().all(|trace| {
-        trace_prime_is_valid_for_poly(&recomputed, trace.prime) && {
-            let reduced = reduce_q_to_fp(&recomputed, trace.prime);
-            reduced.hash == trace.relation_mod_hash
-        }
-    })
+    let expected_traces = modular_relation_traces(
+        &template.input.polynomials,
+        &recomputed,
+        ModularOptions::default(),
+    );
+    !cert.modular_traces.is_empty()
+        && cert.modular_traces == expected_traces
+        && cert.modular_traces.iter().all(|trace| {
+            trace_prime_is_valid_for_poly(&recomputed, trace.prime) && {
+                let reduced = reduce_q_to_fp(&recomputed, trace.prime);
+                reduced.hash == trace.relation_mod_hash
+            }
+        })
 }
 
 fn compute_exact_resultant_relation(
@@ -782,6 +789,26 @@ mod tests {
         let mut relation =
             compute_resultant_relation(&template, ModularOptions::default()).unwrap();
         relation.certificate.relation_hash = zero_poly().hash;
+
+        assert!(!verify_resultant_certificate(&relation.certificate));
+    }
+
+    #[test]
+    fn resultant_certificate_rejects_missing_modular_traces() {
+        let x = VariableId(1);
+        let y = VariableId(2);
+        let f = poly_sub(&variable_poly(y), &variable_poly(x));
+        let g = poly_sub(&variable_poly(y), &constant_poly(int_q(1)));
+        let input = ResultantInput {
+            polynomials: vec![f, g],
+            eliminate: y,
+            keep_variables: vec![x],
+            max_matrix_dim: 4,
+        };
+        let template = build_sparse_resultant_template(input).unwrap();
+        let mut relation =
+            compute_resultant_relation(&template, ModularOptions::default()).unwrap();
+        relation.certificate.modular_traces.clear();
 
         assert!(!verify_resultant_certificate(&relation.certificate));
     }

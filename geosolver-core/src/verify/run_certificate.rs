@@ -515,6 +515,7 @@ pub fn hash_solver_options(options: &SolverOptions) -> Hash {
     hash_sequence(
         "solver-options",
         &[
+            vec![options.finite_candidate_cover_mode as u8],
             vec![options.exact_image_mode as u8],
             opt_usize(options.max_relation_search_export_degree),
             opt_u64(options.max_memory_bytes),

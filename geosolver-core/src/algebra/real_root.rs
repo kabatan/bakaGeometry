@@ -88,7 +88,125 @@ pub fn isolate_real_roots_sturm_with_max_width(
 pub fn isolate_real_roots_descartes(
     p: &UniPolynomialQ,
 ) -> Result<Vec<RealRootRecord>, SolverError> {
-    isolate_real_roots_sturm(p)
+    let squarefree = squarefree_part_uni(&normalize_univariate(p.clone()));
+    if degree_uni(&squarefree).is_none() {
+        if squarefree.coeffs_low_to_high.is_empty() {
+            return Err(algorithmic_hard_case(
+                squarefree.variable,
+                "DescartesVincentIsolation",
+                "zero support polynomial has no finite isolating root set",
+            ));
+        }
+        return Ok(Vec::new());
+    }
+
+    let bound = cauchy_bound(&squarefree)?;
+    let lo = neg_q(&bound);
+    let hi = bound;
+    let mut intervals = Vec::new();
+    isolate_descartes_interval(&squarefree, lo, hi, &mut intervals)?;
+    intervals.sort_by(|a, b| cmp_q(&a.lo, &b.lo));
+
+    Ok(intervals
+        .into_iter()
+        .enumerate()
+        .map(|(root_index, isolating_interval)| RealRootRecord {
+            support_hash: squarefree.hash,
+            root_index,
+            isolating_interval,
+        })
+        .collect())
+}
+
+fn isolate_descartes_interval(
+    support: &UniPolynomialQ,
+    lo: RationalQ,
+    hi: RationalQ,
+    intervals: &mut Vec<RationalInterval>,
+) -> Result<(), SolverError> {
+    let variations = descartes_variations_on_interval(support, &lo, &hi)?;
+    if variations == 0 {
+        return Ok(());
+    }
+    if variations == 1 {
+        intervals.push(RationalInterval { lo, hi });
+        return Ok(());
+    }
+
+    let split = choose_nonroot_split(support, &lo, &hi)?;
+    isolate_descartes_interval(support, lo, split.clone(), intervals)?;
+    isolate_descartes_interval(support, split, hi, intervals)
+}
+
+fn descartes_variations_on_interval(
+    p: &UniPolynomialQ,
+    lo: &RationalQ,
+    hi: &RationalQ,
+) -> Result<usize, SolverError> {
+    let Some(degree) = degree_uni(p) else {
+        return Ok(0);
+    };
+    let mut transformed = vec![zero_q(); degree + 1];
+    for (power, coeff) in p.coeffs_low_to_high.iter().enumerate() {
+        if is_zero_q(coeff) {
+            continue;
+        }
+        let left = pow_linear(lo, hi, power);
+        let right = pow_linear(&int_q(1), &int_q(1), degree - power);
+        let term = scale_coeffs(&convolve_coeffs(&left, &right), coeff);
+        add_coeffs_in_place(&mut transformed, &term);
+    }
+    Ok(sign_variations_coeffs(&transformed))
+}
+
+fn pow_linear(c0: &RationalQ, c1: &RationalQ, exp: usize) -> Vec<RationalQ> {
+    let mut out = vec![int_q(1)];
+    let base = vec![c0.clone(), c1.clone()];
+    for _ in 0..exp {
+        out = convolve_coeffs(&out, &base);
+    }
+    out
+}
+
+fn convolve_coeffs(a: &[RationalQ], b: &[RationalQ]) -> Vec<RationalQ> {
+    if a.is_empty() || b.is_empty() {
+        return Vec::new();
+    }
+    let mut out = vec![zero_q(); a.len() + b.len() - 1];
+    for (i, ai) in a.iter().enumerate() {
+        for (j, bj) in b.iter().enumerate() {
+            out[i + j] = add_q(&out[i + j], &mul_q(ai, bj));
+        }
+    }
+    out
+}
+
+fn scale_coeffs(coeffs: &[RationalQ], scale: &RationalQ) -> Vec<RationalQ> {
+    coeffs.iter().map(|coeff| mul_q(coeff, scale)).collect()
+}
+
+fn add_coeffs_in_place(acc: &mut [RationalQ], rhs: &[RationalQ]) {
+    for (idx, coeff) in rhs.iter().enumerate() {
+        if let Some(slot) = acc.get_mut(idx) {
+            *slot = add_q(slot, coeff);
+        }
+    }
+}
+
+fn sign_variations_coeffs(coeffs: &[RationalQ]) -> usize {
+    let mut last = 0_i8;
+    let mut variations = 0;
+    for coeff in coeffs.iter().rev() {
+        let sign = sign_q(coeff);
+        if sign == 0 {
+            continue;
+        }
+        if last != 0 && sign != last {
+            variations += 1;
+        }
+        last = sign;
+    }
+    variations
 }
 
 fn isolate_interval(
@@ -135,19 +253,16 @@ fn choose_nonroot_split(
     lo: &RationalQ,
     hi: &RationalQ,
 ) -> Result<RationalQ, SolverError> {
-    for denom in 2..=128 {
+    let mut denom = 2_i64;
+    loop {
         for numer in 1..denom {
             let point = affine_interval_point(lo, hi, numer, denom);
             if !is_zero_q(&eval_uni_q(support, &point)) {
                 return Ok(point);
             }
         }
+        denom += 1;
     }
-    Err(algorithmic_hard_case(
-        support.variable,
-        "SturmIsolation",
-        "could not find a rational subdivision point avoiding support roots",
-    ))
 }
 
 fn root_count_between(
@@ -342,5 +457,28 @@ mod tests {
         let roots = isolate_real_roots_sturm(&p).unwrap();
         assert_eq!(roots.len(), 2);
         assert_eq!(roots[0].support_hash, squarefree_part_uni(&p).hash);
+    }
+
+    #[test]
+    fn descartes_vincent_isolates_same_roots_without_sturm_alias() {
+        let x = VariableId(1);
+        let p = poly(x, vec![3, -4, 1]);
+        let sturm = isolate_real_roots_sturm(&p).unwrap();
+        let descartes = isolate_real_roots_descartes(&p).unwrap();
+
+        assert_eq!(sturm.len(), 2);
+        assert_eq!(descartes.len(), sturm.len());
+        assert!(descartes
+            .iter()
+            .any(|root| crate::types::interval::interval_contains_q(
+                &root.isolating_interval,
+                &int_q(1)
+            )));
+        assert!(descartes
+            .iter()
+            .any(|root| crate::types::interval::interval_contains_q(
+                &root.isolating_interval,
+                &int_q(3)
+            )));
     }
 }

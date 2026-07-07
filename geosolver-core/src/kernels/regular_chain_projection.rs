@@ -629,6 +629,7 @@ fn finish_admission(
     KernelAdmission {
         kind: KernelKind::RegularChainProjection,
         block_id: block.block_id,
+        admission_evidence: crate::planner::admission::KernelAdmissionEvidence::empty(),
         status,
         exported_variables: block.exported_variables.iter().copied().collect(),
         eliminated_variables: block
@@ -685,6 +686,7 @@ mod tests {
     use crate::types::ids::{BlockId, RelationId};
     use crate::types::polynomial::{constant_poly, poly_add, poly_mul, poly_sub, variable_poly};
     use crate::types::rational::int_q;
+    use crate::verify::certificates::kernel_certificate_binding_hash;
 
     use super::*;
 
@@ -855,6 +857,44 @@ mod tests {
             guarded.certificate.certificate_hash,
             amended.certificate.certificate_hash
         );
+    }
+
+    #[test]
+    fn p13_regular_chain_replay_rejects_tampered_regularity_evidence_after_rehash() {
+        let t = VariableId(0);
+        let y = VariableId(1);
+        let compressed = compressed_system(
+            vec![t, y],
+            t,
+            vec![
+                poly_sub(&variable_poly(y), &variable_poly(t)),
+                poly_sub(
+                    &poly_mul(&variable_poly(t), &variable_poly(t)),
+                    &constant_poly(int_q(2)),
+                ),
+            ],
+        );
+        let block = test_block(&compressed, [t, y], [t]);
+        let mut solver_ctx = new_context(SolverOptions::default());
+        let mut kctx = KernelContext {
+            block,
+            system: compressed,
+            child_messages: Vec::new(),
+        };
+        let kernel = RegularChainProjectionKernel;
+        let plan = kernel
+            .plan(&kernel.admit(&kctx.block, &kctx), &kctx, &solver_ctx)
+            .unwrap();
+        let mut message = kernel.execute(&plan, &mut kctx, &mut solver_ctx).unwrap();
+        let KernelCertificatePayload::RegularChain(proof) = &mut message.certificate.payload else {
+            panic!("regular chain message must carry regular chain payload");
+        };
+        proof.dag.chains[0].regularity_evidence[0].initial_hash =
+            hash_sequence("tampered-regularity-initial", &[]);
+        message.certificate.binding_hash = kernel_certificate_binding_hash(&message.certificate);
+        message.package_hash = projection_message_hash(&message);
+
+        assert!(!kernel.replay(&message, &kctx).accepted);
     }
 
     fn compressed_system(
