@@ -526,7 +526,7 @@ pub fn step_core_certificate(
     messages: &[ProjectionMessage],
     support: Option<&UniPolynomialQ>,
     roots: &RootCandidateBundle,
-    exact_image_certificate: Option<&crate::fiber::exact_image::FiberClassificationResult>,
+    exact_image_certificate_hash: Option<Hash>,
     support_certificate: Option<&GlobalSupportCertificate>,
 ) -> CoreRunCertificate {
     let kernel_plan_hashes = executed_plan_hashes(plans, messages);
@@ -559,7 +559,7 @@ pub fn step_core_certificate(
         squarefree_support: Some(&roots.squarefree_support),
         root_isolation: &roots.root_isolation,
         decoded_candidates: &roots.decoded_candidates,
-        exact_image_certificate,
+        exact_image_certificate_hash,
         global_support_certificate_hash: support_certificate.map(|cert| cert.certificate_hash),
         final_dag_replay_evidence: Some(replay_evidence),
     })

@@ -128,5 +128,4 @@ pub enum ProjectionStrength {
     CandidateCoverStrong,
     RadicalProjectionApprox,
     ExactProjectionIdeal,
-    ExactRealFiberAware,
 }

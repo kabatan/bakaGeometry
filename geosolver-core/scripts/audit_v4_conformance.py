@@ -169,7 +169,9 @@ COORDINATE_SOLVER_PATTERN = re.compile(
     r"\b(full_coordinate|coordinate_solution|coordinate_roots|global_lex|rur)\b",
     re.IGNORECASE,
 )
-EXACT_IMAGE_SUCCESS_PATTERN = re.compile(r"\bCertifiedExactTargetImage\b")
+EXACT_IMAGE_SUCCESS_PATTERN = re.compile(
+    r"\b(CertifiedExactTargetImage|CertifiedEmptyRealTargetImage)\b"
+)
 
 
 def is_allowed_no_coordinate_export_marker(line: str) -> bool:
@@ -185,25 +187,6 @@ def is_allowed_no_coordinate_export_marker(line: str) -> bool:
 
 
 def is_allowed_exact_image_reference(phase: str | None, rel_path: str, line: str) -> bool:
-    stripped = line.strip()
-    if phase == "P14" and rel_path == "src/verify/replay.rs":
-        return True
-    if phase == "P16" and rel_path in {
-        "src/result/status.rs",
-        "src/verify/replay.rs",
-    }:
-        return True
-    if phase == "P17" and rel_path == "src/verify/replay.rs":
-        return True
-    if phase is not None:
-        return False
-    if rel_path == "src/result/status.rs" and stripped == "CertifiedExactTargetImage,":
-        return True
-    if rel_path == "src/verify/replay.rs" and (
-        "SolverStatus::CertifiedExactTargetImage | SolverStatus::CertifiedEmptyRealTargetImage"
-        in stripped
-    ):
-        return True
     return False
 
 
@@ -974,7 +957,7 @@ P16_SYMBOLS = {
         "hash_solver_options",
         "options.exact_image_mode",
     ],
-    "verify/replay.rs": ["exact_image_certificate_hash", "CertifiedExactTargetImage"],
+    "verify/replay.rs": ["exact_image_certificate_hash"],
 }
 
 
@@ -2565,7 +2548,7 @@ def scan_p16_specific(findings: list[Finding]) -> None:
         text = run_cert.read_text(encoding="utf-8", errors="ignore")
         for needle in [
             "pub exact_image_certificate_hash: Option<Hash>",
-            "exact_image_certificate_hash: input",
+            "exact_image_certificate_hash: input.exact_image_certificate_hash",
             "vec![options.exact_image_mode as u8]",
             "chunks.push(optional_hash_bytes(cert.exact_image_certificate_hash))",
         ]:
@@ -2584,7 +2567,6 @@ def scan_p16_specific(findings: list[Finding]) -> None:
         text = replay.read_text(encoding="utf-8", errors="ignore")
         for needle in [
             "cert.exact_image_certificate_hash.is_some()",
-            "SolverStatus::CertifiedExactTargetImage | SolverStatus::CertifiedEmptyRealTargetImage",
             "return false",
         ]:
             if needle not in text:

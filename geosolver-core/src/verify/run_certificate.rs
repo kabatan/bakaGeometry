@@ -113,7 +113,7 @@ pub struct CoreRunCertificateInput<'a> {
     pub squarefree_support: Option<&'a UniPolynomialQ>,
     pub root_isolation: &'a [RealRootRecord],
     pub decoded_candidates: &'a [TargetCandidate],
-    pub exact_image_certificate: Option<&'a crate::fiber::exact_image::FiberClassificationResult>,
+    pub exact_image_certificate_hash: Option<Hash>,
     pub global_support_certificate_hash: Option<Hash>,
     pub final_dag_replay_evidence: Option<FinalDagReplayEvidence>,
 }
@@ -138,9 +138,7 @@ pub fn build_core_run_certificate(input: CoreRunCertificateInput<'_>) -> CoreRun
         squarefree_support_hash: input.squarefree_support.map(|support| support.hash),
         root_isolation_hash: Some(hash_root_isolation(input.root_isolation)),
         decoded_candidate_hash: Some(hash_decoded_candidates(input.decoded_candidates)),
-        exact_image_certificate_hash: input
-            .exact_image_certificate
-            .map(crate::fiber::exact_image::hash_fiber_classification_result),
+        exact_image_certificate_hash: input.exact_image_certificate_hash,
         global_support_certificate_hash: input.global_support_certificate_hash,
         final_dag_replay_evidence_hash,
         final_dag_replay_evidence: input.final_dag_replay_evidence,

@@ -21,7 +21,6 @@
 pub mod algebra;
 pub mod api;
 pub mod compose;
-pub mod fiber;
 pub mod graph;
 pub mod kernels;
 pub mod planner;

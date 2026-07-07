@@ -142,12 +142,6 @@ fn replay_checks(result: &TargetSolveResult, problem: &RationalTargetProblem) ->
     if cert.exact_image_certificate_hash.is_some() {
         return false;
     }
-    if matches!(
-        result.status,
-        SolverStatus::CertifiedExactTargetImage | SolverStatus::CertifiedEmptyRealTargetImage
-    ) {
-        return false;
-    }
     let expected_replay_evidence = build_final_dag_replay_evidence_from_dag(
         &actual_dag,
         &compressed,
@@ -641,7 +635,7 @@ mod tests {
             squarefree_support: Some(&support),
             root_isolation: &[],
             decoded_candidates: &[],
-            exact_image_certificate: None,
+            exact_image_certificate_hash: None,
             global_support_certificate_hash: None,
             final_dag_replay_evidence: None,
         });
@@ -749,7 +743,7 @@ mod tests {
             squarefree_support: Some(&support),
             root_isolation: &[],
             decoded_candidates: &[],
-            exact_image_certificate: None,
+            exact_image_certificate_hash: None,
             global_support_certificate_hash: None,
             final_dag_replay_evidence: None,
         });
@@ -782,6 +776,29 @@ mod tests {
         let mut result = result(t, support, messages, cert);
         assert!(super::replay_run_certificate(&result, &problem).accepted);
         result.projection_messages.clear();
+        assert!(!super::replay_run_certificate(&result, &problem).accepted);
+    }
+
+    #[test]
+    fn replay_rejects_exact_image_certificate_hash_even_when_run_hash_matches() {
+        let t = VariableId(0);
+        let support = support_poly(t);
+        let (message, _) = verified_target_univariate_message(t);
+        let messages = vec![message.clone()];
+        let problem = make_problem(
+            vec![t],
+            t,
+            vec![poly_sub(
+                &variable_poly(t),
+                &crate::types::polynomial::constant_poly(int_q(1)),
+            )],
+            Vec::new(),
+        );
+        let mut cert = replay_certificate(&problem, &messages, &support, &support, &[], &[]);
+        cert.exact_image_certificate_hash = Some(hash_sequence("forbidden-exact-image", &[]));
+        cert.run_hash = hash_core_run_certificate(&cert);
+        let result = result(t, support, messages, cert);
+
         assert!(!super::replay_run_certificate(&result, &problem).accepted);
     }
 
@@ -970,7 +987,7 @@ mod tests {
             squarefree_support: Some(&support),
             root_isolation: &[],
             decoded_candidates: &[],
-            exact_image_certificate: None,
+            exact_image_certificate_hash: None,
             global_support_certificate_hash: Some(global_support_certificate_hash(
                 t, &messages, &support,
             )),
@@ -1324,7 +1341,7 @@ mod tests {
             squarefree_support: Some(&forged_support),
             root_isolation: &[],
             decoded_candidates: &[],
-            exact_image_certificate: None,
+            exact_image_certificate_hash: None,
             global_support_certificate_hash: Some(global_support_certificate_hash(
                 t,
                 &messages,
@@ -1420,7 +1437,7 @@ mod tests {
             squarefree_support: Some(&forged_support),
             root_isolation: &[],
             decoded_candidates: &[],
-            exact_image_certificate: None,
+            exact_image_certificate_hash: None,
             global_support_certificate_hash: Some(global_support_certificate_hash(
                 t,
                 &messages,
@@ -1529,7 +1546,7 @@ mod tests {
             squarefree_support: Some(&support),
             root_isolation: &[],
             decoded_candidates: &[],
-            exact_image_certificate: None,
+            exact_image_certificate_hash: None,
             global_support_certificate_hash: Some(global_support_certificate_hash(
                 t, &messages, &support,
             )),
@@ -1583,7 +1600,7 @@ mod tests {
             squarefree_support: Some(squarefree_support),
             root_isolation: roots,
             decoded_candidates: candidates,
-            exact_image_certificate: None,
+            exact_image_certificate_hash: None,
             global_support_certificate_hash: support_certificate_hash,
             final_dag_replay_evidence: Some(evidence),
         })

@@ -1382,9 +1382,7 @@ fn require_representation(
 fn require_candidate_cover_strength(message: &ProjectionMessage) -> Result<(), SolverError> {
     if matches!(
         message.projection_strength,
-        ProjectionStrength::CandidateCoverStrong
-            | ProjectionStrength::ExactProjectionIdeal
-            | ProjectionStrength::ExactRealFiberAware
+        ProjectionStrength::CandidateCoverStrong | ProjectionStrength::ExactProjectionIdeal
     ) {
         Ok(())
     } else {

@@ -8,8 +8,6 @@ use crate::types::rational::RationalQ;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SolverStatus {
     CertifiedCandidateCover,
-    CertifiedExactTargetImage,
-    CertifiedEmptyRealTargetImage,
     CertifiedNonFiniteTargetImage,
     FiniteResourceFailure,
     AlgorithmicHardCase,
