@@ -8,14 +8,17 @@ use std::collections::BTreeSet;
 use num_traits::Zero;
 
 use crate::compression::CertifiedSystemQ;
+use crate::linear_q::nullspace_matrix_q;
+use crate::proof::{prove_fixed_target, CertificateMode, FixedProofInput};
 use crate::proof_learning::LeftNullObstruction;
 use crate::window::ProofWindow;
-use crate::{Monomial, Rational, ResourceLimits, TargetCertificate, Variable};
+use crate::{Monomial, Rational, ResourceLimits, TargetCertificate, UniPolynomialQ, Variable};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct LocalMembershipEquation {
     pub scope: SchurRepairScope,
     pub boundary_variables: Vec<Variable>,
+    pub boundary_support: Vec<Monomial>,
     pub row_monomials: Vec<Monomial>,
     pub multiplier_columns: Vec<Vec<Rational>>,
     pub boundary_columns: Vec<Vec<Rational>>,
@@ -59,6 +62,12 @@ pub(crate) fn localized_schur_repair(
         local_membership_equation(system, proof_window, &scope, &boundary_variables, degree);
     let multiplier_supports =
         localized_predecessor_supports(system, proof_window, obstructions, &scope);
+
+    if let Some(certificate) =
+        target_certificate_from_local_relation(system, &multiplier_supports, &local_membership)
+    {
+        return SchurRepairOutput::Certified(certificate);
+    }
 
     SchurRepairOutput::SupportInformation(SchurSupportInformation {
         scope,
@@ -144,10 +153,91 @@ pub(crate) fn local_membership_equation(
     LocalMembershipEquation {
         scope: scope.clone(),
         boundary_variables: boundary_variables.to_vec(),
+        boundary_support,
         row_monomials,
         multiplier_columns,
         boundary_columns,
     }
+}
+
+fn target_certificate_from_local_relation(
+    system: &CertifiedSystemQ,
+    multiplier_supports: &[Vec<Monomial>],
+    local_membership: &LocalMembershipEquation,
+) -> Option<TargetCertificate> {
+    let mut columns = local_membership.multiplier_columns.clone();
+    columns.extend(local_membership.boundary_columns.clone());
+    let matrix = rows_from_columns(&columns);
+    let boundary_start = local_membership.multiplier_columns.len();
+
+    for relation in nullspace_matrix_q(&matrix) {
+        let Some(support) = target_support_from_boundary_relation(
+            system,
+            &local_membership.boundary_support,
+            &relation[boundary_start..],
+        ) else {
+            continue;
+        };
+        if support.degree().is_none_or(|degree| degree == 0) {
+            continue;
+        }
+        let input = FixedProofInput {
+            system: system.clone(),
+            candidate: support,
+            proof_window: ProofWindow {
+                multiplier_supports: multiplier_supports.to_vec(),
+            },
+            certificate_mode: CertificateMode::Ideal,
+        };
+        if let Ok(certificate) = prove_fixed_target(input) {
+            return Some(certificate);
+        }
+    }
+    None
+}
+
+fn target_support_from_boundary_relation(
+    system: &CertifiedSystemQ,
+    boundary_support: &[Monomial],
+    coefficients: &[Rational],
+) -> Option<UniPolynomialQ> {
+    let target_index = system
+        .variables
+        .iter()
+        .position(|variable| variable == &system.target)?;
+    let mut support_coefficients = Vec::new();
+    for (monomial, coefficient) in boundary_support.iter().zip(coefficients) {
+        if coefficient.is_zero() {
+            continue;
+        }
+        if monomial
+            .exponents
+            .iter()
+            .enumerate()
+            .any(|(index, exponent)| index != target_index && *exponent != 0)
+        {
+            return None;
+        }
+        let degree = monomial.exponents[target_index] as usize;
+        if support_coefficients.len() <= degree {
+            support_coefficients.resize_with(degree + 1, crate::arith::rational_zero);
+        }
+        support_coefficients[degree] -= coefficient.clone();
+    }
+    let mut support = UniPolynomialQ {
+        variable: system.target.clone(),
+        coefficients: support_coefficients,
+    }
+    .primitive_integer_normalized();
+    support.normalize();
+    (!support.is_zero()).then_some(support)
+}
+
+fn rows_from_columns(columns: &[Vec<Rational>]) -> Vec<Vec<Rational>> {
+    let rows = columns.first().map_or(0, Vec::len);
+    (0..rows)
+        .map(|row| columns.iter().map(|column| column[row].clone()).collect())
+        .collect()
 }
 
 fn boundary_variables(system: &CertifiedSystemQ, scope: &SchurRepairScope) -> Vec<Variable> {
@@ -349,7 +439,9 @@ mod tests {
 
     use super::*;
     use crate::compression::CompressionReplayCertificate;
-    use crate::{Monomial, PolynomialQ, Rational};
+    use crate::{
+        Monomial, PolynomialQ, Rational, SolverCertificate, TargetProblemQ, VerificationResult,
+    };
 
     fn variable(symbol: &str) -> Variable {
         Variable {
@@ -470,5 +562,66 @@ mod tests {
         let output = localized_schur_repair(&system, &proof_window, &[obstruction], &limits);
 
         assert!(matches!(output, SchurRepairOutput::NoLocalScope));
+    }
+
+    #[test]
+    fn schur_repair_returns_exact_certificate_for_target_only_local_relation() {
+        let x = variable("X");
+        let t = variable("T");
+        let y = variable("Y");
+        let variables = vec![x.clone(), t.clone(), y.clone()];
+        let equations = vec![
+            polynomial(&variables, &[(1, vec![1, 0, 0]), (-1, vec![0, 1, 0])]),
+            polynomial(&variables, &[(1, vec![2, 0, 0]), (-1, vec![0, 1, 0])]),
+            polynomial(&variables, &[(1, vec![0, 0, 1]), (-1, vec![0, 1, 0])]),
+        ];
+        let problem = TargetProblemQ {
+            equations: equations.clone(),
+            variables: variables.clone(),
+            target: t.clone(),
+            semantic_guards: Vec::new(),
+        };
+        let system = CertifiedSystemQ {
+            equations,
+            variables,
+            target: t.clone(),
+            guard_certificates: Vec::new(),
+            replay: CompressionReplayCertificate { steps: Vec::new() },
+        };
+        let proof_window = ProofWindow {
+            multiplier_supports: vec![
+                vec![monomial(&[1, 0, 0]), monomial(&[0, 1, 0])],
+                vec![monomial(&[0, 0, 0])],
+                Vec::new(),
+            ],
+        };
+        let obstruction = LeftNullObstruction {
+            row_monomials: vec![monomial(&[2, 0, 0])],
+            coefficients: vec![rational(1)],
+        };
+        let limits = ResourceLimits {
+            max_window_degree: Some(2),
+            max_proof_weight: Some(2),
+            max_matrix_rows: None,
+            max_matrix_cols: None,
+            max_candidate_count: None,
+        };
+
+        let output = localized_schur_repair(&system, &proof_window, &[obstruction], &limits);
+
+        let SchurRepairOutput::Certified(certificate) = output else {
+            panic!("local target relation should produce a certificate");
+        };
+        assert_eq!(
+            crate::verify_certificate(problem, SolverCertificate::TargetCover(certificate.clone())),
+            VerificationResult::Verified
+        );
+        let TargetCertificate::IdealMembership { support, .. } = certificate else {
+            panic!("localized Schur should replay as ideal membership");
+        };
+        assert_eq!(
+            support.coefficients,
+            vec![rational(0), rational(-1), rational(1)]
+        );
     }
 }

@@ -103,6 +103,52 @@ pub(crate) fn solve_linear_system_q(matrix: &[Vec<Rational>], rhs: &[Rational]) 
     }
 }
 
+pub(crate) fn nullspace_matrix_q(matrix: &[Vec<Rational>]) -> Vec<Vec<Rational>> {
+    let rows = matrix.len();
+    let cols = matrix.first().map_or(0, Vec::len);
+    assert!(matrix.iter().all(|row| row.len() == cols));
+
+    let mut rref = matrix.to_vec();
+    let mut rank = 0;
+    let mut pivot_columns = Vec::new();
+
+    for col in 0..cols {
+        let pivot_row = (rank..rows).find(|row| !rref[*row][col].is_zero());
+        let Some(pivot_row) = pivot_row else {
+            continue;
+        };
+        rref.swap(rank, pivot_row);
+        let pivot = rref[rank][col].clone();
+        for entry in &mut rref[rank] {
+            *entry /= pivot.clone();
+        }
+        for row in 0..rows {
+            if row == rank || rref[row][col].is_zero() {
+                continue;
+            }
+            let factor = rref[row][col].clone();
+            for entry_col in col..cols {
+                let pivot_entry = rref[rank][entry_col].clone();
+                rref[row][entry_col] -= factor.clone() * pivot_entry;
+            }
+        }
+        pivot_columns.push(col);
+        rank += 1;
+    }
+
+    (0..cols)
+        .filter(|col| !pivot_columns.contains(col))
+        .map(|free_col| {
+            let mut vector = vec![crate::arith::rational_zero(); cols];
+            vector[free_col] = crate::arith::rational_one();
+            for (row, pivot_col) in pivot_columns.iter().copied().enumerate() {
+                vector[pivot_col] = -rref[row][free_col].clone();
+            }
+            vector
+        })
+        .collect()
+}
+
 pub(crate) fn matrix_vector_mul_q(matrix: &[Vec<Rational>], vector: &[Rational]) -> Vec<Rational> {
     matrix
         .iter()
@@ -212,6 +258,21 @@ mod tests {
                 );
                 assert_ne!(dot_q(&obstruction.coefficients, &rhs), Rational::zero());
             }
+        }
+    }
+
+    #[test]
+    fn rational_nullspace_vectors_are_exact_relations() {
+        let matrix = vec![vec![rat(1), rat(2), rat(3)], vec![rat(2), rat(4), rat(6)]];
+
+        let basis = nullspace_matrix_q(&matrix);
+
+        assert_eq!(basis.len(), 2);
+        for vector in basis {
+            assert_eq!(
+                matrix_vector_mul_q(&matrix, &vector),
+                vec![Rational::zero(), Rational::zero()]
+            );
         }
     }
 }

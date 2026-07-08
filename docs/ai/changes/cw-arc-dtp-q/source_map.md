@@ -36,6 +36,8 @@ This file names source classes for the CW-ARC-DTP-Q full implementation change. 
 | V3 route checklist and test matrix | `EXACT` | Required route-forcing, tamper, and non-simplification matrix content | `sources/route_checklists_and_test_matrix_v3.md` |
 | P5/P6 blocker fix instructions | `EXACT` | Required blocker fixes before P7 may start | `C:\Users\bakat\Downloads\CW_ARC_DTP_Q_P5_P6_BLOCKER_FIX_INSTRUCTIONS.md`; SHA-256 `460EACD1C644E32E62094ECBF13E7D111346F23FF430BA151EDE8A6314557C32` |
 | P5/P6 blocker fix Base Spec delta | `DERIVED` | Local admitted implementation delta for the P5/P6 blocker fix only | `P5_P6_BLOCKER_FIX_BASE_SPEC.md` |
+| P7-P13 reviewer constraint instruction | `EXACT` | User-required route closure review constraints before P7-P13 implementation | Conversation user instruction on 2026-07-08 |
+| P7-P13 route closure Base Spec delta | `DERIVED` | Local admitted implementation delta for P7-P13 route closure only | `P7_P13_ROUTE_CLOSURE_BASE_SPEC_DELTA.md` |
 
 ## Authority Boundary
 

@@ -1,13 +1,13 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use num_traits::{One, Signed, Zero};
+use num_traits::{One, Zero};
 
 use crate::candidates::{
     CandidateOracle, CandidateOrigin, CandidateTrace, RouteWitnessTrace, TargetCandidate,
 };
 use crate::compression::CertifiedSystemQ;
 use crate::window::CertificateWindow;
-use crate::{Monomial, PolynomialQ, Rational, UniPolynomialQ, Variable};
+use crate::{GuardCertificate, Monomial, PolynomialQ, Rational, UniPolynomialQ, Variable};
 
 pub(crate) struct NormTraceTowerOracle;
 
@@ -33,7 +33,7 @@ pub(crate) fn norm_trace_tower_candidates(system: &CertifiedSystemQ) -> Vec<Targ
     let Some((target_equation, target_expression)) = target_expression(system) else {
         return Vec::new();
     };
-    let Some(levels) = detect_monic_tower(system, target_equation) else {
+    let Some(levels) = detect_guarded_tower(system, target_equation) else {
         return Vec::new();
     };
     if levels.is_empty() || !target_expression_depends_on_tower(system, &target_expression, &levels)
@@ -106,7 +106,7 @@ fn target_expression(system: &CertifiedSystemQ) -> Option<(usize, PolynomialQ)> 
                 }
             }
         }
-        if valid && !target_coefficient.is_zero() && target_coefficient.abs().is_one() {
+        if valid && !target_coefficient.is_zero() {
             let scale = -crate::arith::rational_one() / target_coefficient;
             return Some((equation_index, rest.scale(&scale)));
         }
@@ -114,7 +114,7 @@ fn target_expression(system: &CertifiedSystemQ) -> Option<(usize, PolynomialQ)> 
     None
 }
 
-fn detect_monic_tower(
+fn detect_guarded_tower(
     system: &CertifiedSystemQ,
     target_equation: usize,
 ) -> Option<Vec<TowerLevel>> {
@@ -134,7 +134,7 @@ fn detect_monic_tower(
                     continue;
                 }
                 if let Some(level) =
-                    monic_level(system, equation, equation_index, variable_index, &available)
+                    guarded_level(system, equation, equation_index, variable_index, &available)
                 {
                     selected = Some(level);
                     break;
@@ -156,7 +156,7 @@ fn detect_monic_tower(
     Some(levels)
 }
 
-fn monic_level(
+fn guarded_level(
     system: &CertifiedSystemQ,
     equation: &PolynomialQ,
     equation_index: usize,
@@ -204,16 +204,62 @@ fn monic_level(
             ));
         }
     }
-    if !leading_coefficient.is_one() {
+    if !leading_coefficient.is_one()
+        && !guard_certifies_leading_coefficient(system, &leading_coefficient)
+    {
         return None;
     }
+    let replacement_scale = -crate::arith::rational_one() / leading_coefficient.clone();
 
     Some(TowerLevel {
         variable_index,
         equation_index,
         degree,
-        lower: lower.scale(&-crate::arith::rational_one()),
+        lower: lower.scale(&replacement_scale),
     })
+}
+
+fn guard_certifies_leading_coefficient(system: &CertifiedSystemQ, coefficient: &Rational) -> bool {
+    let guard = constant_polynomial(system, coefficient.clone());
+    system
+        .guard_certificates
+        .iter()
+        .any(|certificate| guard_certificate_has_polynomial(certificate, &guard))
+}
+
+fn guard_certificate_has_polynomial(certificate: &GuardCertificate, guard: &PolynomialQ) -> bool {
+    match certificate {
+        GuardCertificate::InputSemanticNonzero {
+            guard: certificate_guard,
+            record,
+        } => certificate_guard == guard && &record.polynomial == guard,
+        GuardCertificate::AlgebraicNonvanishing {
+            guard: certificate_guard,
+            ..
+        }
+        | GuardCertificate::RealAdmissibleNonvanishing {
+            guard: certificate_guard,
+            ..
+        } => certificate_guard == guard,
+        GuardCertificate::DerivedProduct {
+            product, factors, ..
+        } => {
+            product == guard
+                || factors
+                    .iter()
+                    .any(|factor| guard_certificate_has_polynomial(factor, guard))
+        }
+    }
+}
+
+fn constant_polynomial(system: &CertifiedSystemQ, coefficient: Rational) -> PolynomialQ {
+    PolynomialQ::from_term(
+        system.variables.clone(),
+        coefficient,
+        Monomial {
+            exponents: vec![0; system.variables.len()],
+        },
+    )
 }
 
 fn target_expression_depends_on_tower(
@@ -496,6 +542,7 @@ mod tests {
 
     use super::*;
     use crate::compression::CompressionReplayCertificate;
+    use crate::{GuardKind, GuardProvenance, GuardRecord};
 
     fn variable(symbol: &str) -> Variable {
         Variable {
@@ -529,6 +576,22 @@ mod tests {
             })
     }
 
+    fn nonzero_guard(variables: &[Variable], coefficient: i64) -> GuardCertificate {
+        let guard = PolynomialQ::from_term(
+            variables.to_vec(),
+            rational(coefficient),
+            monomial(&vec![0; variables.len()]),
+        );
+        let record = GuardRecord {
+            polynomial: guard.clone(),
+            kind: GuardKind::NonZero,
+            provenance: GuardProvenance {
+                description: "nonzero tower leading coefficient".to_string(),
+            },
+        };
+        GuardCertificate::InputSemanticNonzero { guard, record }
+    }
+
     #[test]
     fn tower_route_uses_monic_triangular_structure() {
         let y = variable("Y");
@@ -559,6 +622,67 @@ mod tests {
                 rational(0),
                 rational(0),
                 rational(1)
+            ]
+        );
+    }
+
+    #[test]
+    fn tower_route_requires_guard_for_nonmonic_leading_coefficient() {
+        let y = variable("Y");
+        let t = variable("T");
+        let variables = vec![y.clone(), t.clone()];
+        let mut system = CertifiedSystemQ {
+            equations: vec![
+                polynomial(&variables, &[(2, vec![2, 0]), (-4, vec![0, 0])]),
+                polynomial(&variables, &[(1, vec![0, 1]), (-1, vec![1, 0])]),
+            ],
+            variables: variables.clone(),
+            target: t.clone(),
+            guard_certificates: Vec::new(),
+            replay: CompressionReplayCertificate { steps: Vec::new() },
+        };
+
+        assert!(norm_trace_tower_candidates(&system).is_empty());
+
+        system.guard_certificates.push(nonzero_guard(&variables, 2));
+        let candidates = norm_trace_tower_candidates(&system);
+
+        assert_eq!(candidates.len(), 1);
+        assert_eq!(
+            candidates[0].reconstructed.as_ref().unwrap().coefficients,
+            vec![rational(-2), rational(0), rational(1)]
+        );
+    }
+
+    #[test]
+    fn tower_route_allows_non_unit_target_coefficient() {
+        let y = variable("Y");
+        let x = variable("X");
+        let t = variable("T");
+        let variables = vec![y.clone(), x.clone(), t.clone()];
+        let system = CertifiedSystemQ {
+            equations: vec![
+                polynomial(&variables, &[(1, vec![2, 0, 0]), (-2, vec![0, 0, 0])]),
+                polynomial(&variables, &[(1, vec![0, 2, 0]), (-1, vec![1, 0, 0])]),
+                polynomial(&variables, &[(2, vec![0, 0, 1]), (-1, vec![0, 1, 0])]),
+            ],
+            variables,
+            target: t.clone(),
+            guard_certificates: Vec::new(),
+            replay: CompressionReplayCertificate { steps: Vec::new() },
+        };
+
+        let candidates = norm_trace_tower_candidates(&system);
+
+        assert_eq!(candidates.len(), 1);
+        assert_eq!(
+            candidates[0].reconstructed.as_ref().unwrap().coefficients,
+            vec![
+                rational(-1),
+                rational(0),
+                rational(0),
+                rational(0),
+                rational(8)
             ]
         );
     }

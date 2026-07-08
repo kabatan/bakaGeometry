@@ -78,6 +78,8 @@ pub struct SliceWitnessTrace {
     pub prime: u64,
     pub assignments: Vec<SliceAssignment>,
     pub equation_index: usize,
+    pub equation_indices: Vec<usize>,
+    pub internal_origin: CandidateOrigin,
     pub relation_coefficients: Vec<u64>,
 }
 

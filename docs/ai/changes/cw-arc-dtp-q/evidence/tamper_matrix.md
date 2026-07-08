@@ -1,6 +1,6 @@
 # Tamper Matrix
 
-Status: historical P14 evidence; ComponentUnionLcm and no-target entries updated after P3 re-review blocker fix on 2026-07-08.
+Status: P7-P13 route closure evidence reviewed; ComponentUnionLcm and no-target entries updated after P3 re-review blocker fix on 2026-07-08.
 
 Authority: evidence only. Verifier code and tests are the executable source of truth.
 
@@ -29,7 +29,13 @@ Authority: evidence only. Verifier code and tests are the executable source of t
 | Empty admissible set | `empty_algebraic_certificate_verifies_and_tampering_fails` | altered multiplier rejected |
 | No-target eliminant | `solver_no_target_eliminant_is_design_gap_until_p15_replay`; `no_target_eliminant_is_p15_design_gap_not_monomial_acceptance` | top-level solver returns design gap with no success certificate; verifier design-gap shell remains until P15 |
 | Exact target image | `exact_image_requires_every_root_classified`; solver status tests for Try/Require exact image | missing root classification cannot produce `CertifiedExactTargetImage` |
+| Direct route cover | `direct_route_tampered_certificate_is_rejected` | route-forced certificate support tamper rejected by verifier |
+| Residual route cover | `residual_route_tampered_certificate_is_rejected` | route-forced certificate support tamper rejected by verifier |
+| Krylov route cover | `krylov_route_tampered_certificate_is_rejected` | route-forced certificate support tamper rejected by verifier |
+| Resultant route cover | `resultant_route_tampered_certificate_is_rejected` | route-forced certificate support tamper rejected by verifier |
+| Slice route cover | `slice_route_tampered_certificate_is_rejected` | route-forced certificate support tamper rejected by verifier |
+| Tower route cover | `tower_route_tampered_certificate_is_rejected` | route-forced certificate support tamper rejected by verifier |
 
 ## Command Evidence
 
-Full command evidence is recorded in the P14 audit evidence after the final P14 test run.
+Latest command evidence is recorded in `p7_p13_route_closure_evidence.md`.

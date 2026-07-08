@@ -72,6 +72,22 @@ fn solve_target_with_route_control(
     enabled_origins: Option<&BTreeSet<CandidateOrigin>>,
     allow_complete_fallback: bool,
 ) -> TargetSolveResult {
+    solve_target_with_route_control_inner(
+        problem,
+        options,
+        enabled_origins,
+        allow_complete_fallback,
+        false,
+    )
+}
+
+fn solve_target_with_route_control_inner(
+    problem: TargetProblemQ,
+    options: SolverOptions,
+    enabled_origins: Option<&BTreeSet<CandidateOrigin>>,
+    allow_complete_fallback: bool,
+    tamper_first_candidate: bool,
+) -> TargetSolveResult {
     let system = match certified_system_from_problem(&problem) {
         Ok(system) => system,
         Err(_) => {
@@ -154,6 +170,14 @@ fn solve_target_with_route_control(
 
         let candidates = collect_candidate_routes(&system, &window, enabled_origins);
         let candidates = rank_candidates(normalize_candidates(candidates));
+        #[cfg(test)]
+        let candidates = {
+            let mut candidates = candidates;
+            if tamper_first_candidate {
+                shift_reconstructed_candidates_for_test(&mut candidates);
+            }
+            candidates
+        };
         let mut last_proof_window = None;
 
         for candidate in candidates {
@@ -176,6 +200,7 @@ fn solve_target_with_route_control(
                         &mut collected_obstructions,
                         &mut last_proof_window,
                         &mut trace,
+                        tamper_first_candidate,
                     ) {
                         let Some(certificate) =
                             lift_target_certificate_to_original(&problem, certificate)
@@ -188,29 +213,42 @@ fn solve_target_with_route_control(
             }
         }
 
-        if let Some(proof_window) = last_proof_window.as_ref() {
-            match localized_schur_repair(
-                &system,
-                proof_window,
-                &collected_obstructions,
-                &options.resource_limits,
-            ) {
-                SchurRepairOutput::Certified(certificate) => {
-                    let Some(certificate) =
-                        lift_target_certificate_to_original(&problem, certificate)
-                    else {
-                        return implementation_bug_result(trace);
-                    };
-                    return return_verified_cover(&mut verified, certificate, &options, trace);
+        if !tamper_first_candidate {
+            if let Some(proof_window) = last_proof_window.as_ref() {
+                match localized_schur_repair(
+                    &system,
+                    proof_window,
+                    &collected_obstructions,
+                    &options.resource_limits,
+                ) {
+                    SchurRepairOutput::Certified(certificate) => {
+                        trace.events.push("localized_schur:certified".to_string());
+                        let Some(certificate) =
+                            lift_target_certificate_to_original(&problem, certificate)
+                        else {
+                            return implementation_bug_result(trace);
+                        };
+                        return return_verified_cover(&mut verified, certificate, &options, trace);
+                    }
+                    SchurRepairOutput::SupportInformation(_) => {
+                        trace.events.push("localized_schur:support".to_string());
+                    }
+                    SchurRepairOutput::NoLocalScope => {}
                 }
-                SchurRepairOutput::SupportInformation(_) => {
-                    trace.events.push("localized_schur:support".to_string());
-                }
-                SchurRepairOutput::NoLocalScope => {}
             }
         }
     }
 
+    if !allow_complete_fallback && candidate_count > 0 {
+        trace.events.push("route_forcing:no_verified".to_string());
+        return TargetSolveResult {
+            status: SolverStatus::NoVerifiedTargetCertificate,
+            cover: None,
+            exact_image: None,
+            certificate: None,
+            trace,
+        };
+    }
     assert!(
         allow_complete_fallback,
         "complete fallback reached while disabled"
@@ -313,12 +351,88 @@ pub(crate) fn solve_target_for_test(
     options: SolverOptions,
     forcing: &crate::test_support::TestRouteForcing,
 ) -> TargetSolveResult {
-    solve_target_with_route_control(
+    solve_target_with_route_forcing(problem, options, forcing)
+}
+
+#[cfg(test)]
+pub(crate) fn solve_target_with_route_forcing(
+    problem: TargetProblemQ,
+    options: SolverOptions,
+    forcing: &crate::test_support::RouteForcing,
+) -> TargetSolveResult {
+    if let Some(seed) = forcing.forced_localized_schur.as_ref() {
+        return solve_target_with_forced_localized_schur(problem, options, forcing, seed);
+    }
+    let enabled_origins = if forcing.allow_other_heavy_routes {
+        None
+    } else {
+        Some(&forcing.enabled_origins)
+    };
+    solve_target_with_route_control_inner(
         problem,
         options,
-        Some(&forcing.enabled_origins),
+        enabled_origins,
         forcing.allow_complete_fallback,
+        forcing.tamper_first_candidate,
     )
+}
+
+#[cfg(test)]
+fn solve_target_with_forced_localized_schur(
+    problem: TargetProblemQ,
+    options: SolverOptions,
+    forcing: &crate::test_support::RouteForcing,
+    seed: &crate::test_support::ForcedLocalizedSchur,
+) -> TargetSolveResult {
+    let system = match certified_system_from_problem(&problem) {
+        Ok(system) => system,
+        Err(_) => {
+            return TargetSolveResult {
+                status: SolverStatus::InvalidInput,
+                cover: None,
+                exact_image: None,
+                certificate: None,
+                trace: SolverTrace::default(),
+            };
+        }
+    };
+    let proof_window = ProofWindow {
+        multiplier_supports: seed.proof_multiplier_supports.clone(),
+    };
+    let obstruction = crate::proof_learning::LeftNullObstruction {
+        row_monomials: seed.obstruction_rows.clone(),
+        coefficients: seed.obstruction_coefficients.clone(),
+    };
+    let mut trace = SolverTrace::default();
+    match localized_schur_repair(
+        &system,
+        &proof_window,
+        &[obstruction],
+        &options.resource_limits,
+    ) {
+        SchurRepairOutput::Certified(certificate) => {
+            trace.events.push("localized_schur:certified".to_string());
+            let Some(certificate) = lift_target_certificate_to_original(&problem, certificate)
+            else {
+                return implementation_bug_result(trace);
+            };
+            return return_verified_cover(&mut Vec::new(), certificate, &options, trace);
+        }
+        SchurRepairOutput::SupportInformation(_) => {
+            trace.events.push("localized_schur:support".to_string());
+        }
+        SchurRepairOutput::NoLocalScope => {}
+    }
+    if !forcing.allow_complete_fallback {
+        return TargetSolveResult {
+            status: SolverStatus::NoVerifiedTargetCertificate,
+            cover: None,
+            exact_image: None,
+            certificate: None,
+            trace,
+        };
+    }
+    solve_target_with_route_control(problem, options, None, true)
 }
 
 fn try_candidate_certificate(
@@ -329,6 +443,7 @@ fn try_candidate_certificate(
     collected_obstructions: &mut Vec<crate::proof_learning::LeftNullObstruction>,
     last_proof_window: &mut Option<ProofWindow>,
     trace: &mut SolverTrace,
+    proof_gate_only_for_test: bool,
 ) -> Option<TargetCertificate> {
     let support = candidate.reconstructed.as_ref()?;
     if is_nonzero_constant_support(support) {
@@ -357,6 +472,10 @@ fn try_candidate_certificate(
         ) {
             return Some(certificate);
         }
+    }
+
+    if proof_gate_only_for_test {
+        return None;
     }
 
     match low_degree_multiple_repair(system, support, &proof_window, limits) {
@@ -692,7 +811,7 @@ fn collect_candidate_routes(
     if origin_enabled(enabled_origins, CandidateOrigin::SliceSpecialization) {
         let oracle = SliceSpecializationOracle {
             primes: vec![5, 7, 11, 13],
-            slice_count: 2,
+            slice_count: window.target_degree.saturating_add(1),
         };
         candidates.extend(oracle.generate(system, window));
     }
@@ -752,6 +871,21 @@ fn candidate_degree(candidate: &TargetCandidate) -> usize {
 }
 
 #[cfg(test)]
+fn shift_reconstructed_candidates_for_test(candidates: &mut [TargetCandidate]) {
+    for candidate in candidates {
+        let Some(support) = candidate.reconstructed.as_mut() else {
+            continue;
+        };
+        if support.coefficients.is_empty() {
+            support.coefficients.push(crate::arith::rational_one());
+        } else {
+            support.coefficients[0] += crate::arith::rational_one();
+        }
+        support.normalize();
+    }
+}
+
+#[cfg(test)]
 pub(crate) fn collect_candidates_for_test(
     problem: TargetProblemQ,
     limits: &ResourceLimits,
@@ -761,15 +895,18 @@ pub(crate) fn collect_candidates_for_test(
         return Vec::new();
     }
     let _fallback_allowed = forcing.allow_complete_fallback;
+    let enabled_origins = if forcing.allow_other_heavy_routes {
+        None
+    } else {
+        Some(&forcing.enabled_origins)
+    };
     let Ok(system) = certified_system_from_problem(&problem) else {
         return Vec::new();
     };
     let dag = build_target_dependency_dag(&system);
     plan_certificate_windows(&system, &dag, limits)
         .iter()
-        .flat_map(|window| {
-            collect_candidate_routes(&system, window, Some(&forcing.enabled_origins))
-        })
+        .flat_map(|window| collect_candidate_routes(&system, window, enabled_origins))
         .collect()
 }
 
@@ -1081,6 +1218,7 @@ mod tests {
             &mut collected_obstructions,
             &mut last_proof_window,
             &mut trace,
+            false,
         );
 
         assert!(certificate.is_none());

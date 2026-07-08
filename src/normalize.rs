@@ -27,7 +27,7 @@ fn prepare_candidate(mut candidate: TargetCandidate) -> Option<TargetCandidate> 
         .collect();
     if let Some(reconstructed) = candidate.reconstructed.take() {
         let normalized = reconstructed.primitive_integer_normalized();
-        if normalized.is_zero() {
+        if normalized.is_zero() || normalized.degree() == Some(0) {
             return None;
         }
         candidate.reconstructed = Some(normalized);
@@ -85,7 +85,7 @@ pub(crate) fn factor_schedule(candidate: &TargetCandidate) -> FactorTrialSchedul
     let original = reconstructed.primitive_integer_normalized();
     let factorization = original.factor_squarefree_over_q();
     let mut scheduled = Vec::new();
-    if factorization.status != FactorizationStatus::ResourceFailure {
+    if factorization.status == FactorizationStatus::Complete {
         for factor in &factorization.factors {
             let factor = factor.primitive_integer_normalized();
             if factor.is_zero()
@@ -101,11 +101,11 @@ pub(crate) fn factor_schedule(candidate: &TargetCandidate) -> FactorTrialSchedul
             factor_candidate.reconstructed = Some(factor);
             scheduled.push(factor_candidate);
         }
-    }
 
-    let mut original_candidate = candidate.clone();
-    original_candidate.reconstructed = Some(original);
-    scheduled.push(original_candidate);
+        let mut original_candidate = candidate.clone();
+        original_candidate.reconstructed = Some(original);
+        scheduled.push(original_candidate);
+    }
     FactorTrialSchedule {
         candidates: scheduled,
         status: factorization.status,
@@ -125,7 +125,8 @@ struct ModularMergeKey {
 enum ModularFamilyKey {
     ActiveMultiplierSupports(Vec<Vec<crate::Monomial>>),
     SliceSpecialization {
-        equation_index: usize,
+        equation_indices: Vec<usize>,
+        internal_origin: crate::candidates::CandidateOrigin,
         assignments: Vec<(usize, u64)>,
     },
 }
@@ -304,7 +305,8 @@ fn modular_family_key(candidate: &TargetCandidate) -> Option<ModularFamilyKey> {
     }
     let witness = single_slice_witness(candidate)?;
     Some(ModularFamilyKey::SliceSpecialization {
-        equation_index: witness.equation_index,
+        equation_indices: witness.equation_indices.clone(),
+        internal_origin: witness.internal_origin,
         assignments: witness
             .assignments
             .iter()
@@ -348,6 +350,9 @@ fn normalize_modular_support(mut support: UniPolynomialFp) -> Option<UniPolynomi
     }
     support.normalize();
     let degree = modular_degree(&support)?;
+    if degree == 0 {
+        return None;
+    }
     let inverse = modulus.inv(support.coefficients[degree])?;
     for coefficient in &mut support.coefficients {
         *coefficient = modulus.mul(*coefficient, inverse);
@@ -547,6 +552,16 @@ mod tests {
             .collect::<Vec<_>>();
         assert!(supports.contains(&vec![rational(-1), rational(1)]));
         assert!(supports.contains(&vec![rational(1), rational(-2), rational(1)]));
+    }
+
+    #[test]
+    fn factor_schedule_resource_failure_produces_no_trials() {
+        let candidate =
+            normalize_candidate(candidate_with_coefficients(&[-1_000_003, 0, 1])).unwrap();
+        let scheduled = factor_schedule(&candidate);
+
+        assert_eq!(scheduled.status, FactorizationStatus::ResourceFailure);
+        assert!(scheduled.candidates.is_empty());
     }
 
     #[test]

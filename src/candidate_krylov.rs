@@ -1,8 +1,10 @@
+use num_traits::Zero;
+
 use crate::candidates::{
     CandidateOracle, CandidateOrigin, CandidateTrace, RouteWitnessTrace, TargetCandidate,
 };
 use crate::compression::CertifiedSystemQ;
-use crate::linear_q::{solve_linear_system_q, LinearSolveQ};
+use crate::linear_q::nullspace_matrix_q;
 use crate::window::{build_membership_matrix_q, build_target_power_matrix_q, CertificateWindow};
 use crate::{Rational, UniPolynomialQ};
 
@@ -24,28 +26,27 @@ pub(crate) fn target_cyclic_krylov_candidates(
 ) -> Vec<TargetCandidate> {
     let membership = build_membership_matrix_q(system, window);
     let target_powers = build_target_power_matrix_q(system, window);
+    let quotient = QuotientResidualHandleQ::from_membership_columns(
+        (0..membership.column_count())
+            .map(|index| membership.column(index).to_vec())
+            .collect(),
+    );
+    if quotient.left_null_basis.is_empty() {
+        return Vec::new();
+    }
     let mut candidates = Vec::new();
+    let residuals = (0..target_powers.column_count())
+        .map(|index| quotient.residual_class(target_powers.column(index)))
+        .collect::<Vec<_>>();
 
     for degree in 1..target_powers.column_count() {
-        let mut columns = (0..membership.column_count())
-            .map(|index| membership.column(index).to_vec())
-            .collect::<Vec<_>>();
-        for lower_degree in 0..degree {
-            columns.push(target_powers.column(lower_degree).to_vec());
-        }
-
-        let matrix = rows_from_columns(&columns);
-        let rhs = target_powers
-            .column(degree)
-            .iter()
-            .map(|coefficient| -coefficient.clone())
-            .collect::<Vec<_>>();
-        let LinearSolveQ::Consistent { solution, .. } = solve_linear_system_q(&matrix, &rhs) else {
+        let relation_matrix = rows_from_columns(&residuals[..=degree]);
+        let Some(coefficients) = nullspace_matrix_q(&relation_matrix)
+            .into_iter()
+            .find_map(|relation| normalize_relation_with_leading(relation, degree))
+        else {
             continue;
         };
-
-        let mut coefficients = solution[membership.column_count()..].to_vec();
-        coefficients.push(crate::arith::rational_one());
         let mut support = UniPolynomialQ {
             variable: system.target.clone(),
             coefficients,
@@ -63,12 +64,54 @@ pub(crate) fn target_cyclic_krylov_candidates(
             vec![CandidateTrace::RouteWitness(RouteWitnessTrace {
                 origin: CandidateOrigin::TargetCyclicKrylov,
                 equation_indices: (0..system.equations.len()).collect(),
-                support_size: columns.len(),
+                support_size: quotient.left_null_basis.len() + membership.column_count(),
             })],
         ));
     }
 
     candidates
+}
+
+#[derive(Clone, Debug)]
+struct QuotientResidualHandleQ {
+    left_null_basis: Vec<Vec<Rational>>,
+}
+
+impl QuotientResidualHandleQ {
+    fn from_membership_columns(columns: Vec<Vec<Rational>>) -> Self {
+        Self {
+            left_null_basis: nullspace_matrix_q(&columns),
+        }
+    }
+
+    fn residual_class(&self, vector: &[Rational]) -> Vec<Rational> {
+        self.left_null_basis
+            .iter()
+            .map(|left_relation| {
+                left_relation
+                    .iter()
+                    .zip(vector)
+                    .fold(crate::arith::rational_zero(), |sum, (left, value)| {
+                        sum + left.clone() * value.clone()
+                    })
+            })
+            .collect()
+    }
+}
+
+fn normalize_relation_with_leading(
+    mut relation: Vec<Rational>,
+    leading_degree: usize,
+) -> Option<Vec<Rational>> {
+    if relation.len() <= leading_degree || relation[leading_degree].is_zero() {
+        return None;
+    }
+    relation.truncate(leading_degree + 1);
+    let leading = relation[leading_degree].clone();
+    for coefficient in &mut relation {
+        *coefficient /= leading.clone();
+    }
+    Some(relation)
 }
 
 fn rows_from_columns(columns: &[Vec<Rational>]) -> Vec<Vec<Rational>> {

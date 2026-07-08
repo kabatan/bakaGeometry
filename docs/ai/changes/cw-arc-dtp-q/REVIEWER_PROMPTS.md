@@ -39,6 +39,26 @@ FAIL すべき条件:
 PASS は、source-level control-flow と data-flow を説明でき、forbidden patterns を探し、route-forcing と tamper evidence を production code と照合できた場合だけ出す。
 ```
 
+## P7-P13 mandatory route-closure addendum
+
+Apply this addendum to every P7-P13 review.
+
+```text
+FAIL if P7-P12 route closure is justified by saying P4-P6 primitives exist. Shared primitives are only prerequisites; every route needs its own production control-flow/data-flow inspection.
+
+For each P7-P12 candidate route, require all four evidence classes:
+- route-forcing with only that origin enabled;
+- complete fallback disabled;
+- exact-proof-gate evidence showing the candidate is not adopted without fixed proof and verifier replay;
+- meaningful tamper test for the route certificate, replay data, or candidate evidence.
+
+Treat `FairProofSchedule::unbounded()` and final top-level unbounded ideal execution as separate claims. PASS for the iterator alone must not imply PASS for solver-level unbounded orchestration.
+
+In every phase, inspect factor scheduling and candidate adoption for false completion. FAIL if `FactorizationResult::ResourceFailure` or `FactorizationResult::Partial` can be handled as `Complete`, directly or through fallback cloning.
+
+`origin_evidence` is ranking evidence only. FAIL if origin count, merged origins, or repeated route observations are used as an adoption condition, certificate authority, or proof shortcut.
+```
+
 ## P0 reviewer prompt — Authority lock and gap inventory
 
 ```text
@@ -193,6 +213,8 @@ Check tests:
 ```text
 Review P7.
 
+Also apply the P7-P13 mandatory route-closure addendum.
+
 FAIL if:
 - route uses variable name string rather than Variable equality.
 - direct candidate is returned as certified without fixed proof.
@@ -205,6 +227,8 @@ Check source call chain from DirectTargetEquation oracle to fixed proof gate.
 
 ```text
 Review P8.
+
+Also apply the P7-P13 mandatory route-closure addendum.
 
 Inspect residual-cyclic route in production code.
 
@@ -227,6 +251,8 @@ Check route-forcing tests RC-F1..RC-F4 and spurious candidate rejection.
 ```text
 Review P9.
 
+Also apply the P7-P13 mandatory route-closure addendum.
+
 Inspect quotient/residual handle and recurrence computation.
 
 FAIL if:
@@ -242,6 +268,8 @@ You must explain how residual classes of 1,T,T^2,... produce recurrence coeffici
 
 ```text
 Review P10.
+
+Also apply the P7-P13 mandatory route-closure addendum.
 
 This is adversarial. Look for narrow route capture.
 
@@ -268,6 +296,8 @@ Required reviewer output:
 ```text
 Review P11.
 
+Also apply the P7-P13 mandatory route-closure addendum.
+
 FAIL if:
 - route substitutes values into each equation independently and returns single-equation target polynomials.
 - sliced system does not contain all original equations plus slice equations.
@@ -284,6 +314,8 @@ original system -> slice equations -> sliced system candidate subroute -> origin
 ```text
 Review P12.
 
+Also apply the P7-P13 mandatory route-closure addendum.
+
 FAIL if:
 - only monic coefficient 1 tower is implemented while claiming guarded/nonmonic tower support.
 - nonmonic leading coefficient is inverted without GuardCertificate.
@@ -298,6 +330,8 @@ Check NT-F1..NT-F3 route-forced tests.
 
 ```text
 Review P13.
+
+Also apply the P7-P13 mandatory route-closure addendum. For P13, route-forcing and no-fallback evidence apply to LocalizedSchur only when it returns a replayable exact target certificate; support information alone is not solver success.
 
 FAIL if:
 - localized_schur_repair always returns SupportInformation.
@@ -481,4 +515,3 @@ For each, answer:
 
 Final PASS requires no unresolved QuestionDebt, no CertificateDesignGap in required variants, no final disqualifier, and all route-forcing/tamper/adversarial tests present.
 ```
-

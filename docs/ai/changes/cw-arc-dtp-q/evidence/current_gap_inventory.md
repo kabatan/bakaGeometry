@@ -73,9 +73,8 @@ Disposition:
 
 Finding:
 - `src/fallback_elimination.rs` defines `complete_target_elimination_fallback`.
-- It uses `limits.max_window_degree.unwrap_or(2).max(1)` and searches bounded multiplier/target degrees.
-- Other production repair/search paths also default to bounded windows with `max_window_degree.unwrap_or`, including
-  `src/repair_multiple.rs` and `src/repair_schur.rs`.
+- The original V3 import audit found hidden bounded-window defaults in fallback and repair paths.
+- P5/P6 blocker work removed those hidden defaults; fallback and repair now require explicit caller limits or fail closed.
 
 Impact:
 - Violates V3 G9 and P15 for the fallback path, and leaves route/repair phases dependent on bounded-window defaults until their V3 exact replacements land. A bounded search must not be named or treated as complete target elimination.
@@ -96,13 +95,14 @@ Impact:
 Disposition:
 - P3 checkpoint implementation removes monomial-only verifier acceptance and returns a P15 design gap after guard verification. Top-level `solve_target` returns `CertificateDesignGap` with no success certificate for this path until exact elimination-zero replay exists. Full exact elimination-zero certificate remains P15.
 
-### GAP-006 — modular reconstruction is first-prime-only
+### GAP-006 — modular reconstruction first-prime-only behavior
 
 Finding:
-- `src/normalize.rs` `reconstruct_from_modular_support` reads `support_mod_primes.first()` and lifts residues directly into a small representative range.
+- The original V3 import audit found first-prime-only modular lifting.
+- P4-P6 work replaced the multi-prime path with CRT plus rational reconstruction and keeps single-prime candidates modular-only.
 
 Impact:
-- Violates V3 P6 and candidate route requirements for multi-prime CRT/rational reconstruction.
+- Any reintroduction of first-prime-only multi-prime reconstruction would violate V3 P6 and route requirements.
 
 Disposition:
 - P6 checkpoint implementation keeps single-prime modular candidates modular-only, uses CRT plus rational reconstruction for multi-prime candidates, and preserves duplicate-prime alternatives while still forming distinct-prime reconstruction combinations. Scoped P4-P6 spec, quality, and boundary reviews passed on 2026-07-08.
@@ -129,17 +129,17 @@ Impact:
 Disposition:
 - Current solver sends every scheduled factor candidate through `try_candidate_certificate` and fixed exact proof. `origin_count_does_not_certify_candidate_without_exact_proof` covers the non-adoption boundary for evidence-only ranking inputs.
 
-### GAP-008 — localized Schur has support-information-only production path
+### GAP-008 — localized Schur exact-certificate path required
 
 Finding:
-- `src/repair_schur.rs` `localized_schur_repair` returns `SchurRepairOutput::SupportInformation` in the implemented path.
-- Current tests assert support info only and no certified Schur success.
+- P7-P13 route closure adds a `SchurRepairOutput::Certified` path when local membership produces a target-only relation that replays through fixed proof on the original system.
+- Support-information-only behavior remains for noncertifying local scopes.
 
 Impact:
-- Violates V3 P13, which requires a route-forced exact certificate family and support-info family.
+- P13 scoped route-closure inspection has passed, but this does not close P14+, P15, P16, or final V3 behavior.
 
 Disposition:
-- `replace` in P13 with exact certificate construction where a target-only relation appears, while preserving support-info-only behavior for noncertifying cases.
+- P7-P13 spec, quality, and boundary reviews passed for `schur_repair_returns_exact_certificate_for_target_only_local_relation`, `schur_repair_builds_local_membership_only`, solver-level `localized_schur:certified`, and production `localized_schur_repair`. Full final behavior remains bounded by later phases.
 
 ### GAP-009 — exact target image certificate verifier is unhandled
 
@@ -189,17 +189,14 @@ Disposition:
 ### GAP-013 — candidate routes are narrow relative to V3 route data-flow
 
 Finding:
-- Residual route still needs full P8 route closure, but P4-P6 now provides the shared residual active multiplier solve, admissible-prime filtering, and multi-prime candidate normalization/CRT pieces used by that later route phase.
-- Krylov route is an exact linear dependence search over current matrices, not yet the full quotient/residual handle required by V3 P9.
-- Sparse resultant route is a simplified Macaulay-style nullspace path, not the V3 sparse template/determinant/minor contract.
-- Slice route substitutes values into equations directly rather than building full sliced systems with slice equations and internal subroutes.
-- Norm/trace tower handles monic triangular structure but not guarded-nonmonic tower detection.
+- P7-P13 route closure has implementation changes for Residual route tests/evidence, Krylov quotient residual handle, Slice full sliced-system internal routes, NormTraceTower guarded-nonmonic/non-unit target coefficient handling, and LocalizedSchur exact certificate output.
+- Sparse resultant remains a Macaulay-style sparse template/null-relation route and requires adversarial reviewer inspection for the determinant/minor/template contract.
 
 Impact:
-- Violates V3 route closure phases P8-P12. Existing route-forcing tests from the prior bounded implementation are insufficient for full V3.
+- P7-P13 scoped route closure has been reviewed. This does not imply final V3 route completeness outside the admitted P7-P13 delta or P14+ closure.
 
 Disposition:
-- `replace` each route in its assigned phase, not patch evidence around current narrow behavior.
+- P7-P13 spec, quality, and boundary reviews passed after source and test inspection. Keep `p7_p13_route_closure_evidence.md` as scoped evidence only, not final V3 proof.
 
 ### GAP-014 — public closure from prior implementation is superseded
 
@@ -242,4 +239,4 @@ Disposition:
 
 ## Current Claim Ceiling
 
-This inventory supports only the claim that V3 authority has been imported, P0 admission passed, P1-P6 checkpoint work plus the local P5/P6 blocker fix were implemented with executable evidence, and the current implementation still has known replacement targets for later phases. It does not claim final V3 completion.
+This inventory supports only the claim that V3 authority has been imported, P0 admission passed, P1-P6 checkpoint work plus the local P5/P6 blocker fix were implemented with executable evidence, and P7-P13 route closure was implemented, locally tested, and reviewed under the admitted delta. It does not claim final V3 completion.

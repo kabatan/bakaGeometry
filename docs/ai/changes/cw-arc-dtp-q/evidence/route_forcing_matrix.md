@@ -1,6 +1,6 @@
 # Route-Forcing Matrix
 
-Status: P14 evidence; RP-P14 boundary review passed.
+Status: P7-P13 route closure evidence reviewed; spec, quality, and boundary reviews passed for the scoped delta.
 
 Authority: evidence only. The code and tests named here remain the executable source of truth.
 
@@ -8,28 +8,29 @@ Authority: evidence only. The code and tests named here remain the executable so
 
 - Test-only route control is compiled only through `#[cfg(test)] mod test_support` in `src/lib.rs`.
 - Public `SolverOptions` has no route forcing or complete-fallback switch.
-- `solve_target_for_test` passes a specific `enabled_origins` set and `allow_complete_fallback` to the private solver entry point.
+- `RouteForcing` drives `solve_target_with_route_forcing` with explicit `enabled_origins`, `allow_complete_fallback`, `allow_other_heavy_routes`, and test-only spurious-candidate injection.
 - `assert_route_only_cover` checks `CertifiedCandidateCover`, candidate/proof trace for the selected origin, and absence of `target_elimination:` trace events.
+- `assert_route_spurious_rejected` checks a route-specific spurious candidate is rejected with `NoVerifiedTargetCertificate`, no certificate, no cover, proof trace for the selected origin, and no complete-fallback trace.
 
 ## Matrix
 
 | Route | Test-only route control | Fallback disabled | Closure checked | Test evidence |
 | --- | --- | --- | --- | --- |
-| DirectTargetEquation | yes, only `DirectTargetEquation` | yes | candidate cover and proof trace from direct origin only | `direct_route_forcing_solves_without_other_routes_or_complete_fallback`; candidate isolation in `direct_route_forcing_selects_only_direct_candidates` |
-| ResidualCyclic | yes, only `ResidualCyclic` | yes | candidate cover and proof trace from residual origin only | `residual_route_forcing_solves_without_other_routes_or_complete_fallback`; candidate isolation in `residual_route_forcing_selects_only_residual_candidates` |
-| NormTraceTower | yes, only `NormTraceTower` | yes | candidate cover and proof trace from tower origin only | `tower_route_forcing_solves_without_other_routes_or_complete_fallback`; candidate isolation in `tower_route_forcing_selects_only_tower_candidates` |
-| TargetCyclicKrylov | yes, only `TargetCyclicKrylov` | yes | candidate cover and proof trace from Krylov origin only | `krylov_route_forcing_solves_without_other_routes_or_complete_fallback`; candidate isolation in `krylov_route_forcing_selects_only_krylov_candidates` |
-| HiddenVariableSparseResultant | yes, only `HiddenVariableSparseResultant` | yes | candidate cover and proof trace from resultant origin only | `resultant_route_forcing_solves_without_other_routes_or_complete_fallback`; candidate isolation in `resultant_route_forcing_selects_only_resultant_candidates` |
-| SliceSpecialization | yes, only `SliceSpecialization` | yes for the finite-target success family | candidate cover and proof trace from slice origin only for a positive-dimensional finite-target family; separate test keeps unproved slice candidates from being accepted | `slice_route_forcing_solves_finite_target_family_without_complete_fallback`; `slice_route_forcing_selects_only_slice_candidates`; `slice_candidate_route_does_not_adopt_without_fixed_proof` |
-| LocalizedSchur | not a candidate-origin success route in current implementation | not applicable to candidate route forcing | uncertified Schur returns support information only | `obstruction_scope_uses_incidence_subset`; `schur_repair_builds_local_membership_only`; `uncertified_schur_relation_is_support_info_only` |
+| DirectTargetEquation | yes, only `DirectTargetEquation` | yes | candidate cover and proof trace from direct origin only; spurious candidate rejected before fallback; certificate tamper rejects | `direct_route_forcing_solves_without_other_routes_or_complete_fallback`; `direct_route_forcing_selects_only_direct_candidates`; `direct_route_forcing_rejects_spurious_candidate_without_fallback`; `direct_route_tampered_certificate_is_rejected` |
+| ResidualCyclic | yes, only `ResidualCyclic` | yes | candidate cover and proof trace from residual origin only; active support and prime filters tested; spurious candidate rejected before fallback; certificate tamper rejects | `residual_route_forcing_solves_without_other_routes_or_complete_fallback`; `residual_route_forcing_selects_only_residual_candidates`; `residual_route_forcing_rejects_spurious_candidate_without_fallback`; `residual_route_tampered_certificate_is_rejected` |
+| NormTraceTower | yes, only `NormTraceTower` | yes | candidate cover and proof trace from tower origin only; guarded-nonmonic/non-unit target coefficient tested; spurious candidate rejected before fallback; certificate tamper rejects | `tower_route_forcing_solves_without_other_routes_or_complete_fallback`; `tower_route_forcing_selects_only_tower_candidates`; `tower_route_forcing_rejects_spurious_candidate_without_fallback`; `tower_route_tampered_certificate_is_rejected` |
+| TargetCyclicKrylov | yes, only `TargetCyclicKrylov` | yes | candidate cover and proof trace from Krylov origin only; quotient/residual recurrence tested; spurious candidate rejected before fallback; certificate tamper rejects | `krylov_route_forcing_solves_without_other_routes_or_complete_fallback`; `krylov_route_forcing_selects_only_krylov_candidates`; `krylov_route_forcing_rejects_spurious_candidate_without_fallback`; `krylov_route_tampered_certificate_is_rejected` |
+| HiddenVariableSparseResultant | yes, only `HiddenVariableSparseResultant` | yes | candidate cover and proof trace from resultant origin only; 3-polynomial expansion tested; spurious candidate rejected before fallback; certificate tamper rejects | `resultant_route_forcing_solves_without_other_routes_or_complete_fallback`; `resultant_route_forcing_selects_only_resultant_candidates`; `resultant_route_forcing_rejects_spurious_candidate_without_fallback`; `resultant_route_tampered_certificate_is_rejected` |
+| SliceSpecialization | yes, only `SliceSpecialization` | yes for the finite-target success and spurious-rejection families | candidate cover and proof trace from slice origin only for a positive-dimensional finite-target family; full sliced system witness; route-forced spurious candidate rejected before fallback; separate normal-path test keeps unproved slice candidates from being accepted; certificate tamper rejects | `slice_route_forcing_solves_finite_target_family_without_complete_fallback`; `slice_route_forcing_selects_only_slice_candidates`; `slice_route_forcing_rejects_spurious_candidate_without_fallback`; `slice_candidate_route_does_not_adopt_without_fixed_proof`; `slice_route_tampered_certificate_is_rejected` |
+| LocalizedSchur | yes, via forced obstruction seed rather than candidate-origin enumeration | yes | support-information path, exact target-certificate path, and solver-level no-fallback certified adoption tested | `schur_repair_builds_local_membership_only`; `uncertified_schur_relation_is_support_info_only`; `schur_repair_returns_exact_certificate_for_target_only_local_relation`; `localized_schur_certifies_after_spurious_seed_without_complete_fallback` |
 | CompleteTargetEliminationFallback | explicitly disabled in route-control guard; enabled only for fallback-target tests | disabled test panics if reached | fallback certificates must verify independently | `complete_fallback_disabled_route_control_fails_on_reach`; `fallback_certifies_simple_target_eliminant`; `fallback_certifies_empty_admissible_set`; `no_target_eliminant_is_algebraic_certificate_only` |
 
 ## Production Call Chain Anchors
 
-- Solver route loop: `src/solver.rs:529` collects enabled candidate routes.
-- Test route control entry: `src/solver.rs:270` and `src/test_support.rs:113`.
-- Candidate adoption gate: `src/solver.rs:283` and `src/solver.rs:327`.
-- Verified-cover return path: `src/solver.rs:372` and `src/solver.rs:469`.
+- Solver route loop: `src/solver.rs` `collect_candidate_routes` collects enabled candidate routes.
+- Test route control entry: `src/solver.rs` `solve_target_with_route_forcing` and `src/test_support.rs` `RouteForcing`.
+- Candidate adoption gate: `src/solver.rs` `try_candidate_certificate`.
+- Verified-cover return path: `src/solver.rs` `return_verified_cover`.
 - Complete fallback boundary: `src/fallback_elimination.rs:30`.
 
 ## Command Evidence
@@ -38,5 +39,5 @@ Latest targeted route-control command:
 
 ```text
 cargo test --lib test_support
-result after SliceSpecialization success test: pass, 13 tests passed
+result: pass; 26 route-control, exact-proof-gate, no-fallback, and tamper tests passed
 ```
