@@ -8,8 +8,8 @@ use crate::proof_learning::LeftNullObstruction;
 use crate::verifier::verify_guard_certificate;
 use crate::window::ProofWindow;
 use crate::{
-    ExactIdentity, ExactIdentityKind, GuardCertificate, GuardRecord, Monomial, PolynomialQ,
-    Rational, TargetCertificate, TargetProblemQ, UniPolynomialQ, VerificationResult,
+    ExactIdentity, ExactIdentityKind, GuardRecord, Monomial, PolynomialQ, Rational,
+    TargetCertificate, TargetProblemQ, UniPolynomialQ, VerificationResult,
 };
 
 #[derive(Clone, Debug)]
@@ -60,24 +60,7 @@ pub(crate) fn prove_fixed_target(
 }
 
 fn semantic_guards_from_system(system: &CertifiedSystemQ) -> Vec<GuardRecord> {
-    let mut records = Vec::new();
-    for certificate in &system.guard_certificates {
-        collect_input_guard_records(certificate, &mut records);
-    }
-    records
-}
-
-fn collect_input_guard_records(certificate: &GuardCertificate, records: &mut Vec<GuardRecord>) {
-    match certificate {
-        GuardCertificate::InputSemanticNonzero { record, .. } => records.push(record.clone()),
-        GuardCertificate::DerivedProduct { factors, .. } => {
-            for factor in factors {
-                collect_input_guard_records(factor, records);
-            }
-        }
-        GuardCertificate::AlgebraicNonvanishing { .. }
-        | GuardCertificate::RealAdmissibleNonvanishing { .. } => {}
-    }
+    system.semantic_guards.clone()
 }
 
 pub(crate) fn prove_fixed_target_with_problem(
@@ -417,6 +400,7 @@ mod tests {
             equations,
             variables,
             target,
+            semantic_guards: Vec::new(),
             guard_certificates: Vec::new(),
             replay: CompressionReplayCertificate { steps: Vec::new() },
         }

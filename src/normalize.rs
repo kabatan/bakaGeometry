@@ -7,6 +7,7 @@ use crate::candidates::{CandidateTrace, ModularWitnessTrace, SliceWitnessTrace, 
 use crate::finite_field::PrimeModulus;
 use crate::rational_reconstruction::{
     reconstruct_univariate_q_from_modular, RationalReconstructionBounds,
+    RationalReconstructionError,
 };
 use crate::univariate::UniPolynomialFp;
 use crate::{FactorizationFailure, FactorizationStatus, FactorizationTrace, UniPolynomialQ};
@@ -127,7 +128,7 @@ enum ModularFamilyKey {
     SliceSpecialization {
         equation_indices: Vec<usize>,
         internal_origin: crate::candidates::CandidateOrigin,
-        assignments: Vec<(usize, u64)>,
+        affine_equations: Vec<crate::candidates::SliceAffineEquation>,
     },
 }
 
@@ -307,11 +308,7 @@ fn modular_family_key(candidate: &TargetCandidate) -> Option<ModularFamilyKey> {
     Some(ModularFamilyKey::SliceSpecialization {
         equation_indices: witness.equation_indices.clone(),
         internal_origin: witness.internal_origin,
-        assignments: witness
-            .assignments
-            .iter()
-            .map(|assignment| (assignment.variable_index, assignment.value))
-            .collect(),
+        affine_equations: witness.affine_equations.clone(),
     })
 }
 
@@ -436,8 +433,13 @@ fn active_support_size(candidate: &TargetCandidate) -> usize {
                 .iter()
                 .map(Vec::len)
                 .sum(),
+            CandidateTrace::SparseResultantWitness(witness) => witness
+                .active_multiplier_supports
+                .iter()
+                .map(Vec::len)
+                .sum(),
             CandidateTrace::RouteWitness(witness) => witness.support_size,
-            CandidateTrace::SliceWitness(witness) => witness.assignments.len(),
+            CandidateTrace::SliceWitness(witness) => witness.affine_equations.len(),
         })
         .min()
         .unwrap_or(0)
@@ -456,19 +458,55 @@ fn reconstruct_from_modular_support(candidate: &TargetCandidate) -> Option<UniPo
         return None;
     }
 
-    let modulus_product = candidate
-        .support_mod_primes
+    reconstruct_with_bounds(
+        &candidate.support_mod_primes,
+        &small_rational_reconstruction_bounds(),
+    )
+    .or_else(|| {
+        reconstruct_with_bounds(
+            &candidate.support_mod_primes,
+            &integer_reconstruction_bounds(&candidate.support_mod_primes),
+        )
+    })
+}
+
+fn reconstruct_with_bounds(
+    support_mod_primes: &[UniPolynomialFp],
+    bounds: &RationalReconstructionBounds,
+) -> Option<UniPolynomialQ> {
+    match reconstruct_univariate_q_from_modular(support_mod_primes, bounds) {
+        Ok(polynomial) if !polynomial.is_zero() => Some(polynomial),
+        Ok(_)
+        | Err(RationalReconstructionError::NoCandidate | RationalReconstructionError::NonUnique) => {
+            None
+        }
+        Err(
+            RationalReconstructionError::InvalidModulus
+            | RationalReconstructionError::SearchBoundTooLarge
+            | RationalReconstructionError::Crt(_),
+        ) => None,
+    }
+}
+
+fn small_rational_reconstruction_bounds() -> RationalReconstructionBounds {
+    RationalReconstructionBounds {
+        numerator_abs: BigInt::from(100),
+        denominator_abs: BigInt::from(8),
+    }
+}
+
+fn integer_reconstruction_bounds(
+    support_mod_primes: &[UniPolynomialFp],
+) -> RationalReconstructionBounds {
+    let modulus_product = support_mod_primes
         .iter()
         .fold(BigInt::one(), |product, support| {
             product * BigInt::from(support.modulus)
         });
-    let bounds = RationalReconstructionBounds {
+    RationalReconstructionBounds {
         numerator_abs: (&modulus_product - BigInt::one()) / 2,
         denominator_abs: BigInt::one(),
-    };
-    reconstruct_univariate_q_from_modular(&candidate.support_mod_primes, &bounds)
-        .ok()
-        .filter(|polynomial| !polynomial.is_zero())
+    }
 }
 
 #[cfg(test)]
@@ -686,6 +724,46 @@ mod tests {
         assert_eq!(
             normalized.reconstructed.unwrap().coefficients,
             vec![rational(42), rational(1)]
+        );
+    }
+
+    #[test]
+    fn multi_prime_monic_modular_candidate_reconstructs_rational_then_primitive_integer() {
+        let t = variable("T");
+        let candidate = TargetCandidate {
+            support_mod_primes: vec![
+                UniPolynomialFp {
+                    variable: t.clone(),
+                    modulus: 5,
+                    coefficients: vec![3, 0, 1],
+                },
+                UniPolynomialFp {
+                    variable: t.clone(),
+                    modulus: 7,
+                    coefficients: vec![6, 0, 1],
+                },
+                UniPolynomialFp {
+                    variable: t.clone(),
+                    modulus: 11,
+                    coefficients: vec![1, 0, 1],
+                },
+                UniPolynomialFp {
+                    variable: t,
+                    modulus: 13,
+                    coefficients: vec![2, 0, 1],
+                },
+            ],
+            reconstructed: None,
+            origin: CandidateOrigin::HiddenVariableSparseResultant,
+            origin_evidence: BTreeSet::from([CandidateOrigin::HiddenVariableSparseResultant]),
+            traces: Vec::new(),
+        };
+
+        let normalized = normalize_candidate(candidate).unwrap();
+
+        assert_eq!(
+            normalized.reconstructed.unwrap().coefficients,
+            vec![rational(-9), rational(0), rational(2)]
         );
     }
 

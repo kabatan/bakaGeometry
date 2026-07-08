@@ -54,8 +54,28 @@ pub enum CandidateOrigin {
 pub enum CandidateTrace {
     DirectEquation { equation_index: usize },
     ModularWitness(ModularWitnessTrace),
+    SparseResultantWitness(SparseResultantWitnessTrace),
     RouteWitness(RouteWitnessTrace),
     SliceWitness(SliceWitnessTrace),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SparseResultantTemplateKind {
+    SquareSparseResultant,
+    OverdeterminedSparseEliminantMinor,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SparseResultantWitnessTrace {
+    pub prime: u64,
+    pub template_kind: SparseResultantTemplateKind,
+    pub eliminated_variable_count: usize,
+    pub equation_indices: Vec<usize>,
+    pub support_sums: Vec<Vec<Monomial>>,
+    pub row_support_size: usize,
+    pub multiplier_support_sizes: Vec<usize>,
+    pub minor_or_determinant_degree: usize,
+    pub active_multiplier_supports: Vec<Vec<Monomial>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -77,6 +97,7 @@ pub struct RouteWitnessTrace {
 pub struct SliceWitnessTrace {
     pub prime: u64,
     pub assignments: Vec<SliceAssignment>,
+    pub affine_equations: Vec<SliceAffineEquation>,
     pub equation_index: usize,
     pub equation_indices: Vec<usize>,
     pub internal_origin: CandidateOrigin,
@@ -87,4 +108,17 @@ pub struct SliceWitnessTrace {
 pub struct SliceAssignment {
     pub variable_index: usize,
     pub value: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct SliceAffineEquation {
+    pub coefficients: Vec<SliceAffineCoefficient>,
+    pub constant: u64,
+    pub denominator_admissible: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct SliceAffineCoefficient {
+    pub variable_index: usize,
+    pub coefficient: u64,
 }

@@ -1,6 +1,6 @@
 # Tamper Matrix
 
-Status: P7-P13 route closure evidence reviewed; ComponentUnionLcm and no-target entries updated after P3 re-review blocker fix on 2026-07-08.
+Status: current tamper evidence for P7-P13 plus P1-P13 spec-gap fixes; ComponentUnionLcm and no-target entries remain design-gap behavior after P3 re-review blocker fix.
 
 Authority: evidence only. Verifier code and tests are the executable source of truth.
 
@@ -34,8 +34,10 @@ Authority: evidence only. Verifier code and tests are the executable source of t
 | Krylov route cover | `krylov_route_tampered_certificate_is_rejected` | route-forced certificate support tamper rejected by verifier |
 | Resultant route cover | `resultant_route_tampered_certificate_is_rejected` | route-forced certificate support tamper rejected by verifier |
 | Slice route cover | `slice_route_tampered_certificate_is_rejected` | route-forced certificate support tamper rejected by verifier |
-| Tower route cover | `tower_route_tampered_certificate_is_rejected` | route-forced certificate support tamper rejected by verifier |
+| Tower route cover | `tower_route_tampered_certificate_is_rejected`; `tower_route_forcing_solves_guarded_nonmonic_tower_without_fallback` | route-forced certificate support tamper rejected by verifier; guarded nonmonic tower still adopts only after exact proof |
 
 ## Command Evidence
 
-Latest command evidence is recorded in `p7_p13_route_closure_evidence.md`.
+Latest command evidence is recorded in `p1_p13_spec_gap_fix_evidence.md`.
+
+This matrix is evidence for the current P1-P13 scope only. It does not claim P14/P15/P16 or final V3 completion.

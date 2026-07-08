@@ -1,6 +1,6 @@
 # Non-Simplification Manifests
 
-Status: P7-P13 route closure evidence reviewed; spec, quality, and boundary reviews passed for the scoped delta.
+Status: current P7-P13 plus P1-P13 spec-gap fix evidence.
 
 Authority: evidence only. Manifest entries must be checked against production code.
 
@@ -31,7 +31,7 @@ v2_impl
 new_algo
 hack
 legacy
-temp
+temp_
 fallback_solver
 toy
 phase
@@ -39,13 +39,13 @@ phase
 
 ## P5/P6 Blocker-Fix Shared Manifest
 
-- Production call chain: `solve_target` -> bounded proof-prefix scheduling from `src/proof_schedule.rs` -> `try_candidate_certificate` -> `prove_fixed_target`.
-- Controlling data-flow: `FairProofSchedule::unbounded()` is lazy; production solver uses only the explicitly bounded prefix when `max_proof_weight` is provided, and returns `FiniteResourceFailure` with `resource:unbounded_proof_requires_bound` when no proof bound is available after early empty-set certification.
+- Production call chain: `solve_target` -> bounded proof-prefix scheduling from `src/proof_schedule.rs` or unbounded `GlobalSolveSchedule` from `src/solve_schedule.rs` -> `try_candidate_certificate` / `try_candidate_certificate_trial` -> `prove_fixed_target`.
+- Controlling data-flow: `FairProofSchedule::unbounded()` is lazy and top-level unbounded execution is now integrated through `GlobalSolveSchedule` when `max_window_degree=None` or `max_proof_weight=None`; bounded mode still uses only explicitly bounded prefixes.
 - Fallback/repair data-flow: complete fallback, early empty certification, low-degree multiple repair, and localized Schur repair require explicit `max_window_degree`; without it they fail closed instead of running a hidden capped search.
 - Factorization data-flow: `factor_squarefree_over_q` returns a status-bearing `FactorizationResult`; `factor_schedule` records the status through solver trace and schedules factor/original proof trials only when status is `Complete`.
 - Exact replay oracle: factor trials and multi-origin ranking never adopt candidates directly; every scheduled support must pass fixed exact proof and verifier replay.
 - Multi-origin data-flow: `TargetCandidate.origin_evidence` is merged only for equal primitive reconstructed supports; different supports remain distinct.
-- Route-forcing tests: `solve_target_without_proof_bound_does_not_silently_use_default_six`; `fallback_without_window_bound_is_resource_failure_not_hidden_capped_search`; `early_empty_without_window_bound_does_not_use_hidden_capped_search`; `low_degree_multiple_without_window_bound_does_not_use_hidden_capped_search`; `schur_repair_without_window_bound_does_not_use_hidden_capped_search`; `factorization_splits_product_of_irreducible_quadratics_without_rational_roots`; `factorization_reports_resource_failure_instead_of_false_complete_when_bounds_exceeded`; `factor_schedule_resource_failure_produces_no_trials`; `same_reconstructed_support_from_two_origins_is_merged_and_ranked_by_origin_count`; `different_supports_from_different_origins_are_not_merged`; `origin_count_does_not_certify_candidate_without_exact_proof`.
+- Route-forcing tests: `unbounded_high_radical_power_finds_exact_cover`; `bounded_small_prefix_does_not_use_unbounded_radical_power`; `unbounded_global_schedule_reaches_arbitrary_tuple`; `unbounded_spurious_route_candidate_does_not_starve_complete_fallback_budget`; `fallback_without_window_bound_is_resource_failure_not_hidden_capped_search`; `early_empty_without_window_bound_does_not_use_hidden_capped_search`; `low_degree_multiple_without_window_bound_does_not_use_hidden_capped_search`; `schur_repair_without_window_bound_does_not_use_hidden_capped_search`; `factorization_splits_product_of_irreducible_quadratics_without_rational_roots`; `factorization_reports_resource_failure_instead_of_false_complete_when_bounds_exceeded`; `factor_schedule_resource_failure_produces_no_trials`; `same_reconstructed_support_from_two_origins_is_merged_and_ranked_by_origin_count`; `different_supports_from_different_origins_are_not_merged`; `origin_count_does_not_certify_candidate_without_exact_proof`.
 - Non-simplification notes: no hidden proof-weight default, no rational-root-only factorization, no false complete factorization status, and no origin-count certificate authority.
 
 ## DirectTargetEquation
@@ -69,9 +69,9 @@ phase
 ## NormTraceTower
 
 - Production call chain: `solve_target` -> `collect_candidate_routes` -> `NormTraceTowerOracle::generate` -> `norm_trace_tower_candidates` -> `try_candidate_certificate` -> `prove_fixed_target`.
-- Controlling data-flow: detects triangular towers structurally, requires a guard certificate for nonmonic leading coefficients, permits non-unit target equation coefficients, reduces multiplication by the target expression on the tower basis, computes a characteristic polynomial over Q, and returns a candidate.
+- Controlling data-flow: detects triangular towers structurally, requires replay-verified guard certificates for nonmonic leading coefficients, supports nonconstant leading polynomials over lower tower variables through quotient-basis inverses, permits non-unit target equation coefficients, reduces multiplication by the target expression on the tower basis, computes a characteristic polynomial over Q, and returns a candidate.
 - Exact replay oracle: the characteristic output is still only a candidate; fixed proof and verifier replay are required for cover success.
-- Route-forcing tests: `tower_route_forcing_selects_only_tower_candidates`; `tower_route_forcing_solves_without_other_routes_or_complete_fallback`; `tower_route_forcing_rejects_spurious_candidate_without_fallback`; `tower_route_requires_guard_for_nonmonic_leading_coefficient`; `tower_route_allows_non_unit_target_coefficient`.
+- Route-forcing tests: `tower_route_forcing_selects_only_tower_candidates`; `tower_route_forcing_solves_without_other_routes_or_complete_fallback`; `tower_route_forcing_solves_guarded_nonmonic_tower_without_fallback`; `tower_route_forcing_rejects_spurious_candidate_without_fallback`; `tower_route_requires_guard_for_nonmonic_leading_coefficient`; `tower_route_allows_non_unit_target_coefficient`; `tower_route_uses_verified_guarded_nonconstant_leading_coefficient`.
 - Tamper tests: `tower_route_tampered_certificate_is_rejected`; target certificate support tamper and same-ideal composite tamper.
 - Non-simplification notes: selection depends on guarded tower structure and variable incidence, not problem names or geometry terms.
 
@@ -87,20 +87,20 @@ phase
 ## HiddenVariableSparseResultant
 
 - Production call chain: `solve_target` -> `collect_candidate_routes` -> `HiddenVariableSparseResultantOracle::generate` -> `hidden_variable_sparse_resultant_candidates` -> modular reconstruction -> `try_candidate_certificate` -> `prove_fixed_target`.
-- Controlling data-flow: builds Newton-support multiplier arrays, resultant rows, exact polynomial columns, target-power columns, modular null relations, and target-only modular supports.
+- Controlling data-flow: decomposes input supports with the target hidden, builds sparse support-sum eliminant templates, lifts template supports over target powers, records `SparseResultantWitnessTrace`, derives active multiplier supports from the actual relation, and emits target-only modular supports.
 - Exact replay oracle: modular resultant relation remains a candidate; cover success requires Q reconstruction, fixed proof, and verifier replay.
-- Route-forcing tests: `resultant_route_forcing_selects_only_resultant_candidates`; `resultant_route_forcing_solves_without_other_routes_or_complete_fallback`; `resultant_route_forcing_rejects_spurious_candidate_without_fallback`.
+- Route-forcing tests: `resultant_route_forcing_selects_only_resultant_candidates`; `resultant_route_forcing_solves_without_other_routes_or_complete_fallback`; `resultant_route_forcing_solves_sr_f1_two_polynomial_hidden_resultant_without_fallback`; `resultant_route_forcing_solves_non_chain_sparse_eliminant_without_fallback`; `resultant_route_forcing_rejects_spurious_candidate_without_fallback`; `resultant_route_handles_two_polynomial_hidden_resultant`; `resultant_route_handles_non_chain_three_equation_eliminant`; `sparse_template_support_sums_do_not_fill_total_degree_macaulay_shape`; `multi_prime_monic_modular_candidate_reconstructs_rational_then_primitive_integer`.
 - Tamper tests: `resultant_route_tampered_certificate_is_rejected`; target identity tamper and composite support tamper.
-- Non-simplification notes: the route uses all supplied equations in the expansion path and does not delegate to complete fallback.
+- Non-simplification notes: the route uses all supplied equations in the sparse template path, does not delegate to complete fallback, and static tests reject reintroduction of `monomials_up_to_degree` in `candidate_resultant.rs`.
 
 ## SliceSpecialization
 
 - Production call chain: `solve_target` -> `collect_candidate_routes` -> `SliceSpecializationOracle::generate` -> `slice_specialization_candidates` -> modular reconstruction if possible -> `try_candidate_certificate`.
-- Controlling data-flow: assigns deterministic finite-field values to non-target variables, builds a full sliced system with all original equations plus slice equations, runs ResidualCyclic or HiddenVariableSparseResultant inside the sliced system, and records slice equations plus internal route in witness traces.
+- Controlling data-flow: builds deterministic generic affine equations over all non-target variables, checks prime-local denominator admissibility by nonzero affine determinant, builds a full sliced system with all original equations plus affine slice equations, runs ResidualCyclic or HiddenVariableSparseResultant inside the sliced system, and records affine equations plus internal route in witness traces.
 - Exact replay oracle: slice output is a candidate only; without fixed proof, solver does not return a cover.
-- Route-forcing tests: `slice_route_forcing_solves_finite_target_family_without_complete_fallback`; `slice_route_forcing_selects_only_slice_candidates`; `slice_route_forcing_rejects_spurious_candidate_without_fallback`; `slice_candidate_route_does_not_adopt_without_fixed_proof`.
+- Route-forcing tests: `slice_route_forcing_solves_finite_target_family_without_complete_fallback`; `slice_route_forcing_solves_affine_coupled_family_without_complete_fallback`; `slice_route_forcing_selects_only_slice_candidates`; `slice_route_forcing_rejects_spurious_candidate_without_fallback`; `slice_route_records_affine_slice_candidate_only`; `affine_slice_admissibility_rejects_singular_or_bad_denominator_trace`; `slice_route_rejects_prime_with_input_denominator_obstruction`; `slice_candidate_route_does_not_adopt_without_fixed_proof`.
 - Tamper tests: `slice_route_tampered_certificate_is_rejected`; target identity tamper and exact-image missing-classification tests cover the fail-closed adoption boundary.
-- Non-simplification notes: specialization never becomes certificate authority by itself and no longer extracts single-equation substituted target polynomials.
+- Non-simplification notes: specialization never becomes certificate authority by itself, records affine rather than coordinate slice data for multi-variable slices, and no longer extracts single-equation substituted target polynomials.
 
 ## LocalizedSchur
 
@@ -111,11 +111,18 @@ phase
 - Tamper tests: target certificate and composite verifier tamper tests cover accepted certificate forms; support-information output has no certificate authority.
 - Non-simplification notes: no full-system Schur outside complete fallback and no complete-fallback call labelled as localized Schur.
 
+## P1-P13 Spec-Gap Blockers Before P14
+
+- P5 top-level unbounded ideal execution: F1 local implementation evidence exists through `GlobalSolveSchedule` and unbounded radical tests.
+- P10 HiddenVariableSparseResultant: F2 local implementation evidence exists through sparse support-sum template traces and non-chain route tests.
+- P11 SliceSpecialization: F3 local implementation evidence exists through generic affine slice traces and route-forcing tests.
+- P12 NormTraceTower: F4 local implementation evidence exists through nonconstant guarded leading coefficient tests.
+
 ## CompleteTargetEliminationFallback
 
 - Production call chain: bounded `solve_target` route exhaustion -> explicit fallback gate -> `complete_target_elimination_fallback` -> certified support, empty certificate, no-target-eliminant certificate, or resource failure.
 - Controlling data-flow: enumerates exact multiplier windows, solves exact rational linear systems for empty certificates or target eliminants, and sends target support through `prove_fixed_target`. The no-target-eliminant branch is not replay-complete until P15.
 - Exact replay oracle: fallback support uses fixed proof; empty certificates are independently replayed by `verify_certificate`. No-target-eliminant verifier behavior is a P15 `CertificateDesignGap`, and top-level `solve_target` returns `SolverStatus::CertificateDesignGap` with no success certificate on that path.
-- Route-forcing tests: `complete_fallback_disabled_route_control_fails_on_reach`; fallback-specific tests `fallback_certifies_simple_target_eliminant`, `fallback_certifies_empty_admissible_set`, `no_target_eliminant_is_algebraic_certificate_only`, and `solver_no_target_eliminant_is_design_gap_until_p15_replay`.
+- Route-forcing tests: `complete_fallback_disabled_route_control_fails_on_reach`; fallback-specific tests `fallback_certifies_simple_target_eliminant`, `fallback_certifies_empty_admissible_set`, `no_target_eliminant_is_algebraic_certificate_only`, `solver_no_target_eliminant_is_design_gap_until_p15_replay`, and `unbounded_solver_no_target_eliminant_is_design_gap_until_p15_replay`.
 - Tamper tests: empty-certificate multiplier tamper; no-target replay is tracked as a design-gap shell rather than accepted replay.
 - Non-simplification notes: fallback is explicit in top-level solver and disabled during route-only closure tests.

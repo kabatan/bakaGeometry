@@ -1,11 +1,11 @@
 use crate::candidates::{
-    CandidateOracle, CandidateOrigin, CandidateTrace, SliceAssignment, SliceWitnessTrace,
-    TargetCandidate,
+    CandidateOracle, CandidateOrigin, CandidateTrace, SliceAffineCoefficient, SliceAffineEquation,
+    SliceAssignment, SliceWitnessTrace, TargetCandidate,
 };
 use crate::compression::CertifiedSystemQ;
-use crate::finite_field::PrimeModulus;
+use crate::finite_field::{rational_to_mod_prime, PrimeModulus};
 use crate::window::{make_row_closed_certificate_window, CertificateWindow};
-use crate::{Monomial, PolynomialQ};
+use crate::{GuardCertificate, Monomial, PolynomialQ};
 
 pub(crate) struct SliceSpecializationOracle {
     pub primes: Vec<u64>,
@@ -48,8 +48,14 @@ pub(crate) fn slice_specialization_candidates(
             continue;
         };
         for slice_index in 0..slice_count.max(1) {
-            let assignments = deterministic_assignments(&sliced_variables, slice_index, modulus);
-            let sliced_system = build_sliced_system(system, &assignments);
+            let affine_equations =
+                deterministic_affine_slice(&sliced_variables, slice_index, modulus);
+            if affine_equations.is_empty()
+                || !slice_input_is_prime_admissible(system, &affine_equations, modulus)
+            {
+                continue;
+            }
+            let sliced_system = build_sliced_system(system, &affine_equations);
             let sliced_window = make_row_closed_certificate_window(
                 &sliced_system,
                 window.target_degree,
@@ -79,13 +85,8 @@ pub(crate) fn slice_specialization_candidates(
                     CandidateOrigin::SliceSpecialization,
                     vec![CandidateTrace::SliceWitness(SliceWitnessTrace {
                         prime: *prime,
-                        assignments: assignments
-                            .iter()
-                            .map(|(variable_index, value)| SliceAssignment {
-                                variable_index: *variable_index,
-                                value: *value,
-                            })
-                            .collect(),
+                        assignments: coordinate_assignments_for_compat_key(&affine_equations),
+                        affine_equations: affine_equations.clone(),
                         equation_index: 0,
                         equation_indices: (0..sliced_system.equations.len()).collect(),
                         internal_origin: inner.origin,
@@ -101,41 +102,47 @@ pub(crate) fn slice_specialization_candidates(
 
 fn build_sliced_system(
     system: &CertifiedSystemQ,
-    assignments: &[(usize, u64)],
+    affine_equations: &[SliceAffineEquation],
 ) -> CertifiedSystemQ {
     let mut equations = system.equations.clone();
     equations.extend(
-        assignments
+        affine_equations
             .iter()
-            .map(|(variable_index, value)| slice_equation(system, *variable_index, *value)),
+            .map(|equation| affine_slice_equation(system, equation)),
     );
     CertifiedSystemQ {
         equations,
         variables: system.variables.clone(),
         target: system.target.clone(),
+        semantic_guards: system.semantic_guards.clone(),
         guard_certificates: system.guard_certificates.clone(),
         replay: system.replay.clone(),
     }
 }
 
-fn slice_equation(system: &CertifiedSystemQ, variable_index: usize, value: u64) -> PolynomialQ {
-    let mut variable_exponents = vec![0; system.variables.len()];
-    variable_exponents[variable_index] = 1;
-    let variable_term = PolynomialQ::from_term(
-        system.variables.clone(),
-        crate::arith::rational_one(),
-        Monomial {
-            exponents: variable_exponents,
-        },
-    );
+fn affine_slice_equation(system: &CertifiedSystemQ, equation: &SliceAffineEquation) -> PolynomialQ {
+    let mut polynomial = PolynomialQ::zero(system.variables.clone());
+    for coefficient in &equation.coefficients {
+        let mut variable_exponents = vec![0; system.variables.len()];
+        variable_exponents[coefficient.variable_index] = 1;
+        polynomial = polynomial.add(&PolynomialQ::from_term(
+            system.variables.clone(),
+            num_rational::BigRational::from_integer(num_bigint::BigInt::from(
+                coefficient.coefficient,
+            )),
+            Monomial {
+                exponents: variable_exponents,
+            },
+        ));
+    }
     let constant = PolynomialQ::from_term(
         system.variables.clone(),
-        -num_rational::BigRational::from_integer(num_bigint::BigInt::from(value)),
+        -num_rational::BigRational::from_integer(num_bigint::BigInt::from(equation.constant)),
         Monomial {
             exponents: vec![0; system.variables.len()],
         },
     );
-    variable_term.add(&constant)
+    polynomial.add(&constant)
 }
 
 fn scheduled_slice_supports(system: &CertifiedSystemQ, target_degree: usize) -> Vec<Vec<Monomial>> {
@@ -151,17 +158,200 @@ fn modular_coefficients_for_prime(candidate: &TargetCandidate, prime: u64) -> Op
         .map(|support| support.coefficients.clone())
 }
 
-fn deterministic_assignments(
+fn slice_input_is_prime_admissible(
+    system: &CertifiedSystemQ,
+    affine_equations: &[SliceAffineEquation],
+    modulus: PrimeModulus,
+) -> bool {
+    !affine_equations.is_empty()
+        && system
+            .equations
+            .iter()
+            .all(|polynomial| polynomial_coefficients_admissible(polynomial, modulus))
+        && system
+            .semantic_guards
+            .iter()
+            .all(|record| polynomial_coefficients_admissible(&record.polynomial, modulus))
+        && system
+            .guard_certificates
+            .iter()
+            .all(|certificate| guard_certificate_admissible(certificate, modulus))
+        && affine_equations
+            .iter()
+            .all(|equation| equation.denominator_admissible)
+}
+
+fn polynomial_coefficients_admissible(polynomial: &PolynomialQ, modulus: PrimeModulus) -> bool {
+    polynomial
+        .terms
+        .values()
+        .all(|coefficient| rational_to_mod_prime(coefficient, modulus).is_some())
+}
+
+fn guard_certificate_admissible(certificate: &GuardCertificate, modulus: PrimeModulus) -> bool {
+    match certificate {
+        GuardCertificate::InputSemanticNonzero { guard, record } => {
+            polynomial_coefficients_admissible(guard, modulus)
+                && polynomial_coefficients_admissible(&record.polynomial, modulus)
+        }
+        GuardCertificate::AlgebraicNonvanishing { guard, certificate } => {
+            polynomial_coefficients_admissible(guard, modulus)
+                && certificate
+                    .multipliers
+                    .iter()
+                    .all(|polynomial| polynomial_coefficients_admissible(polynomial, modulus))
+                && polynomial_coefficients_admissible(&certificate.guard_multiplier, modulus)
+        }
+        GuardCertificate::RealAdmissibleNonvanishing { guard, .. } => {
+            polynomial_coefficients_admissible(guard, modulus)
+        }
+        GuardCertificate::DerivedProduct {
+            product, factors, ..
+        } => {
+            polynomial_coefficients_admissible(product, modulus)
+                && factors
+                    .iter()
+                    .all(|factor| guard_certificate_admissible(factor, modulus))
+        }
+    }
+}
+
+fn deterministic_affine_slice(
     variable_indices: &[usize],
     slice_index: usize,
     modulus: PrimeModulus,
-) -> Vec<(usize, u64)> {
-    variable_indices
+) -> Vec<SliceAffineEquation> {
+    if variable_indices.is_empty() {
+        return Vec::new();
+    }
+    for seed in 0..modulus.value() {
+        let matrix = affine_coefficient_matrix(variable_indices.len(), slice_index, seed, modulus);
+        let determinant = determinant_mod(&matrix, modulus);
+        if determinant == 0 {
+            continue;
+        }
+        let equations = matrix
+            .into_iter()
+            .enumerate()
+            .map(|(row_index, row)| {
+                let denominator_admissible = affine_row_denominator_admissible(&row, modulus);
+                SliceAffineEquation {
+                    coefficients: row
+                        .into_iter()
+                        .zip(variable_indices)
+                        .filter_map(|(coefficient, variable_index)| {
+                            (coefficient != 0).then_some(SliceAffineCoefficient {
+                                variable_index: *variable_index,
+                                coefficient,
+                            })
+                        })
+                        .collect(),
+                    constant: ((slice_index + row_index + seed as usize + 1) as u64)
+                        % modulus.value(),
+                    denominator_admissible,
+                }
+            })
+            .collect::<Vec<_>>();
+        if affine_slice_is_prime_admissible(&equations, determinant, modulus) {
+            return equations;
+        }
+    }
+    Vec::new()
+}
+
+fn affine_row_denominator_admissible(row: &[u64], modulus: PrimeModulus) -> bool {
+    row.iter()
+        .all(|coefficient| modulus.normalize(*coefficient) == *coefficient % modulus.value())
+}
+
+fn affine_slice_is_prime_admissible(
+    equations: &[SliceAffineEquation],
+    determinant: u64,
+    modulus: PrimeModulus,
+) -> bool {
+    determinant % modulus.value() != 0
+        && !equations.is_empty()
+        && equations.iter().all(|equation| {
+            equation.denominator_admissible
+                && equation.constant < modulus.value()
+                && !equation.coefficients.is_empty()
+                && equation
+                    .coefficients
+                    .iter()
+                    .all(|coefficient| coefficient.coefficient < modulus.value())
+        })
+}
+
+fn affine_coefficient_matrix(
+    variable_count: usize,
+    slice_index: usize,
+    seed: u64,
+    modulus: PrimeModulus,
+) -> Vec<Vec<u64>> {
+    (0..variable_count)
+        .map(|row| {
+            (0..variable_count)
+                .map(|column| {
+                    let raw =
+                        seed + slice_index as u64 + ((row + 1) as u64 * (column + 2) as u64) + 1;
+                    let value = raw % modulus.value();
+                    if value == 0 {
+                        1
+                    } else {
+                        value
+                    }
+                })
+                .collect()
+        })
+        .collect()
+}
+
+fn determinant_mod(matrix: &[Vec<u64>], modulus: PrimeModulus) -> u64 {
+    let size = matrix.len();
+    if size == 0 {
+        return 1;
+    }
+    let mut work = matrix.to_vec();
+    let mut determinant = 1;
+    for pivot_col in 0..size {
+        let Some(pivot_row) = (pivot_col..size).find(|row| work[*row][pivot_col] != 0) else {
+            return 0;
+        };
+        if pivot_row != pivot_col {
+            work.swap(pivot_row, pivot_col);
+            determinant = modulus.neg(determinant);
+        }
+        let pivot = work[pivot_col][pivot_col];
+        determinant = modulus.mul(determinant, pivot);
+        let Some(inverse) = modulus.inv(pivot) else {
+            return 0;
+        };
+        for row in pivot_col + 1..size {
+            if work[row][pivot_col] == 0 {
+                continue;
+            }
+            let factor = modulus.mul(work[row][pivot_col], inverse);
+            for column in pivot_col..size {
+                work[row][column] = modulus.sub(
+                    work[row][column],
+                    modulus.mul(factor, work[pivot_col][column]),
+                );
+            }
+        }
+    }
+    determinant
+}
+
+fn coordinate_assignments_for_compat_key(
+    affine_equations: &[SliceAffineEquation],
+) -> Vec<SliceAssignment> {
+    affine_equations
         .iter()
-        .enumerate()
-        .map(|(offset, variable_index)| {
-            let value = ((slice_index + offset + 1) as u64) % modulus.value();
-            (*variable_index, value)
+        .filter_map(|equation| {
+            (equation.coefficients.len() == 1).then_some(SliceAssignment {
+                variable_index: equation.coefficients[0].variable_index,
+                value: equation.constant,
+            })
         })
         .collect()
 }
@@ -224,6 +414,10 @@ mod tests {
         BigRational::from_integer(BigInt::from(value))
     }
 
+    fn rational_fraction(numerator: i64, denominator: i64) -> Rational {
+        BigRational::new(BigInt::from(numerator), BigInt::from(denominator))
+    }
+
     fn monomial(exponents: &[u32]) -> Monomial {
         Monomial {
             exponents: exponents.to_vec(),
@@ -246,18 +440,32 @@ mod tests {
             })
     }
 
+    fn polynomial_q(variables: &[Variable], terms: &[(Rational, Vec<u32>)]) -> PolynomialQ {
+        terms
+            .iter()
+            .fold(PolynomialQ::zero(variables.to_vec()), |sum, entry| {
+                sum.add(&PolynomialQ::from_term(
+                    variables.to_vec(),
+                    entry.0.clone(),
+                    monomial(&entry.1),
+                ))
+            })
+    }
+
     #[test]
     fn slice_route_records_affine_slice_candidate_only() {
         let x = variable("X");
+        let y = variable("Y");
         let t = variable("T");
-        let variables = vec![x.clone(), t.clone()];
+        let variables = vec![x.clone(), y.clone(), t.clone()];
         let system = CertifiedSystemQ {
             equations: vec![polynomial(
                 &variables,
-                &[(1, vec![0, 2]), (1, vec![1, 0]), (-2, vec![0, 0])],
+                &[(1, vec![0, 0, 2]), (-2, vec![0, 0, 0])],
             )],
             variables,
             target: t.clone(),
+            semantic_guards: Vec::new(),
             guard_certificates: Vec::new(),
             replay: CompressionReplayCertificate { steps: Vec::new() },
         };
@@ -265,7 +473,7 @@ mod tests {
         let window = make_row_closed_certificate_window(
             &system,
             2,
-            vec![vec![monomial(&[0, 0])]; system.equations.len()],
+            vec![vec![monomial(&[0, 0, 0])]; system.equations.len()],
         );
 
         let candidates = slice_specialization_candidates(&system, &window, &[5], 1);
@@ -280,9 +488,97 @@ mod tests {
                     candidate.traces.first(),
                     Some(CandidateTrace::SliceWitness(trace))
                         if trace.prime == 5
-                            && trace.equation_indices.len() == 2
+                            && trace.equation_indices.len() == 3
                             && trace.internal_origin == CandidateOrigin::ResidualCyclic
+                            && trace.assignments.is_empty()
+                            && trace.affine_equations.len() == 2
+                            && trace.affine_equations.iter().all(|equation| equation.denominator_admissible)
+                            && trace.affine_equations.iter().any(|equation| equation.coefficients.len() > 1)
                 )
         }));
+    }
+
+    #[test]
+    fn affine_slice_admissibility_rejects_singular_or_bad_denominator_trace() {
+        let modulus = PrimeModulus::new(5).unwrap();
+        let singular_equations = vec![
+            SliceAffineEquation {
+                coefficients: vec![
+                    SliceAffineCoefficient {
+                        variable_index: 0,
+                        coefficient: 1,
+                    },
+                    SliceAffineCoefficient {
+                        variable_index: 1,
+                        coefficient: 1,
+                    },
+                ],
+                constant: 1,
+                denominator_admissible: true,
+            },
+            SliceAffineEquation {
+                coefficients: vec![
+                    SliceAffineCoefficient {
+                        variable_index: 0,
+                        coefficient: 2,
+                    },
+                    SliceAffineCoefficient {
+                        variable_index: 1,
+                        coefficient: 2,
+                    },
+                ],
+                constant: 2,
+                denominator_admissible: true,
+            },
+        ];
+        assert!(!affine_slice_is_prime_admissible(
+            &singular_equations,
+            0,
+            modulus
+        ));
+
+        let bad_denominator = vec![SliceAffineEquation {
+            coefficients: vec![SliceAffineCoefficient {
+                variable_index: 0,
+                coefficient: 1,
+            }],
+            constant: 1,
+            denominator_admissible: false,
+        }];
+        assert!(!affine_slice_is_prime_admissible(
+            &bad_denominator,
+            1,
+            modulus
+        ));
+    }
+
+    #[test]
+    fn slice_route_rejects_prime_with_input_denominator_obstruction() {
+        let x = variable("X");
+        let t = variable("T");
+        let variables = vec![x.clone(), t.clone()];
+        let system = CertifiedSystemQ {
+            equations: vec![polynomial_q(
+                &variables,
+                &[
+                    (rational_fraction(1, 5), vec![1, 0]),
+                    (rational(1), vec![0, 2]),
+                ],
+            )],
+            variables,
+            target: t,
+            semantic_guards: Vec::new(),
+            guard_certificates: Vec::new(),
+            replay: CompressionReplayCertificate { steps: Vec::new() },
+        };
+        let window = make_row_closed_certificate_window(
+            &system,
+            2,
+            vec![vec![monomial(&[0, 0])]; system.equations.len()],
+        );
+
+        let candidates = slice_specialization_candidates(&system, &window, &[5], 1);
+
+        assert!(candidates.is_empty());
     }
 }

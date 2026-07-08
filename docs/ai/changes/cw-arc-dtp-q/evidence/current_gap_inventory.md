@@ -1,6 +1,6 @@
 # Current Gap Inventory
 
-Status: P0 evidence plus P1-P6 checkpoint tracking; P5/P6 blocker-fix local evidence added.
+Status: P0 evidence plus P1-P13 checkpoint tracking; P1-P13 spec-gap blocker-fix local evidence added.
 Authority: evidence only. The V3 Base Spec and production source control correctness.
 
 Purpose: quarantine the current implementation against CW-ARC-DTP-Q Full Implementation v3. Every listed production gap is a `replace` target unless a later reviewer confirms full conformance from production data-flow.
@@ -80,8 +80,20 @@ Impact:
 - Violates V3 G9 and P15 for the fallback path, and leaves route/repair phases dependent on bounded-window defaults until their V3 exact replacements land. A bounded search must not be named or treated as complete target elimination.
 
 Disposition:
-- P5/P6 blocker fix removed hidden proof/window defaults from proof scheduling, solver integration, fallback empty/support search, low-degree multiple repair, and localized Schur repair. `solve_target` now fail-closes with `resource:unbounded_proof_requires_bound` when no explicit proof bound exists after early empty-set certification.
-- `replace` fallback behavior through P14 exact elimination substrate and P15 complete fallback closure. Bounded fallback/repair behavior remains bounded by explicit caller limits and must not be used as proof of route completeness.
+- P1-P13 spec-gap fix connects `solve_target` to `GlobalSolveSchedule` when `max_window_degree=None` or `max_proof_weight=None`. The old `resource:unbounded_proof_requires_bound` production sentinel is removed.
+- `replace` complete fallback behavior through P14 exact elimination substrate and P15 complete fallback closure. Bounded fallback/repair behavior remains bounded by explicit caller limits and must not be used as proof of route completeness.
+
+### GAP-004A — P5 top-level unbounded ideal execution blocker
+
+Finding:
+- Historical P5/P6 evidence had `FairProofSchedule::unbounded()` without top-level integration and `solve_target` returned `FiniteResourceFailure` with `resource:unbounded_proof_requires_bound` when `max_proof_weight = None`.
+- Current F1 code connects `max_window_degree = None` or `max_proof_weight = None` to top-level unbounded fair candidate/proof execution.
+
+Impact:
+- This was a P1-P13 spec-gap blocker. F1 local implementation evidence exists; F6 review remains before any stronger claim.
+
+Disposition:
+- F1 implementation added `src/solve_schedule.rs`, connected it to `solve_target`, and added high radical power, bounded small-prefix non-success, arbitrary tuple reachability, and anti-hidden-default scans. This closes the P1-P13 blocker for top-level unbounded ideal execution, without closing P14/P15/P16 or final V3.
 
 ### GAP-005 — no-target-eliminant verifier is monomial-only / design-gap behavior
 
@@ -190,13 +202,46 @@ Disposition:
 
 Finding:
 - P7-P13 route closure has implementation changes for Residual route tests/evidence, Krylov quotient residual handle, Slice full sliced-system internal routes, NormTraceTower guarded-nonmonic/non-unit target coefficient handling, and LocalizedSchur exact certificate output.
-- Sparse resultant remains a Macaulay-style sparse template/null-relation route and requires adversarial reviewer inspection for the determinant/minor/template contract.
+- P1-P13 spec-gap fix replaced the previous weak P10/P11/P12 evidence with sparse resultant support-sum templates, generic affine slices, and guarded nonconstant tower leading coefficients.
 
 Impact:
 - P7-P13 scoped route closure has been reviewed. This does not imply final V3 route completeness outside the admitted P7-P13 delta or P14+ closure.
 
 Disposition:
-- P7-P13 spec, quality, and boundary reviews passed after source and test inspection. Keep `p7_p13_route_closure_evidence.md` as scoped evidence only, not final V3 proof.
+- P7-P13 historical reviews remain scoped evidence. P1-P13 spec-gap fix evidence is in `p1_p13_spec_gap_fix_evidence.md`. Neither evidence file is final V3 proof.
+
+### GAP-013A — P10 HiddenVariableSparseResultant sparse resultant data-flow blocker
+
+Finding:
+- The previous route was Macaulay-style and insufficient. The current route now builds support-sum sparse eliminant templates and records sparse resultant witness data, but still remains candidate-generation evidence gated by exact proof.
+
+Impact:
+- This was a P1-P13 spec-gap blocker. F2 local implementation evidence exists; F6 review remains before any stronger claim.
+
+Disposition:
+- F2 implementation added `SparseResultantWitnessTrace`, support-sum template data-flow, non-chain conformance, no-total-degree static scan, and route-forced exact-proof-gated tests. This closes the P1-P13 blocker for P10 before P14 review.
+
+### GAP-013B — P11 SliceSpecialization generic affine slicing blocker
+
+Finding:
+- The previous slice route used deterministic coordinate/constant slices. The current route constructs generic affine equations over all non-target variables and appends them to the full sliced system.
+
+Impact:
+- This was a P1-P13 spec-gap blocker. F3 local implementation evidence exists; F6 review remains before any stronger claim.
+
+Disposition:
+- F3 implementation added affine slice trace data, denominator-admissible per-prime checks, multi-variable affine route-forcing/no-fallback/tamper tests, and exact-proof-gated adoption. This closes the P1-P13 blocker for P11 before P14 review.
+
+### GAP-013C — P12 NormTraceTower nonconstant guarded-nonmonic leading coefficient blocker
+
+Finding:
+- The previous tower route handled only constant nonmonic leading coefficients by equality check. The current route supports nonconstant leading polynomials over lower tower variables only after replay-verified guard certificates.
+
+Impact:
+- This was a P1-P13 spec-gap blocker. F4 local implementation evidence exists; F6 review remains before any stronger claim.
+
+Disposition:
+- F4 implementation added polynomial leading coefficients, quotient-basis inverse computation, `verify_guard_certificate` replay, `DerivedProduct`/`InputSemanticNonzero` provenance checks, and the required `x^2-2, x*y^2-1, T-y` conformance family. This closes the P1-P13 blocker for P12 before P14 review.
 
 ### GAP-014 — public closure from prior implementation is superseded
 
@@ -239,4 +284,4 @@ Disposition:
 
 ## Current Claim Ceiling
 
-This inventory supports only the claim that V3 authority has been imported, P0 admission passed, P1-P6 checkpoint work plus the local P5/P6 blocker fix were implemented with executable evidence, and P7-P13 route closure was implemented, locally tested, and reviewed under the admitted delta. It does not claim final V3 completion.
+This inventory supports only the claim that V3 authority has been imported, P0 admission passed, earlier checkpoint work exists as evidence, and the P1-P13 spec-gap blocker fixes F1-F5 have local test evidence. It does not claim final V3 completion, P14/P15/P16 completion, source-faithfulness, production-safety, readiness, acceptance-complete, or any R-ID verified status.

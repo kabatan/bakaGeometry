@@ -1,13 +1,18 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use num_traits::{One, Zero};
+use num_traits::Zero;
 
 use crate::candidates::{
     CandidateOracle, CandidateOrigin, CandidateTrace, RouteWitnessTrace, TargetCandidate,
 };
 use crate::compression::CertifiedSystemQ;
+use crate::matrix_q::{solve_linear_system_q, LinearSolveQ};
+use crate::verifier::verify_guard_certificate;
 use crate::window::CertificateWindow;
-use crate::{GuardCertificate, Monomial, PolynomialQ, Rational, UniPolynomialQ, Variable};
+use crate::{
+    GuardCertificate, Monomial, PolynomialQ, Rational, TargetProblemQ, UniPolynomialQ, Variable,
+    VerificationResult,
+};
 
 pub(crate) struct NormTraceTowerOracle;
 
@@ -16,7 +21,9 @@ struct TowerLevel {
     variable_index: usize,
     equation_index: usize,
     degree: u32,
+    leading: PolynomialQ,
     lower: PolynomialQ,
+    leading_guard: Option<GuardCertificate>,
 }
 
 impl CandidateOracle for NormTraceTowerOracle {
@@ -42,6 +49,14 @@ pub(crate) fn norm_trace_tower_candidates(system: &CertifiedSystemQ) -> Vec<Targ
     }
 
     let basis = tower_basis(system.variables.len(), &levels);
+    let _verified_guard_count = levels
+        .iter()
+        .filter(|level| {
+            level.leading_guard.as_ref().is_some_and(|certificate| {
+                guard_certificate_has_polynomial(certificate, &level.leading)
+            })
+        })
+        .count();
     let columns = basis
         .iter()
         .map(|basis_monomial| {
@@ -133,9 +148,14 @@ fn detect_guarded_tower(
                 if used_equations.contains(&equation_index) {
                     continue;
                 }
-                if let Some(level) =
-                    guarded_level(system, equation, equation_index, variable_index, &available)
-                {
+                if let Some(level) = guarded_level(
+                    system,
+                    equation,
+                    equation_index,
+                    variable_index,
+                    &available,
+                    &levels,
+                ) {
                     selected = Some(level);
                     break;
                 }
@@ -162,6 +182,7 @@ fn guarded_level(
     equation_index: usize,
     variable_index: usize,
     available: &BTreeSet<usize>,
+    previous_levels: &[TowerLevel],
 ) -> Option<TowerLevel> {
     let degree = equation
         .terms
@@ -173,7 +194,7 @@ fn guarded_level(
         return None;
     }
 
-    let mut leading_coefficient = crate::arith::rational_zero();
+    let mut leading = PolynomialQ::zero(system.variables.clone());
     let mut lower = PolynomialQ::zero(system.variables.clone());
     for (monomial, coefficient) in &equation.terms {
         if monomial
@@ -187,15 +208,15 @@ fn guarded_level(
             return None;
         }
         if monomial.exponents[variable_index] == degree {
-            if monomial
-                .exponents
-                .iter()
-                .enumerate()
-                .any(|(index, exponent)| index != variable_index && *exponent != 0)
-            {
-                return None;
-            }
-            leading_coefficient += coefficient.clone();
+            let mut leading_exponents = monomial.exponents.clone();
+            leading_exponents[variable_index] = 0;
+            leading = leading.add(&PolynomialQ::from_term(
+                system.variables.clone(),
+                coefficient.clone(),
+                Monomial {
+                    exponents: leading_exponents,
+                },
+            ));
         } else {
             lower = lower.add(&PolynomialQ::from_term(
                 system.variables.clone(),
@@ -204,27 +225,105 @@ fn guarded_level(
             ));
         }
     }
-    if !leading_coefficient.is_one()
-        && !guard_certifies_leading_coefficient(system, &leading_coefficient)
-    {
+    if leading.is_zero() || polynomial_depends_on_variable(&leading, variable_index) {
         return None;
     }
-    let replacement_scale = -crate::arith::rational_one() / leading_coefficient.clone();
+    let leading_guard = if leading == PolynomialQ::one(system.variables.clone()) {
+        None
+    } else {
+        Some(verified_guard_for_polynomial(system, &leading)?)
+    };
+    let leading_inverse = inverse_mod_previous_tower(system, &leading, previous_levels)?;
+    let replacement = lower
+        .scale(&-crate::arith::rational_one())
+        .mul(&leading_inverse);
+    let replacement = reduce_by_tower(&replacement, previous_levels);
 
     Some(TowerLevel {
         variable_index,
         equation_index,
         degree,
-        lower: lower.scale(&replacement_scale),
+        leading,
+        lower: replacement,
+        leading_guard,
     })
 }
 
-fn guard_certifies_leading_coefficient(system: &CertifiedSystemQ, coefficient: &Rational) -> bool {
-    let guard = constant_polynomial(system, coefficient.clone());
+fn inverse_mod_previous_tower(
+    system: &CertifiedSystemQ,
+    leading: &PolynomialQ,
+    previous_levels: &[TowerLevel],
+) -> Option<PolynomialQ> {
+    if let Some(constant) = constant_value(leading) {
+        if constant.is_zero() {
+            return None;
+        }
+        return Some(constant_polynomial(
+            system,
+            crate::arith::rational_one() / constant,
+        ));
+    }
+    if polynomial_depends_on_variable_index(
+        leading,
+        variable_index(&system.variables, &system.target)?,
+    ) {
+        return None;
+    }
+    let basis = tower_basis(system.variables.len(), previous_levels);
+    let mut matrix = vec![vec![crate::arith::rational_zero(); basis.len()]; basis.len()];
+    for (column_index, basis_monomial) in basis.iter().enumerate() {
+        let basis_polynomial = PolynomialQ::from_term(
+            system.variables.clone(),
+            crate::arith::rational_one(),
+            basis_monomial.clone(),
+        );
+        let reduced = reduce_by_tower(&basis_polynomial.mul(leading), previous_levels);
+        let vector = vector_over_tower_basis(&reduced, &basis, system)?;
+        for (row_index, coefficient) in vector.into_iter().enumerate() {
+            matrix[row_index][column_index] = coefficient;
+        }
+    }
+    let mut rhs = vec![crate::arith::rational_zero(); basis.len()];
+    rhs[0] = crate::arith::rational_one();
+    let LinearSolveQ::Consistent { solution, .. } = solve_linear_system_q(&matrix, &rhs) else {
+        return None;
+    };
+    let mut inverse = PolynomialQ::zero(system.variables.clone());
+    for (coefficient, monomial) in solution.into_iter().zip(basis) {
+        if coefficient.is_zero() {
+            continue;
+        }
+        inverse = inverse.add(&PolynomialQ::from_term(
+            system.variables.clone(),
+            coefficient,
+            monomial,
+        ));
+    }
+    Some(inverse)
+}
+
+fn verified_guard_for_polynomial(
+    system: &CertifiedSystemQ,
+    guard: &PolynomialQ,
+) -> Option<GuardCertificate> {
+    let problem = guard_problem_from_system(system);
     system
         .guard_certificates
         .iter()
-        .any(|certificate| guard_certificate_has_polynomial(certificate, &guard))
+        .find(|certificate| {
+            guard_certificate_has_polynomial(certificate, guard)
+                && verify_guard_certificate(&problem, certificate) == VerificationResult::Verified
+        })
+        .cloned()
+}
+
+fn guard_problem_from_system(system: &CertifiedSystemQ) -> TargetProblemQ {
+    TargetProblemQ {
+        equations: system.equations.clone(),
+        variables: system.variables.clone(),
+        target: system.target.clone(),
+        semantic_guards: system.semantic_guards.clone(),
+    }
 }
 
 fn guard_certificate_has_polynomial(certificate: &GuardCertificate, guard: &PolynomialQ) -> bool {
@@ -252,6 +351,17 @@ fn guard_certificate_has_polynomial(certificate: &GuardCertificate, guard: &Poly
     }
 }
 
+fn constant_value(polynomial: &PolynomialQ) -> Option<Rational> {
+    let mut value = None;
+    for (monomial, coefficient) in &polynomial.terms {
+        if monomial.exponents.iter().any(|exponent| *exponent != 0) {
+            return None;
+        }
+        value = Some(coefficient.clone());
+    }
+    value
+}
+
 fn constant_polynomial(system: &CertifiedSystemQ, coefficient: Rational) -> PolynomialQ {
     PolynomialQ::from_term(
         system.variables.clone(),
@@ -260,6 +370,40 @@ fn constant_polynomial(system: &CertifiedSystemQ, coefficient: Rational) -> Poly
             exponents: vec![0; system.variables.len()],
         },
     )
+}
+
+fn polynomial_depends_on_variable(polynomial: &PolynomialQ, variable_index: usize) -> bool {
+    polynomial_depends_on_variable_index(polynomial, variable_index)
+}
+
+fn polynomial_depends_on_variable_index(polynomial: &PolynomialQ, variable_index: usize) -> bool {
+    polynomial
+        .terms
+        .keys()
+        .any(|monomial| monomial.exponents[variable_index] != 0)
+}
+
+fn vector_over_tower_basis(
+    polynomial: &PolynomialQ,
+    basis: &[Monomial],
+    system: &CertifiedSystemQ,
+) -> Option<Vec<Rational>> {
+    let target_index = variable_index(&system.variables, &system.target)?;
+    let index = basis
+        .iter()
+        .cloned()
+        .enumerate()
+        .map(|(index, monomial)| (monomial, index))
+        .collect::<BTreeMap<_, _>>();
+    let mut vector = vec![crate::arith::rational_zero(); basis.len()];
+    for (monomial, coefficient) in &polynomial.terms {
+        if monomial.exponents[target_index] != 0 {
+            return None;
+        }
+        let row = *index.get(monomial)?;
+        vector[row] += coefficient.clone();
+    }
+    Some(vector)
 }
 
 fn target_expression_depends_on_tower(
@@ -542,7 +686,7 @@ mod tests {
 
     use super::*;
     use crate::compression::CompressionReplayCertificate;
-    use crate::{GuardKind, GuardProvenance, GuardRecord};
+    use crate::{ExactIdentity, ExactIdentityKind, GuardKind, GuardProvenance, GuardRecord};
 
     fn variable(symbol: &str) -> Variable {
         Variable {
@@ -592,6 +736,31 @@ mod tests {
         GuardCertificate::InputSemanticNonzero { guard, record }
     }
 
+    fn nonzero_polynomial_guard(guard: PolynomialQ) -> GuardCertificate {
+        let record = nonzero_polynomial_record(&guard);
+        GuardCertificate::InputSemanticNonzero { guard, record }
+    }
+
+    fn nonzero_polynomial_record(guard: &PolynomialQ) -> GuardRecord {
+        GuardRecord {
+            polynomial: guard.clone(),
+            kind: GuardKind::NonZero,
+            provenance: GuardProvenance {
+                description: "semantic nonzero tower leading polynomial".to_string(),
+            },
+        }
+    }
+
+    fn derived_product_guard(guard: PolynomialQ) -> GuardCertificate {
+        GuardCertificate::DerivedProduct {
+            product: guard.clone(),
+            factors: vec![nonzero_polynomial_guard(guard)],
+            identity: ExactIdentity {
+                kind: ExactIdentityKind::GuardProduct,
+            },
+        }
+    }
+
     #[test]
     fn tower_route_uses_monic_triangular_structure() {
         let y = variable("Y");
@@ -606,6 +775,7 @@ mod tests {
             ],
             variables,
             target: t.clone(),
+            semantic_guards: Vec::new(),
             guard_certificates: Vec::new(),
             replay: CompressionReplayCertificate { steps: Vec::new() },
         };
@@ -638,13 +808,18 @@ mod tests {
             ],
             variables: variables.clone(),
             target: t.clone(),
+            semantic_guards: Vec::new(),
             guard_certificates: Vec::new(),
             replay: CompressionReplayCertificate { steps: Vec::new() },
         };
 
         assert!(norm_trace_tower_candidates(&system).is_empty());
 
-        system.guard_certificates.push(nonzero_guard(&variables, 2));
+        let leading_guard = nonzero_guard(&variables, 2);
+        if let GuardCertificate::InputSemanticNonzero { record, .. } = &leading_guard {
+            system.semantic_guards.push(record.clone());
+        }
+        system.guard_certificates.push(leading_guard);
         let candidates = norm_trace_tower_candidates(&system);
 
         assert_eq!(candidates.len(), 1);
@@ -668,6 +843,7 @@ mod tests {
             ],
             variables,
             target: t.clone(),
+            semantic_guards: Vec::new(),
             guard_certificates: Vec::new(),
             replay: CompressionReplayCertificate { steps: Vec::new() },
         };
@@ -685,5 +861,60 @@ mod tests {
                 rational(8)
             ]
         );
+    }
+
+    #[test]
+    fn tower_route_uses_verified_guarded_nonconstant_leading_coefficient() {
+        let x = variable("X");
+        let y = variable("Y");
+        let t = variable("T");
+        let variables = vec![x.clone(), y.clone(), t.clone()];
+        let x_guard = polynomial(&variables, &[(1, vec![1, 0, 0])]);
+        let mut system = CertifiedSystemQ {
+            equations: vec![
+                polynomial(&variables, &[(1, vec![2, 0, 0]), (-2, vec![0, 0, 0])]),
+                polynomial(&variables, &[(1, vec![1, 2, 0]), (-1, vec![0, 0, 0])]),
+                polynomial(&variables, &[(1, vec![0, 0, 1]), (-1, vec![0, 1, 0])]),
+            ],
+            variables,
+            target: t.clone(),
+            semantic_guards: Vec::new(),
+            guard_certificates: Vec::new(),
+            replay: CompressionReplayCertificate { steps: Vec::new() },
+        };
+
+        assert!(norm_trace_tower_candidates(&system).is_empty());
+
+        system
+            .guard_certificates
+            .push(derived_product_guard(x_guard.clone()));
+        assert!(norm_trace_tower_candidates(&system).is_empty());
+
+        system
+            .semantic_guards
+            .push(nonzero_polynomial_record(&x_guard));
+        let candidates = norm_trace_tower_candidates(&system);
+
+        assert_eq!(candidates.len(), 1);
+        assert_eq!(
+            candidates[0].reconstructed.as_ref().unwrap().coefficients,
+            vec![
+                rational(-1),
+                rational(0),
+                rational(0),
+                rational(0),
+                rational(2)
+            ]
+        );
+        let levels = detect_guarded_tower(&system, 2).unwrap();
+        let guarded_level = levels
+            .iter()
+            .find(|level| level.variable_index == 1)
+            .expect("y level should be detected");
+        assert_eq!(
+            guarded_level.leading,
+            polynomial(&system.variables, &[(1, vec![1, 0, 0])])
+        );
+        assert!(guarded_level.leading_guard.is_some());
     }
 }

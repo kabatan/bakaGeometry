@@ -53,9 +53,9 @@ mod tests {
         solver::{
             collect_candidates_for_test, solve_target_for_test, solve_target_with_route_forcing,
         },
-        ExactImageMode, GuardRecord, Monomial, PolynomialQ, Rational, ResourceLimits,
-        SolverCertificate, SolverOptions, SolverStatus, TargetCertificate, TargetProblemQ,
-        Variable, VerificationResult,
+        ExactImageMode, GuardKind, GuardProvenance, GuardRecord, Monomial, PolynomialQ, Rational,
+        ResourceLimits, SolverCertificate, SolverOptions, SolverStatus, TargetCertificate,
+        TargetProblemQ, Variable, VerificationResult,
     };
 
     fn variable(symbol: &str) -> Variable {
@@ -99,6 +99,20 @@ mod tests {
             variables,
             target,
             semantic_guards: Vec::<GuardRecord>::new(),
+        }
+    }
+
+    fn problem_with_guards(
+        equations: Vec<PolynomialQ>,
+        variables: Vec<Variable>,
+        target: Variable,
+        semantic_guards: Vec<GuardRecord>,
+    ) -> TargetProblemQ {
+        TargetProblemQ {
+            equations,
+            variables,
+            target,
+            semantic_guards,
         }
     }
 
@@ -289,6 +303,55 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn unbounded_spurious_route_candidate_does_not_starve_complete_fallback_budget() {
+        let t = variable("T");
+        let variables = vec![t.clone()];
+        let equations = vec![polynomial(&variables, &[(1, vec![1]), (-2, vec![0])])];
+        let forcing = RouteForcing {
+            enabled_origins: BTreeSet::from([CandidateOrigin::DirectTargetEquation]),
+            allow_complete_fallback: true,
+            allow_other_heavy_routes: false,
+            tamper_first_candidate: true,
+            forced_localized_schur: None,
+        };
+
+        let result = solve_target_with_route_forcing(
+            problem(equations, variables, t.clone()),
+            SolverOptions {
+                resource_limits: ResourceLimits {
+                    max_window_degree: None,
+                    max_proof_weight: None,
+                    max_matrix_rows: None,
+                    max_matrix_cols: None,
+                    max_candidate_count: None,
+                },
+                exact_image_mode: ExactImageMode::CoverOnly,
+            },
+            &forcing,
+        );
+
+        assert_eq!(result.status, SolverStatus::CertifiedCandidateCover);
+        assert_eq!(
+            result.cover.unwrap().support.primitive_integer_normalized(),
+            crate::UniPolynomialQ {
+                variable: t,
+                coefficients: vec![rational(-2), rational(1)],
+            }
+            .primitive_integer_normalized()
+        );
+        assert!(result
+            .trace
+            .events
+            .iter()
+            .any(|event| event.contains("proof_try:DirectTargetEquation")));
+        assert!(result
+            .trace
+            .events
+            .iter()
+            .any(|event| event.contains("target_elimination:support:budget=")));
     }
 
     #[test]
@@ -484,6 +547,54 @@ mod tests {
     }
 
     #[test]
+    fn tower_route_forcing_solves_guarded_nonmonic_tower_without_fallback() {
+        let x = variable("X");
+        let y = variable("Y");
+        let t = variable("T");
+        let variables = vec![x.clone(), y.clone(), t.clone()];
+        let equations = vec![
+            polynomial(&variables, &[(1, vec![2, 0, 0]), (-2, vec![0, 0, 0])]),
+            polynomial(&variables, &[(1, vec![1, 2, 0]), (-1, vec![0, 0, 0])]),
+            polynomial(&variables, &[(1, vec![0, 0, 1]), (-1, vec![0, 1, 0])]),
+        ];
+        let x_guard = polynomial(&variables, &[(1, vec![1, 0, 0])]);
+        let input = problem_with_guards(
+            equations,
+            variables,
+            t.clone(),
+            vec![GuardRecord {
+                polynomial: x_guard,
+                kind: GuardKind::NonZero,
+                provenance: GuardProvenance {
+                    description: "x is semantically nonzero for guarded tower".to_string(),
+                },
+            }],
+        );
+
+        let result = solve_target_for_test(
+            input,
+            solver_options(),
+            &TestRouteForcing::only(CandidateOrigin::NormTraceTower),
+        );
+
+        assert_route_only_cover(result.clone(), CandidateOrigin::NormTraceTower);
+        assert_eq!(
+            result.cover.unwrap().support.primitive_integer_normalized(),
+            crate::UniPolynomialQ {
+                variable: t,
+                coefficients: vec![
+                    rational(-1),
+                    rational(0),
+                    rational(0),
+                    rational(0),
+                    rational(2)
+                ],
+            }
+            .primitive_integer_normalized()
+        );
+    }
+
+    #[test]
     fn tower_route_tampered_certificate_is_rejected() {
         let y = variable("Y");
         let x = variable("X");
@@ -639,6 +750,73 @@ mod tests {
     }
 
     #[test]
+    fn resultant_route_forcing_solves_sr_f1_two_polynomial_hidden_resultant_without_fallback() {
+        let x = variable("X");
+        let t = variable("T");
+        let variables = vec![x.clone(), t.clone()];
+        let equations = vec![
+            polynomial(&variables, &[(1, vec![2, 0]), (-1, vec![0, 1])]),
+            polynomial(&variables, &[(1, vec![2, 0]), (-2, vec![0, 0])]),
+        ];
+
+        let result = route_result(
+            equations,
+            variables,
+            t.clone(),
+            CandidateOrigin::HiddenVariableSparseResultant,
+        );
+
+        assert_route_only_cover(
+            result.clone(),
+            CandidateOrigin::HiddenVariableSparseResultant,
+        );
+        assert_eq!(
+            result.cover.unwrap().support.primitive_integer_normalized(),
+            crate::UniPolynomialQ {
+                variable: t,
+                coefficients: vec![rational(-2), rational(1)],
+            }
+            .primitive_integer_normalized()
+        );
+    }
+
+    #[test]
+    fn resultant_route_forcing_solves_non_chain_sparse_eliminant_without_fallback() {
+        let x = variable("X");
+        let y = variable("Y");
+        let t = variable("T");
+        let variables = vec![x.clone(), y.clone(), t.clone()];
+        let equations = vec![
+            polynomial(&variables, &[(1, vec![2, 0, 0]), (-2, vec![0, 0, 0])]),
+            polynomial(&variables, &[(1, vec![1, 1, 0]), (-1, vec![0, 0, 0])]),
+            polynomial(
+                &variables,
+                &[(1, vec![0, 0, 1]), (-1, vec![1, 0, 0]), (-1, vec![0, 1, 0])],
+            ),
+        ];
+
+        let result = route_result(
+            equations,
+            variables,
+            t.clone(),
+            CandidateOrigin::HiddenVariableSparseResultant,
+        );
+
+        assert_route_only_cover(
+            result.clone(),
+            CandidateOrigin::HiddenVariableSparseResultant,
+        );
+        assert_eq!(
+            result.cover.unwrap().support.primitive_integer_normalized(),
+            crate::UniPolynomialQ {
+                variable: t,
+                coefficients: vec![rational(-9), rational(0), rational(2)],
+            }
+            .primitive_integer_normalized()
+        );
+    }
+
+    #[test]
     fn resultant_route_tampered_certificate_is_rejected() {
         let x = variable("X");
         let y = variable("Y");
@@ -683,11 +861,12 @@ mod tests {
     #[test]
     fn slice_route_forcing_selects_only_slice_candidates() {
         let x = variable("X");
+        let y = variable("Y");
         let t = variable("T");
-        let variables = vec![x.clone(), t.clone()];
+        let variables = vec![x.clone(), y.clone(), t.clone()];
         let equations = vec![polynomial(
             &variables,
-            &[(1, vec![0, 2]), (1, vec![1, 0]), (-2, vec![0, 0])],
+            &[(1, vec![0, 0, 2]), (-2, vec![0, 0, 0])],
         )];
 
         let candidates = collect_candidates_for_test(
@@ -705,9 +884,13 @@ mod tests {
     #[test]
     fn slice_route_forcing_solves_finite_target_family_without_complete_fallback() {
         let x = variable("X");
+        let y = variable("Y");
         let t = variable("T");
-        let variables = vec![x.clone(), t.clone()];
-        let equations = vec![polynomial(&variables, &[(1, vec![0, 2]), (-2, vec![0, 0])])];
+        let variables = vec![x.clone(), y.clone(), t.clone()];
+        let equations = vec![polynomial(
+            &variables,
+            &[(1, vec![0, 0, 2]), (-2, vec![0, 0, 0])],
+        )];
 
         let result = route_result(
             equations,
@@ -720,11 +903,48 @@ mod tests {
     }
 
     #[test]
+    fn slice_route_forcing_solves_affine_coupled_family_without_complete_fallback() {
+        let x = variable("X");
+        let y = variable("Y");
+        let t = variable("T");
+        let variables = vec![x.clone(), y.clone(), t.clone()];
+        let equations = vec![
+            polynomial(
+                &variables,
+                &[(1, vec![0, 0, 1]), (-1, vec![1, 0, 0]), (-1, vec![0, 0, 0])],
+            ),
+            polynomial(&variables, &[(-1, vec![1, 0, 0]), (1, vec![0, 1, 0])]),
+            polynomial(&variables, &[(1, vec![2, 0, 0]), (-2, vec![0, 0, 0])]),
+        ];
+
+        let result = route_result(
+            equations,
+            variables,
+            t.clone(),
+            CandidateOrigin::SliceSpecialization,
+        );
+
+        assert_route_only_cover(result.clone(), CandidateOrigin::SliceSpecialization);
+        assert_eq!(
+            result.cover.unwrap().support.primitive_integer_normalized(),
+            crate::UniPolynomialQ {
+                variable: t,
+                coefficients: vec![rational(0), rational(-1), rational(-2), rational(1)],
+            }
+            .primitive_integer_normalized()
+        );
+    }
+
+    #[test]
     fn slice_route_tampered_certificate_is_rejected() {
         let x = variable("X");
+        let y = variable("Y");
         let t = variable("T");
-        let variables = vec![x.clone(), t.clone()];
-        let equations = vec![polynomial(&variables, &[(1, vec![0, 2]), (-2, vec![0, 0])])];
+        let variables = vec![x.clone(), y.clone(), t.clone()];
+        let equations = vec![polynomial(
+            &variables,
+            &[(1, vec![0, 0, 2]), (-2, vec![0, 0, 0])],
+        )];
 
         assert_route_certificate_tamper_rejected(
             equations,
@@ -737,9 +957,13 @@ mod tests {
     #[test]
     fn slice_route_forcing_rejects_spurious_candidate_without_fallback() {
         let x = variable("X");
+        let y = variable("Y");
         let t = variable("T");
-        let variables = vec![x.clone(), t.clone()];
-        let equations = vec![polynomial(&variables, &[(1, vec![0, 2]), (-2, vec![0, 0])])];
+        let variables = vec![x.clone(), y.clone(), t.clone()];
+        let equations = vec![polynomial(
+            &variables,
+            &[(1, vec![0, 0, 2]), (-2, vec![0, 0, 0])],
+        )];
 
         let result = route_spurious_result(
             equations,

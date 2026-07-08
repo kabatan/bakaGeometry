@@ -488,6 +488,7 @@ mod tests {
             ],
             variables,
             target: t,
+            semantic_guards: Vec::new(),
             guard_certificates: Vec::new(),
             replay: CompressionReplayCertificate { steps: Vec::new() },
         };
@@ -585,6 +586,7 @@ mod tests {
             equations,
             variables,
             target: t.clone(),
+            semantic_guards: Vec::new(),
             guard_certificates: Vec::new(),
             replay: CompressionReplayCertificate { steps: Vec::new() },
         };

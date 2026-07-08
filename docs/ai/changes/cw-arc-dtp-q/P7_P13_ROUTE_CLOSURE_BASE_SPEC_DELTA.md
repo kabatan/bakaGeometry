@@ -4,6 +4,17 @@ Purpose: controlling delta for the P7-P13 route-closure implementation and revie
 Status: admitted route-closure authority after guardian boundary review on 2026-07-08.
 Authority: this file narrows and strengthens the active V3 Base Spec for P7-P13 only. `BASE_SPEC.md` remains controlling outside this delta.
 
+## Superseding Blocker Notice
+
+The later source `CW_ARC_DTP_Q_P1_P13_SPEC_GAP_FIX_INSTRUCTIONS.md` identifies spec gaps in the previous P1-P13 implementation. F1-F5 have current local implementation evidence in `evidence/p1_p13_spec_gap_fix_evidence.md`; until F6 review passes, this file must not be used to claim unconditional P7-P13 closure or permission to start P14.
+
+Blockers from that source handled by current local F1-F5 implementation evidence:
+
+- P5 top-level unbounded ideal execution.
+- P10 `HiddenVariableSparseResultant`.
+- P11 generic affine `SliceSpecialization`.
+- P12 guarded-nonmonic `NormTraceTower`.
+
 ## Source Intent
 
 The user required the following review constraints before P7-P13 implementation:
@@ -37,4 +48,4 @@ P7-P13-R6. LocalizedSchur is included in P13 but is not a candidate-origin PASS 
 
 ## Claim Boundary
 
-After admission, this delta authorizes and restricts only the P7-P13 route-closure implementation scope. It does not itself close P7-P13, and it does not close P14+, P15, P16, final V3 completion, source-faithfulness, production-safety, readiness, acceptance-complete, or any R-ID verified claim.
+After admission, this delta authorized and restricted only the previous P7-P13 route-closure implementation scope. Current P1-P13 blocker-fix evidence is recorded separately and still requires F6 review before any stronger claim. This file does not close P14+, P15, P16, final V3 completion, source-faithfulness, production-safety, readiness, acceptance-complete, or any R-ID verified claim.

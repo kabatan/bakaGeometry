@@ -4,7 +4,7 @@ Purpose: operational hot context.
 Status: active for current Guardian phase.
 Authority: non-authoritative; use `BASE_SPEC.md` and `PLAN.md` for correctness.
 
-Status: P7-P13 route closure implemented, locally tested, and reviewed under the admitted P7-P13 delta.
+Status: P1-P13 spec-gap fix F1-F5 implemented locally; F6 spec, quality, and Guardian boundary review passed for the narrow scope.
 
 Current spec: `CW-ARC-DTP-Q-FULL-V3`
 Base Spec: `docs/ai/changes/cw-arc-dtp-q/BASE_SPEC.md`
@@ -15,7 +15,7 @@ Original algorithm source: `docs/ai/changes/cw-arc-dtp-q/sources/cw_arc_dtp_q_re
 V3 failure analysis: `docs/ai/changes/cw-arc-dtp-q/sources/failure_analysis_and_fix_principles_v3.md`
 V3 route checklist: `docs/ai/changes/cw-arc-dtp-q/sources/route_checklists_and_test_matrix_v3.md`
 
-Current phase: P7-P13 route closure reviewed; P14+ requires separate scoped permission and review.
+Current phase: P1-P13 spec-gap blocker fix before P14.
 
 Current P7-P13 delta:
 - `docs/ai/changes/cw-arc-dtp-q/P7_P13_ROUTE_CLOSURE_BASE_SPEC_DELTA.md`
@@ -25,11 +25,20 @@ Current P7-P13 delta:
 - `FactorizationResult::ResourceFailure` and `Partial` must not be treated as `Complete`.
 - `origin_evidence` remains ranking evidence only.
 
-P7-P13 implementation evidence:
+P7-P13 and P1-P13 implementation evidence:
 - `docs/ai/changes/cw-arc-dtp-q/evidence/p7_p13_route_closure_evidence.md`
-- Latest local `cargo test` passed before reviewer handoff.
-- Latest local `cargo test --lib test_support` passed 26 route-control/no-fallback/tamper tests.
-- `spec_verifier`, `quality_reviewer`, and `guardian_boundary_reviewer` passed for scoped P7-P13.
+- `docs/ai/changes/cw-arc-dtp-q/evidence/p1_p13_spec_gap_fix_evidence.md`
+- `docs/ai/changes/cw-arc-dtp-q/reviews/p1_p13_spec_gap_fix_2026-07-08.md`
+- Latest local `cargo test -- --nocapture` passed after F1-F5 implementation and F6 blocker fixes.
+- Latest local route-control evidence includes 31 route-control/no-fallback/tamper tests.
+- `spec_verifier`, `quality_reviewer`, and `guardian_boundary_reviewer` passed for scoped P7-P13 and scoped P1-P13 spec-gap F1-F5 closure.
+
+Current P1-P13 spec-gap fix source:
+- `C:\Users\bakat\Downloads\CW_ARC_DTP_Q_P1_P13_SPEC_GAP_FIX_INSTRUCTIONS.md`
+- SHA-256 `2D646EFA570B45365618B7506FEA925B8412D8686651231ED12810B111C5FE59`
+- Local delta: `docs/ai/changes/cw-arc-dtp-q/P1_P13_SPEC_GAP_FIX_BASE_SPEC_DELTA.md`
+- F1-F5 local implementation status: top-level unbounded execution, true sparse resultant data-flow, generic affine slicing, guarded-nonmonic tower, and regression/static gates implemented and locally tested.
+- F6 status: spec verifier, quality reviewer, and Guardian boundary reviewer passed after blocker fixes.
 
 P0 result:
 - V3 Base Spec / Plan / Reviewer Prompt admitted as current authority
@@ -59,6 +68,7 @@ Current ReadSet:
 - `docs/ai/changes/cw-arc-dtp-q/PLAN.md`
 - `docs/ai/changes/cw-arc-dtp-q/REVIEWER_PROMPTS.md`
 - `docs/ai/changes/cw-arc-dtp-q/P7_P13_ROUTE_CLOSURE_BASE_SPEC_DELTA.md`
+- `docs/ai/changes/cw-arc-dtp-q/P1_P13_SPEC_GAP_FIX_BASE_SPEC_DELTA.md`
 - `docs/ai/changes/cw-arc-dtp-q/source_map.md`
 - `docs/ai/changes/cw-arc-dtp-q/evidence/current_gap_inventory.md`
 - current production files named by the P0 search
@@ -70,8 +80,9 @@ Current edit scope:
 - P1-P13 production and test files changed under scoped user permission
 
 Claim ceiling:
-- Allowed: P1-P3 checkpoint, scoped P3 blocker fixes, scoped P4-P6 checkpoint, and scoped P7-P13 route closure were implemented, locally tested, and reviewed.
+- Allowed: P1-P3 checkpoint, scoped P3 blocker fixes, scoped P4-P6 checkpoint, scoped P7-P13 route closure, and P1-P13 spec-gap F1-F5 local implementation were implemented, locally tested, and passed F6 spec/quality/boundary review.
 - Forbidden: claiming the current implementation satisfies V3 final completion.
+- Forbidden: claiming P14/P15/P16 are complete without a separate admitted scope and review.
 - Forbidden: `SOURCE_FAITHFUL`, `VERIFIED`, `ACCEPTANCE_COMPLETE`, `PRODUCTION_SAFE`, or any requirement verified claim.
 
 Known boundary:
@@ -80,4 +91,4 @@ Known boundary:
 - The repo is clean before this V3 import work; current changes are local and not yet committed.
 
 Next action:
-- Ask for scoped permission before starting P14 or any later phase.
+- Handle any P14+ work only under a separate admitted scope.

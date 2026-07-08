@@ -1,25 +1,26 @@
 # P7-P13 Route Closure Review
 
 Purpose: record scoped Guardian review results for the P7-P13 route-closure implementation.
-Status: review record.
+Status: historical review record superseded for P5/P10/P11/P12 by the P1-P13 spec-gap fix source.
 Authority: review evidence only. This file does not verify any V3 requirement.
 
 Date: 2026-07-08.
 
 ## Scope
 
-The reviewed scope is P7 through P13 of `CW-ARC-DTP-Q-FULL-V3` under the admitted `P7_P13_ROUTE_CLOSURE_BASE_SPEC_DELTA.md`:
+The historical reviewed scope was P7 through P13 of `CW-ARC-DTP-Q-FULL-V3` under the admitted `P7_P13_ROUTE_CLOSURE_BASE_SPEC_DELTA.md`. The later P1-P13 spec-gap fix source supersedes this review for P5/P10/P11/P12 closure.
 
 - P7 DirectTargetEquation route closure.
 - P8 ResidualCyclic route closure.
 - P9 TargetCyclicKrylov quotient/residual recurrence closure.
-- P10 HiddenVariableSparseResultant route closure.
-- P11 SliceSpecialization full sliced-system route closure.
-- P12 NormTraceTower guarded-nonmonic and non-unit target-coefficient closure.
+- P10 previous HiddenVariableSparseResultant route evidence, now insufficient for true sparse resultant / eliminant closure.
+- P11 previous SliceSpecialization full sliced-system evidence, now insufficient for generic affine slice closure.
+- P12 previous NormTraceTower guarded-constant-nonmonic and non-unit target-coefficient evidence, now insufficient for nonconstant guarded-nonmonic closure.
 - P13 LocalizedSchur support-information and exact-certificate paths.
 
 Out of scope:
 
+- The later P1-P13 spec-gap fix blockers for P5, P10, P11, and P12.
 - P14 and later implementation.
 - P15 exact no-target eliminant replay.
 - P16 exact real-image replay.
@@ -54,9 +55,9 @@ The quality review found no findings and checked:
 
 `guardian_boundary_reviewer`: PASS.
 
-Allowed boundary:
+Allowed boundary at the time of this historical review:
 
-- P7-P13 route closure has been implemented, locally tested, and reviewed under the admitted P7-P13 Base Spec delta.
+- P7-P13 route closure had been implemented, locally tested, and reviewed under the admitted P7-P13 Base Spec delta. This is superseded for P5/P10/P11/P12 by the later P1-P13 spec-gap fix source.
 
 Forbidden claims:
 
@@ -94,3 +95,5 @@ git diff --check emitted CRLF warnings only.
 ## Claim Boundary
 
 This review supports only the scoped P7-P13 route-closure implementation claim under the admitted delta. It does not mark any R-ID verified, does not close P14+, and does not support final V3 completion, source-faithfulness, production-safety, readiness, or acceptance-complete claims.
+
+After `CW_ARC_DTP_Q_P1_P13_SPEC_GAP_FIX_INSTRUCTIONS.md`, this review is historical evidence only and cannot be used to claim P5/P10/P11/P12 closure or permission to start P14.

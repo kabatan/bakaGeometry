@@ -102,7 +102,7 @@ impl Iterator for CertificateWindowSchedule<'_> {
 
         let degree = self.next_degree;
         self.next_degree += 1;
-        Some(window_for_degree(self.system, self.dag, degree))
+        Some(certificate_window_for_degree(self.system, self.dag, degree))
     }
 }
 
@@ -162,7 +162,7 @@ fn target_levels(
     levels
 }
 
-fn window_for_degree(
+pub(crate) fn certificate_window_for_degree(
     system: &CertifiedSystemQ,
     dag: &TargetDependencyDag,
     degree: usize,
@@ -305,6 +305,7 @@ mod tests {
             ],
             variables,
             target: t,
+            semantic_guards: Vec::new(),
             guard_certificates: Vec::new(),
             replay: CompressionReplayCertificate { steps: Vec::new() },
         }

@@ -175,6 +175,7 @@ mod tests {
             ],
             variables,
             target: t.clone(),
+            semantic_guards: Vec::new(),
             guard_certificates: Vec::new(),
             replay: CompressionReplayCertificate { steps: Vec::new() },
         };

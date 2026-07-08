@@ -26,6 +26,7 @@ pub(crate) fn direct_target_equation_candidates(system: &CertifiedSystemQ) -> Ve
             }
             let reconstructed = equation
                 .to_univariate_in(&system.target)?
+                .squarefree_part()
                 .primitive_integer_normalized();
             (!reconstructed.is_zero()).then_some(TargetCandidate::from_origin(
                 Vec::new(),
@@ -89,6 +90,7 @@ mod tests {
             ],
             variables,
             target: t.clone(),
+            semantic_guards: Vec::new(),
             guard_certificates: Vec::new(),
             replay: CompressionReplayCertificate { steps: Vec::new() },
         };

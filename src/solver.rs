@@ -10,7 +10,9 @@ use crate::candidates::{CandidateOracle, CandidateOrigin, TargetCandidate};
 use crate::compression::{
     certified_system_from_problem, lift_multipliers_to_original_problem, CertifiedSystemQ,
 };
-use crate::dependency_dag::{build_target_dependency_dag, plan_certificate_windows};
+use crate::dependency_dag::{
+    build_target_dependency_dag, certificate_window_for_degree, plan_certificate_windows,
+};
 use crate::exact_image::{classify_real_fibers_conservative, ExactImageClassification};
 use crate::fallback_elimination::{
     complete_target_elimination_fallback, try_empty_admissible_set_certificate,
@@ -21,10 +23,13 @@ use crate::proof::{prove_fixed_target, CertificateMode, FixedProofInput, ProofFa
 use crate::proof_learning::{
     expand_by_obstruction_predecessors, expand_by_total_degree, learn_initial_proof_window,
 };
-use crate::proof_schedule::{bounded_fair_proof_prefix, certificate_mode_for_trial};
+use crate::proof_schedule::{
+    bounded_fair_proof_prefix, certificate_mode_for_trial, FairProofTrial,
+};
 use crate::repair_multiple::low_degree_multiple_repair;
 use crate::repair_schur::{localized_schur_repair, SchurRepairOutput};
 use crate::roots::isolate_real_roots_squarefree;
+use crate::solve_schedule::{GlobalSolveSchedule, SolveWorkItem};
 use crate::window::{CertificateWindow, ProofWindow};
 use crate::{
     AlgebraicRealRoot, CertifiedExactTargetImage, CompositeRule, EmptyAdmissibleSetCertificate,
@@ -128,11 +133,18 @@ fn solve_target_with_route_control_inner(
         };
     }
 
-    if options.resource_limits.max_proof_weight.is_none() {
-        trace
-            .events
-            .push("resource:unbounded_proof_requires_bound".to_string());
-        return finite_resource_failure(trace);
+    if options.resource_limits.max_window_degree.is_none()
+        || options.resource_limits.max_proof_weight.is_none()
+    {
+        return solve_target_unbounded_with_route_control(
+            problem,
+            options,
+            enabled_origins,
+            allow_complete_fallback,
+            tamper_first_candidate,
+            system,
+            trace,
+        );
     }
 
     let dag = build_target_dependency_dag(&system);
@@ -311,6 +323,212 @@ fn solve_target_with_route_control_inner(
     }
 }
 
+fn solve_target_unbounded_with_route_control(
+    problem: TargetProblemQ,
+    options: SolverOptions,
+    enabled_origins: Option<&BTreeSet<CandidateOrigin>>,
+    allow_complete_fallback: bool,
+    tamper_first_candidate: bool,
+    system: CertifiedSystemQ,
+    mut trace: SolverTrace,
+) -> TargetSolveResult {
+    let dag = build_target_dependency_dag(&system);
+    let candidate_limit = options
+        .resource_limits
+        .max_candidate_count
+        .unwrap_or(usize::MAX);
+    if candidate_limit == 0 {
+        trace.events.push("resource:candidate_limit".to_string());
+        return finite_resource_failure(trace);
+    }
+
+    let mut candidate_count = 0;
+    let mut verified = Vec::new();
+    let mut collected_obstructions = Vec::new();
+    let mut last_proof_window = None;
+
+    for work_item in GlobalSolveSchedule::from_limits(&options.resource_limits) {
+        match work_item {
+            SolveWorkItem::CandidateWindow {
+                window_degree,
+                proof_trial,
+            } => {
+                let window = certificate_window_for_degree(&system, &dag, window_degree);
+                trace
+                    .events
+                    .push(format!("window:degree={}", window.target_degree));
+                trace.events.push(format!(
+                    "proof_schedule:window_degree={}:proof_weight={}:multiplier_degree={}:support_power={}:guard_power={}",
+                    window_degree,
+                    crate::proof_schedule::proof_tuple_weight(&proof_trial.tuple),
+                    proof_trial.tuple.multiplier_degree,
+                    proof_trial.tuple.support_power,
+                    proof_trial.tuple.guard_power,
+                ));
+                if window_exceeds_limits(&window, &options.resource_limits) {
+                    trace.events.push(format!(
+                        "resource:window:rows={}:cols={}",
+                        window.row_monomials.len(),
+                        window
+                            .multiplier_supports
+                            .iter()
+                            .map(Vec::len)
+                            .sum::<usize>()
+                    ));
+                    return finite_resource_failure(trace);
+                }
+
+                let candidates = collect_candidate_routes(&system, &window, enabled_origins);
+                let candidates = rank_candidates(normalize_candidates(candidates));
+                #[cfg(test)]
+                let candidates = {
+                    let mut candidates = candidates;
+                    if tamper_first_candidate {
+                        shift_reconstructed_candidates_for_test(&mut candidates);
+                    }
+                    candidates
+                };
+
+                for candidate in candidates {
+                    if candidate_count >= candidate_limit {
+                        trace.events.push("resource:candidate_limit".to_string());
+                        return finite_resource_failure(trace);
+                    }
+                    candidate_count += 1;
+                    trace.events.push(candidate_trace_event(&candidate));
+                    if candidate.reconstructed.is_none() {
+                        continue;
+                    }
+                    let factor_trials = factor_schedule(&candidate);
+                    trace.events.push(factorization_trace_event(&factor_trials));
+                    for proof_candidate in factor_trials.candidates {
+                        trace.events.push(proof_try_trace_event(&proof_candidate));
+                        if let Some(certificate) = try_candidate_certificate_trial(
+                            &system,
+                            &window,
+                            &proof_candidate,
+                            &proof_trial,
+                            &global_work_item_proof_limits(&options.resource_limits),
+                            &mut collected_obstructions,
+                            &mut last_proof_window,
+                            &mut trace,
+                        ) {
+                            let Some(certificate) =
+                                lift_target_certificate_to_original(&problem, certificate)
+                            else {
+                                return implementation_bug_result(trace);
+                            };
+                            return return_verified_cover(
+                                &mut verified,
+                                certificate,
+                                &options,
+                                trace,
+                            );
+                        }
+                    }
+                }
+
+                if !tamper_first_candidate {
+                    if let Some(proof_window) = last_proof_window.as_ref() {
+                        match localized_schur_repair(
+                            &system,
+                            proof_window,
+                            &collected_obstructions,
+                            &options.resource_limits,
+                        ) {
+                            SchurRepairOutput::Certified(certificate) => {
+                                trace.events.push("localized_schur:certified".to_string());
+                                let Some(certificate) =
+                                    lift_target_certificate_to_original(&problem, certificate)
+                                else {
+                                    return implementation_bug_result(trace);
+                                };
+                                return return_verified_cover(
+                                    &mut verified,
+                                    certificate,
+                                    &options,
+                                    trace,
+                                );
+                            }
+                            SchurRepairOutput::SupportInformation(_) => {
+                                trace.events.push("localized_schur:support".to_string());
+                            }
+                            SchurRepairOutput::NoLocalScope => {}
+                        }
+                    }
+                }
+            }
+            SolveWorkItem::CompleteFallbackBudget { elimination_degree } => {
+                if !allow_complete_fallback {
+                    continue;
+                }
+                let mut fallback_limits = options.resource_limits.clone();
+                fallback_limits.max_window_degree = Some(elimination_degree);
+                match complete_target_elimination_fallback(&system, &fallback_limits) {
+                    CompleteFallbackResult::CertifiedEmpty(certificate) => {
+                        let Some(certificate) =
+                            lift_empty_certificate_to_original(&problem, certificate)
+                        else {
+                            return implementation_bug_result(trace);
+                        };
+                        trace.events.push(format!(
+                            "target_elimination:empty:budget={elimination_degree}"
+                        ));
+                        return TargetSolveResult {
+                            status: SolverStatus::CertifiedEmptyAdmissibleSet,
+                            cover: None,
+                            exact_image: None,
+                            certificate: Some(SolverCertificate::EmptyAdmissibleSet(certificate)),
+                            trace,
+                        };
+                    }
+                    CompleteFallbackResult::CertifiedNoTargetEliminant(_) => {
+                        trace.events.push(format!(
+                            "target_elimination:no_target_eliminant:budget={elimination_degree}"
+                        ));
+                        return TargetSolveResult {
+                            status: SolverStatus::CertificateDesignGap,
+                            cover: None,
+                            exact_image: None,
+                            certificate: None,
+                            trace,
+                        };
+                    }
+                    CompleteFallbackResult::CertifiedSupport(certificate) => {
+                        let Some(certificate) =
+                            lift_target_certificate_to_original(&problem, certificate)
+                        else {
+                            return implementation_bug_result(trace);
+                        };
+                        trace.events.push(format!(
+                            "target_elimination:support:budget={elimination_degree}"
+                        ));
+                        return maybe_classify_exact_target_image(certificate, &options, trace);
+                    }
+                    CompleteFallbackResult::ResourceFailure(cost) => {
+                        trace.events.push(format!(
+                            "target_elimination:resource:budget={}:rows={}:cols={}",
+                            elimination_degree, cost.matrix_rows, cost.matrix_cols
+                        ));
+                    }
+                }
+            }
+        }
+    }
+
+    if !allow_complete_fallback && candidate_count > 0 {
+        trace.events.push("route_forcing:no_verified".to_string());
+    }
+
+    TargetSolveResult {
+        status: SolverStatus::NoVerifiedTargetCertificate,
+        cover: None,
+        exact_image: None,
+        certificate: None,
+        trace,
+    }
+}
+
 fn finite_resource_failure(trace: SolverTrace) -> TargetSolveResult {
     TargetSolveResult {
         status: SolverStatus::FiniteResourceFailure,
@@ -319,6 +537,12 @@ fn finite_resource_failure(trace: SolverTrace) -> TargetSolveResult {
         certificate: None,
         trace,
     }
+}
+
+fn global_work_item_proof_limits(limits: &ResourceLimits) -> ResourceLimits {
+    let mut trial_limits = limits.clone();
+    trial_limits.max_window_degree = Some(0);
+    trial_limits
 }
 
 fn implementation_bug_result(trace: SolverTrace) -> TargetSolveResult {
@@ -488,6 +712,39 @@ fn try_candidate_certificate(
     }
 }
 
+fn try_candidate_certificate_trial(
+    system: &CertifiedSystemQ,
+    window: &CertificateWindow,
+    candidate: &TargetCandidate,
+    trial: &FairProofTrial,
+    limits: &ResourceLimits,
+    collected_obstructions: &mut Vec<crate::proof_learning::LeftNullObstruction>,
+    last_proof_window: &mut Option<ProofWindow>,
+    trace: &mut SolverTrace,
+) -> Option<TargetCertificate> {
+    let support = candidate.reconstructed.as_ref()?;
+    if is_nonzero_constant_support(support) {
+        trace
+            .events
+            .push("proof_constant_support:defer_empty".to_string());
+        return None;
+    }
+
+    let proof_window = learn_initial_proof_window(window, &candidate.traces);
+    let scheduled_window =
+        expand_by_total_degree(system, &proof_window, trial.tuple.multiplier_degree);
+    *last_proof_window = Some(scheduled_window.clone());
+    try_fixed_certificate(
+        system,
+        support,
+        &scheduled_window,
+        certificate_mode_for_trial(trial),
+        limits,
+        collected_obstructions,
+        trace,
+    )
+}
+
 fn try_fixed_certificate(
     system: &CertifiedSystemQ,
     support: &UniPolynomialQ,
@@ -511,14 +768,14 @@ fn try_fixed_certificate(
         match prove_fixed_target(input) {
             Ok(certificate) => return Some(certificate),
             Err(ProofFailure::Inconsistent { obstruction }) => {
+                trace.events.push("proof_obstruction".to_string());
+                collected_obstructions.push(obstruction.clone());
                 if expansion_limit.is_some_and(|limit| expansion_count >= limit) {
                     return None;
                 }
                 expansion_count += 1;
-                trace.events.push("proof_obstruction".to_string());
                 let expanded =
                     expand_by_obstruction_predecessors(system, &current_window, &obstruction);
-                collected_obstructions.push(obstruction);
                 if expanded == current_window {
                     return None;
                 }
@@ -1097,61 +1354,13 @@ mod tests {
     }
 
     #[test]
-    fn max_window_degree_none_does_not_insert_hidden_default_window_bound() {
-        let x = variable("X");
+    fn unbounded_high_radical_power_finds_exact_cover() {
         let t = variable("T");
-        let variables = vec![x.clone(), t.clone()];
-        let equations = vec![polynomial(&variables, &[(1, vec![1, 0])])];
+        let variables = vec![t.clone()];
+        let equations = vec![polynomial(&variables, &[(1, vec![9])])];
         let options = SolverOptions {
             resource_limits: ResourceLimits {
                 max_window_degree: None,
-                max_proof_weight: Some(1),
-                max_matrix_rows: None,
-                max_matrix_cols: None,
-                max_candidate_count: None,
-            },
-            exact_image_mode: ExactImageMode::CoverOnly,
-        };
-
-        let result = solve_target(problem(equations, variables, t), options);
-
-        assert_eq!(result.status, SolverStatus::NoVerifiedTargetCertificate);
-        assert!(result.cover.is_none());
-        assert!(result.certificate.is_none());
-        assert!(!result
-            .trace
-            .events
-            .iter()
-            .any(|event| event.starts_with("window:")));
-        assert!(!result
-            .trace
-            .events
-            .iter()
-            .any(|event| event.starts_with("proof_try:")));
-        assert!(result
-            .trace
-            .events
-            .iter()
-            .any(|event| event.starts_with("target_elimination:resource:")));
-        assert!(!result
-            .trace
-            .events
-            .iter()
-            .any(|event| event == "target_elimination:no_target_eliminant"));
-    }
-
-    #[test]
-    fn solve_target_without_proof_bound_does_not_silently_use_default_six() {
-        let x = variable("X");
-        let t = variable("T");
-        let variables = vec![x.clone(), t.clone()];
-        let equations = vec![
-            polynomial(&variables, &[(1, vec![2, 0]), (-2, vec![0, 0])]),
-            polynomial(&variables, &[(-1, vec![1, 0]), (1, vec![0, 1])]),
-        ];
-        let options = SolverOptions {
-            resource_limits: ResourceLimits {
-                max_window_degree: Some(2),
                 max_proof_weight: None,
                 max_matrix_rows: None,
                 max_matrix_cols: None,
@@ -1162,10 +1371,10 @@ mod tests {
 
         let result = solve_target(problem(equations, variables, t), options);
 
-        assert_eq!(result.status, SolverStatus::FiniteResourceFailure);
-        assert!(result.cover.is_none());
-        assert!(result.certificate.is_none());
-        assert!(result
+        assert_eq!(result.status, SolverStatus::CertifiedCandidateCover);
+        let cover = result.cover.as_ref().unwrap();
+        assert_eq!(cover.support, uni(&variable("T"), &[0, 1]));
+        assert!(!result
             .trace
             .events
             .iter()
@@ -1174,7 +1383,44 @@ mod tests {
             .trace
             .events
             .iter()
-            .any(|event| event.starts_with("target_elimination:")));
+            .any(|event| event.starts_with("target_elimination:support")));
+        assert!(result
+            .trace
+            .events
+            .iter()
+            .any(|event| event.contains("support_power=9")));
+    }
+
+    #[test]
+    fn bounded_small_prefix_does_not_use_unbounded_radical_power() {
+        let t = variable("T");
+        let variables = vec![t.clone()];
+        let equations = vec![polynomial(&variables, &[(1, vec![9])])];
+        let options = SolverOptions {
+            resource_limits: ResourceLimits {
+                max_window_degree: Some(0),
+                max_proof_weight: Some(3),
+                max_matrix_rows: None,
+                max_matrix_cols: None,
+                max_candidate_count: None,
+            },
+            exact_image_mode: ExactImageMode::CoverOnly,
+        };
+
+        let result = solve_target(problem(equations, variables, t), options);
+
+        assert_ne!(result.status, SolverStatus::CertifiedCandidateCover);
+        assert!(result.cover.is_none());
+        assert!(!result
+            .trace
+            .events
+            .iter()
+            .any(|event| event.contains("support_power=9")));
+        assert!(result
+            .trace
+            .events
+            .iter()
+            .any(|event| event.starts_with("target_elimination:resource:")));
     }
 
     #[test]

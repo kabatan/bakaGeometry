@@ -105,3 +105,27 @@ fn solver_no_target_eliminant_is_design_gap_until_p15_replay() {
         .iter()
         .any(|event| event == "target_elimination:no_target_eliminant"));
 }
+
+#[test]
+fn unbounded_solver_no_target_eliminant_is_design_gap_until_p15_replay() {
+    let x = variable("X");
+    let t = variable("T");
+    let variables = vec![x.clone(), t.clone()];
+    let equations = vec![polynomial(&variables, &[(1, vec![1, 0])])];
+    let input = problem(equations, variables, t);
+    let mut unbounded_options = options();
+    unbounded_options.resource_limits.max_window_degree = None;
+    unbounded_options.resource_limits.max_proof_weight = None;
+
+    let result = solve_target(input, unbounded_options);
+
+    assert_eq!(result.status, SolverStatus::CertificateDesignGap);
+    assert!(result.cover.is_none());
+    assert!(result.exact_image.is_none());
+    assert!(result.certificate.is_none());
+    assert!(result
+        .trace
+        .events
+        .iter()
+        .any(|event| { event.starts_with("target_elimination:no_target_eliminant:budget=") }));
+}

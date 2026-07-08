@@ -45,43 +45,8 @@ impl FairProofSchedule {
     }
 
     fn fill_next_weight(&mut self) {
-        let weight = self.next_weight;
-        for multiplier_degree in 0..=weight {
-            for support_power in 1..=weight + 1 {
-                for guard_power in 0..=weight {
-                    if multiplier_degree + support_power + guard_power != weight + 1 {
-                        continue;
-                    }
-                    let tuple = ProofSearchTuple {
-                        multiplier_degree,
-                        support_power,
-                        guard_power,
-                    };
-                    if support_power == 1 && guard_power == 0 {
-                        self.queued.push_back(FairProofTrial {
-                            tuple: tuple.clone(),
-                            mode_kind: ProofModeKind::Ideal,
-                            mode: CertificateMode::Ideal,
-                        });
-                    }
-                    if guard_power == 0 {
-                        self.queued.push_back(FairProofTrial {
-                            tuple: tuple.clone(),
-                            mode_kind: ProofModeKind::Radical,
-                            mode: CertificateMode::Radical { support_power },
-                        });
-                    }
-                    self.queued.push_back(FairProofTrial {
-                        tuple,
-                        mode_kind: ProofModeKind::GuardedRadical,
-                        mode: CertificateMode::GuardedRadical {
-                            support_power,
-                            guard_power,
-                        },
-                    });
-                }
-            }
-        }
+        self.queued
+            .extend(fair_proof_trials_for_weight(self.next_weight));
         self.next_weight += 1;
     }
 }
@@ -135,7 +100,48 @@ pub(crate) fn bounded_certificate_mode_prefix(max_weight: usize) -> Vec<Certific
     modes
 }
 
-fn proof_tuple_weight(tuple: &ProofSearchTuple) -> usize {
+pub(crate) fn fair_proof_trials_for_weight(weight: usize) -> Vec<FairProofTrial> {
+    let mut trials = Vec::new();
+    for multiplier_degree in 0..=weight {
+        for support_power in 1..=weight + 1 {
+            for guard_power in 0..=weight {
+                if multiplier_degree + support_power + guard_power != weight + 1 {
+                    continue;
+                }
+                let tuple = ProofSearchTuple {
+                    multiplier_degree,
+                    support_power,
+                    guard_power,
+                };
+                if support_power == 1 && guard_power == 0 {
+                    trials.push(FairProofTrial {
+                        tuple: tuple.clone(),
+                        mode_kind: ProofModeKind::Ideal,
+                        mode: CertificateMode::Ideal,
+                    });
+                }
+                if guard_power == 0 {
+                    trials.push(FairProofTrial {
+                        tuple: tuple.clone(),
+                        mode_kind: ProofModeKind::Radical,
+                        mode: CertificateMode::Radical { support_power },
+                    });
+                }
+                trials.push(FairProofTrial {
+                    tuple,
+                    mode_kind: ProofModeKind::GuardedRadical,
+                    mode: CertificateMode::GuardedRadical {
+                        support_power,
+                        guard_power,
+                    },
+                });
+            }
+        }
+    }
+    trials
+}
+
+pub(crate) fn proof_tuple_weight(tuple: &ProofSearchTuple) -> usize {
     tuple.multiplier_degree + tuple.support_power + tuple.guard_power - 1
 }
 

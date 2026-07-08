@@ -38,6 +38,9 @@ This file names source classes for the CW-ARC-DTP-Q full implementation change. 
 | P5/P6 blocker fix Base Spec delta | `DERIVED` | Local admitted implementation delta for the P5/P6 blocker fix only | `P5_P6_BLOCKER_FIX_BASE_SPEC.md` |
 | P7-P13 reviewer constraint instruction | `EXACT` | User-required route closure review constraints before P7-P13 implementation | Conversation user instruction on 2026-07-08 |
 | P7-P13 route closure Base Spec delta | `DERIVED` | Local admitted implementation delta for P7-P13 route closure only | `P7_P13_ROUTE_CLOSURE_BASE_SPEC_DELTA.md` |
+| P1-P13 spec-gap fix instructions | `EXACT` | Required blockers before P14 may start | `C:\Users\bakat\Downloads\CW_ARC_DTP_Q_P1_P13_SPEC_GAP_FIX_INSTRUCTIONS.md`; SHA-256 `2D646EFA570B45365618B7506FEA925B8412D8686651231ED12810B111C5FE59` |
+| P1-P13 spec-gap fix Base Spec delta | `DERIVED` | Local admitted implementation delta for P1-P13 spec-gap blockers only | `P1_P13_SPEC_GAP_FIX_BASE_SPEC_DELTA.md` |
+| P1-P13 spec-gap fix evidence | `DERIVED` | Local implementation and test evidence for F1-F5 blockers only | `evidence/p1_p13_spec_gap_fix_evidence.md` |
 
 ## Authority Boundary
 

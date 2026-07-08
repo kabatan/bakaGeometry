@@ -8,6 +8,7 @@ pub struct CertifiedSystemQ {
     pub equations: Vec<PolynomialQ>,
     pub variables: Vec<Variable>,
     pub target: Variable,
+    pub semantic_guards: Vec<crate::GuardRecord>,
     pub guard_certificates: Vec<GuardCertificate>,
     pub replay: CompressionReplayCertificate,
 }
@@ -142,6 +143,7 @@ pub fn certified_system_from_problem(
         equations,
         variables: problem.variables.clone(),
         target: problem.target.clone(),
+        semantic_guards: problem.semantic_guards.clone(),
         guard_certificates,
         replay: CompressionReplayCertificate { steps },
     })
@@ -209,7 +211,10 @@ pub fn verify_compression_replay(
     if certified.variables != replayed.variables || certified.target != replayed.target {
         return Err(CompressionVerificationError::CertifiedFieldMismatch);
     }
-    if certified.equations != replayed.equations || certified.replay != replayed.replay {
+    if certified.equations != replayed.equations
+        || certified.semantic_guards != replayed.semantic_guards
+        || certified.replay != replayed.replay
+    {
         return Err(CompressionVerificationError::ReplayMismatch);
     }
     if certified.guard_certificates != replayed.guard_certificates {

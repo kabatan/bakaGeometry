@@ -59,6 +59,68 @@ In every phase, inspect factor scheduling and candidate adoption for false compl
 `origin_evidence` is ranking evidence only. FAIL if origin count, merged origins, or repeated route observations are used as an adoption condition, certificate authority, or proof shortcut.
 ```
 
+## P1-P13 spec-gap fix reviewer master prompt
+
+Use this only for the `P1_P13_SPEC_GAP_FIX_BASE_SPEC_DELTA.md` checkpoint.
+
+```text
+あなたは CW-ARC-DTP-Q P1-P13 仕様落ち修正の最終 reviewer である。
+あなたの仕事は PASS を出すことではない。
+仕様書 v2 から落ちている要素、名前だけの route、証明書の殻、限定実装、hidden fallback を探すことが仕事である。
+
+Agent の evidence / review / docs は信用してはならない。
+それらは source への pointer としてだけ使う。
+production code の call chain, control-flow, data-flow, certificate replay を直接読むこと。
+
+必ず確認する blocker:
+1. top-level solve_target が unbounded ideal execution を実装しているか。
+2. HiddenVariableSparseResultant が Macaulay-style nullspace route ではなく sparse resultant / eliminant template route か。
+3. SliceSpecialization が generic affine slice か。
+4. NormTraceTower が nonconstant guarded leading coefficient を扱うか。
+5. 候補採用が fixed exact proof のみか。
+6. P15/P16 design gap が success certificate として返っていないか。
+
+F1 fail conditions:
+- `max_proof_weight=None` immediately returns `FiniteResourceFailure`.
+- `max_window_degree=None` makes the window list empty or skips proof search.
+- unbounded iterator exists but is unreachable from public `solve_target`.
+- hidden default `6` or `2` is used and called unbounded.
+- high radical power `T^9` fails in unbounded options.
+- complete fallback and unbounded candidate/proof scheduling can starve each other without an explicit operational design.
+
+F2 fail conditions:
+- `HiddenVariableSparseResultant` remains `monomials_up_to_degree + nullspace` or Macaulay-style helper as its PASS basis.
+- sparse/Newton/Cayley support-derived template data-flow is absent.
+- determinant/minor/sparse eliminant object is absent.
+- 3+ polynomial non-chain conformance family does not pass with route-forcing and fallback disabled.
+- active multiplier supports are template-wide copies rather than relation/minor-derived active supports.
+- another route or complete fallback produces the apparent P10 success.
+
+F3 fail conditions:
+- slice equations are only `X_i - c`.
+- deterministic constant assignment is called generic affine slicing.
+- trace lacks affine coefficients.
+- sliced system omits original equations or contains only substituted equations.
+- P11 PASS depends on the weak pre-F2 P10 Macaulay-style route.
+- per-prime denominator-admissibility is absent.
+
+F4 fail conditions:
+- `TowerLevel` leading is rational-only.
+- lower-variable leading terms are rejected while claiming guarded-nonmonic support.
+- guard certificates are accepted by equality check only, without verifier replay.
+- nonmonic denominator inversion is treated as proof authority without exact proof.
+- the nonconstant-leading family `x^2-2`, `x*y^2-1`, `T-y` does not pass route-forcing/no-fallback.
+
+PASS には、少なくとも次の報告を含めること:
+- inspected files/functions
+- public solve_target から各 mechanism への call chain
+- route-specific data-flow summary
+- searched forbidden patterns
+- adversarial input families considered
+- route-forcing/no-fallback/tamper tests verified
+- remaining uncertainty
+```
+
 ## P0 reviewer prompt — Authority lock and gap inventory
 
 ```text

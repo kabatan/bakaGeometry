@@ -34,6 +34,7 @@ mod repair_multiple;
 mod repair_schur;
 mod residual;
 mod roots;
+mod solve_schedule;
 mod solver;
 mod trace;
 mod univariate;

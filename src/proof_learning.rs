@@ -24,16 +24,14 @@ pub(crate) fn learn_initial_proof_window(
         .collect::<Vec<_>>();
 
     for trace in traces {
-        let CandidateTrace::ModularWitness(witness) = trace else {
-            continue;
-        };
-        if supports.len() < witness.active_multiplier_supports.len() {
-            supports.resize_with(witness.active_multiplier_supports.len(), BTreeSet::new);
-        }
-        for (target_support, active_support) in
-            supports.iter_mut().zip(&witness.active_multiplier_supports)
-        {
-            target_support.extend(active_support.iter().cloned());
+        match trace {
+            CandidateTrace::ModularWitness(witness) => {
+                extend_with_active_supports(&mut supports, &witness.active_multiplier_supports);
+            }
+            CandidateTrace::SparseResultantWitness(witness) => {
+                extend_with_active_supports(&mut supports, &witness.active_multiplier_supports);
+            }
+            _ => {}
         }
     }
 
@@ -42,6 +40,18 @@ pub(crate) fn learn_initial_proof_window(
             .into_iter()
             .map(|support| support.into_iter().collect())
             .collect(),
+    }
+}
+
+fn extend_with_active_supports(
+    supports: &mut Vec<BTreeSet<Monomial>>,
+    active_multiplier_supports: &[Vec<Monomial>],
+) {
+    if supports.len() < active_multiplier_supports.len() {
+        supports.resize_with(active_multiplier_supports.len(), BTreeSet::new);
+    }
+    for (target_support, active_support) in supports.iter_mut().zip(active_multiplier_supports) {
+        target_support.extend(active_support.iter().cloned());
     }
 }
 
@@ -233,6 +243,7 @@ mod tests {
             equations: vec![polynomial(&variables, &[(1, vec![2, 0]), (-2, vec![0, 0])])],
             variables,
             target: t,
+            semantic_guards: Vec::new(),
             guard_certificates: Vec::new(),
             replay: CompressionReplayCertificate { steps: Vec::new() },
         };
@@ -281,6 +292,7 @@ mod tests {
             ],
             variables,
             target: t,
+            semantic_guards: Vec::new(),
             guard_certificates: Vec::new(),
             replay: CompressionReplayCertificate { steps: Vec::new() },
         };

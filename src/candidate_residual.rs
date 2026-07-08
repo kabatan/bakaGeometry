@@ -354,6 +354,7 @@ mod tests {
             equations,
             variables,
             target,
+            semantic_guards: Vec::new(),
             guard_certificates: Vec::new(),
             replay: CompressionReplayCertificate { steps: Vec::new() },
         }
