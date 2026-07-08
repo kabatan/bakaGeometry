@@ -18,6 +18,56 @@ pub struct UniPolynomialFp {
     pub coefficients: Vec<u64>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FactorizationResult {
+    pub status: FactorizationStatus,
+    pub squarefree_part: UniPolynomialQ,
+    pub factors: Vec<UniPolynomialQ>,
+    pub remaining: Option<UniPolynomialQ>,
+    pub failure: Option<FactorizationFailure>,
+    pub trace: FactorizationTrace,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FactorizationStatus {
+    Complete,
+    Partial,
+    ResourceFailure,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FactorizationFailure {
+    CoefficientHeightTooLarge,
+    DivisorEnumerationLimitExceeded,
+    ExactDivisionFailed,
+    InterpolationPointExhausted,
+    ProductReconstructionFailed,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct FactorizationTrace {
+    pub original_degree: Option<usize>,
+    pub squarefree_degree: Option<usize>,
+    pub searched_factor_degrees: Vec<usize>,
+    pub evaluated_points: usize,
+    pub divisor_enumerations: usize,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct FactorizationLimits {
+    pub max_divisor_enumerations: Option<usize>,
+    pub max_evaluation_abs: u64,
+}
+
+impl Default for FactorizationLimits {
+    fn default() -> Self {
+        Self {
+            max_divisor_enumerations: Some(200_000),
+            max_evaluation_abs: 100_000,
+        }
+    }
+}
+
 impl UniPolynomialFp {
     pub fn normalize(&mut self) {
         while self
@@ -163,33 +213,25 @@ impl UniPolynomialQ {
         }
     }
 
-    pub fn factor_squarefree_over_q(&self) -> Vec<Self> {
-        let mut remaining = self.squarefree_part().primitive_integer_normalized();
-        if remaining.is_zero() {
-            return Vec::new();
-        }
-        if remaining.degree().is_none_or(|degree| degree == 0) {
-            return vec![remaining];
-        }
+    pub fn factor_squarefree_over_q(&self) -> FactorizationResult {
+        self.factor_squarefree_over_q_with_limits(FactorizationLimits::default())
+    }
 
-        let mut factors = Vec::new();
-        while remaining.degree().is_some_and(|degree| degree > 1) {
-            let Some(root) = rational_root(&remaining) else {
-                break;
-            };
-            let factor = linear_factor_for_root(&remaining.variable, &root);
-            let (quotient, remainder) = remaining.div_rem(&factor);
-            if !remainder.is_zero() {
-                break;
-            }
-            factors.push(factor.primitive_integer_normalized());
-            remaining = quotient.primitive_integer_normalized();
-        }
+    pub fn factor_squarefree_over_q_with_divisor_limit(
+        &self,
+        max_divisor_enumerations: usize,
+    ) -> FactorizationResult {
+        self.factor_squarefree_over_q_with_limits(FactorizationLimits {
+            max_divisor_enumerations: Some(max_divisor_enumerations),
+            ..FactorizationLimits::default()
+        })
+    }
 
-        if !remaining.is_zero() && remaining.degree().is_some_and(|degree| degree > 0) {
-            factors.push(remaining.primitive_integer_normalized());
-        }
-        factors
+    pub fn factor_squarefree_over_q_with_limits(
+        &self,
+        limits: FactorizationLimits,
+    ) -> FactorizationResult {
+        factor_squarefree_over_q_with_limits(self, limits)
     }
 
     pub fn pow(&self, exponent: usize) -> Self {
@@ -339,57 +381,310 @@ impl UniPolynomialQ {
         result.normalize();
         result
     }
+
+    fn add(&self, rhs: &Self) -> Self {
+        assert_eq!(self.variable, rhs.variable);
+        let len = self.coefficients.len().max(rhs.coefficients.len());
+        let mut coefficients = vec![crate::arith::rational_zero(); len];
+        for (index, coefficient) in self.coefficients.iter().enumerate() {
+            coefficients[index] += coefficient.clone();
+        }
+        for (index, coefficient) in rhs.coefficients.iter().enumerate() {
+            coefficients[index] += coefficient.clone();
+        }
+        let mut result = Self {
+            variable: self.variable.clone(),
+            coefficients,
+        };
+        result.normalize();
+        result
+    }
 }
 
-fn rational_root(polynomial: &UniPolynomialQ) -> Option<Rational> {
-    let normalized = polynomial.primitive_integer_normalized();
-    let degree = normalized.degree()?;
-    if degree == 0 {
-        return None;
+fn factor_squarefree_over_q_with_limits(
+    polynomial: &UniPolynomialQ,
+    limits: FactorizationLimits,
+) -> FactorizationResult {
+    let squarefree_part = polynomial.squarefree_part().primitive_integer_normalized();
+    let mut trace = FactorizationTrace {
+        original_degree: polynomial.degree(),
+        squarefree_degree: squarefree_part.degree(),
+        searched_factor_degrees: Vec::new(),
+        evaluated_points: 0,
+        divisor_enumerations: 0,
+    };
+    if squarefree_part.is_zero() {
+        return FactorizationResult {
+            status: FactorizationStatus::Complete,
+            squarefree_part,
+            factors: Vec::new(),
+            remaining: None,
+            failure: None,
+            trace,
+        };
     }
-    let leading = normalized.coefficients[degree].numer().clone();
-    let constant = normalized
-        .coefficients
-        .first()
-        .map(|coefficient| coefficient.numer().clone())
-        .unwrap_or_else(BigInt::zero);
 
-    if constant.is_zero() {
-        return Some(BigRational::zero());
-    }
+    let mut factors = Vec::new();
+    let mut remaining = squarefree_part.clone();
 
-    let numerators = bounded_positive_divisors(&constant.abs())?;
-    let denominators = bounded_positive_divisors(&leading.abs())?;
-    for numerator in numerators {
-        for denominator in &denominators {
-            for sign in [1, -1] {
-                let signed = if sign == 1 {
-                    numerator.clone()
-                } else {
-                    -numerator.clone()
-                };
-                let candidate = BigRational::new(signed, denominator.clone());
-                if evaluate_univariate(&normalized, &candidate).is_zero() {
-                    return Some(candidate);
+    loop {
+        let Some(degree) = remaining.degree() else {
+            break;
+        };
+        if degree == 0 {
+            factors.push(remaining.primitive_integer_normalized());
+            break;
+        }
+
+        let mut found_factor = None;
+        for factor_degree in 1..=degree / 2 {
+            trace.searched_factor_degrees.push(factor_degree);
+            match find_factor_of_degree(&remaining, factor_degree, &limits, &mut trace) {
+                Ok(Some(factor)) => {
+                    found_factor = Some(factor);
+                    break;
+                }
+                Ok(None) => {}
+                Err(failure) => {
+                    return FactorizationResult {
+                        status: FactorizationStatus::ResourceFailure,
+                        squarefree_part,
+                        factors,
+                        remaining: Some(remaining.primitive_integer_normalized()),
+                        failure: Some(failure),
+                        trace,
+                    };
                 }
             }
         }
+
+        let Some(factor) = found_factor else {
+            factors.push(remaining.primitive_integer_normalized());
+            break;
+        };
+        let (quotient, remainder) = remaining.div_rem(&factor);
+        if !remainder.is_zero() || quotient.is_zero() {
+            return FactorizationResult {
+                status: FactorizationStatus::Partial,
+                squarefree_part,
+                factors,
+                remaining: Some(remaining.primitive_integer_normalized()),
+                failure: Some(FactorizationFailure::ExactDivisionFailed),
+                trace,
+            };
+        }
+        factors.push(factor.primitive_integer_normalized());
+        remaining = quotient.primitive_integer_normalized();
     }
-    None
+
+    let product = product_of_factors(&squarefree_part.variable, &factors);
+    if product != squarefree_part {
+        return FactorizationResult {
+            status: FactorizationStatus::Partial,
+            squarefree_part,
+            factors,
+            remaining: None,
+            failure: Some(FactorizationFailure::ProductReconstructionFailed),
+            trace,
+        };
+    }
+
+    FactorizationResult {
+        status: FactorizationStatus::Complete,
+        squarefree_part,
+        factors,
+        remaining: None,
+        failure: None,
+        trace,
+    }
 }
 
-fn bounded_positive_divisors(value: &BigInt) -> Option<Vec<BigInt>> {
-    let limit = value.to_u64()?;
-    if limit > 1_000_000 {
-        return None;
-    }
-    let mut divisors = Vec::new();
-    for candidate in 1..=limit {
-        if value % BigInt::from(candidate) == BigInt::zero() {
-            divisors.push(BigInt::from(candidate));
+fn find_factor_of_degree(
+    polynomial: &UniPolynomialQ,
+    factor_degree: usize,
+    limits: &FactorizationLimits,
+    trace: &mut FactorizationTrace,
+) -> Result<Option<UniPolynomialQ>, FactorizationFailure> {
+    let points = select_nonzero_evaluation_points(polynomial, factor_degree + 1, trace)?;
+    let divisor_lists = points
+        .iter()
+        .map(|(_, value)| signed_divisors(value, limits, trace))
+        .collect::<Result<Vec<_>, _>>()?;
+    search_divisor_assignments(
+        polynomial,
+        factor_degree,
+        &points,
+        &divisor_lists,
+        0,
+        &mut Vec::new(),
+        limits,
+        trace,
+    )
+}
+
+fn select_nonzero_evaluation_points(
+    polynomial: &UniPolynomialQ,
+    count: usize,
+    trace: &mut FactorizationTrace,
+) -> Result<Vec<(i64, BigInt)>, FactorizationFailure> {
+    let degree = polynomial.degree().unwrap_or(0);
+    let max_probe_count = degree
+        .saturating_mul(2)
+        .saturating_add(count.saturating_mul(4))
+        .saturating_add(16);
+    let mut points = Vec::new();
+    for index in 0..max_probe_count {
+        let point = integer_evaluation_point(index);
+        let value =
+            evaluate_univariate(polynomial, &BigRational::from_integer(BigInt::from(point)));
+        trace.evaluated_points += 1;
+        if value.is_zero() {
+            continue;
+        }
+        if value.denom() != &BigInt::one() {
+            return Err(FactorizationFailure::CoefficientHeightTooLarge);
+        }
+        points.push((point, value.numer().clone()));
+        if points.len() == count {
+            return Ok(points);
         }
     }
-    Some(divisors)
+    Err(FactorizationFailure::InterpolationPointExhausted)
+}
+
+fn integer_evaluation_point(index: usize) -> i64 {
+    if index == 0 {
+        0
+    } else {
+        let magnitude = index.div_ceil(2) as i64;
+        if index % 2 == 1 {
+            magnitude
+        } else {
+            -magnitude
+        }
+    }
+}
+
+fn signed_divisors(
+    value: &BigInt,
+    limits: &FactorizationLimits,
+    trace: &mut FactorizationTrace,
+) -> Result<Vec<BigInt>, FactorizationFailure> {
+    let abs = value.abs();
+    let limit = abs
+        .to_u64()
+        .ok_or(FactorizationFailure::CoefficientHeightTooLarge)?;
+    if limit > limits.max_evaluation_abs {
+        return Err(FactorizationFailure::CoefficientHeightTooLarge);
+    }
+
+    let mut divisors = Vec::new();
+    for candidate in 1..=limit {
+        let divisor = BigInt::from(candidate);
+        if &abs % &divisor == BigInt::zero() {
+            divisors.push(divisor.clone());
+            divisors.push(-divisor);
+        }
+    }
+    spend_divisor_budget(trace, limits, divisors.len())?;
+    Ok(divisors)
+}
+
+fn search_divisor_assignments(
+    polynomial: &UniPolynomialQ,
+    factor_degree: usize,
+    points: &[(i64, BigInt)],
+    divisor_lists: &[Vec<BigInt>],
+    index: usize,
+    current: &mut Vec<BigInt>,
+    limits: &FactorizationLimits,
+    trace: &mut FactorizationTrace,
+) -> Result<Option<UniPolynomialQ>, FactorizationFailure> {
+    if index == divisor_lists.len() {
+        spend_divisor_budget(trace, limits, 1)?;
+        let candidate = interpolate_polynomial(&polynomial.variable, points, current)
+            .primitive_integer_normalized();
+        if candidate.degree() != Some(factor_degree)
+            || candidate == polynomial.primitive_integer_normalized()
+        {
+            return Ok(None);
+        }
+        let (_, remainder) = polynomial.div_rem(&candidate);
+        if remainder.is_zero() {
+            return Ok(Some(candidate));
+        }
+        return Ok(None);
+    }
+
+    for divisor in &divisor_lists[index] {
+        current.push(divisor.clone());
+        if let Some(factor) = search_divisor_assignments(
+            polynomial,
+            factor_degree,
+            points,
+            divisor_lists,
+            index + 1,
+            current,
+            limits,
+            trace,
+        )? {
+            return Ok(Some(factor));
+        }
+        current.pop();
+    }
+    Ok(None)
+}
+
+fn spend_divisor_budget(
+    trace: &mut FactorizationTrace,
+    limits: &FactorizationLimits,
+    amount: usize,
+) -> Result<(), FactorizationFailure> {
+    trace.divisor_enumerations = trace.divisor_enumerations.saturating_add(amount);
+    if limits
+        .max_divisor_enumerations
+        .is_some_and(|max| trace.divisor_enumerations > max)
+    {
+        return Err(FactorizationFailure::DivisorEnumerationLimitExceeded);
+    }
+    Ok(())
+}
+
+fn interpolate_polynomial(
+    variable: &Variable,
+    points: &[(i64, BigInt)],
+    values: &[BigInt],
+) -> UniPolynomialQ {
+    let mut result = UniPolynomialQ::zero(variable.clone());
+    for (index, (point, _)) in points.iter().enumerate() {
+        let xi = BigInt::from(*point);
+        let mut basis = UniPolynomialQ::one(variable.clone());
+        let mut denominator = BigInt::one();
+        for (other_index, (other_point, _)) in points.iter().enumerate() {
+            if index == other_index {
+                continue;
+            }
+            let xj = BigInt::from(*other_point);
+            let linear = UniPolynomialQ {
+                variable: variable.clone(),
+                coefficients: vec![BigRational::from_integer(-xj.clone()), BigRational::one()],
+            };
+            basis = basis.mul(&linear);
+            denominator *= xi.clone() - xj;
+        }
+        let scale = BigRational::new(values[index].clone(), denominator);
+        result = result.add(&basis.shift_scale(0, &scale));
+    }
+    result
+}
+
+fn product_of_factors(variable: &Variable, factors: &[UniPolynomialQ]) -> UniPolynomialQ {
+    factors
+        .iter()
+        .fold(UniPolynomialQ::one(variable.clone()), |product, factor| {
+            product.mul(factor)
+        })
+        .primitive_integer_normalized()
 }
 
 fn evaluate_univariate(polynomial: &UniPolynomialQ, point: &Rational) -> Rational {
@@ -400,16 +695,4 @@ fn evaluate_univariate(polynomial: &UniPolynomialQ, point: &Rational) -> Rationa
         .fold(BigRational::zero(), |value, coefficient| {
             value * point.clone() + coefficient.clone()
         })
-}
-
-fn linear_factor_for_root(variable: &Variable, root: &Rational) -> UniPolynomialQ {
-    let mut factor = UniPolynomialQ {
-        variable: variable.clone(),
-        coefficients: vec![
-            -BigRational::from_integer(root.numer().clone()),
-            BigRational::from_integer(root.denom().clone()),
-        ],
-    };
-    factor.normalize();
-    factor.primitive_integer_normalized()
 }

@@ -286,18 +286,13 @@ fn verify_composite_target_certificate(
             }
         }
         CompositeRule::ComponentUnionLcm => {
-            let Some(source) = component_union_source else {
-                return reject("component union source missing");
-            };
-            if source.description.is_empty() {
-                return reject("component union source missing");
-            }
             for child in &children[1..] {
                 combined = combined.lcm(target_certificate_support(child));
             }
             if combined.primitive_integer_normalized() != support.primitive_integer_normalized() {
                 return reject("composite support mismatch");
             }
+            let _ = component_union_source;
             return design_gap(
                 "component union source replay requires P5/P16 replay-verifiable data",
             );

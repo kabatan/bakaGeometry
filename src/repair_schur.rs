@@ -51,7 +51,9 @@ pub(crate) fn localized_schur_repair(
     }
 
     let boundary_variables = boundary_variables(system, &scope);
-    let degree = limits.max_window_degree.unwrap_or(1);
+    let Some(degree) = limits.max_window_degree else {
+        return SchurRepairOutput::NoLocalScope;
+    };
     let boundary_support = boundary_monomials(system, &boundary_variables, degree);
     let local_membership =
         local_membership_equation(system, proof_window, &scope, &boundary_variables, degree);
@@ -452,5 +454,21 @@ mod tests {
         let output = localized_schur_repair(&system, &proof_window, &[obstruction], &limits);
 
         assert!(matches!(output, SchurRepairOutput::SupportInformation(_)));
+    }
+
+    #[test]
+    fn schur_repair_without_window_bound_does_not_use_hidden_capped_search() {
+        let (system, proof_window, obstruction) = local_system();
+        let limits = ResourceLimits {
+            max_window_degree: None,
+            max_proof_weight: None,
+            max_matrix_rows: None,
+            max_matrix_cols: None,
+            max_candidate_count: None,
+        };
+
+        let output = localized_schur_repair(&system, &proof_window, &[obstruction], &limits);
+
+        assert!(matches!(output, SchurRepairOutput::NoLocalScope));
     }
 }

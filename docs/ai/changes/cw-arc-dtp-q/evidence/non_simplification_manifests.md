@@ -37,6 +37,17 @@ toy
 phase
 ```
 
+## P5/P6 Blocker-Fix Shared Manifest
+
+- Production call chain: `solve_target` -> bounded proof-prefix scheduling from `src/proof_schedule.rs` -> `try_candidate_certificate` -> `prove_fixed_target`.
+- Controlling data-flow: `FairProofSchedule::unbounded()` is lazy; production solver uses only the explicitly bounded prefix when `max_proof_weight` is provided, and returns `FiniteResourceFailure` with `resource:unbounded_proof_requires_bound` when no proof bound is available after early empty-set certification.
+- Fallback/repair data-flow: complete fallback, early empty certification, low-degree multiple repair, and localized Schur repair require explicit `max_window_degree`; without it they fail closed instead of running a hidden capped search.
+- Factorization data-flow: `factor_squarefree_over_q` returns a status-bearing `FactorizationResult`; `factor_schedule` records the status through solver trace and does not treat partial/resource-limited factorization as complete.
+- Exact replay oracle: factor trials and multi-origin ranking never adopt candidates directly; every scheduled support must pass fixed exact proof and verifier replay.
+- Multi-origin data-flow: `TargetCandidate.origin_evidence` is merged only for equal primitive reconstructed supports; different supports remain distinct.
+- Route-forcing tests: `solve_target_without_proof_bound_does_not_silently_use_default_six`; `fallback_without_window_bound_is_resource_failure_not_hidden_capped_search`; `early_empty_without_window_bound_does_not_use_hidden_capped_search`; `low_degree_multiple_without_window_bound_does_not_use_hidden_capped_search`; `schur_repair_without_window_bound_does_not_use_hidden_capped_search`; `factorization_splits_product_of_irreducible_quadratics_without_rational_roots`; `factorization_reports_resource_failure_instead_of_false_complete_when_bounds_exceeded`; `same_reconstructed_support_from_two_origins_is_merged_and_ranked_by_origin_count`; `different_supports_from_different_origins_are_not_merged`; `origin_count_does_not_certify_candidate_without_exact_proof`.
+- Non-simplification notes: no hidden proof-weight default, no rational-root-only factorization, no false complete factorization status, and no origin-count certificate authority.
+
 ## DirectTargetEquation
 
 - Production call chain: `solve_target` -> `collect_candidate_routes` -> `DirectTargetEquationOracle::generate` -> `direct_target_equation_candidates` -> `try_candidate_certificate` -> `prove_fixed_target` -> `return_verified_cover`.

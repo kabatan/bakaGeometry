@@ -437,7 +437,7 @@ fn component_union_lcm_without_replay_source_is_design_gap() {
     });
     assert!(matches!(
         verify_certificate(problem, missing_source),
-        VerificationResult::Rejected { .. }
+        VerificationResult::CertificateDesignGap { .. }
     ));
 }
 

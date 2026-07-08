@@ -53,7 +53,7 @@ fn options() -> SolverOptions {
     SolverOptions {
         resource_limits: ResourceLimits {
             max_window_degree: Some(2),
-            max_proof_weight: None,
+            max_proof_weight: Some(2),
             max_matrix_rows: None,
             max_matrix_cols: None,
             max_candidate_count: None,

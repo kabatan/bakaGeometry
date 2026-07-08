@@ -31,7 +31,14 @@ pub(crate) fn complete_target_elimination_fallback(
     system: &CertifiedSystemQ,
     limits: &ResourceLimits,
 ) -> CompleteFallbackResult {
-    let max_degree = limits.max_window_degree.unwrap_or(2).max(1);
+    let Some(max_degree) = limits.max_window_degree.map(|degree| degree.max(1)) else {
+        return CompleteFallbackResult::ResourceFailure(CostTrace {
+            target_degree: 0,
+            multiplier_degree: 0,
+            matrix_rows: 0,
+            matrix_cols: 0,
+        });
+    };
     let mut last_cost = CostTrace {
         target_degree: 0,
         multiplier_degree: 0,
@@ -79,7 +86,7 @@ pub(crate) fn try_empty_admissible_set_certificate(
     system: &CertifiedSystemQ,
     limits: &ResourceLimits,
 ) -> Option<EmptyAdmissibleSetCertificate> {
-    let max_degree = limits.max_window_degree.unwrap_or(2).max(1);
+    let max_degree = limits.max_window_degree.map(|degree| degree.max(1))?;
     for multiplier_degree in 0..=max_degree {
         let proof_window = proof_window_for_degree(system, multiplier_degree);
         if let Some((certificate, _cost)) = certify_empty(system, &proof_window, multiplier_degree)
@@ -491,5 +498,41 @@ mod tests {
             ),
             VerificationResult::CertificateDesignGap { .. }
         ));
+    }
+
+    #[test]
+    fn fallback_without_window_bound_is_resource_failure_not_hidden_capped_search() {
+        let t = variable("T");
+        let variables = vec![t.clone()];
+        let equations = vec![PolynomialQ::one(variables.clone())];
+        let mut limits = limits();
+        limits.max_window_degree = None;
+
+        let result =
+            complete_target_elimination_fallback(&system(equations, variables, t), &limits);
+
+        assert!(matches!(
+            result,
+            CompleteFallbackResult::ResourceFailure(CostTrace {
+                target_degree: 0,
+                multiplier_degree: 0,
+                matrix_rows: 0,
+                matrix_cols: 0,
+            })
+        ));
+    }
+
+    #[test]
+    fn early_empty_without_window_bound_does_not_use_hidden_capped_search() {
+        let t = variable("T");
+        let variables = vec![t.clone()];
+        let equations = vec![PolynomialQ::one(variables.clone())];
+        let mut limits = limits();
+        limits.max_window_degree = None;
+
+        let certificate =
+            try_empty_admissible_set_certificate(&system(equations, variables, t), &limits);
+
+        assert!(certificate.is_none());
     }
 }

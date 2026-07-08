@@ -56,16 +56,16 @@ pub(crate) fn target_cyclic_krylov_candidates(
             continue;
         }
 
-        candidates.push(TargetCandidate {
-            support_mod_primes: Vec::new(),
-            reconstructed: Some(support),
-            origin: CandidateOrigin::TargetCyclicKrylov,
-            traces: vec![CandidateTrace::RouteWitness(RouteWitnessTrace {
+        candidates.push(TargetCandidate::from_origin(
+            Vec::new(),
+            Some(support),
+            CandidateOrigin::TargetCyclicKrylov,
+            vec![CandidateTrace::RouteWitness(RouteWitnessTrace {
                 origin: CandidateOrigin::TargetCyclicKrylov,
                 equation_indices: (0..system.equations.len()).collect(),
                 support_size: columns.len(),
             })],
-        });
+        ));
     }
 
     candidates

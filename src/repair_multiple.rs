@@ -4,9 +4,8 @@ use num_traits::Zero;
 
 use crate::compression::CertifiedSystemQ;
 use crate::linear_q::{solve_linear_system_q, LinearSolveQ};
-use crate::proof::{
-    fair_certificate_mode_schedule, prove_fixed_target, FixedProofInput, ProofFailure,
-};
+use crate::proof::{prove_fixed_target, FixedProofInput, ProofFailure};
+use crate::proof_schedule::bounded_certificate_mode_prefix;
 use crate::window::ProofWindow;
 use crate::{Monomial, PolynomialQ, Rational, ResourceLimits, TargetCertificate, UniPolynomialQ};
 
@@ -38,8 +37,13 @@ pub(crate) fn low_degree_multiple_repair(
         return Err(ProofFailure::InvalidInput);
     }
 
-    let max_degree = limits.max_window_degree.unwrap_or(2);
-    let modes = fair_certificate_mode_schedule(limits);
+    let Some(max_degree) = limits.max_window_degree else {
+        return Err(ProofFailure::NoCertificateFound);
+    };
+    let Some(max_proof_weight) = limits.max_proof_weight else {
+        return Err(ProofFailure::NoCertificateFound);
+    };
+    let modes = bounded_certificate_mode_prefix(max_proof_weight);
     for degree in 0..=max_degree {
         for anchor in 0..=degree {
             let Some(product) =
@@ -345,5 +349,32 @@ mod tests {
             verify_certificate(problem, SolverCertificate::TargetCover(certificate)),
             VerificationResult::Verified
         );
+    }
+
+    #[test]
+    fn low_degree_multiple_without_window_bound_does_not_use_hidden_capped_search() {
+        let t = variable("T");
+        let variables = vec![t.clone()];
+        let system = CertifiedSystemQ {
+            equations: vec![polynomial(&variables, &[(1, vec![1])])],
+            variables,
+            target: t.clone(),
+            guard_certificates: Vec::new(),
+            replay: CompressionReplayCertificate { steps: Vec::new() },
+        };
+        let proof_window = ProofWindow {
+            multiplier_supports: vec![vec![monomial(&[0])]],
+        };
+        let limits = ResourceLimits {
+            max_window_degree: None,
+            max_proof_weight: Some(1),
+            max_matrix_rows: None,
+            max_matrix_cols: None,
+            max_candidate_count: None,
+        };
+
+        let result = low_degree_multiple_repair(&system, &uni(&t, &[0, 1]), &proof_window, &limits);
+
+        assert!(matches!(result, Err(ProofFailure::NoCertificateFound)));
     }
 }

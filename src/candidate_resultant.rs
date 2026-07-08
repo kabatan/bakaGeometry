@@ -72,11 +72,11 @@ pub(crate) fn hidden_variable_sparse_resultant_candidates(
             if support.is_zero() {
                 continue;
             }
-            candidates.push(TargetCandidate {
-                support_mod_primes: vec![support],
-                reconstructed: None,
-                origin: CandidateOrigin::HiddenVariableSparseResultant,
-                traces: vec![
+            candidates.push(TargetCandidate::from_origin(
+                vec![support],
+                None,
+                CandidateOrigin::HiddenVariableSparseResultant,
+                vec![
                     CandidateTrace::RouteWitness(RouteWitnessTrace {
                         origin: CandidateOrigin::HiddenVariableSparseResultant,
                         equation_indices: (0..system.equations.len()).collect(),
@@ -89,7 +89,7 @@ pub(crate) fn hidden_variable_sparse_resultant_candidates(
                         residual_vectors: Vec::new(),
                     }),
                 ],
-            });
+            ));
         }
     }
 

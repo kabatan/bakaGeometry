@@ -28,6 +28,7 @@ mod polynomial;
 mod problem;
 mod proof;
 mod proof_learning;
+mod proof_schedule;
 mod rational_reconstruction;
 mod repair_multiple;
 mod repair_schur;
@@ -65,6 +66,9 @@ pub use problem::{GuardKind, GuardProvenance, GuardRecord, TargetProblemQ};
 pub use roots::{AlgebraicRealRoot, RationalInterval};
 pub use solver::{solve_target, CertifiedCandidateCover, SolverStatus, TargetSolveResult};
 pub use trace::SolverTrace;
-pub use univariate::UniPolynomialQ;
+pub use univariate::{
+    FactorizationFailure, FactorizationLimits, FactorizationResult, FactorizationStatus,
+    FactorizationTrace, UniPolynomialQ,
+};
 pub use variable::Variable;
 pub use verifier::{verify_certificate, VerificationResult};

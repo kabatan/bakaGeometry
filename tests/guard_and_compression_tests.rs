@@ -177,7 +177,7 @@ fn solver_certificate_from_normalized_system_verifies_against_original_problem()
         SolverOptions {
             resource_limits: ResourceLimits {
                 max_window_degree: Some(2),
-                max_proof_weight: None,
+                max_proof_weight: Some(2),
                 max_matrix_rows: None,
                 max_matrix_cols: None,
                 max_candidate_count: None,

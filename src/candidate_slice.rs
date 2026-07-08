@@ -69,11 +69,11 @@ pub(crate) fn slice_specialization_candidates(
                 if support.is_zero() {
                     continue;
                 }
-                candidates.push(TargetCandidate {
-                    support_mod_primes: vec![support],
-                    reconstructed: None,
-                    origin: CandidateOrigin::SliceSpecialization,
-                    traces: vec![CandidateTrace::SliceWitness(SliceWitnessTrace {
+                candidates.push(TargetCandidate::from_origin(
+                    vec![support],
+                    None,
+                    CandidateOrigin::SliceSpecialization,
+                    vec![CandidateTrace::SliceWitness(SliceWitnessTrace {
                         prime: *prime,
                         assignments: assignments
                             .iter()
@@ -85,7 +85,7 @@ pub(crate) fn slice_specialization_candidates(
                         equation_index,
                         relation_coefficients: normalized,
                     })],
-                });
+                ));
             }
         }
     }

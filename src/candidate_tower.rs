@@ -66,16 +66,16 @@ pub(crate) fn norm_trace_tower_candidates(system: &CertifiedSystemQ) -> Vec<Targ
         .collect::<Vec<_>>();
     equation_indices.push(target_equation);
 
-    vec![TargetCandidate {
-        support_mod_primes: Vec::new(),
-        reconstructed: Some(support),
-        origin: CandidateOrigin::NormTraceTower,
-        traces: vec![CandidateTrace::RouteWitness(RouteWitnessTrace {
+    vec![TargetCandidate::from_origin(
+        Vec::new(),
+        Some(support),
+        CandidateOrigin::NormTraceTower,
+        vec![CandidateTrace::RouteWitness(RouteWitnessTrace {
             origin: CandidateOrigin::NormTraceTower,
             equation_indices,
             support_size: basis.len(),
         })],
-    }]
+    )]
 }
 
 fn target_expression(system: &CertifiedSystemQ) -> Option<(usize, PolynomialQ)> {

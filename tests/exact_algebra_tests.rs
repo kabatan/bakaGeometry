@@ -1,6 +1,9 @@
 use std::panic;
 
-use geosolver_core::{Monomial, PolynomialQ, Rational, UniPolynomialQ, Variable};
+use geosolver_core::{
+    FactorizationFailure, FactorizationStatus, Monomial, PolynomialQ, Rational, UniPolynomialQ,
+    Variable,
+};
 use num_bigint::BigInt;
 use num_rational::BigRational;
 
@@ -25,6 +28,26 @@ fn uni(variable: &Variable, coefficients: &[i64]) -> UniPolynomialQ {
     };
     polynomial.normalize();
     polynomial
+}
+
+fn multiply_univariate(left: &UniPolynomialQ, right: &UniPolynomialQ) -> UniPolynomialQ {
+    assert_eq!(left.variable, right.variable);
+    if left.is_zero() || right.is_zero() {
+        return UniPolynomialQ::zero(left.variable.clone());
+    }
+    let mut coefficients = vec![int(0); left.coefficients.len() + right.coefficients.len() - 1];
+    for (left_degree, left_coefficient) in left.coefficients.iter().enumerate() {
+        for (right_degree, right_coefficient) in right.coefficients.iter().enumerate() {
+            coefficients[left_degree + right_degree] +=
+                left_coefficient.clone() * right_coefficient.clone();
+        }
+    }
+    let mut product = UniPolynomialQ {
+        variable: left.variable.clone(),
+        coefficients,
+    };
+    product.normalize();
+    product.primitive_integer_normalized()
 }
 
 #[test]
@@ -122,10 +145,55 @@ fn squarefree_factorization_splits_conformance_family() {
     let t = var("T");
     let polynomial = uni(&t, &[-6, 11, -6, 1]);
 
-    let factors = polynomial.factor_squarefree_over_q();
+    let result = polynomial.factor_squarefree_over_q();
 
+    assert_eq!(result.status, FactorizationStatus::Complete);
     assert_eq!(
-        factors,
+        result.factors,
         vec![uni(&t, &[-1, 1]), uni(&t, &[-2, 1]), uni(&t, &[-3, 1])]
     );
+}
+
+#[test]
+fn factorization_splits_product_of_irreducible_quadratics_without_rational_roots() {
+    let t = var("T");
+    let polynomial = uni(&t, &[2, 0, 3, 0, 1]);
+
+    let result = polynomial.factor_squarefree_over_q();
+
+    assert_eq!(result.status, FactorizationStatus::Complete);
+    assert!(result.factors.contains(&uni(&t, &[1, 0, 1])));
+    assert!(result.factors.contains(&uni(&t, &[2, 0, 1])));
+}
+
+#[test]
+fn factorization_reports_resource_failure_instead_of_false_complete_when_bounds_exceeded() {
+    let t = var("T");
+    let polynomial = uni(&t, &[2, 0, 3, 0, 1]);
+
+    let result = polynomial.factor_squarefree_over_q_with_divisor_limit(1);
+
+    assert_eq!(result.status, FactorizationStatus::ResourceFailure);
+    assert_eq!(
+        result.failure,
+        Some(FactorizationFailure::DivisorEnumerationLimitExceeded)
+    );
+    assert_ne!(result.status, FactorizationStatus::Complete);
+}
+
+#[test]
+fn factorization_product_reconstructs_original_squarefree_part() {
+    let t = var("T");
+    let polynomial = uni(&t, &[2, 0, 3, 0, 1]);
+
+    let result = polynomial.factor_squarefree_over_q();
+    let product = result
+        .factors
+        .iter()
+        .fold(UniPolynomialQ::one(t), |accumulator, factor| {
+            multiply_univariate(&accumulator, factor)
+        });
+
+    assert_eq!(result.status, FactorizationStatus::Complete);
+    assert_eq!(product, result.squarefree_part);
 }

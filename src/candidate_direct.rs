@@ -27,12 +27,12 @@ pub(crate) fn direct_target_equation_candidates(system: &CertifiedSystemQ) -> Ve
             let reconstructed = equation
                 .to_univariate_in(&system.target)?
                 .primitive_integer_normalized();
-            (!reconstructed.is_zero()).then_some(TargetCandidate {
-                support_mod_primes: Vec::new(),
-                reconstructed: Some(reconstructed),
-                origin: CandidateOrigin::DirectTargetEquation,
-                traces: vec![CandidateTrace::DirectEquation { equation_index }],
-            })
+            (!reconstructed.is_zero()).then_some(TargetCandidate::from_origin(
+                Vec::new(),
+                Some(reconstructed),
+                CandidateOrigin::DirectTargetEquation,
+                vec![CandidateTrace::DirectEquation { equation_index }],
+            ))
         })
         .collect()
 }

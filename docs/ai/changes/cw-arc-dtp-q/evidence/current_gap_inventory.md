@@ -1,6 +1,6 @@
 # Current Gap Inventory
 
-Status: P0 evidence plus P1-P6 checkpoint tracking; P1-P6 scoped reviews passed.
+Status: P0 evidence plus P1-P6 checkpoint tracking; P5/P6 blocker-fix local evidence added.
 Authority: evidence only. The V3 Base Spec and production source control correctness.
 
 Purpose: quarantine the current implementation against CW-ARC-DTP-Q Full Implementation v3. Every listed production gap is a `replace` target unless a later reviewer confirms full conformance from production data-flow.
@@ -15,9 +15,12 @@ semantic_guards: Vec::new()
 classify_real_fibers / Incomplete
 complete_target_elimination_fallback
 max_window_degree.unwrap_or
+max_proof_weight.unwrap_or(6)
 NoTargetEliminant monomial ideal special case
 reconstruct_from_modular_support / first prime
 factor_schedule returning clone only
+factor_squarefree_over_q returns Vec only with no status
+rank uses candidate.origin enum order as origin-count substitute
 localized_schur_repair returning SupportInformation only
 ExactTargetImage unhandled
 TODO / unimplemented / not available / Unsupported / normal-path ImplementationBug
@@ -78,7 +81,8 @@ Impact:
 - Violates V3 G9 and P15 for the fallback path, and leaves route/repair phases dependent on bounded-window defaults until their V3 exact replacements land. A bounded search must not be named or treated as complete target elimination.
 
 Disposition:
-- `replace` fallback behavior through P14 exact elimination substrate and P15 complete fallback closure. Replace non-fallback bounded repair/search defaults in their owning phases, including P7/P13, rather than using the default degree as proof of route completeness.
+- P5/P6 blocker fix removed hidden proof/window defaults from proof scheduling, solver integration, fallback empty/support search, low-degree multiple repair, and localized Schur repair. `solve_target` now fail-closes with `resource:unbounded_proof_requires_bound` when no explicit proof bound exists after early empty-set certification.
+- `replace` fallback behavior through P14 exact elimination substrate and P15 complete fallback closure. Bounded fallback/repair behavior remains bounded by explicit caller limits and must not be used as proof of route completeness.
 
 ### GAP-005 — no-target-eliminant verifier is monomial-only / design-gap behavior
 
@@ -103,16 +107,27 @@ Impact:
 Disposition:
 - P6 checkpoint implementation keeps single-prime modular candidates modular-only, uses CRT plus rational reconstruction for multi-prime candidates, and preserves duplicate-prime alternatives while still forming distinct-prime reconstruction combinations. Scoped P4-P6 spec, quality, and boundary reviews passed on 2026-07-08.
 
-### GAP-007 — factor schedule is clone-only
+### GAP-007 — factor schedule was clone-only
 
 Finding:
-- `src/normalize.rs` `factor_schedule` returns `vec![candidate.clone()]`.
+- Earlier P6 checkpoint code still allowed too-weak factor scheduling/factorization semantics relative to the blocker source.
 
 Impact:
-- Violates V3 P6 final factor schedule requirements.
+- Violated the P5/P6 blocker requirement for status-bearing factorization, exact Q factor search beyond rational roots, and no silent `[original]` completion under partial/resource-limited factorization.
 
 Disposition:
-- P6 checkpoint implementation replaces clone-only scheduling with exact Q factor trials plus the original candidate, with reducible-candidate tests. Scoped P4-P6 spec, quality, and boundary reviews passed on 2026-07-08.
+- P5/P6 blocker fix replaced `factor_squarefree_over_q` with `FactorizationResult` carrying `Complete`, `Partial`, or `ResourceFailure`, exact division/product reconstruction checks, and Kronecker-style Q factor search. New tests cover splitting `(T^2+1)(T^2+2)`, product reconstruction, and resource failure instead of false completion.
+
+### GAP-007A — factor adoption requires fixed exact proof
+
+Finding:
+- Factorization and factor schedule are candidate-trial data-flow only.
+
+Impact:
+- Any factor adopted without its own fixed exact certificate would violate the P5/P6 blocker source.
+
+Disposition:
+- Current solver sends every scheduled factor candidate through `try_candidate_certificate` and fixed exact proof. `origin_count_does_not_certify_candidate_without_exact_proof` covers the non-adoption boundary for evidence-only ranking inputs.
 
 ### GAP-008 — localized Schur has support-information-only production path
 
@@ -209,6 +224,17 @@ Impact:
 Disposition:
 - Current verifier returns `CertificateDesignGap` for description-only `ComponentUnionLcm` after support checking. Replace with replay-verifiable source data and replay verification in the owning later certificate phase.
 
+### GAP-016 — multi-origin evidence was not aggregated
+
+Finding:
+- Earlier P6 checkpoint ranking used `candidate.origin` enum order and did not carry a merged origin-evidence set for same-support candidates.
+
+Impact:
+- Violated the P5/P6 blocker requirement that same primitive reconstructed support from multiple origins be aggregated, and that origin count affect only trial order.
+
+Disposition:
+- P5/P6 blocker fix adds `TargetCandidate.origin_evidence`, merges same primitive reconstructed support across origins, ranks by origin count only after exact/reconstructed status, degree, and prime count, and keeps origin count non-certifying.
+
 ## Test-only / documentation hits
 
 - `Unsupported` and `TODO` hits found in `tests/anti_simplification_static_tests.rs` are anti-pattern test fixtures, not production behavior.
@@ -216,4 +242,4 @@ Disposition:
 
 ## Current Claim Ceiling
 
-This inventory supports only the claim that V3 authority has been imported, P0 admission passed, P1-P6 checkpoint work was implemented and reviewed, and the current implementation still has known replacement targets for later phases. It does not claim final V3 completion.
+This inventory supports only the claim that V3 authority has been imported, P0 admission passed, P1-P6 checkpoint work plus the local P5/P6 blocker fix were implemented with executable evidence, and the current implementation still has known replacement targets for later phases. It does not claim final V3 completion.

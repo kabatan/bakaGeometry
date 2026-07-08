@@ -101,17 +101,17 @@ pub fn residual_cyclic_candidates(
                 continue;
             };
 
-            candidates.push(TargetCandidate {
-                support_mod_primes: vec![support],
-                reconstructed: None,
-                origin: CandidateOrigin::ResidualCyclic,
-                traces: vec![CandidateTrace::ModularWitness(ModularWitnessTrace {
+            candidates.push(TargetCandidate::from_origin(
+                vec![support],
+                None,
+                CandidateOrigin::ResidualCyclic,
+                vec![CandidateTrace::ModularWitness(ModularWitnessTrace {
                     prime: *prime,
                     active_multiplier_supports,
                     relation_coefficients: coefficients,
                     residual_vectors: residuals.clone(),
                 })],
-            });
+            ));
         }
     }
 

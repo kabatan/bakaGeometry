@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use crate::univariate::UniPolynomialFp;
 use crate::window::CertificateWindow;
 use crate::{compression::CertifiedSystemQ, Monomial, UniPolynomialQ};
@@ -15,7 +17,25 @@ pub struct TargetCandidate {
     pub support_mod_primes: Vec<UniPolynomialFp>,
     pub reconstructed: Option<UniPolynomialQ>,
     pub origin: CandidateOrigin,
+    pub origin_evidence: BTreeSet<CandidateOrigin>,
     pub traces: Vec<CandidateTrace>,
+}
+
+impl TargetCandidate {
+    pub(crate) fn from_origin(
+        support_mod_primes: Vec<UniPolynomialFp>,
+        reconstructed: Option<UniPolynomialQ>,
+        origin: CandidateOrigin,
+        traces: Vec<CandidateTrace>,
+    ) -> Self {
+        Self {
+            support_mod_primes,
+            reconstructed,
+            origin,
+            origin_evidence: BTreeSet::from([origin]),
+            traces,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]

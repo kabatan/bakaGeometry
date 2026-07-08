@@ -17,12 +17,11 @@ use crate::fallback_elimination::{
     CompleteFallbackResult,
 };
 use crate::normalize::{factor_schedule, normalize_candidates, rank_candidates};
-use crate::proof::{
-    fair_proof_schedule, prove_fixed_target, CertificateMode, FixedProofInput, ProofFailure,
-};
+use crate::proof::{prove_fixed_target, CertificateMode, FixedProofInput, ProofFailure};
 use crate::proof_learning::{
     expand_by_obstruction_predecessors, expand_by_total_degree, learn_initial_proof_window,
 };
+use crate::proof_schedule::{bounded_fair_proof_prefix, certificate_mode_for_trial};
 use crate::repair_multiple::low_degree_multiple_repair;
 use crate::repair_schur::{localized_schur_repair, SchurRepairOutput};
 use crate::roots::isolate_real_roots_squarefree;
@@ -113,9 +112,15 @@ fn solve_target_with_route_control(
         };
     }
 
+    if options.resource_limits.max_proof_weight.is_none() {
+        trace
+            .events
+            .push("resource:unbounded_proof_requires_bound".to_string());
+        return finite_resource_failure(trace);
+    }
+
     let dag = build_target_dependency_dag(&system);
-    let effective_window_limits = effective_window_limits(&options.resource_limits);
-    let bounded_windows = plan_certificate_windows(&system, &dag, &effective_window_limits);
+    let bounded_windows = plan_certificate_windows(&system, &dag, &options.resource_limits);
     let window_source: Box<dyn Iterator<Item = CertificateWindow> + '_> =
         Box::new(bounded_windows.into_iter());
     let candidate_limit = options
@@ -159,13 +164,15 @@ fn solve_target_with_route_control(
             candidate_count += 1;
             trace.events.push(candidate_trace_event(&candidate));
             if candidate.reconstructed.is_some() {
-                for proof_candidate in factor_schedule(&candidate) {
+                let factor_trials = factor_schedule(&candidate);
+                trace.events.push(factorization_trace_event(&factor_trials));
+                for proof_candidate in factor_trials.candidates {
                     trace.events.push(proof_try_trace_event(&proof_candidate));
                     if let Some(certificate) = try_candidate_certificate(
                         &system,
                         &window,
                         &proof_candidate,
-                        &effective_window_limits,
+                        &options.resource_limits,
                         &mut collected_obstructions,
                         &mut last_proof_window,
                         &mut trace,
@@ -300,14 +307,6 @@ fn window_exceeds_limits(window: &CertificateWindow, limits: &ResourceLimits) ->
         })
 }
 
-fn effective_window_limits(limits: &ResourceLimits) -> ResourceLimits {
-    let mut effective = limits.clone();
-    if effective.max_window_degree.is_none() {
-        effective.max_window_degree = Some(effective.max_proof_weight.unwrap_or(6));
-    }
-    effective
-}
-
 #[cfg(test)]
 pub(crate) fn solve_target_for_test(
     problem: TargetProblemQ,
@@ -342,14 +341,16 @@ fn try_candidate_certificate(
     let proof_window = learn_initial_proof_window(window, &candidate.traces);
     *last_proof_window = Some(proof_window.clone());
 
-    for step in fair_proof_schedule(limits) {
-        let scheduled_window = expand_by_total_degree(system, &proof_window, step.support_degree);
+    let max_weight = limits.max_proof_weight?;
+    for trial in bounded_fair_proof_prefix(max_weight) {
+        let scheduled_window =
+            expand_by_total_degree(system, &proof_window, trial.tuple.multiplier_degree);
         *last_proof_window = Some(scheduled_window.clone());
         if let Some(certificate) = try_fixed_certificate(
             system,
             support,
             &scheduled_window,
-            step.mode,
+            certificate_mode_for_trial(&trial),
             limits,
             collected_obstructions,
             trace,
@@ -707,17 +708,29 @@ fn origin_enabled(
 
 fn candidate_trace_event(candidate: &TargetCandidate) -> String {
     format!(
-        "candidate:{:?}:degree={}",
+        "candidate:{:?}:degree={}:origins={}",
         candidate.origin,
-        candidate_degree(candidate)
+        candidate_degree(candidate),
+        candidate.origin_evidence.len()
     )
 }
 
 fn proof_try_trace_event(candidate: &TargetCandidate) -> String {
     format!(
-        "proof_try:{:?}:degree={}",
+        "proof_try:{:?}:degree={}:origins={}",
         candidate.origin,
-        candidate_degree(candidate)
+        candidate_degree(candidate),
+        candidate.origin_evidence.len()
+    )
+}
+
+fn factorization_trace_event(schedule: &crate::normalize::FactorTrialSchedule) -> String {
+    format!(
+        "factorization:{:?}:searched_degrees={}:divisors={}:failure={:?}",
+        schedule.status,
+        schedule.trace.searched_factor_degrees.len(),
+        schedule.trace.divisor_enumerations,
+        schedule.failure
     )
 }
 
@@ -762,10 +775,14 @@ pub(crate) fn collect_candidates_for_test(
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeSet;
+
     use num_bigint::BigInt;
     use num_rational::BigRational;
 
     use super::*;
+    use crate::candidates::CandidateTrace;
+    use crate::window::make_row_closed_certificate_window;
     use crate::{
         verify_certificate, ExactIdentity, ExactIdentityKind, GuardRecord, Monomial, PolynomialQ,
         Rational, Variable, VerificationResult,
@@ -909,14 +926,14 @@ mod tests {
     }
 
     #[test]
-    fn unbounded_window_search_resource_failure_does_not_reach_fallback() {
+    fn bounded_window_resource_failure_does_not_reach_fallback() {
         let x = variable("X");
         let t = variable("T");
         let variables = vec![x.clone(), t.clone()];
         let equations = vec![polynomial(&variables, &[(1, vec![1, 0])])];
         let options = SolverOptions {
             resource_limits: ResourceLimits {
-                max_window_degree: None,
+                max_window_degree: Some(1),
                 max_proof_weight: Some(1),
                 max_matrix_rows: Some(0),
                 max_matrix_cols: None,
@@ -943,7 +960,7 @@ mod tests {
     }
 
     #[test]
-    fn max_window_degree_none_uses_fair_prefix_then_reaches_fallback() {
+    fn max_window_degree_none_does_not_insert_hidden_default_window_bound() {
         let x = variable("X");
         let t = variable("T");
         let variables = vec![x.clone(), t.clone()];
@@ -961,13 +978,111 @@ mod tests {
 
         let result = solve_target(problem(equations, variables, t), options);
 
-        assert_eq!(result.status, SolverStatus::CertificateDesignGap);
+        assert_eq!(result.status, SolverStatus::NoVerifiedTargetCertificate);
+        assert!(result.cover.is_none());
+        assert!(result.certificate.is_none());
+        assert!(!result
+            .trace
+            .events
+            .iter()
+            .any(|event| event.starts_with("window:")));
+        assert!(!result
+            .trace
+            .events
+            .iter()
+            .any(|event| event.starts_with("proof_try:")));
+        assert!(result
+            .trace
+            .events
+            .iter()
+            .any(|event| event.starts_with("target_elimination:resource:")));
+        assert!(!result
+            .trace
+            .events
+            .iter()
+            .any(|event| event == "target_elimination:no_target_eliminant"));
+    }
+
+    #[test]
+    fn solve_target_without_proof_bound_does_not_silently_use_default_six() {
+        let x = variable("X");
+        let t = variable("T");
+        let variables = vec![x.clone(), t.clone()];
+        let equations = vec![
+            polynomial(&variables, &[(1, vec![2, 0]), (-2, vec![0, 0])]),
+            polynomial(&variables, &[(-1, vec![1, 0]), (1, vec![0, 1])]),
+        ];
+        let options = SolverOptions {
+            resource_limits: ResourceLimits {
+                max_window_degree: Some(2),
+                max_proof_weight: None,
+                max_matrix_rows: None,
+                max_matrix_cols: None,
+                max_candidate_count: None,
+            },
+            exact_image_mode: ExactImageMode::CoverOnly,
+        };
+
+        let result = solve_target(problem(equations, variables, t), options);
+
+        assert_eq!(result.status, SolverStatus::FiniteResourceFailure);
         assert!(result.cover.is_none());
         assert!(result.certificate.is_none());
         assert!(result
             .trace
             .events
             .iter()
-            .any(|event| event == "target_elimination:no_target_eliminant"));
+            .any(|event| event == "resource:unbounded_proof_requires_bound"));
+        assert!(!result
+            .trace
+            .events
+            .iter()
+            .any(|event| event.starts_with("target_elimination:")));
+    }
+
+    #[test]
+    fn origin_count_does_not_certify_candidate_without_exact_proof() {
+        let x = variable("X");
+        let t = variable("T");
+        let variables = vec![x.clone(), t.clone()];
+        let input = problem(
+            vec![polynomial(&variables, &[(1, vec![1, 0])])],
+            variables.clone(),
+            t.clone(),
+        );
+        let system = certified_system_from_problem(&input).unwrap();
+        let window = make_row_closed_certificate_window(&system, 1, vec![vec![monomial(&[0, 0])]]);
+        let candidate = TargetCandidate {
+            support_mod_primes: Vec::new(),
+            reconstructed: Some(uni(&t, &[-1, 1])),
+            origin: CandidateOrigin::DirectTargetEquation,
+            origin_evidence: BTreeSet::from([
+                CandidateOrigin::DirectTargetEquation,
+                CandidateOrigin::NormTraceTower,
+            ]),
+            traces: vec![CandidateTrace::DirectEquation { equation_index: 0 }],
+        };
+        let limits = ResourceLimits {
+            max_window_degree: Some(1),
+            max_proof_weight: Some(1),
+            max_matrix_rows: None,
+            max_matrix_cols: None,
+            max_candidate_count: None,
+        };
+        let mut collected_obstructions = Vec::new();
+        let mut last_proof_window = None;
+        let mut trace = SolverTrace::default();
+
+        let certificate = try_candidate_certificate(
+            &system,
+            &window,
+            &candidate,
+            &limits,
+            &mut collected_obstructions,
+            &mut last_proof_window,
+            &mut trace,
+        );
+
+        assert!(certificate.is_none());
     }
 }

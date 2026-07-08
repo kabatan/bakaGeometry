@@ -9,7 +9,7 @@ use crate::rational_reconstruction::{
     reconstruct_univariate_q_from_modular, RationalReconstructionBounds,
 };
 use crate::univariate::UniPolynomialFp;
-use crate::UniPolynomialQ;
+use crate::{FactorizationFailure, FactorizationStatus, FactorizationTrace, UniPolynomialQ};
 
 #[cfg(test)]
 pub(crate) fn normalize_candidate(candidate: TargetCandidate) -> Option<TargetCandidate> {
@@ -17,6 +17,9 @@ pub(crate) fn normalize_candidate(candidate: TargetCandidate) -> Option<TargetCa
 }
 
 fn prepare_candidate(mut candidate: TargetCandidate) -> Option<TargetCandidate> {
+    if candidate.origin_evidence.is_empty() {
+        candidate.origin_evidence.insert(candidate.origin);
+    }
     candidate.support_mod_primes = candidate
         .support_mod_primes
         .into_iter()
@@ -50,10 +53,11 @@ pub(crate) fn normalize_candidates(candidates: Vec<TargetCandidate>) -> Vec<Targ
         .into_iter()
         .filter_map(prepare_candidate)
         .collect::<Vec<_>>();
-    merge_modular_candidates(prepared)
+    let finished = merge_modular_candidates(prepared)
         .into_iter()
         .filter_map(finish_normalized_candidate)
-        .collect()
+        .collect::<Vec<_>>();
+    merge_equivalent_candidates(finished)
 }
 
 pub(crate) fn rank_candidates(mut candidates: Vec<TargetCandidate>) -> Vec<TargetCandidate> {
@@ -61,39 +65,57 @@ pub(crate) fn rank_candidates(mut candidates: Vec<TargetCandidate>) -> Vec<Targe
     candidates
 }
 
-pub(crate) fn factor_schedule(candidate: &TargetCandidate) -> Vec<TargetCandidate> {
+#[derive(Clone, Debug)]
+pub(crate) struct FactorTrialSchedule {
+    pub candidates: Vec<TargetCandidate>,
+    pub status: FactorizationStatus,
+    pub failure: Option<FactorizationFailure>,
+    pub trace: FactorizationTrace,
+}
+
+pub(crate) fn factor_schedule(candidate: &TargetCandidate) -> FactorTrialSchedule {
     let Some(reconstructed) = &candidate.reconstructed else {
-        let mut scheduled = Vec::new();
-        scheduled.push(candidate.clone());
-        return scheduled;
+        return FactorTrialSchedule {
+            candidates: vec![candidate.clone()],
+            status: FactorizationStatus::Complete,
+            failure: None,
+            trace: FactorizationTrace::default(),
+        };
     };
     let original = reconstructed.primitive_integer_normalized();
+    let factorization = original.factor_squarefree_over_q();
     let mut scheduled = Vec::new();
-    for factor in original.factor_squarefree_over_q() {
-        let factor = factor.primitive_integer_normalized();
-        if factor.is_zero()
-            || factor == original
-            || scheduled.iter().any(|candidate: &TargetCandidate| {
-                candidate.reconstructed.as_ref() == Some(&factor)
-            })
-        {
-            continue;
+    if factorization.status != FactorizationStatus::ResourceFailure {
+        for factor in &factorization.factors {
+            let factor = factor.primitive_integer_normalized();
+            if factor.is_zero()
+                || factor == original
+                || scheduled.iter().any(|candidate: &TargetCandidate| {
+                    candidate.reconstructed.as_ref() == Some(&factor)
+                })
+            {
+                continue;
+            }
+            let mut factor_candidate = candidate.clone();
+            factor_candidate.support_mod_primes.clear();
+            factor_candidate.reconstructed = Some(factor);
+            scheduled.push(factor_candidate);
         }
-        let mut factor_candidate = candidate.clone();
-        factor_candidate.support_mod_primes.clear();
-        factor_candidate.reconstructed = Some(factor);
-        scheduled.push(factor_candidate);
     }
 
     let mut original_candidate = candidate.clone();
     original_candidate.reconstructed = Some(original);
     scheduled.push(original_candidate);
-    scheduled
+    FactorTrialSchedule {
+        candidates: scheduled,
+        status: factorization.status,
+        failure: factorization.failure,
+        trace: factorization.trace,
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct ModularMergeKey {
-    origin: crate::candidates::CandidateOrigin,
     variable: crate::Variable,
     degree: usize,
     family: ModularFamilyKey,
@@ -127,7 +149,6 @@ fn merge_modular_candidates(candidates: Vec<TargetCandidate>) -> Vec<TargetCandi
         };
         groups
             .entry(ModularMergeKey {
-                origin: candidate.origin,
                 variable: support.variable.clone(),
                 degree,
                 family,
@@ -205,9 +226,74 @@ fn merge_distinct_prime_combination(
         merged
             .support_mod_primes
             .push(candidate.support_mod_primes[0].clone());
+        merged.origin_evidence.extend(candidate.origin_evidence);
+        merged.origin = merged.origin.min(candidate.origin);
         merged.traces.extend(candidate.traces);
     }
     Some(merged)
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum CandidateEquivalenceKey {
+    Reconstructed(ReconstructedSupportKey),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct ReconstructedSupportKey {
+    variable: crate::Variable,
+    coefficients: Vec<(BigInt, BigInt)>,
+}
+
+fn merge_equivalent_candidates(candidates: Vec<TargetCandidate>) -> Vec<TargetCandidate> {
+    let mut passthrough = Vec::new();
+    let mut groups = BTreeMap::<CandidateEquivalenceKey, TargetCandidate>::new();
+
+    for candidate in candidates {
+        let Some(key) = candidate_equivalence_key(&candidate) else {
+            passthrough.push(candidate);
+            continue;
+        };
+        if let Some(existing) = groups.get_mut(&key) {
+            merge_candidate_evidence(existing, candidate);
+        } else {
+            groups.insert(key, candidate);
+        }
+    }
+
+    passthrough.extend(groups.into_values());
+    passthrough
+}
+
+fn candidate_equivalence_key(candidate: &TargetCandidate) -> Option<CandidateEquivalenceKey> {
+    let reconstructed = candidate
+        .reconstructed
+        .as_ref()?
+        .primitive_integer_normalized();
+    Some(CandidateEquivalenceKey::Reconstructed(
+        ReconstructedSupportKey {
+            variable: reconstructed.variable,
+            coefficients: reconstructed
+                .coefficients
+                .into_iter()
+                .map(|coefficient| (coefficient.numer().clone(), coefficient.denom().clone()))
+                .collect(),
+        },
+    ))
+}
+
+fn merge_candidate_evidence(existing: &mut TargetCandidate, incoming: TargetCandidate) {
+    existing.origin_evidence.extend(incoming.origin_evidence);
+    existing.origin = existing.origin.min(incoming.origin);
+    for support in incoming.support_mod_primes {
+        if !existing
+            .support_mod_primes
+            .iter()
+            .any(|current| current.modulus == support.modulus)
+        {
+            existing.support_mod_primes.push(support);
+        }
+    }
+    existing.traces.extend(incoming.traces);
 }
 
 fn modular_family_key(candidate: &TargetCandidate) -> Option<ModularFamilyKey> {
@@ -282,9 +368,10 @@ fn candidate_rank(candidate: &TargetCandidate) -> CandidateRank {
         modular_only: candidate.reconstructed.is_none(),
         degree: candidate_degree(candidate),
         prime_count_order: usize::MAX - candidate.support_mod_primes.len(),
-        origin: candidate.origin,
+        origin_count_order: usize::MAX - candidate.origin_evidence.len(),
         coefficient_height: coefficient_height(candidate),
         active_support_size: active_support_size(candidate),
+        origin_tie_breaker: candidate.origin,
     }
 }
 
@@ -293,9 +380,10 @@ struct CandidateRank {
     modular_only: bool,
     degree: usize,
     prime_count_order: usize,
-    origin: crate::candidates::CandidateOrigin,
+    origin_count_order: usize,
     coefficient_height: BigInt,
     active_support_size: usize,
+    origin_tie_breaker: crate::candidates::CandidateOrigin,
 }
 
 fn candidate_degree(candidate: &TargetCandidate) -> usize {
@@ -380,12 +468,14 @@ fn reconstruct_from_modular_support(candidate: &TargetCandidate) -> Option<UniPo
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeSet;
+
     use num_bigint::BigInt;
     use num_rational::BigRational;
 
     use super::*;
     use crate::candidates::{
-        CandidateOrigin, CandidateTrace, ModularWitnessTrace, TargetCandidate,
+        CandidateOrigin, CandidateTrace, ModularWitnessTrace, RouteWitnessTrace, TargetCandidate,
     };
     use crate::univariate::UniPolynomialFp;
     use crate::{UniPolynomialQ, Variable};
@@ -409,7 +499,26 @@ mod tests {
                 coefficients: coefficients.iter().map(|value| rational(*value)).collect(),
             }),
             origin: CandidateOrigin::DirectTargetEquation,
+            origin_evidence: BTreeSet::from([CandidateOrigin::DirectTargetEquation]),
             traces: vec![CandidateTrace::DirectEquation { equation_index: 0 }],
+        }
+    }
+
+    fn candidate_with_origin(coefficients: &[i64], origin: CandidateOrigin) -> TargetCandidate {
+        let t = variable("T");
+        TargetCandidate {
+            support_mod_primes: Vec::new(),
+            reconstructed: Some(UniPolynomialQ {
+                variable: t,
+                coefficients: coefficients.iter().map(|value| rational(*value)).collect(),
+            }),
+            origin,
+            origin_evidence: BTreeSet::from([origin]),
+            traces: vec![CandidateTrace::RouteWitness(RouteWitnessTrace {
+                origin,
+                equation_indices: vec![0],
+                support_size: 1,
+            })],
         }
     }
 
@@ -423,7 +532,9 @@ mod tests {
         let candidate = normalize_candidate(candidate_with_coefficients(&[1, -2, 1])).unwrap();
         let scheduled = factor_schedule(&candidate);
 
+        assert_eq!(scheduled.status, FactorizationStatus::Complete);
         let supports = scheduled
+            .candidates
             .iter()
             .map(|candidate| {
                 candidate
@@ -449,6 +560,52 @@ mod tests {
         assert_eq!(ranked[1].reconstructed, higher.reconstructed);
     }
 
+    #[test]
+    fn same_reconstructed_support_from_two_origins_is_merged_and_ranked_by_origin_count() {
+        let merged_direct = candidate_with_origin(&[-1, 1], CandidateOrigin::DirectTargetEquation);
+        let merged_tower = candidate_with_origin(&[-1, 1], CandidateOrigin::NormTraceTower);
+        let single_origin = candidate_with_origin(&[1, 1], CandidateOrigin::ResidualCyclic);
+
+        let normalized = normalize_candidates(vec![single_origin, merged_tower, merged_direct]);
+        let merged = normalized
+            .iter()
+            .find(|candidate| {
+                candidate
+                    .reconstructed
+                    .as_ref()
+                    .is_some_and(|support| support.coefficients == vec![rational(-1), rational(1)])
+            })
+            .expect("same support should be merged");
+        assert_eq!(merged.origin_evidence.len(), 2);
+        assert!(merged
+            .origin_evidence
+            .contains(&CandidateOrigin::DirectTargetEquation));
+        assert!(merged
+            .origin_evidence
+            .contains(&CandidateOrigin::NormTraceTower));
+
+        let ranked = rank_candidates(normalized);
+
+        assert_eq!(
+            ranked[0].reconstructed.as_ref().unwrap().coefficients,
+            vec![rational(-1), rational(1)]
+        );
+        assert_eq!(ranked[0].origin_evidence.len(), 2);
+    }
+
+    #[test]
+    fn different_supports_from_different_origins_are_not_merged() {
+        let first = candidate_with_origin(&[-1, 1], CandidateOrigin::DirectTargetEquation);
+        let second = candidate_with_origin(&[1, 1], CandidateOrigin::NormTraceTower);
+
+        let normalized = normalize_candidates(vec![first, second]);
+
+        assert_eq!(normalized.len(), 2);
+        assert!(normalized
+            .iter()
+            .all(|candidate| candidate.origin_evidence.len() == 1));
+    }
+
     fn modular_trace(
         prime: u64,
         active_multiplier_supports: Vec<Vec<crate::Monomial>>,
@@ -472,6 +629,7 @@ mod tests {
             }],
             reconstructed: None,
             origin: CandidateOrigin::ResidualCyclic,
+            origin_evidence: BTreeSet::from([CandidateOrigin::ResidualCyclic]),
             traces: Vec::new(),
         };
 
@@ -504,6 +662,7 @@ mod tests {
             ],
             reconstructed: None,
             origin: CandidateOrigin::ResidualCyclic,
+            origin_evidence: BTreeSet::from([CandidateOrigin::ResidualCyclic]),
             traces: Vec::new(),
         };
 
@@ -528,6 +687,7 @@ mod tests {
                 }],
                 reconstructed: None,
                 origin: CandidateOrigin::ResidualCyclic,
+                origin_evidence: BTreeSet::from([CandidateOrigin::ResidualCyclic]),
                 traces: vec![modular_trace(5, active_support.clone())],
             },
             TargetCandidate {
@@ -538,6 +698,7 @@ mod tests {
                 }],
                 reconstructed: None,
                 origin: CandidateOrigin::ResidualCyclic,
+                origin_evidence: BTreeSet::from([CandidateOrigin::ResidualCyclic]),
                 traces: vec![modular_trace(11, active_support.clone())],
             },
             TargetCandidate {
@@ -548,6 +709,7 @@ mod tests {
                 }],
                 reconstructed: None,
                 origin: CandidateOrigin::ResidualCyclic,
+                origin_evidence: BTreeSet::from([CandidateOrigin::ResidualCyclic]),
                 traces: vec![modular_trace(13, active_support)],
             },
         ];
@@ -574,6 +736,7 @@ mod tests {
                 }],
                 reconstructed: None,
                 origin: CandidateOrigin::ResidualCyclic,
+                origin_evidence: BTreeSet::from([CandidateOrigin::ResidualCyclic]),
                 traces: Vec::new(),
             },
             TargetCandidate {
@@ -584,6 +747,7 @@ mod tests {
                 }],
                 reconstructed: None,
                 origin: CandidateOrigin::ResidualCyclic,
+                origin_evidence: BTreeSet::from([CandidateOrigin::ResidualCyclic]),
                 traces: Vec::new(),
             },
         ];
@@ -609,6 +773,7 @@ mod tests {
                 }],
                 reconstructed: None,
                 origin: CandidateOrigin::ResidualCyclic,
+                origin_evidence: BTreeSet::from([CandidateOrigin::ResidualCyclic]),
                 traces: vec![modular_trace(5, active_support.clone())],
             },
             TargetCandidate {
@@ -619,6 +784,7 @@ mod tests {
                 }],
                 reconstructed: None,
                 origin: CandidateOrigin::ResidualCyclic,
+                origin_evidence: BTreeSet::from([CandidateOrigin::ResidualCyclic]),
                 traces: vec![modular_trace(5, active_support)],
             },
         ];
@@ -644,6 +810,7 @@ mod tests {
                 }],
                 reconstructed: None,
                 origin: CandidateOrigin::ResidualCyclic,
+                origin_evidence: BTreeSet::from([CandidateOrigin::ResidualCyclic]),
                 traces: vec![modular_trace(5, active_support.clone())],
             },
             TargetCandidate {
@@ -654,6 +821,7 @@ mod tests {
                 }],
                 reconstructed: None,
                 origin: CandidateOrigin::ResidualCyclic,
+                origin_evidence: BTreeSet::from([CandidateOrigin::ResidualCyclic]),
                 traces: vec![modular_trace(5, active_support.clone())],
             },
             TargetCandidate {
@@ -664,6 +832,7 @@ mod tests {
                 }],
                 reconstructed: None,
                 origin: CandidateOrigin::ResidualCyclic,
+                origin_evidence: BTreeSet::from([CandidateOrigin::ResidualCyclic]),
                 traces: vec![modular_trace(7, active_support)],
             },
         ];
@@ -699,6 +868,7 @@ mod tests {
             }],
             reconstructed: None,
             origin: CandidateOrigin::ResidualCyclic,
+            origin_evidence: BTreeSet::from([CandidateOrigin::ResidualCyclic]),
             traces: Vec::new(),
         };
 
