@@ -1,14 +1,16 @@
+use crate::problem::polynomial_terms_have_valid_arity;
 use crate::{
-    CompositeRule, EmptyAdmissibleSetCertificate, GuardCertificate, GuardKind,
-    NoTargetEliminantCertificate, NullstellensatzCertificate, PolynomialQ,
-    RealInfeasibilityCertificate, SolverCertificate, TargetCertificate, TargetProblemQ,
-    UniPolynomialQ,
+    AlgebraicRealRoot, CompositeRule, EmptyAdmissibleSetCertificate, ExactIdentityKind,
+    ExactTargetImageCertificate, GuardCertificate, GuardKind, NoTargetEliminantCertificate,
+    NullstellensatzCertificate, PolynomialQ, RealInfeasibilityCertificate,
+    RealRootFiberCertificate, SolverCertificate, TargetCertificate, TargetProblemQ, UniPolynomialQ,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum VerificationResult {
     Verified,
     Rejected { reason: String },
+    CertificateDesignGap { reason: String },
 }
 
 pub fn verify_certificate(problem: TargetProblemQ, cert: SolverCertificate) -> VerificationResult {
@@ -26,8 +28,8 @@ pub fn verify_certificate(problem: TargetProblemQ, cert: SolverCertificate) -> V
         SolverCertificate::TargetCover(certificate) => {
             verify_target_certificate(&problem, &certificate)
         }
-        SolverCertificate::ExactTargetImage(_) => {
-            reject("certificate kind is not handled by this verifier checkpoint")
+        SolverCertificate::ExactTargetImage(certificate) => {
+            verify_exact_target_image_certificate(&problem, &certificate)
         }
     }
 }
@@ -40,8 +42,11 @@ pub(crate) fn verify_target_certificate(
         TargetCertificate::IdealMembership {
             support,
             multipliers,
-            ..
+            identity,
         } => {
+            if identity.kind != ExactIdentityKind::IdealMembership {
+                return reject("identity kind mismatch");
+            }
             if let Some(rejection) = reject_invalid_target_support(problem, support) {
                 return rejection;
             }
@@ -52,8 +57,11 @@ pub(crate) fn verify_target_certificate(
             support,
             power,
             multipliers,
-            ..
+            identity,
         } => {
+            if identity.kind != ExactIdentityKind::RadicalMembership {
+                return reject("identity kind mismatch");
+            }
             if let Some(rejection) = reject_invalid_target_support(problem, support) {
                 return rejection;
             }
@@ -70,10 +78,16 @@ pub(crate) fn verify_target_certificate(
             guard_product,
             guard_certificates,
             multipliers,
-            ..
+            identity,
         } => {
+            if identity.kind != ExactIdentityKind::GuardedRadicalMembership {
+                return reject("identity kind mismatch");
+            }
             if let Some(rejection) = reject_invalid_target_support(problem, support) {
                 return rejection;
+            }
+            if !polynomial_matches_problem(problem, guard_product) {
+                return reject("guard product malformed");
             }
             if *support_power == 0 {
                 return reject("support power must be positive");
@@ -137,7 +151,13 @@ pub(crate) fn verify_empty_certificate(
     cert: &EmptyAdmissibleSetCertificate,
 ) -> VerificationResult {
     match cert {
-        EmptyAdmissibleSetCertificate::AlgebraicInfeasibility { multipliers, .. } => {
+        EmptyAdmissibleSetCertificate::AlgebraicInfeasibility {
+            multipliers,
+            identity,
+        } => {
+            if identity.kind != ExactIdentityKind::AlgebraicInfeasibility {
+                return reject("identity kind mismatch");
+            }
             verify_linear_combination_equals(
                 problem,
                 multipliers,
@@ -149,8 +169,14 @@ pub(crate) fn verify_empty_certificate(
             guard_power,
             guard_certificates,
             multipliers,
-            ..
+            identity,
         } => {
+            if identity.kind != ExactIdentityKind::GuardedAlgebraicInfeasibility {
+                return reject("identity kind mismatch");
+            }
+            if !polynomial_matches_problem(problem, guard_product) {
+                return reject("guard product malformed");
+            }
             let Some(computed_product) = product_of_verified_guards(problem, guard_certificates)
             else {
                 return reject("guard factor rejected");
@@ -162,7 +188,7 @@ pub(crate) fn verify_empty_certificate(
             verify_linear_combination_equals(problem, multipliers, &target)
         }
         EmptyAdmissibleSetCertificate::RealInfeasibility { .. } => {
-            reject("real infeasibility replay is not available")
+            design_gap("real infeasibility replay requires P16 exact real replay")
         }
     }
 }
@@ -181,40 +207,55 @@ pub(crate) fn verify_no_target_eliminant_certificate(
             return reject("saturation guard certificate rejected");
         }
     }
-    if !cert.guard_certificates.is_empty()
-        || !cert
-            .saturated_ideal_description
-            .guard_certificates
-            .is_empty()
-    {
-        return reject("guarded no-target eliminant replay is not available");
+    design_gap("no-target eliminant exact elimination-zero replay requires P15")
+}
+
+fn verify_exact_target_image_certificate(
+    problem: &TargetProblemQ,
+    cert: &ExactTargetImageCertificate,
+) -> VerificationResult {
+    if verify_target_certificate(problem, &cert.cover) != VerificationResult::Verified {
+        return reject("exact image cover certificate rejected");
     }
-    let Some(target_index) = problem
-        .variables
-        .iter()
-        .position(|variable| variable == &problem.target)
-    else {
-        return reject("target variable missing");
-    };
-    let monomial_non_target_ideal = problem.equations.iter().all(|equation| {
-        if equation.terms.is_empty() {
-            return true;
+    let support = target_certificate_support(&cert.cover);
+    if cert.squarefree_support != support.squarefree_part() {
+        return reject("exact image squarefree support mismatch");
+    }
+    let roots = crate::roots::isolate_real_roots_squarefree(&cert.squarefree_support);
+    if cert.root_classifications.len() != roots.len() {
+        return reject("exact image root classification count mismatch");
+    }
+    for root in &roots {
+        let matches = cert
+            .root_classifications
+            .iter()
+            .filter(|classification| classified_root(classification) == root)
+            .count();
+        if matches != 1 {
+            return reject("exact image root classification mismatch");
         }
-        if equation.terms.len() != 1 {
-            return false;
+    }
+    for classification in &cert.root_classifications {
+        match classification {
+            RealRootFiberCertificate::Nonempty { certificate, .. } => {
+                if certificate.description.is_empty() {
+                    return reject("nonempty real fiber replay missing");
+                }
+            }
+            RealRootFiberCertificate::Empty { certificate, .. } => {
+                if certificate.description.is_empty() {
+                    return reject("empty real fiber replay missing");
+                }
+            }
         }
-        let monomial = equation.terms.keys().next().unwrap();
-        monomial.exponents[target_index] == 0
-            && monomial
-                .exponents
-                .iter()
-                .enumerate()
-                .any(|(index, exponent)| index != target_index && *exponent != 0)
-    });
-    if monomial_non_target_ideal {
-        VerificationResult::Verified
-    } else {
-        reject("no target eliminant replay is not available")
+    }
+    design_gap("exact real fiber replay requires P16")
+}
+
+fn classified_root(classification: &RealRootFiberCertificate) -> &AlgebraicRealRoot {
+    match classification {
+        RealRootFiberCertificate::Nonempty { root, .. }
+        | RealRootFiberCertificate::Empty { root, .. } => root,
     }
 }
 
@@ -280,6 +321,7 @@ fn verified_guard_polynomial(
     match cert {
         GuardCertificate::InputSemanticNonzero { guard, record } => {
             if record.kind == GuardKind::NonZero
+                && polynomial_matches_problem(problem, guard)
                 && &record.polynomial == guard
                 && problem.semantic_guards.contains(record)
             {
@@ -301,8 +343,14 @@ fn verified_guard_polynomial(
         GuardCertificate::DerivedProduct {
             product,
             factors,
-            identity: _,
+            identity,
         } => {
+            if identity.kind != ExactIdentityKind::GuardProduct {
+                return None;
+            }
+            if !polynomial_matches_problem(problem, product) {
+                return None;
+            }
             let computed = product_of_verified_guards(problem, factors)?;
             (&computed == product).then(|| product.clone())
         }
@@ -326,8 +374,11 @@ fn verify_nullstellensatz_nonvanishing(
     guard: &PolynomialQ,
     certificate: &NullstellensatzCertificate,
 ) -> bool {
-    if guard.variables != problem.variables
-        || certificate.guard_multiplier.variables != problem.variables
+    if certificate.identity.kind != ExactIdentityKind::AlgebraicInfeasibility {
+        return false;
+    }
+    if !polynomial_matches_problem(problem, guard)
+        || !polynomial_matches_problem(problem, &certificate.guard_multiplier)
         || certificate.multipliers.len() != problem.equations.len()
     {
         return false;
@@ -346,7 +397,7 @@ fn verify_linear_combination_equals(
     multipliers: &[PolynomialQ],
     target: &PolynomialQ,
 ) -> VerificationResult {
-    if target.variables != problem.variables {
+    if !polynomial_matches_problem(problem, target) {
         return reject("target variables mismatch");
     }
     let Some(sum) = linear_combination(problem, multipliers) else {
@@ -368,7 +419,9 @@ fn linear_combination(
     }
     let mut sum = PolynomialQ::zero(problem.variables.clone());
     for (multiplier, equation) in multipliers.iter().zip(&problem.equations) {
-        if multiplier.variables != problem.variables || equation.variables != problem.variables {
+        if !polynomial_matches_problem(problem, multiplier)
+            || !polynomial_matches_problem(problem, equation)
+        {
             return None;
         }
         sum = sum.add(&multiplier.mul(equation));
@@ -376,8 +429,18 @@ fn linear_combination(
     Some(sum)
 }
 
+fn polynomial_matches_problem(problem: &TargetProblemQ, polynomial: &PolynomialQ) -> bool {
+    polynomial.variables == problem.variables && polynomial_terms_have_valid_arity(polynomial)
+}
+
 fn reject(reason: &str) -> VerificationResult {
     VerificationResult::Rejected {
+        reason: reason.to_string(),
+    }
+}
+
+fn design_gap(reason: &str) -> VerificationResult {
+    VerificationResult::CertificateDesignGap {
         reason: reason.to_string(),
     }
 }
@@ -556,7 +619,7 @@ mod tests {
             certificate: NullstellensatzCertificate {
                 multipliers: vec![constant(&variables, -1)],
                 guard_multiplier: constant(&variables, 1),
-                identity: identity(ExactIdentityKind::IdealMembership),
+                identity: identity(ExactIdentityKind::AlgebraicInfeasibility),
             },
         };
 
@@ -570,7 +633,7 @@ mod tests {
             certificate: NullstellensatzCertificate {
                 multipliers: vec![constant(&variables, -1)],
                 guard_multiplier: constant(&variables, 0),
-                identity: identity(ExactIdentityKind::IdealMembership),
+                identity: identity(ExactIdentityKind::AlgebraicInfeasibility),
             },
         };
         assert!(matches!(

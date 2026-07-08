@@ -4,46 +4,54 @@ Purpose: operational hot context.
 Status: active for current Guardian phase.
 Authority: non-authoritative; use `BASE_SPEC.md` and `PLAN.md` for correctness.
 
-Status: Base Spec and Plan admitted for implementation; P5 through P14 passed Guardian review; P15 closure review passed with bounded closure claim.
+Status: P1-P3 checkpoint closed narrowly; P4 is not started.
 
-Current spec: `CW-ARC-DTP-Q-CANDIDATE-COVER`
+Current spec: `CW-ARC-DTP-Q-FULL-V3`
 Base Spec: `docs/ai/changes/cw-arc-dtp-q/BASE_SPEC.md`
 Plan: `docs/ai/changes/cw-arc-dtp-q/PLAN.md`
 Reviewer prompts: `docs/ai/changes/cw-arc-dtp-q/REVIEWER_PROMPTS.md`
 Source map: `docs/ai/changes/cw-arc-dtp-q/source_map.md`
 Original algorithm source: `docs/ai/changes/cw-arc-dtp-q/sources/cw_arc_dtp_q_revised_spec_v2.md`
+V3 failure analysis: `docs/ai/changes/cw-arc-dtp-q/sources/failure_analysis_and_fix_principles_v3.md`
+V3 route checklist: `docs/ai/changes/cw-arc-dtp-q/sources/route_checklists_and_test_matrix_v3.md`
 
-Current phase: P15 - Closure complete.
+Current phase: P1-P3 checkpoint closed; awaiting scoped permission before P4.
 
-Open P15 R-IDs:
-- all active R-IDs
+P0 result:
+- V3 Base Spec / Plan / Reviewer Prompt admitted as current authority
+- `current_gap_inventory.md` admitted as current replacement-target inventory
+- existing implementation gaps quarantined as replace-targets, not acceptable shortcuts
 
-Required reviewer before closing P15:
-- completed: `guardian_boundary_reviewer` using `RP-CLOSURE` / final closure review
+P0 review:
+- `docs/ai/changes/cw-arc-dtp-q/reviews/p0_authority_admission_2026-07-08.md`
+
+P1-P3 evidence and review:
+- `docs/ai/changes/cw-arc-dtp-q/evidence/p1_p3_implementation.md`
+- `docs/ai/changes/cw-arc-dtp-q/reviews/p1_p3_checkpoint_2026-07-08.md`
 
 Current ReadSet:
 - `docs/ai/changes/cw-arc-dtp-q/BASE_SPEC.md`
 - `docs/ai/changes/cw-arc-dtp-q/PLAN.md`
-- `docs/ai/changes/cw-arc-dtp-q/source_map.md`
-- `docs/ai/changes/cw-arc-dtp-q/sources/cw_arc_dtp_q_revised_spec_v2.md`
 - `docs/ai/changes/cw-arc-dtp-q/REVIEWER_PROMPTS.md`
-- all P1-P14 evidence files
-- changed production and test files
+- `docs/ai/changes/cw-arc-dtp-q/source_map.md`
+- `docs/ai/changes/cw-arc-dtp-q/evidence/current_gap_inventory.md`
+- current production files named by the P0 search
 
 Current edit scope:
+- `docs/ai/SPEC_REGISTRY.md`
 - `docs/ai/ACTIVE_CONTEXT.md`
-- `docs/ai/changes/cw-arc-dtp-q/CLOSURE.md`
-- P14/P15 evidence updates only if closure review requires correction
+- `docs/ai/changes/cw-arc-dtp-q/`
+- P1-P3 production and test files changed under scoped user permission
 
 Claim ceiling:
-- Allowed: closure packet may state a bounded candidate-cover core and exact-image fail-closed boundary if supported by fresh evidence and RP-CLOSURE.
-- Forbidden: `SOURCE_FAITHFUL`, `VERIFIED`, `ACCEPTANCE_COMPLETE`, `PRODUCTION_SAFE`, or any R-ID verified claim unless the final closure reviewer explicitly supports that exact wording and the evidence supports it.
-- Forbidden: claiming general `CertifiedExactTargetImage` completion; the exact-image classifier is conservative incomplete.
+- Allowed: P1-P3 checkpoint was implemented, reviewed, and local tests pass.
+- Forbidden: claiming the current implementation satisfies V3 final completion.
+- Forbidden: `SOURCE_FAITHFUL`, `VERIFIED`, `ACCEPTANCE_COMPLETE`, `PRODUCTION_SAFE`, or any requirement verified claim.
 
 Known boundary:
-- The original CW-ARC-DTP-Q revised spec v2 is stored in this repo.
-- Failure-analysis artifacts named by the imported package are still not stored in this repo.
-- Repository files are currently untracked in this workspace; no commit has been requested.
+- Existing `main` contains the prior bounded candidate-cover implementation and closure.
+- V3 explicitly treats that bounded implementation as incomplete for the full algorithm.
+- The repo is clean before this V3 import work; current changes are local and not yet committed.
 
 Next action:
-- Hand back summary to user.
+- Request scoped implementation permission before starting P4.

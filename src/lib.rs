@@ -10,6 +10,7 @@ mod candidate_tower;
 mod candidates;
 mod certificates;
 mod compression;
+mod crt;
 mod dependency_dag;
 mod error;
 mod exact_image;
@@ -18,6 +19,8 @@ mod finite_field;
 mod guards;
 mod linear_fp;
 mod linear_q;
+mod matrix_fp;
+mod matrix_q;
 mod monomial;
 mod normalize;
 mod options;
@@ -25,6 +28,7 @@ mod polynomial;
 mod problem;
 mod proof;
 mod proof_learning;
+mod rational_reconstruction;
 mod repair_multiple;
 mod repair_schur;
 mod residual;
@@ -39,9 +43,15 @@ mod window;
 #[cfg(test)]
 mod test_support;
 
+pub use crate::compression::{
+    certified_system_from_problem, validate_target_problem, verify_compression_replay,
+    CertifiedSystemQ, CompressionReplayCertificate, CompressionStepCertificate,
+    CompressionVerificationError, ProblemValidationError,
+};
 pub use certificates::{
-    ComponentUnionSource, CompositeRule, EmptyAdmissibleSetCertificate, ExactIdentity,
-    ExactIdentityKind, NoTargetEliminantCertificate, SolverCertificate, TargetCertificate,
+    ComponentUnionSource, CompositeRule, EliminationZeroCertificate, EmptyAdmissibleSetCertificate,
+    ExactIdentity, ExactIdentityKind, NoTargetEliminantCertificate, SaturatedIdealCertificate,
+    SolverCertificate, TargetCertificate,
 };
 pub use exact_image::{
     CertifiedExactTargetImage, ExactTargetImageCertificate, RealFiberEmptyCertificate,

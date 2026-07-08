@@ -1,7 +1,10 @@
 use num_bigint::BigInt;
-use num_traits::{Signed, Zero};
+use num_traits::{One, Signed, Zero};
 
 use crate::candidates::{CandidateTrace, TargetCandidate};
+use crate::rational_reconstruction::{
+    reconstruct_univariate_q_from_modular, RationalReconstructionBounds,
+};
 use crate::{Rational, UniPolynomialQ};
 
 pub(crate) fn normalize_candidate(mut candidate: TargetCandidate) -> Option<TargetCandidate> {
@@ -107,7 +110,36 @@ fn active_support_size(candidate: &TargetCandidate) -> usize {
 }
 
 fn reconstruct_from_modular_support(candidate: &TargetCandidate) -> Option<UniPolynomialQ> {
-    let support = candidate.support_mod_primes.first()?;
+    if candidate.support_mod_primes.is_empty()
+        || candidate
+            .support_mod_primes
+            .iter()
+            .all(crate::univariate::UniPolynomialFp::is_zero)
+    {
+        return None;
+    }
+    if candidate.support_mod_primes.len() == 1 {
+        return single_prime_integer_lift(&candidate.support_mod_primes[0]);
+    }
+
+    let modulus_product = candidate
+        .support_mod_primes
+        .iter()
+        .fold(BigInt::one(), |product, support| {
+            product * BigInt::from(support.modulus)
+        });
+    let bounds = RationalReconstructionBounds {
+        numerator_abs: (&modulus_product - BigInt::one()) / 2,
+        denominator_abs: BigInt::one(),
+    };
+    reconstruct_univariate_q_from_modular(&candidate.support_mod_primes, &bounds)
+        .ok()
+        .filter(|polynomial| !polynomial.is_zero())
+}
+
+fn single_prime_integer_lift(
+    support: &crate::univariate::UniPolynomialFp,
+) -> Option<UniPolynomialQ> {
     if support.is_zero() {
         return None;
     }
@@ -222,6 +254,40 @@ mod tests {
         assert_eq!(
             normalized.reconstructed.unwrap().coefficients,
             vec![rational(-2), rational(0), rational(1)]
+        );
+    }
+
+    #[test]
+    fn multi_prime_modular_candidate_uses_crt_not_first_prime() {
+        let t = variable("T");
+        let candidate = TargetCandidate {
+            support_mod_primes: vec![
+                UniPolynomialFp {
+                    variable: t.clone(),
+                    modulus: 5,
+                    coefficients: vec![2, 1],
+                },
+                UniPolynomialFp {
+                    variable: t.clone(),
+                    modulus: 11,
+                    coefficients: vec![9, 1],
+                },
+                UniPolynomialFp {
+                    variable: t,
+                    modulus: 13,
+                    coefficients: vec![3, 1],
+                },
+            ],
+            reconstructed: None,
+            origin: CandidateOrigin::ResidualCyclic,
+            traces: Vec::new(),
+        };
+
+        let normalized = normalize_candidate(candidate).unwrap();
+
+        assert_eq!(
+            normalized.reconstructed.unwrap().coefficients,
+            vec![rational(42), rational(1)]
         );
     }
 }

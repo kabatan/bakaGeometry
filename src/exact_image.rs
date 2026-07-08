@@ -1,13 +1,13 @@
 use crate::{AlgebraicRealRoot, TargetCertificate, UniPolynomialQ};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ExactTargetImageCertificate {
     pub cover: TargetCertificate,
     pub squarefree_support: UniPolynomialQ,
     pub root_classifications: Vec<RealRootFiberCertificate>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CertifiedExactTargetImage {
     pub support: UniPolynomialQ,
     pub squarefree_support: UniPolynomialQ,
@@ -16,7 +16,7 @@ pub struct CertifiedExactTargetImage {
     pub certificate: ExactTargetImageCertificate,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum RealRootFiberCertificate {
     Nonempty {
         root: AlgebraicRealRoot,
@@ -28,12 +28,12 @@ pub enum RealRootFiberCertificate {
     },
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RealFiberNonemptyCertificate {
     pub description: String,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RealFiberEmptyCertificate {
     pub description: String,
 }

@@ -3,12 +3,12 @@ use crate::{
     RealInfeasibilityCertificate, UniPolynomialQ,
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ExactIdentity {
     pub kind: ExactIdentityKind,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ExactIdentityKind {
     IdealMembership,
     RadicalMembership,
@@ -19,7 +19,7 @@ pub enum ExactIdentityKind {
     CompressionReplay,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TargetCertificate {
     IdealMembership {
         support: UniPolynomialQ,
@@ -60,7 +60,7 @@ pub struct ComponentUnionSource {
     pub description: String,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SolverCertificate {
     TargetCover(TargetCertificate),
     ExactTargetImage(ExactTargetImageCertificate),
@@ -68,7 +68,7 @@ pub enum SolverCertificate {
     NoNonzeroTargetEliminant(NoTargetEliminantCertificate),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum EmptyAdmissibleSetCertificate {
     AlgebraicInfeasibility {
         multipliers: Vec<PolynomialQ>,
@@ -86,19 +86,19 @@ pub enum EmptyAdmissibleSetCertificate {
     },
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct NoTargetEliminantCertificate {
     pub saturated_ideal_description: SaturatedIdealCertificate,
     pub elimination_certificate: EliminationZeroCertificate,
     pub guard_certificates: Vec<GuardCertificate>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SaturatedIdealCertificate {
     pub guard_certificates: Vec<GuardCertificate>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EliminationZeroCertificate {
     pub identity: ExactIdentity,
 }

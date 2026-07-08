@@ -1,6 +1,9 @@
 use std::collections::BTreeMap;
 
+use num_bigint::BigInt;
+use num_integer::Integer;
 use num_rational::BigRational;
+use num_traits::{Signed, Zero};
 
 use crate::{Monomial, UniPolynomialQ, Variable};
 
@@ -127,6 +130,41 @@ impl PolynomialQ {
         result
     }
 
+    pub(crate) fn primitive_integer_normalized_with_multiplier(&self) -> (Self, Rational) {
+        if self.is_zero() {
+            return (
+                Self::zero(self.variables.clone()),
+                crate::arith::rational_one(),
+            );
+        }
+        let denominator_lcm = crate::arith::lcm_bigint(
+            self.terms
+                .values()
+                .map(|coefficient| coefficient.denom().clone()),
+        );
+        let integer_coefficients = self
+            .terms
+            .values()
+            .map(|coefficient| coefficient.numer() * (&denominator_lcm / coefficient.denom()))
+            .collect::<Vec<BigInt>>();
+        let content =
+            integer_coefficients
+                .iter()
+                .fold(BigInt::zero(), |accumulator, coefficient| {
+                    if accumulator.is_zero() {
+                        coefficient.abs()
+                    } else {
+                        accumulator.gcd(&coefficient.abs())
+                    }
+                });
+        let multiplier = if content.is_zero() {
+            BigRational::from_integer(denominator_lcm)
+        } else {
+            BigRational::new(denominator_lcm, content)
+        };
+        (self.scale(&multiplier), multiplier)
+    }
+
     pub fn substitute_variable(&self, variable: &Variable, replacement: &PolynomialQ) -> Self {
         assert_eq!(self.variables, replacement.variables);
         let variable_index = self
@@ -191,5 +229,3 @@ impl PolynomialQ {
         assert_eq!(self.variables, rhs.variables);
     }
 }
-
-use num_traits::Zero;

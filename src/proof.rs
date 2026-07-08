@@ -8,8 +8,9 @@ use crate::proof_learning::LeftNullObstruction;
 use crate::verifier::verify_guard_certificate;
 use crate::window::ProofWindow;
 use crate::{
-    ExactIdentity, ExactIdentityKind, Monomial, PolynomialQ, Rational, ResourceLimits,
-    TargetCertificate, TargetProblemQ, UniPolynomialQ, VerificationResult,
+    ExactIdentity, ExactIdentityKind, GuardCertificate, GuardRecord, Monomial, PolynomialQ,
+    Rational, ResourceLimits, TargetCertificate, TargetProblemQ, UniPolynomialQ,
+    VerificationResult,
 };
 
 #[derive(Clone, Debug)]
@@ -126,9 +127,30 @@ pub(crate) fn prove_fixed_target(
         equations: input.system.equations.clone(),
         variables: input.system.variables.clone(),
         target: input.system.target.clone(),
-        semantic_guards: Vec::new(),
+        semantic_guards: semantic_guards_from_system(&input.system),
     };
     prove_fixed_target_with_problem(input, &problem)
+}
+
+fn semantic_guards_from_system(system: &CertifiedSystemQ) -> Vec<GuardRecord> {
+    let mut records = Vec::new();
+    for certificate in &system.guard_certificates {
+        collect_input_guard_records(certificate, &mut records);
+    }
+    records
+}
+
+fn collect_input_guard_records(certificate: &GuardCertificate, records: &mut Vec<GuardRecord>) {
+    match certificate {
+        GuardCertificate::InputSemanticNonzero { record, .. } => records.push(record.clone()),
+        GuardCertificate::DerivedProduct { factors, .. } => {
+            for factor in factors {
+                collect_input_guard_records(factor, records);
+            }
+        }
+        GuardCertificate::AlgebraicNonvanishing { .. }
+        | GuardCertificate::RealAdmissibleNonvanishing { .. } => {}
+    }
 }
 
 pub(crate) fn prove_fixed_target_with_problem(
@@ -409,7 +431,9 @@ mod tests {
     use num_rational::BigRational;
 
     use super::*;
-    use crate::compression::{CertifiedSystemQ, CompressionReplayCertificate};
+    use crate::compression::{
+        certified_system_from_problem, CertifiedSystemQ, CompressionReplayCertificate,
+    };
     use crate::window::ProofWindow;
     use crate::{
         verify_certificate, GuardCertificate, GuardKind, GuardProvenance, GuardRecord, Monomial,
@@ -504,6 +528,56 @@ mod tests {
             certificate,
             TargetCertificate::IdealMembership { .. }
         ));
+        assert_eq!(
+            verify_certificate(problem, SolverCertificate::TargetCover(certificate)),
+            VerificationResult::Verified
+        );
+    }
+
+    #[test]
+    fn semantic_nonzero_guard_reaches_guarded_radical_proof_mode() {
+        let t = variable("T");
+        let variables = vec![t.clone()];
+        let guard = term(&variables, 1, &[1]);
+        let record = GuardRecord {
+            polynomial: guard.clone(),
+            kind: GuardKind::NonZero,
+            provenance: GuardProvenance {
+                description: "input nonzero guard".to_string(),
+            },
+        };
+        let equation = polynomial(&variables, &[(1, vec![2]), (-1, vec![1])]);
+        let problem = TargetProblemQ {
+            equations: vec![equation],
+            variables: variables.clone(),
+            target: t.clone(),
+            semantic_guards: vec![record],
+        };
+        let system = certified_system_from_problem(&problem).unwrap();
+        let input = FixedProofInput {
+            system,
+            candidate: uni(&t, &[-1, 1]),
+            proof_window: ProofWindow {
+                multiplier_supports: vec![vec![monomial(&[0])]],
+            },
+            certificate_mode: CertificateMode::GuardedRadical {
+                support_power: 1,
+                guard_power: 1,
+            },
+        };
+
+        let certificate = prove_fixed_target(input).unwrap();
+
+        let TargetCertificate::GuardedRadicalMembership {
+            guard_certificates,
+            guard_product,
+            ..
+        } = &certificate
+        else {
+            panic!("guarded radical certificate required");
+        };
+        assert_eq!(guard_certificates.len(), 1);
+        assert_eq!(guard_product, &guard);
         assert_eq!(
             verify_certificate(problem, SolverCertificate::TargetCover(certificate)),
             VerificationResult::Verified

@@ -1,26 +1,28 @@
-# CW-ARC-DTP-Q Guardian Implementation Package
+# CW-ARC-DTP-Q Full Guardian Package v3
 
-このパッケージには、空の Rust repo から `geosolver-core` の CW-ARC-DTP-Q candidate-cover solver を実装させるための Guardian 用文書が入っています。
+この package は、前回の実装失敗を前提に、Guardian Agent に渡すための修正版 Base Spec / Plan / Reviewer Prompt 一式である。
 
-## Files
+## ファイル
 
-- `CW_ARC_DTP_Q_GUARDIAN_BASE_SPEC.md`
-  - 最終的に repo が満たすべき仕様です。
-  - 添付 CW-ARC-DTP-Q v2 の数学的仕様を中核に、file 構成、型、関数、禁止実装、検証条件まで固定しています。
+1. `00_FAILURE_ANALYSIS_AND_FIX_PRINCIPLES.md`  
+   失敗原因の分析と、それを一般化した再発防止原則。
 
-- `CW_ARC_DTP_Q_GUARDIAN_PLAN.md`
-  - Base Spec を実装するための phase-by-phase plan です。
-  - 各 phase に R-ID、MECH、実装対象 file、受け入れ条件、停止条件、reviewer prompt を割り当てています。
+2. `01_BASE_SPEC_CW_ARC_DTP_Q_FULL_V3.md`  
+   repo が最終的に満たすべき状態を、file / module / function / algorithm data-flow まで固定した Base Spec。
 
-- `CW_ARC_DTP_Q_GUARDIAN_REVIEWER_PROMPTS.md`
-  - Guardian reviewer に渡す prompt 集です。
-  - Agent evidence を信用せず、production code の control-flow / data-flow / certificate replay を直接読むようにしています。
+3. `02_PLAN_CW_ARC_DTP_Q_FULL_V3.md`  
+   空 repo または既存 repo から、Base Spec 通りに作るための作業計画。
 
-## Recommended Guardian flow
+4. `03_REVIEWER_PROMPTS_CW_ARC_DTP_Q_FULL_V3.md`  
+   Guardian reviewer に渡す phase 別 prompt。Agent evidence を信用せず、production code を直接読む前提。
 
-1. User approves the Base Spec and Plan.
-2. Agent copies the Base Spec and Plan into `docs/ai/changes/cw-arc-dtp-q/`.
-3. Agent executes phases P0..P15 in order.
-4. At every phase, run the matching reviewer prompt.
-5. Do not close a phase from tests alone.
-6. Final closure must not claim general exact image unless real-fiber classification is actually implemented and reviewed.
+5. `04_ROUTE_CHECKLISTS_AND_TEST_MATRIX.md`  
+   route-forcing / no-fallback / tamper / non-simplification の検査表。
+
+## 使い方
+
+Guardian の Base Spec には `01_BASE_SPEC_CW_ARC_DTP_Q_FULL_V3.md` を使う。  
+Guardian の Plan には `02_PLAN_CW_ARC_DTP_Q_FULL_V3.md` を使う。  
+各 phase の reviewer prompt は `03_REVIEWER_PROMPTS_CW_ARC_DTP_Q_FULL_V3.md` から該当節をそのまま渡す。  
+Phase closure では `04_ROUTE_CHECKLISTS_AND_TEST_MATRIX.md` の表を必ず埋めるが、表だけで PASS してはならない。Reviewer は production code の control-flow / data-flow / certificate replay を直接確認する。
+

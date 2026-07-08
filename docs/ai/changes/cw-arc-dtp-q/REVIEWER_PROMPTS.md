@@ -1,596 +1,484 @@
-# CW-ARC-DTP-Q Guardian Reviewer Prompts
+# 03. Reviewer Prompts: CW-ARC-DTP-Q Full Implementation v3
 
-Spec ID: `CW-ARC-DTP-Q-CANDIDATE-COVER`
-Type: Reviewer Prompt Pack
-Status: Draft for user approval
-Base Spec: `CW_ARC_DTP_Q_GUARDIAN_BASE_SPEC.md`
-Plan: `CW_ARC_DTP_Q_GUARDIAN_PLAN.md`
+## 0. Universal reviewer prompt
 
----
-
-## Common reviewer instructions for every phase
-
-You are a read-only adversarial reviewer. Your job is not to help the implementer pass. Your job is to find the shortest concrete evidence that the implementation does not satisfy the approved Base Spec and Plan.
-
-Do not rely on:
+Use this at the start of every review.
 
 ```text
-- Agent summaries.
-- Source-to-code maps.
-- Closure tables.
-- Audit scripts.
-- Test names.
-- Prior reviewer PASS.
-- Comments claiming an algorithm is implemented.
+あなたの仕事は PASS を出すことではない。
+Agent の実装が Base Spec を満たしていない最短の証拠を探すことである。
+Agent が作った evidence、audit、closure table、test 名、manifest、過去 reviewer の PASS は信用しない。それらは source を探す pointer としてだけ使う。
+
+必ず production code を読む。`#[cfg(test)]` 内だけの実装、doc だけの主張、trace だけの主張では PASS してはならない。
+
+次を必ず出力する:
+
+Verdict: PASS / FAIL
+Files inspected:
+Functions inspected:
+Production call chain checked:
+Data-flow checked:
+Certificate replay checked:
+Forbidden patterns searched:
+Route-forcing tests checked:
+Tamper tests checked:
+Adversarial input families considered:
+Remaining uncertainty:
+Reason:
+
+FAIL すべき条件:
+- function/type/test の名前だけ仕様に似ている。
+- certificate struct はあるが verifier が exact identity / replay を再検証していない。
+- route が別 route / complete fallback / Groebner に隠れて委譲している。
+- route が fixture-shaped / two-polynomial-only / single-equation-only / first-prime-only である。
+- fail-closed stub を final completion として扱っている。
+- bounded search を complete algorithm と呼んでいる。
+- top-level success だけで route correctness を主張している。
+- guard や replay が production path で落ちている。
+
+PASS は、source-level control-flow と data-flow を説明でき、forbidden patterns を探し、route-forcing と tamper evidence を production code と照合できた場合だけ出す。
 ```
 
-Use them only as pointers. Inspect production code directly.
-
-For every PASS or FAIL, your review must include:
+## P0 reviewer prompt — Authority lock and gap inventory
 
 ```text
-1. Files inspected.
-2. Functions/types inspected.
-3. Public/planner call chain checked.
-4. Data-flow checked.
-5. Forbidden patterns searched.
-6. Route-forcing evidence checked when relevant.
-7. Certificate tamper/replay evidence checked when relevant.
-8. Remaining uncertainty.
-9. Verdict: PASS or FAIL.
+Review P0.
+
+Check that Base Spec v3, Plan v3, and Reviewer Prompts v3 are copied into docs.
+Inspect `current_gap_inventory.md`.
+Do not accept a gap inventory that only says "not applicable" or "safe fail-closed".
+
+You must search source for these patterns and equivalents:
+- guard_certificates: Vec::new()
+- semantic_guards: Vec::new()
+- classify_real_fibers / Incomplete
+- complete_target_elimination_fallback
+- max_window_degree.unwrap_or
+- NoTargetEliminant monomial ideal special case
+- reconstruct_from_modular_support / first prime
+- factor_schedule returning clone only
+- localized_schur_repair returning SupportInformation only
+- ExactTargetImage unhandled
+- `TODO`, `unimplemented`, `not available`, `Unsupported`, normal-path `ImplementationBug`
+
+FAIL if any known gap is omitted from inventory.
+PASS only if every gap is assigned to a later phase that replaces the controlling path, not patches around it.
 ```
 
-Global FAIL conditions:
+## P1 reviewer prompt — Algebra primitives
 
 ```text
-- Any success path lacks exact certificate verification.
-- Candidate traces, modular rank, random seed, score, or planner estimate are accepted as proof.
-- Verifier trusts hashes, strings, source maps, or solver trace instead of recomputing exact identities.
-- A general route is only a toy/slice/two-polynomial/fixture path.
-- A route is implemented by hidden delegation to another route or fallback.
-- Production code branches on geometry names, fixture names, expected answers, or official solutions.
-- Production path builds full coordinate solution lists, full coordinate RUR, or full coordinate lex parametrization to read T.
-- Complete fallback is called before admitted candidate/proof routes are exhausted, except in tests that explicitly target fallback.
-- Any phase is closed because tests pass but production control-flow/data-flow does not match the Base Spec.
-```
+Review P1.
 
----
-
-## RP-P0 — Guardian scaffold and source anchoring
-
-Review target: docs only.
-
-PASS only if:
-
-```text
-- BASE_SPEC.md and PLAN.md are present under docs/ai/changes/cw-arc-dtp-q/.
-- source_map.md classifies primary algorithm spec as EXACT.
-- failure-analysis docs are treated as generalized anti-pattern authority.
-- ACTIVE_CONTEXT.md is short and operational, not a replacement for the Base Spec.
-- No implementation code has been written before user approval.
-```
+Inspect exact polynomial, univariate, finite field, matrix, CRT, and rational reconstruction code.
 
 FAIL if:
+- univariate factorization is only squarefree_part wrapped in a Vec.
+- rational reconstruction uses only one prime where multi-prime reconstruction is required.
+- Q solver inconsistent result lacks a verifiable left-null obstruction.
+- Fp solver cannot expose nonzero solution support.
+- arithmetic depends on HashMap iteration order for canonical output.
 
-```text
-- source_map.md weakens the uploaded CW-ARC-DTP-Q spec.
-- summaries are made authoritative over the Base Spec.
-- implementation starts before approval.
+Required evidence from source:
+- Call chain from candidate normalization to CRT/rational reconstruction.
+- Tests where coefficient height exceeds a single prime.
+- Tests where left-null obstruction verifies λ^T M = 0 and λ^T b != 0.
 ```
 
----
-
-## RP-P1 — Crate skeleton and naming
-
-Inspect:
+## P2 reviewer prompt — Problem, compression, guards
 
 ```text
-Cargo.toml
-src/lib.rs
-all src file names
-tests/anti_simplification_static_tests.rs
-```
+Review P2.
 
-PASS only if:
-
-```text
-- Package/crate naming follows geosolver-core/geosolver_core.
-- Modules are domain-named and snake_case.
-- Public exports are limited to Base Spec public API.
-- No phase/version/temporary names appear in production code.
-- Static anti-simplification test exists and scans production files.
-```
+Inspect `TargetProblemQ`, `CertifiedSystemQ`, `certified_system_from_problem`, guard construction, and replay verification.
 
 FAIL if:
+- production `CertifiedSystemQ` construction always returns empty `guard_certificates`.
+- semantic NonZero guards are not converted into `InputSemanticNonzero` certificates.
+- compression replay is empty after canonicalization or zero-removal.
+- proof/guard verification creates a dummy problem with `semantic_guards: Vec::new()`.
+- guard provenance is ignored when verifying InputSemanticNonzero.
 
-```text
-- Production API exposes route forcing.
-- Files or code names include phase numbers, v2/new/legacy/temp/hack/toy/fixture/expected.
-- Extra public API appears without a Base Spec amendment.
+You must verify a source call chain:
+`solve_target` -> validation/canonicalization -> certified compression -> guard certificates -> guarded proof verifier.
+
+Tamper checks required:
+- Change guard polynomial: verifier rejects.
+- Change guard kind from NonZero: verifier rejects.
+- Remove replay step after normalization: verifier rejects or compression verification fails.
 ```
 
----
-
-## RP-P2 — Exact algebra core
-
-Inspect:
+## P3 reviewer prompt — Certificate verifier
 
 ```text
-src/variable.rs
-src/monomial.rs
-src/polynomial.rs
-src/univariate.rs
-tests/exact_algebra_tests.rs
-```
+Review P3.
 
-Data-flow to verify:
-
-```text
-Variable order -> Monomial exponent vector -> PolynomialQ BTreeMap terms -> exact operations -> UniPolynomialQ conversion.
-```
-
-PASS only if:
-
-```text
-- Polynomial arithmetic is exact over BigRational.
-- BTreeMap or equivalent canonical ordering is used.
-- Different variable orders cannot be silently merged.
-- squarefree_part is separate from proof target.
-- gcd/lcm are exact univariate operations.
-```
+Inspect `verify_certificate` and every helper it calls.
 
 FAIL if:
+- ExactIdentityKind is trusted without recomputing polynomial identities.
+- GuardedRadicalMembership does not recompute guard_product from verified guards.
+- `ExactTargetImage` is rejected as "not handled" in final code.
+- `NoNonzeroTargetEliminant` verifier is monomial-only in final code.
+- EmptyAdmissibleSet can be represented as support polynomial 1.
+- Any solver success certificate cannot be verified from original TargetProblemQ alone.
 
-```text
-- f32/f64 are used in proof-relevant algebra.
-- polynomial equality depends on string formatting.
-- HashMap iteration order is canonical output.
-- variable names are inspected for geometry semantics.
+You must describe exact equations checked for:
+- IdealMembership
+- RadicalMembership
+- GuardedRadicalMembership
+- EmptyAdmissibleSet
+- ExactTargetImage
+- NoNonzeroTargetEliminant
 ```
 
----
-
-## RP-P3 — Linear algebra
-
-Inspect:
+## P4 reviewer prompt — Window and residual oracle
 
 ```text
-src/finite_field.rs
-src/linear_q.rs
-src/linear_fp.rs
-related tests
-```
+Review P4.
 
-Data-flow to verify:
-
-```text
-Exact matrix -> Gaussian elimination -> solution or exact left-null obstruction.
-Finite-field matrix -> modular relation -> trace/candidate only.
-```
-
-PASS only if:
-
-```text
-- Q linear solve returns exact rational solution or exact obstruction.
-- Obstruction verifies λ^T M = 0 and λ^T b != 0.
-- Fp solve is not used as proof over Q.
-```
+Inspect row-closed window construction, membership matrix construction, target power matrix, modular reduction, and residual oracle.
 
 FAIL if:
+- caller-provided row_monomials can affect matrix rows without recomputation.
+- residual reduce(v)=0 iff v ∈ col(M) is not tested.
+- denominator-admissible prime filtering is missing.
+- residual oracle stores decorative trace not used by ResidualCyclic.
 
-```text
-- inconsistent systems return only boolean failure without obstruction.
-- modular rank stability is treated as exact proof.
-- modular computations write TargetCertificate directly.
+You must check tests for forged windows and residual oracle quotient behavior over multiple primes.
 ```
 
----
-
-## RP-P4 — Problem, compression, guards, verifier foundation
-
-Inspect:
+## P5 reviewer prompt — Fixed proof and fair schedule
 
 ```text
-src/problem.rs
-src/compression.rs
-src/guards.rs
-src/certificates.rs
-src/verifier.rs
-related tests
-```
+Review P5.
 
-PASS only if:
-
-```text
-- Input semantic guards remain separate from algebraic proof.
-- InputSemanticNonzero checks identical input GuardRecord with NonZero kind.
-- AlgebraicNonvanishing recomputes 1 = Σ q_i F_i + q_g guard.
-- DerivedProduct recursively verifies factors and exact product.
-- Unknown real certificate payload fails closed.
-```
+Inspect `prove_fixed_target`, proof schedule, proof learning, and obstruction expansion.
 
 FAIL if:
+- successful proof does not recompute H - Σ q_i F_i exactly.
+- GuardedRadical builds D without verifying guard certificates.
+- unbounded mode can loop forever over windows and never reaches fair proof tuple enumeration or complete fallback behavior.
+- schedule is fair over powers but not support degree.
+- obstruction expansion does not add Pred_F(row) supports.
 
-```text
-- guard_product is trusted without factor certificates.
-- Positive/Negative guards are used as nonzero without proof.
-- Compression replay can contain unreplayable external CAS simplification.
+You must produce:
+- proof target formula for each CertificateMode from code.
+- fairness argument for all finite tuples (d_B,a,e) in unbounded mode.
+- line-level evidence that exact identity check gates certificate construction.
 ```
 
----
-
-## RP-P5 — Target certificate verifier
-
-Inspect:
+## P6 reviewer prompt — Candidate normalization and factor schedule
 
 ```text
-src/certificates.rs
-src/verifier.rs
-tests/verifier_tests.rs
-```
+Review P6.
 
-PASS only if:
-
-```text
-- IdealMembership verifies H - Σ q_i F_i == 0 over Q.
-- RadicalMembership verifies support^a identity with a >= 1.
-- GuardedRadicalMembership verifies guards, guard product, and Q identity.
-- Composite SameIdealGcd recomputes gcd of verified child supports.
-- ComponentUnionLcm requires explicit component-union semantics.
-- Tamper tests fail.
-```
+Inspect candidate normalization, modular merge, rational reconstruction, ranking, and factor schedule.
 
 FAIL if:
+- first modular prime is lifted directly to Q in the multi-prime route.
+- single-prime heuristic is ranked as certified reconstruction.
+- factor_schedule returns only the original candidate in final implementation.
+- squarefree support replaces proof candidate without separate certificate.
+- ranking result can become adoption condition.
 
-```text
-- TargetCertificate verification uses solver trace.
-- certificate identity field stores a claimed zero residual that is trusted.
-- squarefree support is accepted as proof target without its own certificate.
+Check tests:
+- high coefficient CRT reconstruction.
+- reducible polynomial factor trial.
+- squarefree part is root isolation only.
 ```
 
----
-
-## RP-P6 — Windows and residual oracle
-
-Inspect:
+## P7 reviewer prompt — DirectTargetEquation
 
 ```text
-src/window.rs
-src/residual.rs
-src/candidate_residual.rs
-tests/residual_window_tests.rs
-```
-
-Data-flow to verify:
-
-```text
-system equations + multiplier supports -> row-closed C -> M_W and N_d -> Fp reduction -> residual oracle -> r_k -> modular relation -> TargetCandidate.
-```
-
-PASS only if:
-
-```text
-- Row closure is recomputed exactly from supports.
-- ResidualOracleFp satisfies reduce(v)=0 iff v is in column space for tested matrices.
-- residual-cyclic route returns TargetCandidate, not TargetCertificate.
-- Matrix backend is hidden behind residual trait.
-```
+Review P7.
 
 FAIL if:
+- route uses variable name string rather than Variable equality.
+- direct candidate is returned as certified without fixed proof.
+- route-forcing test still permits other routes or complete fallback.
 
-```text
-- residual oracle is only a rank/hash check.
-- residual route can set SolverStatus directly.
-- C is caller-trusted without recomputation.
+Check source call chain from DirectTargetEquation oracle to fixed proof gate.
 ```
 
----
-
-## RP-P7 — Primary candidate routes
-
-Inspect:
+## P8 reviewer prompt — ResidualCyclic
 
 ```text
-src/candidates.rs
-src/candidate_direct.rs
-src/candidate_residual.rs
-src/normalize.rs
-src/test_support.rs
-tests/candidate_route_forcing_tests.rs
-```
+Review P8.
 
-PASS only if:
+Inspect residual-cyclic route in production code.
 
-```text
-- CandidateOracle returns only candidates and traces.
-- Direct target equation route checks target-only equations structurally.
-- Residual route is reachable from solver planning.
-- Normalization clears denominators/content and keeps proof target distinct from squarefree root support.
-- Route forcing exists only under cfg(test).
-```
+Required data-flow:
+M_W and N_d -> modular reduction -> residual oracle -> relation nullspace -> modular multiplier solve -> active support -> CRT/reconstruction -> candidate -> fixed proof.
 
 FAIL if:
+- active_multiplier_supports is copied from the full window.
+- relation coefficients are not derived from residual nullspace.
+- modular multiplier solve M u = N c is absent.
+- reconstruction is first-prime-only.
+- prime admissibility ignores denominators/guards/replay.
+- exact proof gate can be bypassed.
 
-```text
-- candidate origin, score, or repeated-prime count is accepted as proof.
-- public SolverOptions exposes route forcing.
-- top-level pass through fallback is used to close direct/residual route.
+Check route-forcing tests RC-F1..RC-F4 and spurious candidate rejection.
 ```
 
----
-
-## RP-P8 — Fixed proof and learning
-
-Inspect:
+## P9 reviewer prompt — TargetCyclicKrylov
 
 ```text
-src/proof.rs
-src/proof_learning.rs
-tests/fixed_proof_tests.rs
-```
+Review P9.
 
-Data-flow to verify:
-
-```text
-candidate S + mode + proof window -> H = D^e S^a -> C_H -> M_H u = vec(H) -> q_i -> exact identity check -> TargetCertificate.
-```
-
-PASS only if:
-
-```text
-- Q identity check is the only adoption gate.
-- Guarded mode constructs D only from verified guard certificates.
-- left-null obstruction is emitted for inconsistent windows.
-- expansion by obstruction predecessors follows Pred_F(r).
-- fair schedule covers support power, guard power, and support degree.
-```
+Inspect quotient/residual handle and recurrence computation.
 
 FAIL if:
+- route is only a Q linear dependence search but called Krylov with no quotient handle.
+- route calls Groebner or complete fallback.
+- recurrence is accepted without fixed proof.
+- tests only show same top-level problem solved by another route.
 
-```text
-- modular reconstruction is accepted without Q identity.
-- proof window inconsistency is treated as S not in I.
-- semantic guards are used in D without certificates.
+You must explain how residual classes of 1,T,T^2,... produce recurrence coefficients in source.
 ```
 
----
-
-## RP-P9 — Repairs
-
-Inspect:
+## P10 reviewer prompt — HiddenVariableSparseResultant
 
 ```text
-src/repair_multiple.rs
-src/repair_schur.rs
-related tests
+Review P10.
+
+This is adversarial. Look for narrow route capture.
+
+FAIL if any production path:
+- rejects all polynomial_count != 2 cases without a separate general path;
+- computes only Sylvester resultant and calls it sparse resultant;
+- delegates candidate generation to complete fallback or Groebner;
+- does not build a sparse Macaulay/resultant template;
+- cannot handle a 3+ polynomial conformance family;
+- produces candidate from something other than determinant/minor/null-relation of the template;
+- treats resultant candidate as proof.
+
+Required reviewer output:
+- File/function where template rows are constructed.
+- File/function where columns are constructed.
+- File/function where determinant/minor/null relation is computed.
+- File/function where CRT/reconstruction occurs.
+- Route-forced 3+ polynomial test name.
+- Tamper test name.
 ```
 
-PASS only if:
+## P11 reviewer prompt — SliceSpecialization
 
 ```text
-- low-degree repair returns certified P=A*S, not uncertified S.
-- Schur repair scope is derived from obstruction incidence.
-- Schur output without exact certificate is only support information/trace.
-- Full-system Schur appears only in final fallback if at all.
-```
+Review P11.
 
 FAIL if:
+- route substitutes values into each equation independently and returns single-equation target polynomials.
+- sliced system does not contain all original equations plus slice equations.
+- slice gcd or repeated slice agreement is used as adoption evidence.
+- slice assignment schedule is hard-coded to one/two slices without resource schedule.
+- fixed proof in original unsliced system is absent.
 
-```text
-- repair delegates to complete fallback while claiming repair route.
-- local Schur uses all equations without obstruction-local reason.
-- uncertified Schur relation becomes solver success.
+You must trace:
+original system -> slice equations -> sliced system candidate subroute -> original-system fixed proof.
 ```
 
----
-
-## RP-P10 — Non-primary candidate routes
-
-Inspect:
+## P12 reviewer prompt — NormTraceTower
 
 ```text
-src/candidate_tower.rs
-src/candidate_krylov.rs
-src/candidate_resultant.rs
-src/candidate_slice.rs
-tests/candidate_route_forcing_tests.rs
-```
-
-Required call-chain evidence:
-
-```text
-solver/window planner -> route function -> route-specific algebraic core -> TargetCandidate -> fixed proof later.
-```
-
-PASS only if:
-
-```text
-- NormTraceTower detects monic triangular tower structurally.
-- TargetCyclicKrylov recurrence comes from target-relevant quotient/residual handle.
-- HiddenVariableSparseResultant has a multi-polynomial template path.
-- SliceSpecialization never uses slice agreement as proof.
-- Each route has route-forcing test with other routes and fallback disabled.
-```
+Review P12.
 
 FAIL if:
+- only monic coefficient 1 tower is implemented while claiming guarded/nonmonic tower support.
+- nonmonic leading coefficient is inverted without GuardCertificate.
+- target expression must be coefficient ±1 only.
+- quotient basis and reduction by tower are not exact.
+- characteristic polynomial code lacks rational/nontrivial tower tests.
 
-```text
-- Resultant route rejects all equations.len() != 2 inputs.
-- Resultant route is only univariate Sylvester but claims sparse/multi-polynomial resultant.
-- Any route calls Groebner/fallback and labels output as its own candidate.
-- Tests prove only top-level success through another route.
-- Route uses fixture-shaped detection.
+Check NT-F1..NT-F3 route-forced tests.
 ```
 
----
-
-## RP-P11 — Complete fallback
-
-Inspect:
+## P13 reviewer prompt — LocalizedSchur
 
 ```text
-src/fallback_elimination.rs
-src/solver.rs
-related tests
-```
-
-PASS only if:
-
-```text
-- Fallback computes only target elimination statement `(I:D^∞) ∩ Q[T]` or exact certificates about it.
-- It returns only CertifiedSupport, CertifiedEmpty, CertifiedNoTargetEliminant, or ResourceFailure.
-- It is called only after candidate/proof/repair routes are exhausted.
-- It does not enumerate coordinate solutions or produce full coordinate RUR.
-```
+Review P13.
 
 FAIL if:
+- localized_schur_repair always returns SupportInformation.
+- no conformance family exists where Schur returns exact certificate.
+- local relation is accepted without replay to original system.
+- full-system Schur is used outside complete fallback.
+- obstruction scope is not derived from row/equation incidence.
 
-```text
-- Fallback is reachable from candidate routes.
-- NoTargetEliminant is treated as real nonfinite.
-- Empty is returned as cover with S=1.
+You must explain:
+obstruction -> scope Ω -> boundary variables -> local membership equation -> target-only relation or support info.
 ```
 
----
-
-## RP-P12 — Top-level solver integration
-
-Inspect:
+## P14 reviewer prompt — Exact elimination substrate
 
 ```text
-src/dependency_dag.rs
-src/solver.rs
-src/options.rs
-src/trace.rs
-related tests
-```
-
-PASS only if:
-
-```text
-- Target Dependency DAG uses only algebraic footprint.
-- Window planner produces row-closed windows and exhaustive degree schedule under unbounded settings.
-- solve_target control-flow matches Base Spec pseudocode.
-- Success statuses always carry matching SolverCertificate.
-- Candidate cover finalization uses gcd for same ideal.
-```
+Review P14.
 
 FAIL if:
+- Groebner basis polynomials lack representation as combinations of original generators.
+- exact elimination engine enumerates coordinate solutions or builds full coordinate RUR.
+- resource traces are not derived from actual pair/matrix counts.
+- basis tamper tests do not fail.
 
-```text
-- geometry strings influence planner/solver.
-- fallback order is changed to pass tests cheaply.
-- status and certificate disagree.
-- success can occur without verifier-acceptable certificate.
+You must verify representation replay for at least one nontrivial basis polynomial.
 ```
 
----
-
-## RP-P13 — Roots and exact-image safety
-
-Inspect:
+## P15 reviewer prompt — CompleteTargetEliminationFallback
 
 ```text
-src/roots.rs
-src/exact_image.rs
-src/solver.rs
-tests/root_isolation_tests.rs
-tests/solver_status_tests.rs
-```
+Review P15.
 
-PASS only if:
-
-```text
-- Root isolation uses exact rational intervals.
-- Each AlgebraicRealRoot interval contains exactly one real root by exact check.
-- CertifiedCandidateCover includes support, squarefree support, exact roots, and TargetCertificate.
-- CertifiedExactTargetImage requires all roots classified.
-- TryExactImage and RequireExactImage fail closed when classifier incomplete.
-```
+This phase must close all complete fallback gaps.
 
 FAIL if:
+- complete fallback is bounded by max_window_degree rather than exact target elimination.
+- saturation via U*D - 1 or equivalent exact ideal quotient is absent when guards exist.
+- support certificate does not translate saturation back to D^e S^a = Σ q_i F_i.
+- CertifiedNoNonzeroTargetEliminant is monomial-only or heuristic.
+- no-target-eliminant verifier does not replay exact elimination-zero certificate.
+- empty ideal returns support 1 instead of CertifiedEmptyAdmissibleSet.
 
-```text
-- root records are floating approximations only.
-- unclassified roots are dropped.
-- partial classification is returned as CertifiedExactTargetImage.
+You must inspect CTE-F1..CTE-F5 tests and provide code-level data-flow for each returned variant.
 ```
 
----
-
-## RP-P14 — Full anti-simplification audit
-
-Inspect all production code and tests.
-
-Mandatory searches:
+## P16 reviewer prompt — Exact image
 
 ```text
-Unsupported
-expected
-fixture
-circle
-distance
-area
-incircle
-mixtilinear
-orthic
-RUR
-coordinate_solution
-solve_all
-lex_param
-len() != 2
-polynomials.len() != 2
-f64
-f32
-TODO
-panic!("unsupported")
-```
+Review P16.
 
-PASS only if:
-
-```text
-- Hits are absent or strictly confined to tests/docs with explicit anti-pattern checks.
-- Each route has non-simplification manifest and reviewer verified it in code.
-- Route-forcing matrix proves routes independently.
-- Tamper matrix proves certificates are real.
-- No route closes from top-level success via another route.
-```
+This phase must close exact image. Fail-closed stub is not enough.
 
 FAIL if:
+- classify_real_fibers always returns Incomplete.
+- ExactTargetImage verifier is unhandled.
+- nonempty certificate uses floats, approximate roots, or sample strings.
+- empty certificate is a text description without replay.
+- not all roots of squarefree_support are classified exactly once.
+- semantic guard signs are ignored.
 
-```text
-- Any known-bad pattern appears in production control-flow.
-- Manifests are accepted without code inspection.
-- An algorithm is present by name/type only.
+You must inspect:
+- algebraic real representation;
+- exact sign evaluation;
+- CAD/RCF or equivalent feasibility engine;
+- Nonempty certificate verifier;
+- Empty certificate verifier;
+- EI-F1..EI-F4 tests.
+
+PASS only if RequireExactImage returns CertifiedExactTargetImage for at least one nontrivial conformance family.
 ```
 
----
-
-## RP-FINAL / RP-CLOSURE — Final closure review
-
-Inspect:
+## P17 reviewer prompt — Top-level solver integration
 
 ```text
-docs/ai/changes/cw-arc-dtp-q/CLOSURE.md
-all evidence files
-all review files
-all production source files changed
-all tests
+Review P17.
+
+Inspect `solve_target`.
+
+FAIL if:
+- hidden fallback exists that is not in Base Spec.
+- complete fallback is unreachable in bounded/unbounded controlled failure cases.
+- any success status lacks verifier-accepted certificate.
+- status fields are inconsistent with Base Spec.
+- solver options include geometry names, fixture selectors, or algorithm hacks beyond resource/exact image controls.
+- normal failures panic with assert instead of returning status.
+
+You must trace input -> compression -> routes -> proof -> cover/exact image/fallback -> certificate.
 ```
 
-PASS only if closure claim exactly matches evidence.
-
-Required final statement shape:
+## P18 reviewer prompt — Route-forcing matrix
 
 ```text
-This implementation completes the CW-ARC-DTP-Q certified candidate-cover core as specified by R-IDs ... . It returns CertifiedCandidateCover only with exact TargetCertificate verification. It includes exact root isolation and exact-image fail-closed control flow. It does not claim general CertifiedExactTargetImage completion unless all real-fiber classifier requirements were implemented and reviewed.
+Review P18.
+
+FAIL if:
+- route-forcing harness exists only as docs.
+- route-forcing tests still allow other routes.
+- route-forcing success depends on complete fallback.
+- any route lacks route-only success and route-only rejection/spurious test.
+- trace assertions are too weak, e.g. only `candidate:` appears without origin isolation.
+
+Do not accept top-level success as route correctness.
 ```
 
-FAIL if closure claims:
+## P19 reviewer prompt — Non-simplification manifest
 
 ```text
-- general exact target image without complete real-fiber classification.
-- production-safe if reviewers did not inspect production code.
-- verified route correctness based on top-level tests only.
-- source-faithful while source_map is missing/incomplete.
+Review P19.
+
+Read the manifest only as a checklist, then verify every item in production source.
+
+FAIL if manifest says "not fallback" but source calls fallback.
+FAIL if manifest says "not certificate shell" but verifier does not recompute exact identity.
+FAIL if manifest says "general" but source has hard-coded structural restrictions.
+FAIL if manifest lacks data-flow proof for any route.
+
+You must independently search forbidden patterns and include results in review output.
 ```
+
+## P20 reviewer prompt — Adversarial regression suite
+
+```text
+Review P20.
+
+FAIL if tests use geometry family names, problem IDs, or expected-answer branches.
+FAIL if algebraic stress families are toy-only T^2-c cases.
+FAIL if guard/saturation, positive-dimensional finite target, bilinear determinant-like, Gram-like, sparse incidence, and tower structures are absent.
+FAIL if resource failure tests are indistinguishable from unsupported scope.
+
+Ensure tests exercise algebraic IR structures, not geometry DSL lowering.
+```
+
+## P21 reviewer prompt — Final disqualifier scan
+
+```text
+Review P21.
+
+Run static search and source inspection for final disqualifiers:
+- TODO / unimplemented / not available / Unsupported in production path
+- always Incomplete exact image
+- exact image verifier unhandled
+- monomial-only no-target eliminant
+- first-prime reconstruction
+- bounded complete fallback
+- dropped guards
+- dummy empty semantic guards
+- factor_schedule clone-only
+- Schur support-only
+- polynomial_count == 2 hard general route gate
+- single-equation slice route
+- hidden full coordinate RUR / full coordinate solution enumeration
+
+FAIL if any remains in final production path.
+```
+
+## P22 reviewer prompt — Final review
+
+```text
+Perform final adversarial review.
+
+You must not rely on previous PASS results. Re-sample source across all critical paths:
+- compression and guards;
+- verifier;
+- residual candidate;
+- sparse resultant;
+- slice;
+- tower;
+- Krylov;
+- Schur;
+- fixed proof;
+- complete fallback;
+- exact image;
+- solve_target integration.
+
+For each, answer:
+1. What is the production entry?
+2. What data controls the computation?
+3. What certificate is produced?
+4. How does verifier replay it?
+5. What would make it fail if tampered?
+6. Which forbidden simplification did you search for?
+
+Final PASS requires no unresolved QuestionDebt, no CertificateDesignGap in required variants, no final disqualifier, and all route-forcing/tamper/adversarial tests present.
+```
+

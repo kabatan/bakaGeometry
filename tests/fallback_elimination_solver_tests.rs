@@ -106,8 +106,8 @@ fn solver_no_target_eliminant_is_algebraic_only() {
         .events
         .iter()
         .any(|event| event == "target_elimination:no_target_eliminant"));
-    assert_eq!(
+    assert!(matches!(
         verify_certificate(input, result.certificate.unwrap()),
-        VerificationResult::Verified
-    );
+        VerificationResult::CertificateDesignGap { .. }
+    ));
 }

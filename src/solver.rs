@@ -7,7 +7,9 @@ use crate::candidate_resultant::HiddenVariableSparseResultantOracle;
 use crate::candidate_slice::SliceSpecializationOracle;
 use crate::candidate_tower::NormTraceTowerOracle;
 use crate::candidates::{CandidateOracle, CandidateOrigin, TargetCandidate};
-use crate::compression::{CertifiedSystemQ, CompressionReplayCertificate};
+use crate::compression::{
+    certified_system_from_problem, lift_multipliers_to_original_problem, CertifiedSystemQ,
+};
 use crate::dependency_dag::{
     build_target_dependency_dag, certificate_window_schedule, plan_certificate_windows,
 };
@@ -27,9 +29,9 @@ use crate::repair_schur::{localized_schur_repair, SchurRepairOutput};
 use crate::roots::isolate_real_roots_squarefree;
 use crate::window::{CertificateWindow, ProofWindow};
 use crate::{
-    AlgebraicRealRoot, CertifiedExactTargetImage, CompositeRule, ExactImageMode, ResourceLimits,
-    SolverCertificate, SolverOptions, SolverTrace, TargetCertificate, TargetProblemQ,
-    UniPolynomialQ,
+    AlgebraicRealRoot, CertifiedExactTargetImage, CompositeRule, EmptyAdmissibleSetCertificate,
+    ExactImageMode, ResourceLimits, SolverCertificate, SolverOptions, SolverTrace,
+    TargetCertificate, TargetProblemQ, UniPolynomialQ,
 };
 
 #[derive(Clone, Debug)]
@@ -72,6 +74,18 @@ fn solve_target_with_route_control(
     enabled_origins: Option<&BTreeSet<CandidateOrigin>>,
     allow_complete_fallback: bool,
 ) -> TargetSolveResult {
+    let system = match certified_system_from_problem(&problem) {
+        Ok(system) => system,
+        Err(_) => {
+            return TargetSolveResult {
+                status: SolverStatus::InvalidInput,
+                cover: None,
+                exact_image: None,
+                certificate: None,
+                trace: SolverTrace::default(),
+            };
+        }
+    };
     if !problem.is_well_formed() {
         return TargetSolveResult {
             status: SolverStatus::InvalidInput,
@@ -82,12 +96,14 @@ fn solve_target_with_route_control(
         };
     }
 
-    let system = certified_system_from_problem(&problem);
     let mut trace = SolverTrace::default();
 
     if let Some(certificate) =
         try_empty_admissible_set_certificate(&system, &options.resource_limits)
     {
+        let Some(certificate) = lift_empty_certificate_to_original(&problem, certificate) else {
+            return implementation_bug_result(trace);
+        };
         trace.events.push("early_empty:certified".to_string());
         return TargetSolveResult {
             status: SolverStatus::CertifiedEmptyAdmissibleSet,
@@ -159,6 +175,11 @@ fn solve_target_with_route_control(
                         &mut last_proof_window,
                         &mut trace,
                     ) {
+                        let Some(certificate) =
+                            lift_target_certificate_to_original(&problem, certificate)
+                        else {
+                            return implementation_bug_result(trace);
+                        };
                         return return_verified_cover(&mut verified, certificate, &options, trace);
                     }
                 }
@@ -173,6 +194,11 @@ fn solve_target_with_route_control(
                 &options.resource_limits,
             ) {
                 SchurRepairOutput::Certified(certificate) => {
+                    let Some(certificate) =
+                        lift_target_certificate_to_original(&problem, certificate)
+                    else {
+                        return implementation_bug_result(trace);
+                    };
                     return return_verified_cover(&mut verified, certificate, &options, trace);
                 }
                 SchurRepairOutput::SupportInformation(_) => {
@@ -194,6 +220,10 @@ fn solve_target_with_route_control(
     );
     match complete_target_elimination_fallback(&system, &options.resource_limits) {
         CompleteFallbackResult::CertifiedEmpty(certificate) => {
+            let Some(certificate) = lift_empty_certificate_to_original(&problem, certificate)
+            else {
+                return implementation_bug_result(trace);
+            };
             trace.events.push("target_elimination:empty".to_string());
             return TargetSolveResult {
                 status: SolverStatus::CertifiedEmptyAdmissibleSet,
@@ -216,6 +246,10 @@ fn solve_target_with_route_control(
             };
         }
         CompleteFallbackResult::CertifiedSupport(certificate) => {
+            let Some(certificate) = lift_target_certificate_to_original(&problem, certificate)
+            else {
+                return implementation_bug_result(trace);
+            };
             trace.events.push("target_elimination:support".to_string());
             return maybe_classify_exact_target_image(certificate, &options, trace);
         }
@@ -245,6 +279,16 @@ fn solve_target_with_route_control(
 fn finite_resource_failure(trace: SolverTrace) -> TargetSolveResult {
     TargetSolveResult {
         status: SolverStatus::FiniteResourceFailure,
+        cover: None,
+        exact_image: None,
+        certificate: None,
+        trace,
+    }
+}
+
+fn implementation_bug_result(trace: SolverTrace) -> TargetSolveResult {
+    TargetSolveResult {
+        status: SolverStatus::ImplementationBug,
         cover: None,
         exact_image: None,
         certificate: None,
@@ -388,6 +432,101 @@ fn return_verified_cover(
     maybe_classify_exact_target_image(final_certificate, options, trace)
 }
 
+fn lift_target_certificate_to_original(
+    problem: &TargetProblemQ,
+    certificate: TargetCertificate,
+) -> Option<TargetCertificate> {
+    match certificate {
+        TargetCertificate::IdealMembership {
+            support,
+            multipliers,
+            identity,
+        } => Some(TargetCertificate::IdealMembership {
+            support,
+            multipliers: lift_multipliers_to_original_problem(problem, &multipliers)?,
+            identity,
+        }),
+        TargetCertificate::RadicalMembership {
+            support,
+            power,
+            multipliers,
+            identity,
+        } => Some(TargetCertificate::RadicalMembership {
+            support,
+            power,
+            multipliers: lift_multipliers_to_original_problem(problem, &multipliers)?,
+            identity,
+        }),
+        TargetCertificate::GuardedRadicalMembership {
+            support,
+            support_power,
+            guard_power,
+            guard_product,
+            guard_certificates,
+            multipliers,
+            identity,
+        } => Some(TargetCertificate::GuardedRadicalMembership {
+            support,
+            support_power,
+            guard_power,
+            guard_product,
+            guard_certificates,
+            multipliers: lift_multipliers_to_original_problem(problem, &multipliers)?,
+            identity,
+        }),
+        TargetCertificate::CompositeCover {
+            support,
+            children,
+            rule,
+            component_union_source,
+        } => {
+            let children = children
+                .into_iter()
+                .map(|child| lift_target_certificate_to_original(problem, child))
+                .collect::<Option<Vec<_>>>()?;
+            Some(TargetCertificate::CompositeCover {
+                support,
+                children,
+                rule,
+                component_union_source,
+            })
+        }
+    }
+}
+
+fn lift_empty_certificate_to_original(
+    problem: &TargetProblemQ,
+    certificate: EmptyAdmissibleSetCertificate,
+) -> Option<EmptyAdmissibleSetCertificate> {
+    match certificate {
+        EmptyAdmissibleSetCertificate::AlgebraicInfeasibility {
+            multipliers,
+            identity,
+        } => Some(EmptyAdmissibleSetCertificate::AlgebraicInfeasibility {
+            multipliers: lift_multipliers_to_original_problem(problem, &multipliers)?,
+            identity,
+        }),
+        EmptyAdmissibleSetCertificate::GuardedAlgebraicInfeasibility {
+            guard_product,
+            guard_power,
+            guard_certificates,
+            multipliers,
+            identity,
+        } => Some(
+            EmptyAdmissibleSetCertificate::GuardedAlgebraicInfeasibility {
+                guard_product,
+                guard_power,
+                guard_certificates,
+                multipliers: lift_multipliers_to_original_problem(problem, &multipliers)?,
+                identity,
+            },
+        ),
+        EmptyAdmissibleSetCertificate::RealInfeasibility { certificate } => {
+            Some(EmptyAdmissibleSetCertificate::RealInfeasibility { certificate })
+        }
+    }
+}
+
 fn refine_and_finalize(verified: &[TargetCertificate]) -> Option<TargetCertificate> {
     let mut certificates = verified.iter();
     let first = certificates.next()?.clone();
@@ -516,16 +655,6 @@ fn target_certificate_support(certificate: &TargetCertificate) -> &UniPolynomial
     }
 }
 
-fn certified_system_from_problem(problem: &TargetProblemQ) -> CertifiedSystemQ {
-    CertifiedSystemQ {
-        equations: problem.equations.clone(),
-        variables: problem.variables.clone(),
-        target: problem.target.clone(),
-        guard_certificates: Vec::new(),
-        replay: CompressionReplayCertificate { steps: Vec::new() },
-    }
-}
-
 fn collect_candidate_routes(
     system: &CertifiedSystemQ,
     window: &CertificateWindow,
@@ -619,7 +748,9 @@ pub(crate) fn collect_candidates_for_test(
         return Vec::new();
     }
     let _fallback_allowed = forcing.allow_complete_fallback;
-    let system = certified_system_from_problem(&problem);
+    let Ok(system) = certified_system_from_problem(&problem) else {
+        return Vec::new();
+    };
     let dag = build_target_dependency_dag(&system);
     plan_certificate_windows(&system, &dag, limits)
         .iter()

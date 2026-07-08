@@ -484,12 +484,12 @@ mod tests {
         let CompleteFallbackResult::CertifiedNoTargetEliminant(certificate) = result else {
             panic!("fallback should certify no target eliminant");
         };
-        assert_eq!(
+        assert!(matches!(
             verify_certificate(
                 problem,
                 SolverCertificate::NoNonzeroTargetEliminant(certificate)
             ),
-            VerificationResult::Verified
-        );
+            VerificationResult::CertificateDesignGap { .. }
+        ));
     }
 }

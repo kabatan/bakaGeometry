@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use crate::{GuardCertificate, PolynomialQ, Variable};
 
 #[derive(Clone, Debug)]
@@ -32,16 +34,27 @@ pub struct GuardProvenance {
 
 impl TargetProblemQ {
     pub(crate) fn is_well_formed(&self) -> bool {
-        self.variables.contains(&self.target)
-            && self
-                .equations
-                .iter()
-                .all(|equation| equation.variables == self.variables)
-            && self
-                .semantic_guards
-                .iter()
-                .all(|record| record.polynomial.variables == self.variables)
+        self.variables
+            .iter()
+            .filter(|variable| *variable == &self.target)
+            .count()
+            == 1
+            && self.variables.iter().collect::<BTreeSet<_>>().len() == self.variables.len()
+            && self.equations.iter().all(|equation| {
+                equation.variables == self.variables && polynomial_terms_have_valid_arity(equation)
+            })
+            && self.semantic_guards.iter().all(|record| {
+                record.polynomial.variables == self.variables
+                    && polynomial_terms_have_valid_arity(&record.polynomial)
+            })
     }
+}
+
+pub(crate) fn polynomial_terms_have_valid_arity(polynomial: &PolynomialQ) -> bool {
+    polynomial
+        .terms
+        .keys()
+        .all(|monomial| monomial.exponents.len() == polynomial.variables.len())
 }
 
 pub(crate) fn verified_guard_count(guards: &[GuardCertificate]) -> usize {

@@ -1,7 +1,7 @@
 use num_bigint::BigInt;
 use num_integer::Integer;
 use num_rational::BigRational;
-use num_traits::{One, Signed, Zero};
+use num_traits::{One, Signed, ToPrimitive, Zero};
 
 use crate::{Monomial, PolynomialQ, Rational, Variable};
 
@@ -164,7 +164,32 @@ impl UniPolynomialQ {
     }
 
     pub fn factor_squarefree_over_q(&self) -> Vec<Self> {
-        vec![self.squarefree_part()]
+        let mut remaining = self.squarefree_part().primitive_integer_normalized();
+        if remaining.is_zero() {
+            return Vec::new();
+        }
+        if remaining.degree().is_none_or(|degree| degree == 0) {
+            return vec![remaining];
+        }
+
+        let mut factors = Vec::new();
+        while remaining.degree().is_some_and(|degree| degree > 1) {
+            let Some(root) = rational_root(&remaining) else {
+                break;
+            };
+            let factor = linear_factor_for_root(&remaining.variable, &root);
+            let (quotient, remainder) = remaining.div_rem(&factor);
+            if !remainder.is_zero() {
+                break;
+            }
+            factors.push(factor.primitive_integer_normalized());
+            remaining = quotient.primitive_integer_normalized();
+        }
+
+        if !remaining.is_zero() && remaining.degree().is_some_and(|degree| degree > 0) {
+            factors.push(remaining.primitive_integer_normalized());
+        }
+        factors
     }
 
     pub fn pow(&self, exponent: usize) -> Self {
@@ -314,4 +339,77 @@ impl UniPolynomialQ {
         result.normalize();
         result
     }
+}
+
+fn rational_root(polynomial: &UniPolynomialQ) -> Option<Rational> {
+    let normalized = polynomial.primitive_integer_normalized();
+    let degree = normalized.degree()?;
+    if degree == 0 {
+        return None;
+    }
+    let leading = normalized.coefficients[degree].numer().clone();
+    let constant = normalized
+        .coefficients
+        .first()
+        .map(|coefficient| coefficient.numer().clone())
+        .unwrap_or_else(BigInt::zero);
+
+    if constant.is_zero() {
+        return Some(BigRational::zero());
+    }
+
+    let numerators = bounded_positive_divisors(&constant.abs())?;
+    let denominators = bounded_positive_divisors(&leading.abs())?;
+    for numerator in numerators {
+        for denominator in &denominators {
+            for sign in [1, -1] {
+                let signed = if sign == 1 {
+                    numerator.clone()
+                } else {
+                    -numerator.clone()
+                };
+                let candidate = BigRational::new(signed, denominator.clone());
+                if evaluate_univariate(&normalized, &candidate).is_zero() {
+                    return Some(candidate);
+                }
+            }
+        }
+    }
+    None
+}
+
+fn bounded_positive_divisors(value: &BigInt) -> Option<Vec<BigInt>> {
+    let limit = value.to_u64()?;
+    if limit > 1_000_000 {
+        return None;
+    }
+    let mut divisors = Vec::new();
+    for candidate in 1..=limit {
+        if value % BigInt::from(candidate) == BigInt::zero() {
+            divisors.push(BigInt::from(candidate));
+        }
+    }
+    Some(divisors)
+}
+
+fn evaluate_univariate(polynomial: &UniPolynomialQ, point: &Rational) -> Rational {
+    polynomial
+        .coefficients
+        .iter()
+        .rev()
+        .fold(BigRational::zero(), |value, coefficient| {
+            value * point.clone() + coefficient.clone()
+        })
+}
+
+fn linear_factor_for_root(variable: &Variable, root: &Rational) -> UniPolynomialQ {
+    let mut factor = UniPolynomialQ {
+        variable: variable.clone(),
+        coefficients: vec![
+            -BigRational::from_integer(root.numer().clone()),
+            BigRational::from_integer(root.denom().clone()),
+        ],
+    };
+    factor.normalize();
+    factor.primitive_integer_normalized()
 }

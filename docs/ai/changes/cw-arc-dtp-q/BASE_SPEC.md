@@ -1,306 +1,121 @@
-# CW-ARC-DTP-Q Guardian Base Spec
+# 01. Base Spec: CW-ARC-DTP-Q Full Implementation v3
 
-Spec ID: `CW-ARC-DTP-Q-CANDIDATE-COVER`
-Type: Change Base Spec
-Status: Draft for user approval
-Scope owner: `geosolver-core` target-value solver
-Target repo state: empty Rust repository
+## 0. Authority and scope
 
----
+This Base Spec defines the final required state of the repository implementing CW-ARC-DTP-Q in `geosolver-core`.
 
-## Context Packet
+The implementation MUST implement the full algorithmic contract described here. It MUST NOT implement a simplified candidate-cover-only subset and call it complete. It MUST NOT scope out guard handling, certified compression, complete target elimination, or exact target image without an explicit user-approved Base Spec amendment.
 
-Spec ID: `CW-ARC-DTP-Q-CANDIDATE-COVER`
-Type: Change Base Spec
-Status: Draft
-Parent: none assumed; if the repo already has an active Repo or Area Base Spec, this Change Base Spec must be amended to list the required parent R-IDs before implementation.
-Scope: Implement the CW-ARC-DTP-Q target-candidate-cover core over rational polynomial systems.
-Applies To: `geosolver-core` library crate and its tests.
-Required Parent R-IDs: none in an empty repo.
-Blocking Questions: none. This spec intentionally resolves ambiguous implementation choices by fixing file paths, public types, control flow, and verification behavior.
-Non-blocking Debt: general exact real fiber classification is not required for closing `CertifiedCandidateCover`, but the exact-image API and fail-closed status behavior are required.
-Known Exceptions: none.
-Read-First R-IDs: BS-CORE-001, BS-CERT-001, BS-PROOF-001, BS-SOLVER-001, BS-FORBID-001.
-Context Packet Authority: non-authoritative digest. The body below is authoritative.
+The original mathematical authority is the CW-ARC-DTP-Q revised specification v2. This Base Spec narrows implementation ambiguity. If this Base Spec and the source specification appear to conflict, the Agent MUST stop and create QuestionDebt. It MUST NOT choose the easier interpretation.
 
----
+## 1. Global completion definition
 
-## 0. Source Authority and Fidelity Rules
-
-### BS-SRC-001 — Primary source
-The implementation MUST follow the uploaded CW-ARC-DTP-Q revised specification v2 exactly for the mathematical solver contract. The solver is target-certificate-first: candidate generation by finite-field, specialization, Krylov, resultant, norm/trace, and slice probes is never enough for success; adoption requires an exact certificate over the original rational system or a replay-equivalent certified system.
-
-### BS-SRC-002 — Failure-analysis sources
-The uploaded failure-analysis documents are normative anti-pattern sources. Their specific past examples are not to be copied literally as narrow checks; they MUST be generalized into requirements that prevent name-only implementation, certificate shelling, narrow route capture, hidden delegation, evidence overfitting, and gate-only completion.
-
-### BS-SRC-003 — Guardian workflow constraints
-Implementation MUST use Guardian Lane. A Base Spec is the correctness authority, a Plan maps tasks to R-IDs/MECHs/verification, and implementation MUST NOT start until this Base Spec and Plan are explicitly approved by the user.
-
-### BS-SRC-004 — Design and naming references
-Rust code MUST follow the Rust API Guidelines naming conventions: modules/functions/methods/local variables in `snake_case`, types/traits/enum variants in `UpperCamelCase`, constants/statics in `SCREAMING_SNAKE_CASE`, and conversion methods using `as_`, `to_`, and `into_` according to cost/ownership. Module boundaries MUST follow information-hiding principles: hide volatile representation choices such as residual matrix backend, row-basis representation, monomial ordering internals, and linear algebra backend behind stable contracts.
-
----
-
-## 1. Exact Scope
-
-### BS-SCOPE-001 — In scope
-The repo MUST implement a Rust library crate whose production public API is:
-
-```rust
-pub fn solve_target(problem: TargetProblemQ, options: SolverOptions) -> TargetSolveResult;
-
-pub fn verify_certificate(problem: TargetProblemQ, cert: SolverCertificate) -> VerificationResult;
-```
-
-The implemented solver MUST accept well-formed rational polynomial target systems:
+The repository is complete only if all of the following are true.
 
 ```text
-F = {F_1, ..., F_m} ⊂ Q[X_1, ..., X_n, T]
+G1. `solve_target(problem, options)` accepts every well-formed rational target polynomial system.
+G2. No production path dispatches on geometry names, fixture names, problem IDs, expected answers, or variable names except by exact structural equality of variables.
+G3. Candidate generation and candidate adoption are separated.
+G4. Every `CertifiedCandidateCover` has a `SolverCertificate::TargetCover` that `verify_certificate` verifies from the original problem without solver trace.
+G5. Every guard used in `GuardedRadicalMembership`, guarded empty proof, or saturation has a valid `GuardCertificate`.
+G6. `CertifiedSystemQ` is produced by replayable, verifier-checkable compression steps. Input semantic nonzero guards are not dropped.
+G7. Residual / Krylov / resultant / slice / tower outputs are never adopted without fixed exact proof or route-specific exact certificate allowed by this spec.
+G8. Unbounded proof search is fair over multiplier support degree, support power, and guard power.
+G9. `CompleteTargetEliminationFallback` computes the exact target elimination of `(I : D^∞) ∩ Q[T]` or returns resource failure. It is not a bounded relation search.
+G10. `CertifiedNoNonzeroTargetEliminant` is returned only with a verifier-checkable exact elimination-zero certificate.
+G11. `CertifiedEmptyAdmissibleSet` is returned only with an exact empty certificate and is never encoded as support `1`.
+G12. `CertifiedExactTargetImage` is returned only if all real roots of `squarefree_support` are classified by exact real fiber certificates.
+G13. `ExactImageMode::RequireExactImage` has production examples where it returns `CertifiedExactTargetImage` and examples where it fail-closes when resource limits prevent classification.
+G14. Every route has a route-forcing test where all other routes and complete fallback are disabled.
+G15. Every route has tamper tests showing certificate replay fails after meaningful mutation.
+G16. No final production function contains placeholder semantics such as always-incomplete classifier, first-prime-only reconstruction for multi-prime candidate reconstruction, bounded search named complete, or evidence-only certificate validation.
 ```
 
-and search for a nonzero target-only support polynomial:
+## 2. Mandatory repository structure
 
-```text
-S(T) ∈ Q[T]
-```
-
-with an exact certificate proving one of:
-
-```text
-S(T) ∈ I,
-S(T)^a ∈ I,
-D^e S(T)^a ∈ I,
-```
-
-where `I = <F_1, ..., F_m>`, `a >= 1`, `e >= 0`, and every guard factor in `D` has an independently verifiable `GuardCertificate`.
-
-### BS-SCOPE-002 — Standard success target
-The standard success status for this change is `SolverStatus::CertifiedCandidateCover`. It returns exact target candidate values as real roots of `support`, possibly with extra roots.
-
-### BS-SCOPE-003 — Exact image boundary
-The exact-image types, root isolation, and `MaybeClassifyExactTargetImage` control flow MUST exist. `CertifiedExactTargetImage` MUST only be returned when every real root of the squarefree support has an exact `Nonempty` or `Empty` fiber certificate. If the general real-fiber classifier is not complete, the implementation MUST fail closed according to `ExactImageMode` and MUST NOT silently drop unclassified roots.
-
-### BS-SCOPE-004 — Empty and no-eliminant statuses
-Exact empty admissible set and no-nonzero-target-eliminant statuses MUST be separate from target cover. The solver MUST NOT fake empty admissible set by returning `S(T)=1` as a cover.
-
-### BS-SCOPE-005 — Out of scope
-The following are out of scope for this change and MUST NOT appear as production behavior:
-
-```text
-- Geometry DSL lowering.
-- Geometry-family dispatch.
-- Coordinate-solution enumeration.
-- Full coordinate RUR construction.
-- Full coordinate lex parametrization followed by reading T.
-- Generic numerical solving as proof.
-- Generic CAD/QE as a hidden production fallback.
-- Problem-name, fixture-name, expected-answer, or official-solution dispatch.
-```
-
----
-
-## 2. Required Repository Layout
-
-The empty repo MUST be created with this layout. Names MUST NOT contain plan version names, phase names, temporary labels, author jokes, benchmark fixture names, or terms such as `v2_impl`, `new_algo`, `hack`, `legacy`, `temp`, `fallback_solver`, or `toy`.
+The repository MUST contain the following files. Additional internal helper files are allowed only if the public contracts below remain unchanged.
 
 ```text
 Cargo.toml
-README.md
-src/
-  lib.rs
-  arith.rs
-  variable.rs
-  monomial.rs
-  polynomial.rs
-  univariate.rs
-  finite_field.rs
-  linear_q.rs
-  linear_fp.rs
-  problem.rs
-  compression.rs
-  guards.rs
-  certificates.rs
-  verifier.rs
-  window.rs
-  residual.rs
-  candidates.rs
-  candidate_direct.rs
-  candidate_residual.rs
-  candidate_tower.rs
-  candidate_krylov.rs
-  candidate_resultant.rs
-  candidate_slice.rs
-  normalize.rs
-  dependency_dag.rs
-  proof.rs
-  proof_learning.rs
-  repair_multiple.rs
-  repair_schur.rs
-  fallback_elimination.rs
-  roots.rs
-  exact_image.rs
-  solver.rs
-  trace.rs
-  options.rs
-  error.rs
-  test_support.rs      # cfg(test) only
-
-tests/
-  exact_algebra_tests.rs
-  verifier_tests.rs
-  residual_window_tests.rs
-  fixed_proof_tests.rs
-  guard_certificate_tests.rs
-  candidate_route_forcing_tests.rs
-  solver_status_tests.rs
-  root_isolation_tests.rs
-  anti_simplification_static_tests.rs
-
-docs/ai/
-  SPEC_REGISTRY.md
-  ACTIVE_CONTEXT.md
-  changes/cw-arc-dtp-q/
-    BASE_SPEC.md
-    PLAN.md
-    CLOSURE.md
-    source_map.md
-    evidence/
-    reviews/
+src/lib.rs
+src/arith.rs
+src/variable.rs
+src/monomial.rs
+src/polynomial.rs
+src/univariate.rs
+src/finite_field.rs
+src/matrix_q.rs
+src/matrix_fp.rs
+src/crt.rs
+src/rational_reconstruction.rs
+src/problem.rs
+src/compression.rs
+src/guards.rs
+src/certificates.rs
+src/verifier.rs
+src/window.rs
+src/residual.rs
+src/candidates/mod.rs
+src/candidates/direct.rs
+src/candidates/residual_cyclic.rs
+src/candidates/krylov.rs
+src/candidates/sparse_resultant.rs
+src/candidates/slice.rs
+src/candidates/norm_trace_tower.rs
+src/candidates/localized_schur.rs
+src/proof/mod.rs
+src/proof/fixed.rs
+src/proof/schedule.rs
+src/proof/learning.rs
+src/proof/multiple_repair.rs
+src/elimination/mod.rs
+src/elimination/groebner.rs
+src/elimination/saturation.rs
+src/elimination/target_elimination.rs
+src/real/mod.rs
+src/real/algebraic.rs
+src/real/sturm.rs
+src/real/cad.rs
+src/real/fiber.rs
+src/solver.rs
+src/trace.rs
+tests/route_forcing_*.rs
+tests/certificate_tamper_*.rs
+tests/exact_image_*.rs
+tests/complete_fallback_*.rs
+tests/guard_and_compression_*.rs
+docs/ai/changes/cw-arc-dtp-q/BASE_SPEC.md
+docs/ai/changes/cw-arc-dtp-q/PLAN.md
+docs/ai/changes/cw-arc-dtp-q/REVIEWER_PROMPTS.md
+docs/ai/changes/cw-arc-dtp-q/evidence/non_simplification_manifest.md
+docs/ai/changes/cw-arc-dtp-q/evidence/route_forcing_matrix.md
+docs/ai/changes/cw-arc-dtp-q/evidence/data_flow_proofs.md
 ```
 
-`src/lib.rs` MUST expose only the public API and core public data types. Matrix backends, monomial enumeration details, and route internals MUST remain private unless a type is explicitly listed in this Base Spec as public.
+### 2.1 Naming rules
 
----
-
-## 3. Required Public Data Model
-
-### BS-DATA-001 — Variables
-File: `src/variable.rs`
-
-```rust
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-pub struct Variable {
-    pub symbol: String,
-}
-```
-
-Rules:
+The code MUST follow these rules.
 
 ```text
-- `Variable.symbol` is only an identifier for equality, display, and stable ordering.
-- Production algorithms MUST NOT dispatch on substrings such as "circle", "distance", "area", "x", "y", "mixtilinear", fixture names, or problem names.
-- The only semantic distinction allowed is equality with `TargetProblemQ.target`.
+- Rust modules, functions, and methods: snake_case.
+- Rust types, traits, enum variants: UpperCamelCase.
+- Constants: SCREAMING_SNAKE_CASE.
+- Conversion methods:
+  - `as_*` returns a borrowed or cheap view.
+  - `to_*` clones or computes a converted value.
+  - `into_*` consumes self.
+- Do not use names containing plan versions, phase labels, temporary labels, or implementation excuses.
+- Forbidden names in production API: `v2`, `v3`, `phase`, `hack`, `toy`, `simple`, `fake`, `stub`, `baka`, `debug_only`, `experimental_complete`.
+- A bounded search MUST be named `try_*`, `bounded_*`, or `search_*`. It MUST NOT be named `complete_*`.
 ```
 
-### BS-DATA-002 — Exact sparse multivariate polynomial
-File: `src/polynomial.rs`
+## 3. Data model
 
-```rust
-pub type Rational = num_rational::BigRational;
+### 3.1 `TargetProblemQ`
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-pub struct Monomial {
-    pub exponents: Vec<u32>,
-}
-
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct PolynomialQ {
-    pub variables: Vec<Variable>,
-    pub terms: std::collections::BTreeMap<Monomial, Rational>,
-}
-```
-
-Required functions and behavior:
-
-```rust
-impl PolynomialQ {
-    pub fn zero(variables: Vec<Variable>) -> Self;
-    pub fn one(variables: Vec<Variable>) -> Self;
-    pub fn from_term(variables: Vec<Variable>, coefficient: Rational, monomial: Monomial) -> Self;
-    pub fn normalize(&mut self);
-    pub fn is_zero(&self) -> bool;
-    pub fn support(&self) -> Vec<Monomial>;
-    pub fn degree(&self) -> u32;
-    pub fn add(&self, rhs: &Self) -> Self;
-    pub fn sub(&self, rhs: &Self) -> Self;
-    pub fn mul(&self, rhs: &Self) -> Self;
-    pub fn pow(&self, exponent: usize) -> Self;
-    pub fn scale(&self, factor: &Rational) -> Self;
-    pub fn substitute_variable(&self, variable: &Variable, replacement: &PolynomialQ) -> Self;
-    pub fn depends_only_on(&self, allowed: &[Variable]) -> bool;
-    pub fn to_univariate_in(&self, target: &Variable) -> Option<UniPolynomialQ>;
-}
-```
-
-Pseudocode for `normalize`:
-
-```text
-remove every term with zero coefficient
-assert every monomial has exactly variables.len() exponents
-keep BTreeMap order as canonical sparse order
-```
-
-Forbidden simplifications:
-
-```text
-- Floating point coefficients.
-- HashMap iteration order as canonical output.
-- String parsing as the primary polynomial representation.
-- Implicit variable creation during arithmetic.
-- Silently aligning polynomials with different variable orders.
-```
-
-### BS-DATA-003 — Exact univariate target polynomial
-File: `src/univariate.rs`
-
-```rust
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct UniPolynomialQ {
-    pub variable: Variable,
-    pub coefficients: Vec<Rational>, // coefficient of T^k at index k
-}
-
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct UniPolynomialFp {
-    pub variable: Variable,
-    pub modulus: u64,
-    pub coefficients: Vec<u64>,
-}
-```
-
-Required functions:
-
-```rust
-impl UniPolynomialQ {
-    pub fn zero(variable: Variable) -> Self;
-    pub fn one(variable: Variable) -> Self;
-    pub fn degree(&self) -> Option<usize>;
-    pub fn is_zero(&self) -> bool;
-    pub fn normalize(&mut self);
-    pub fn primitive_integer_normalized(&self) -> Self;
-    pub fn squarefree_part(&self) -> Self;
-    pub fn gcd(&self, rhs: &Self) -> Self;
-    pub fn lcm(&self, rhs: &Self) -> Self;
-    pub fn factor_squarefree_over_q(&self) -> Vec<Self>;
-    pub fn pow(&self, exponent: usize) -> Self;
-    pub fn to_multivariate(&self, variables: &[Variable]) -> PolynomialQ;
-}
-```
-
-Rules:
-
-```text
-- `primitive_integer_normalized` MUST clear denominators, divide integer content, and make the leading coefficient positive.
-- Squarefree form is for root isolation and exact-image stage only. It MUST NOT replace the proof target unless the squarefree part has its own exact certificate.
-- `gcd` is used for same-ideal verified cover refinement.
-- `lcm` is used only for component-union cover composition.
-```
-
-### BS-DATA-004 — Input problem
 File: `src/problem.rs`
 
 ```rust
-#[derive(Clone, Debug)]
 pub struct TargetProblemQ {
     pub equations: Vec<PolynomialQ>,
     pub variables: Vec<Variable>,
@@ -308,14 +123,12 @@ pub struct TargetProblemQ {
     pub semantic_guards: Vec<GuardRecord>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct GuardRecord {
     pub polynomial: PolynomialQ,
     pub kind: GuardKind,
     pub provenance: GuardProvenance,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum GuardKind {
     NonZero,
     Positive,
@@ -324,27 +137,23 @@ pub enum GuardKind {
     NonPositive,
     OtherSemanticCondition,
 }
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct GuardProvenance {
-    pub description: String,
-}
 ```
 
-Invariants:
+Required invariants:
 
 ```text
-- `target` MUST be in `variables`.
-- Every equation and guard polynomial MUST use exactly `variables` as its variable order.
-- `semantic_guards` MUST NOT be used as candidate-adoption evidence unless converted into a valid `GuardCertificate`.
-- Non-`NonZero` guards MUST NOT be used as factors in D unless a separate nonzero `GuardCertificate` is built and verified.
+P1. `target` must appear exactly once in `variables`.
+P2. Every equation and guard polynomial must use exactly `variables` in the same order.
+P3. `semantic_guards` are not candidates and are not proof by themselves.
+P4. `GuardKind::NonZero` may become `GuardCertificate::InputSemanticNonzero` only through certified compression/guard construction.
+P5. Positive/negative/nonnegative/nonpositive guards may be used for real fiber classification; they may be used as nonzero guard factors only after an explicit certificate deriving nonzero.
 ```
 
-### BS-DATA-005 — Certified system and compression replay
+### 3.2 `CertifiedSystemQ`
+
 File: `src/compression.rs`
 
 ```rust
-#[derive(Clone, Debug)]
 pub struct CertifiedSystemQ {
     pub equations: Vec<PolynomialQ>,
     pub variables: Vec<Variable>,
@@ -352,1278 +161,893 @@ pub struct CertifiedSystemQ {
     pub guard_certificates: Vec<GuardCertificate>,
     pub replay: CompressionReplayCertificate,
 }
+```
 
-#[derive(Clone, Debug)]
-pub struct CompressionReplayCertificate {
-    pub steps: Vec<CompressionStepCertificate>,
-}
+`certified_system_from_problem(problem)` MUST NOT merely clone the equations and set empty guard/replay in all cases. It MUST perform the following deterministic process:
 
-#[derive(Clone, Debug)]
+```text
+C1. Validate problem; reject invalid inputs with `InvalidInput`.
+C2. Canonicalize polynomial terms and primitive-normalize equations.
+C3. Remove zero equations with `ZeroEquationRemoval` replay steps.
+C4. For each `GuardKind::NonZero` semantic guard, create an `InputSemanticNonzero` guard certificate and put it in `guard_certificates`.
+C5. Optionally perform definition substitution, affine elimination, explicit guard saturation, and primitive normalization, but only with replay steps.
+C6. Return `CertifiedSystemQ` whose replay can be verified from the original `TargetProblemQ`.
+```
+
+Allowed compression steps:
+
+```rust
 pub enum CompressionStepCertificate {
+    IdentityInput,
     DefinitionSubstitution { variable: Variable, expression: PolynomialQ, identity: ExactIdentity },
-    AffineElimination { pivot: PolynomialQ, pivot_guard: GuardCertificate, identity: ExactIdentity },
+    AffineElimination { eliminated: Variable, pivot: PolynomialQ, pivot_guard: GuardCertificate, identity: ExactIdentity },
     ExplicitGuardSaturation { guard: GuardCertificate, identity: ExactIdentity },
     PrimitiveNormalization { before: PolynomialQ, after: PolynomialQ, multiplier: Rational },
     ZeroEquationRemoval { removed: PolynomialQ },
 }
 ```
 
-Rules:
+Required verifier behavior:
 
 ```text
-- `CertifiedSystemQ` MUST be obtained only by replayable certificate-preserving rewrites.
-- Forbidden rewrites: arbitrary factor selection, branch selection by expected answer, geometry-name formulas, and external CAS simplification without replay.
-- If a planned compression is not replayable, skip it and keep the original equations.
+- `verify_compression_replay(problem, certified)` must replay each step from the original problem.
+- It must verify that every equation in `certified.equations` is explained by replay.
+- It must verify that every guard certificate in `certified.guard_certificates` is valid for the original problem.
+- Empty replay is allowed only if no equation was changed and no semantic guard exists. If semantic nonzero guards exist, replay must still contain guard construction evidence or guard certificates must be directly verifiable against the original problem.
 ```
 
----
+Forbidden simplifications:
 
-## 4. Certificate Language
-
-### BS-CERT-001 — Exact identity is not trusted by itself
-File: `src/certificates.rs`
-
-```rust
-#[derive(Clone, Debug)]
-pub struct ExactIdentity {
-    pub kind: ExactIdentityKind,
-}
-
-#[derive(Clone, Debug)]
-pub enum ExactIdentityKind {
-    IdealMembership,
-    RadicalMembership,
-    GuardedRadicalMembership,
-    GuardProduct,
-    AlgebraicInfeasibility,
-    GuardedAlgebraicInfeasibility,
-    CompressionReplay,
-}
+```text
+FAIL if production `CertifiedSystemQ` creation always uses `guard_certificates: Vec::new()`.
+FAIL if production `CertifiedSystemQ` creation always uses `CompressionReplayCertificate { steps: Vec::new() }` while canonicalization or guard transfer happened.
+FAIL if guarded proof code constructs `TargetProblemQ { semantic_guards: Vec::new() }` for guard verification.
+FAIL if semantic guards are ignored by exact image classification.
 ```
 
-`ExactIdentity` is a typed label for the identity being checked. The verifier MUST recompute the polynomial identity from the certificate payload and the input problem. It MUST NOT trust a stored zero residual, hash, string, trace, or prior solver claim.
+## 4. Certificates and verifier
 
-### BS-CERT-002 — Guard certificates
-File: `src/guards.rs`
+Files:
+
+```text
+src/guards.rs
+src/certificates.rs
+src/verifier.rs
+```
+
+### 4.1 Guard certificates
 
 ```rust
-#[derive(Clone, Debug)]
 pub enum GuardCertificate {
-    InputSemanticNonzero {
-        guard: PolynomialQ,
-        record: GuardRecord,
-    },
-    AlgebraicNonvanishing {
-        guard: PolynomialQ,
-        certificate: NullstellensatzCertificate,
-    },
-    RealAdmissibleNonvanishing {
-        guard: PolynomialQ,
-        certificate: RealInfeasibilityCertificate,
-    },
-    DerivedProduct {
-        product: PolynomialQ,
-        factors: Vec<GuardCertificate>,
-        identity: ExactIdentity,
-    },
-}
-
-#[derive(Clone, Debug)]
-pub struct NullstellensatzCertificate {
-    pub multipliers: Vec<PolynomialQ>,
-    pub guard_multiplier: PolynomialQ,
-    pub identity: ExactIdentity, // 1 = Σ q_i F_i + q_g guard
-}
-
-#[derive(Clone, Debug)]
-pub enum RealInfeasibilityCertificate {
-    VerifiedByExactAlgebraicCertificate(NullstellensatzCertificate),
-    VerifiedByExternalReplay { replay: String },
+    InputSemanticNonzero { guard: PolynomialQ, record: GuardRecord },
+    AlgebraicNonvanishing { guard: PolynomialQ, certificate: NullstellensatzCertificate },
+    RealAdmissibleNonvanishing { guard: PolynomialQ, certificate: RealInfeasibilityCertificate },
+    DerivedProduct { product: PolynomialQ, factors: Vec<GuardCertificate>, identity: ExactIdentity },
 }
 ```
 
-Verifier behavior:
+Verifier MUST check:
 
 ```text
-InputSemanticNonzero:
-  pass only if the original input contains an identical GuardRecord with GuardKind::NonZero.
-
-AlgebraicNonvanishing:
-  recompute 1 - (Σ q_i F_i + q_g guard) over Q and pass only if zero.
-
-RealAdmissibleNonvanishing:
-  pass only for payloads with implemented exact replay. Unknown strings or unimplemented external payloads fail.
-
-DerivedProduct:
-  recursively verify factors, recompute product of factor guards, and compare exactly with `product`.
+G-CERT-1. InputSemanticNonzero: original problem contains an exactly equal `GuardRecord` with `GuardKind::NonZero`.
+G-CERT-2. AlgebraicNonvanishing: verify `1 = Σ q_i F_i + h * guard` exactly over Q.
+G-CERT-3. RealAdmissibleNonvanishing: verify real infeasibility of `F=0 ∧ semantic_guards ∧ guard=0` using the certificate payload.
+G-CERT-4. DerivedProduct: recursively verify all factors and exact polynomial identity `product = Π factor.guard`.
 ```
 
-### BS-CERT-003 — Target certificates
-File: `src/certificates.rs`
+### 4.2 Target certificates
 
 ```rust
-#[derive(Clone, Debug)]
 pub enum TargetCertificate {
-    IdealMembership {
-        support: UniPolynomialQ,
-        multipliers: Vec<PolynomialQ>,
-        identity: ExactIdentity,
-    },
-    RadicalMembership {
-        support: UniPolynomialQ,
-        power: usize,
-        multipliers: Vec<PolynomialQ>,
-        identity: ExactIdentity,
-    },
-    GuardedRadicalMembership {
-        support: UniPolynomialQ,
-        support_power: usize,
-        guard_power: usize,
-        guard_product: PolynomialQ,
-        guard_certificates: Vec<GuardCertificate>,
-        multipliers: Vec<PolynomialQ>,
-        identity: ExactIdentity,
-    },
-    CompositeCover {
-        support: UniPolynomialQ,
-        children: Vec<TargetCertificate>,
-        rule: CompositeRule,
-    },
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum CompositeRule {
-    SameIdealGcd,
-    ComponentUnionLcm,
+    IdealMembership { support: UniPolynomialQ, multipliers: Vec<PolynomialQ>, identity: ExactIdentity },
+    RadicalMembership { support: UniPolynomialQ, power: usize, multipliers: Vec<PolynomialQ>, identity: ExactIdentity },
+    GuardedRadicalMembership { support: UniPolynomialQ, support_power: usize, guard_power: usize, guard_product: PolynomialQ, guard_certificates: Vec<GuardCertificate>, multipliers: Vec<PolynomialQ>, identity: ExactIdentity },
+    CompositeCover { support: UniPolynomialQ, children: Vec<TargetCertificate>, rule: CompositeRule, component_union_source: Option<ComponentUnionSource> },
 }
 ```
 
-Verifier behavior:
+Verifier MUST check:
 
 ```text
-IdealMembership:
-  H = support.to_multivariate(problem.variables)
-  verify H - Σ multipliers[i] * F_i == 0.
-
-RadicalMembership:
-  require power >= 1
-  H = support^power as multivariate
-  verify H - Σ multipliers[i] * F_i == 0.
-
-GuardedRadicalMembership:
-  require support_power >= 1
-  require guard_power >= 0
-  verify every guard certificate
-  verify guard_product equals the product of verified guard factors
-  H = guard_product^guard_power * support^support_power
-  verify H - Σ multipliers[i] * F_i == 0.
-
-CompositeCover / SameIdealGcd:
-  verify all child certificates against the same original problem
-  recompute gcd(child supports) and compare with support after primitive normalization.
-
-CompositeCover / ComponentUnionLcm:
-  allowed only for an explicit component-union certificate source
-  recompute lcm(child supports) and compare with support after primitive normalization.
+T-CERT-1. support is nonzero and has variable equal to problem.target.
+T-CERT-2. IdealMembership: `support(T) - Σ q_i F_i == 0` exactly.
+T-CERT-3. RadicalMembership: power > 0 and `support(T)^power - Σ q_i F_i == 0` exactly.
+T-CERT-4. GuardedRadicalMembership: support_power > 0; every guard certificate valid; `guard_product == Π guards` exactly; `guard_product^guard_power * support(T)^support_power - Σ q_i F_i == 0` exactly.
+T-CERT-5. SameIdealGcd composite: each child verified against same problem; support equals primitive gcd of child supports.
+T-CERT-6. ComponentUnionLcm composite: component union source is present and replay-verifiable; support equals primitive lcm of child supports.
 ```
 
-### BS-CERT-004 — Solver-level certificates
-File: `src/certificates.rs`
+Forbidden simplifications:
+
+```text
+FAIL if verifier trusts `ExactIdentityKind` without recomputing the polynomial identity.
+FAIL if verifier trusts `guard_product` without recomputing product from valid guard certificates.
+FAIL if verifier accepts ExactTargetImage by default or rejects it as "not handled" in final implementation.
+FAIL if verifier accepts NoTargetEliminant only for a narrow monomial ideal special case.
+```
+
+### 4.3 Solver-level certificates
 
 ```rust
-#[derive(Clone, Debug)]
 pub enum SolverCertificate {
     TargetCover(TargetCertificate),
     ExactTargetImage(ExactTargetImageCertificate),
     EmptyAdmissibleSet(EmptyAdmissibleSetCertificate),
     NoNonzeroTargetEliminant(NoTargetEliminantCertificate),
 }
-
-#[derive(Clone, Debug)]
-pub enum EmptyAdmissibleSetCertificate {
-    AlgebraicInfeasibility {
-        multipliers: Vec<PolynomialQ>,
-        identity: ExactIdentity, // 1 = Σ q_i F_i
-    },
-    GuardedAlgebraicInfeasibility {
-        guard_product: PolynomialQ,
-        guard_power: usize,
-        guard_certificates: Vec<GuardCertificate>,
-        multipliers: Vec<PolynomialQ>,
-        identity: ExactIdentity, // D^e = Σ q_i F_i
-    },
-    RealInfeasibility {
-        certificate: RealInfeasibilityCertificate,
-    },
-}
-
-#[derive(Clone, Debug)]
-pub struct NoTargetEliminantCertificate {
-    pub saturated_ideal_description: SaturatedIdealCertificate,
-    pub elimination_certificate: EliminationZeroCertificate,
-    pub guard_certificates: Vec<GuardCertificate>,
-}
 ```
 
-Rules:
+`verify_certificate(problem, cert)` MUST handle every variant in final implementation.
+
+## 5. Algebra primitives
+
+Files:
 
 ```text
-- A `TargetCertificate` alone is not enough for top-level result verification; top-level verification MUST verify `SolverCertificate`.
-- Empty admissible set MUST return `SolverStatus::CertifiedEmptyAdmissibleSet`, never `CertifiedCandidateCover` with support 1.
-- No nonzero target eliminant is an algebraic statement only and MUST NOT imply real non-finiteness.
+src/arith.rs
+src/variable.rs
+src/monomial.rs
+src/polynomial.rs
+src/univariate.rs
+src/finite_field.rs
+src/matrix_q.rs
+src/matrix_fp.rs
+src/crt.rs
+src/rational_reconstruction.rs
 ```
 
----
-
-## 5. Result and Options API
-
-File: `src/options.rs`, `src/solver.rs`, `src/trace.rs`
-
-```rust
-#[derive(Clone, Debug)]
-pub struct SolverOptions {
-    pub resource_limits: ResourceLimits,
-    pub exact_image_mode: ExactImageMode,
-}
-
-#[derive(Clone, Debug)]
-pub struct ResourceLimits {
-    pub max_window_degree: Option<usize>,
-    pub max_proof_weight: Option<usize>,
-    pub max_matrix_rows: Option<usize>,
-    pub max_matrix_cols: Option<usize>,
-    pub max_candidate_count: Option<usize>,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ExactImageMode {
-    CoverOnly,
-    TryExactImage,
-    RequireExactImage,
-}
-
-#[derive(Clone, Debug)]
-pub struct TargetSolveResult {
-    pub status: SolverStatus,
-    pub cover: Option<CertifiedCandidateCover>,
-    pub exact_image: Option<CertifiedExactTargetImage>,
-    pub certificate: Option<SolverCertificate>,
-    pub trace: SolverTrace,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum SolverStatus {
-    CertifiedCandidateCover,
-    CertifiedExactTargetImage,
-    CertifiedEmptyAdmissibleSet,
-    CertifiedNoNonzeroTargetEliminant,
-    NoVerifiedTargetCertificate,
-    FiniteResourceFailure,
-    CertificateDesignGap,
-    InvalidInput,
-    ImplementationBug,
-}
-```
-
-Rules:
+Required functionality:
 
 ```text
-- Production `SolverOptions` MUST NOT contain geometry names, fixture names, expected values, route-forcing options, or hidden fallback switches.
-- Route forcing is allowed only under `#[cfg(test)]` in `test_support.rs`.
-- `Unsupported` MUST NOT be a solver status. Candidate routes may return an empty candidate list with a trace explaining why the route was not applicable.
+A1. Sparse multivariate polynomial over Q with exact add/sub/mul/pow/evaluate/substitute/support.
+A2. Sparse univariate polynomial over Q with primitive normalization, derivative, squarefree part, gcd, lcm, factor_squarefree_over_q.
+A3. Finite field arithmetic for prime fields with denominator admissibility checks.
+A4. Dense or sparse exact Q linear solver returning either solution or left-null obstruction.
+A5. Fp linear solver returning nullspace, solution, rank, and active nonzero columns.
+A6. CRT for matching modular univariate polynomials across primes.
+A7. Rational reconstruction from CRT modulus with explicit success/failure bound.
+A8. Deterministic term ordering; no hash-order-dependent algorithm output.
 ```
 
----
+`factor_squarefree_over_q` MUST NOT return only `[squarefree_part(self)]` in final implementation. It MUST factor squarefree univariate rational polynomials at least by rational-root extraction and squarefree irreducible factor splitting using exact algorithms sufficient for all conformance families. If full factorization is resource-limited, it must return a resource failure and not claim factor trial completed.
 
-## 6. Window and Residual Oracle
+## 6. Certificate windows and residual oracle
 
-### BS-WIN-001 — Certificate windows
-File: `src/window.rs`
+Files:
+
+```text
+src/window.rs
+src/residual.rs
+```
+
+### 6.1 Certificate window
 
 ```rust
-#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CertificateWindow {
     pub target_degree: usize,
-    pub multiplier_supports: Vec<Vec<Monomial>>, // one B_i per equation
-    pub row_monomials: Vec<Monomial>,            // C
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ProofWindow {
     pub multiplier_supports: Vec<Vec<Monomial>>,
+    pub row_monomials: Vec<Monomial>,
 }
 ```
 
-Required functions:
-
-```rust
-pub fn make_row_closed_certificate_window(
-    system: &CertifiedSystemQ,
-    target_degree: usize,
-    multiplier_supports: Vec<Vec<Monomial>>,
-) -> CertificateWindow;
-
-pub fn build_membership_matrix_q(
-    system: &CertifiedSystemQ,
-    window: &CertificateWindow,
-) -> MembershipMatrixQ;
-
-pub fn build_target_power_matrix_q(
-    system: &CertifiedSystemQ,
-    window: &CertificateWindow,
-) -> TargetPowerMatrixQ;
-```
-
-Pseudocode for row closure:
+`make_row_closed_certificate_window(system, target_degree, multiplier_supports)` MUST construct:
 
 ```text
-C := support(1), support(T), ..., support(T^d)
-for each equation F_i:
-  for each b in B_i:
-    C := C ∪ support(b * F_i)
-sort C by the canonical monomial order
-return W = (d, B_i, C)
+C = Supp{1,T,...,T^d} ∪ ⋃_i Supp(B_i F_i)
 ```
 
-Rules:
+It MUST recompute `row_monomials` and ignore forged row sets passed by callers.
 
-```text
-- Row closure MUST be recomputed from equations and supports, not trusted from caller input.
-- Failure to prove in a window MUST NOT be interpreted as proof that S ∉ I.
-```
-
-### BS-RES-001 — Residual oracle contract
-File: `src/residual.rs`
+### 6.2 Residual oracle
 
 ```rust
 pub trait ResidualOracleFp {
     fn modulus(&self) -> u64;
     fn reduce(&self, vector: &[u64]) -> Vec<u64>;
-    fn is_in_column_space(&self, vector: &[u64]) -> bool {
-        self.reduce(vector).iter().all(|x| *x == 0)
-    }
+    fn is_in_column_space(&self, vector: &[u64]) -> bool;
 }
-
-pub struct DenseEchelonResidualOracleFp { /* private fields */ }
 ```
 
-Construction pseudocode:
+Required contract:
 
 ```text
-input: M_{p,W}
-compute a row-echelon basis for the column space using exact F_p arithmetic
-store only private data needed to compute v mod col(M)
-for reduce(v): eliminate v by the same column-space basis and return canonical residual
+R-ORACLE-1. reduce(v) == 0 iff v is in the column space of M_p,W.
+R-ORACLE-2. reduce(reduce(v)) == reduce(v).
+R-ORACLE-3. The implementation may use echelon bases, sparse row bases, or Schur handles, but the external behavior is exactly the quotient residual map.
 ```
 
-Required theorem-level behavior:
+Reviewer must inspect tests proving the iff property by randomized small matrices over several primes.
 
-```text
-rho(v) == 0 iff v is in col(M_{p,W}).
-```
+## 7. Candidate data model and normalization
 
-Forbidden simplifications:
-
-```text
-- Returning a hash, rank, or boolean trace instead of residual vectors.
-- Treating stable rank over several primes as proof over Q.
-- Exposing matrix backend details through the public solver API.
-```
-
-### BS-RES-002 — Residual-cyclic candidate search
-File: `src/candidate_residual.rs`
-
-```rust
-pub fn residual_cyclic_candidates(
-    system: &CertifiedSystemQ,
-    window: &CertificateWindow,
-    primes: &[u64],
-) -> Vec<TargetCandidate>;
-```
-
-Pseudocode:
-
-```text
-for each admissible prime p:
-  reduce M_W and N_d modulo p
-  build ResidualOracleFp for M_{p,W}
-  for k = 0..d:
-    r_k := rho(vec_C(T^k))
-  solve Σ c_k r_k = 0 over F_p for nonzero c
-  for each relation c:
-    S_p(T) := Σ c_k T^k
-    record TargetCandidate with origin ResidualCyclic and modular witness trace
-attempt CRT/rational reconstruction only as reconstruction trace
-return candidates; do not produce TargetCertificate here
-```
-
-Acceptance-specific behavior:
-
-```text
-- Candidate route may be wrong or incomplete.
-- Any candidate from this route MUST remain a candidate until `ProveFixedTarget` returns an exact certificate.
-```
-
----
-
-## 7. Candidate Oracle Layer
-
-### BS-CAND-001 — Candidate model
-File: `src/candidates.rs`
+File: `src/candidates/mod.rs`
 
 ```rust
 pub trait CandidateOracle {
     fn generate(&self, system: &CertifiedSystemQ, window: &CertificateWindow) -> Vec<TargetCandidate>;
 }
 
-#[derive(Clone, Debug)]
 pub struct TargetCandidate {
     pub support_mod_primes: Vec<UniPolynomialFp>,
     pub reconstructed: Option<UniPolynomialQ>,
     pub origin: CandidateOrigin,
     pub traces: Vec<CandidateTrace>,
 }
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum CandidateOrigin {
-    DirectTargetEquation,
-    NormTraceTower,
-    ResidualCyclic,
-    TargetCyclicKrylov,
-    HiddenVariableSparseResultant,
-    SliceSpecialization,
-    LocalizedSchur,
-    CompleteTargetElimination,
-}
 ```
 
-Rules:
+Candidate normalization MUST:
 
 ```text
-- Candidate oracles MUST NOT return `TargetCertificate`, except that `LocalizedSchur` and `CompleteTargetElimination` may carry an exact certificate in a separate result type that is verified before solver success.
-- Candidate traces are diagnostic only and MUST NOT be accepted by verifier.
-- Every route MUST be reachable from top-level planning unless the route's algebraic preconditions fail and a trace records the failed precondition.
+N1. Normalize each modular candidate to primitive monic representative over Fp.
+N2. Merge candidates from different primes only if degrees and normalized CRT residues match.
+N3. Reconstruct Q coefficients only through CRT + rational reconstruction when more than one prime is available.
+N4. If only one prime is available, mark reconstruction as heuristic candidate and require exact proof before any output; do not score it as multi-prime reconstructed.
+N5. Normalize Q candidates by clearing denominators, dividing content, and positive leading coefficient.
+N6. Keep squarefree support only for root isolation; never replace proof target with squarefree part unless the squarefree factor itself is separately certified.
+N7. Factor schedule must attempt actual univariate factors and original candidate; it must not be `vec![candidate.clone()]` in final implementation.
 ```
 
-### BS-CAND-002 — Direct target equation
-File: `src/candidate_direct.rs`
+Ranking is proof attempt order only. It is never adoption.
 
-```rust
-pub fn direct_target_equation_candidates(system: &CertifiedSystemQ) -> Vec<TargetCandidate>;
-```
+## 8. Candidate routes
 
-Pseudocode:
+Every route below must be production-reachable, route-forceable, no-fallback testable, and tamper-testable.
+
+### 8.1 DirectTargetEquation
+
+File: `src/candidates/direct.rs`
+
+Required control-flow:
 
 ```text
-for each equation F_i:
-  if F_i is nonzero and depends only on target:
-    convert F_i to UniPolynomialQ
-    normalize as candidate
-    return candidate with origin DirectTargetEquation
+1. Iterate over certified system equations.
+2. Select equations whose support contains only powers of target T.
+3. Convert to `UniPolynomialQ`.
+4. Primitive-normalize and return as candidate.
+5. Record equation index trace.
 ```
 
 Forbidden:
 
 ```text
-- Treating the direct equation as proof without fixed proof verification.
-- Reading variable names other than equality with target.
+- Reading variable names such as "T" instead of comparing `Variable` objects.
+- Returning direct candidate as certified without fixed proof.
 ```
 
-### BS-CAND-003 — NormTraceTower
-File: `src/candidate_tower.rs`
+### 8.2 ResidualCyclic
 
-The route MUST implement a real structural detector for explicit algebraic towers, not a fixture detector.
+File: `src/candidates/residual_cyclic.rs`
 
-Required tower shape:
+Required control-flow:
 
 ```text
-variables can be ordered y_1, ..., y_r so that each level has a monic equation
-p_j(y_j; previous variables, T) = 0
-and target expression is represented by a polynomial relation in the tower.
+1. Build row-closed window W.
+2. Build exact Q membership matrix M_W and target power matrix N_d.
+3. Select admissible primes not dividing any denominator in equations, guards, replay data, or target power vectors.
+4. For each prime p:
+   a. Reduce M_W and N_d modulo p.
+   b. Build residual oracle rho_p,W from M_p,W.
+   c. Compute residuals r_k = rho(vec(T^k)).
+   d. Solve nullspace relation Σ c_k r_k = 0.
+   e. For each relation c, solve M_p,W u = N_p,d c to recover at least one modular multiplier vector u.
+   f. Record active multiplier supports Act_i,p = {b in B_i | u_{i,b} != 0}.
+5. Merge modular supports across primes by degree and normalized residues.
+6. Apply CRT + rational reconstruction to get optional Q candidate.
+7. Return candidate with modular witnesses and reconstructed Q candidate only when reconstruction succeeds.
 ```
 
-Pseudocode:
+Required data-flow:
 
 ```text
-detect monic triangular tower by variable incidence and main-variable degree
-if no tower exists: return empty candidate trace `precondition_not_met`
-construct multiplication matrix for the target expression in the finite free module implied by the monic tower
-compute characteristic/norm polynomial det(Z - M_target) exactly or modulo primes with reconstruction
-map Z to T if the norm is target-only
-return candidate with origin NormTraceTower
+- `support_mod_primes` must be the normalized relation polynomial from residual nullspace.
+- `reconstructed` must be derived from CRT/rational reconstruction over the collected primes, not from the first prime alone.
+- `active_multiplier_supports` must be derived from nonzero entries of an actual modular solution u, not copied from the full window.
 ```
 
-Acceptance:
+Forbidden simplifications:
 
 ```text
-- A route-forcing test MUST include at least a two-level tower not named by fixtures.
-- Adoption still requires fixed proof.
+FAIL if reconstruction maps the first prime into [-p/2,p/2] and calls that Q reconstruction when multiple primes are available.
+FAIL if active support trace equals the entire window by default.
+FAIL if residual relation is adopted without fixed proof.
+FAIL if denominator-admissibility of primes is skipped.
 ```
 
-### BS-CAND-004 — TargetCyclicKrylov
-File: `src/candidate_krylov.rs`
-
-Required behavior:
+Minimum conformance families:
 
 ```text
-- Use a target-relevant quotient handle derived from a finite row basis or residual oracle.
-- Generate recurrence from the sequence 1, T, T^2, ... in that handle.
-- Return only candidates unless exact proof succeeds later.
+RC-F1. Two-equation finite target family with nontrivial multiplier support.
+RC-F2. Same family with coefficient height exceeding any single prime, forcing CRT reconstruction.
+RC-F3. Family where a wrong first-prime lift exists but exact proof rejects it.
+RC-F4. Guarded family where a denominator/guard denominator excludes a prime.
+```
+
+### 8.3 TargetCyclicKrylov
+
+File: `src/candidates/krylov.rs`
+
+Required control-flow:
+
+```text
+1. Build target-relevant quotient handle from the same window/residual contract as M_W.
+2. Compute residual classes of 1,T,T^2,... up to target_degree.
+3. Find a minimal recurrence relation among those classes using exact Q or modular Krylov linear algebra.
+4. Return the recurrence polynomial as candidate.
+5. Record quotient rank estimate, recurrence length, and basis columns used.
+```
+
+Required data-flow:
+
+```text
+- Recurrence must be computed from residual classes / quotient handle.
+- If exact Q relation search is used, it must be explicitly named and treated as a candidate route, not hidden as Krylov if no quotient recurrence is built.
 ```
 
 Forbidden:
 
 ```text
-- Calling full coordinate RUR.
-- Calling coordinate solution enumeration.
-- Returning recurrence as proof.
+FAIL if route simply calls complete fallback or Groebner elimination.
+FAIL if route only appends target powers to a Q matrix and does not expose a quotient/residual recurrence handle.
+FAIL if recurrence candidate is adopted without fixed proof.
 ```
 
-### BS-CAND-005 — HiddenVariableSparseResultant
-File: `src/candidate_resultant.rs`
-
-This route MUST be general enough to handle multi-polynomial templates. It MUST NOT be a two-polynomial-only Sylvester wrapper.
-
-Required control flow:
+Minimum conformance families:
 
 ```text
-1. Collect Newton supports for all equations in the selected target dependency cone.
-2. Select eliminated variables X and hidden target T by algebraic incidence, not by names.
-3. Build a monomial template from support-set/Macaulay-style degree expansion.
-4. Build the modular template matrix over admissible primes.
-5. Compute determinant/null-relation candidates modulo primes.
-6. Reconstruct a target-only candidate over Q when possible.
-7. Return TargetCandidate only; exact proof is separate.
+KR-F1. Finite quotient where target recurrence degree is smaller than full quotient rank.
+KR-F2. Positive-dimensional system with finite target image and finite target recurrence.
+KR-F3. Case where an early recurrence is spurious and exact proof rejects it.
 ```
 
-Required static FAIL patterns:
+### 8.4 HiddenVariableSparseResultant
+
+File: `src/candidates/sparse_resultant.rs`
+
+This route MUST implement a general multi-polynomial sparse eliminant template. It MUST NOT be a two-polynomial Sylvester resultant route disguised as sparse resultant.
+
+Required control-flow:
 
 ```text
-- Any production branch that rejects all `equations.len() != 2` for the entire resultant route.
-- Any production branch that supports only one eliminated variable without a general path or documented resource failure evidence.
-- Any production route that calls Groebner fallback and labels the result as sparse resultant.
-- Any acceptance based solely on modular determinant stability.
+1. Select a target-relevant block from CertifiedSystemQ using algebraic incidence and Newton supports; do not use names or fixtures.
+2. Keep target T as hidden variable. Choose eliminated variables X_B.
+3. Build a sparse Macaulay / resultant-style template over Fp[T] or over Q[T]:
+   - row monomials are monomials in X_B chosen from support-set expansion;
+   - columns are multiplier monomials times input equations;
+   - coefficients are univariate polynomials in T.
+4. Support m >= 2 equations. For overdetermined systems, use maximal minors or null-relation templates as specified below.
+5. Compute a determinantal or null-relation eliminant polynomial in Fp[T].
+6. Normalize, merge across primes, reconstruct Q candidate using CRT/rational reconstruction.
+7. Return only candidate traces; adoption still requires fixed exact proof.
 ```
 
-Route-forcing acceptance:
+For rectangular templates:
 
 ```text
-- Must include at least one 3-polynomial hidden-variable eliminant family.
-- Other candidate routes and complete fallback must be disabled in the test harness.
-- The route may return a candidate that is later certified by fixed proof; top-level success through another route does not close this R-ID.
+- If columns == rows, candidate is det(A(T)).
+- If columns > rows, compute nonzero maximal row-rank minors using deterministic pivot subsets; candidate is gcd/lcm-normalized common vanishing polynomial from selected maximal minors.
+- If rows > columns, compute left null conditions and determinant of selected square subtemplates after support expansion.
+- In all cases, template rank data and selected rows/columns must be recorded.
 ```
 
-### BS-CAND-006 — SliceSpecialization
-File: `src/candidate_slice.rs`
-
-Required behavior:
+Required data-flow:
 
 ```text
-1. Choose deterministic generic affine slices over admissible finite fields for variables other than target.
-2. Solve only for target candidates in the sliced residual/eliminant system.
-3. Record slice equations and modular trace.
-4. Return candidates only.
+- Candidate polynomial must be derived from the constructed sparse template.
+- The template must include contributions from all selected equations unless a recorded algebraic reason excludes an equation.
+- Multi-polynomial input must not be reduced to pairwise resultants without exact lcm/gcd aggregation and proof gate.
+```
+
+Forbidden simplifications:
+
+```text
+FAIL if production route has a hard condition `polynomial_count == 2` or equivalent and no separate general path.
+FAIL if route computes only univariate Sylvester resultant while claiming sparse resultant.
+FAIL if route calls complete target elimination or Groebner and labels the output resultant.
+FAIL if determinant/null relation output is not the source of the candidate.
+FAIL if 3+ polynomial conformance route is absent.
+```
+
+Minimum conformance families:
+
+```text
+SR-F1. Two-polynomial sparse resultant case.
+SR-F2. Three-polynomial overdetermined case where all equations are needed.
+SR-F3. Sparse support case where dense Macaulay degree is larger but sparse template is small.
+SR-F4. Case where selected minor gives spurious factor and exact proof filters it.
+```
+
+### 8.5 SliceSpecialization
+
+File: `src/candidates/slice.rs`
+
+Required control-flow:
+
+```text
+1. Select non-target variables to slice using algebraic incidence; never slice target.
+2. Generate deterministic generic affine slices over admissible primes.
+3. Build sliced system containing all original equations plus slice equations.
+4. Compute target candidate for the sliced system using residual-cyclic or sparse eliminant on the sliced system.
+5. Record slice equations, assignments, prime, and the route used inside the slice.
+6. Combine slice observations only as candidate ranking/aggregation; never as certificate.
+7. Return candidates that still require fixed proof in the original unsliced system.
+```
+
+Forbidden simplifications:
+
+```text
+FAIL if route substitutes non-target variables into each equation independently and treats each single-equation target polynomial as slice candidate.
+FAIL if route does not build a sliced system with all original equations.
+FAIL if route uses slice gcd as adoption evidence.
+FAIL if deterministic assignments are hard-coded to one or two slices without resource-driven schedule.
+```
+
+Minimum conformance families:
+
+```text
+SL-F1. System where any single equation slice gives wrong target polynomial but global sliced system gives useful candidate.
+SL-F2. System where slice candidate is spurious and fixed proof rejects it.
+SL-F3. System needing two different affine slice families to recover stable candidate.
+```
+
+### 8.6 NormTraceTower
+
+File: `src/candidates/norm_trace_tower.rs`
+
+Required control-flow:
+
+```text
+1. Detect triangular algebraic tower using equations of the form a_j(Y_<j) * Y_j^d + lower = 0.
+2. If leading coefficient a_j is not 1, require a valid guard certificate proving a_j nonzero on admissible fibers before using it.
+3. Build quotient basis with exponents below each tower degree.
+4. Reduce multiplication by target expression in the tower quotient.
+5. Construct multiplication matrix for the target element.
+6. Candidate is characteristic polynomial or minimal polynomial derived from exact matrix computation.
+7. Return candidate only; adoption requires fixed proof unless the route also constructs a full exact membership certificate.
+```
+
+Forbidden simplifications:
+
+```text
+FAIL if route accepts only monic coefficient 1 towers and claims general NormTraceTower without documenting and testing guarded nonmonic path.
+FAIL if target expression must have coefficient ±1 only.
+FAIL if reduction by tower is not exact.
+FAIL if characteristic polynomial is computed by ad hoc determinant code without tests over rational coefficients and nontrivial tower degrees.
+```
+
+Minimum conformance families:
+
+```text
+NT-F1. Monic two-level tower.
+NT-F2. Nonmonic leading coefficient with InputSemanticNonzero guard.
+NT-F3. Tower where characteristic polynomial has repeated factors and factor schedule must handle them correctly.
+```
+
+### 8.7 LocalizedSchur
+
+File: `src/candidates/localized_schur.rs`
+
+Required control-flow:
+
+```text
+1. Collect left-null obstructions from failed fixed proofs.
+2. Determine minimal obstruction scope Ω by row monomial / equation support incidence.
+3. Determine boundary variables Z_Ω = {T} ∪ separators(Ω).
+4. Build local membership equation M_Ω u + N_Ω f = 0 over exact Q.
+5. Solve for frontier relation space V_Ω.
+6. If a target-only relation in T is derived, construct `TargetCertificate` by replaying to original system and return `LocalizedSchur` candidate with certificate.
+7. If no target-only relation is derived, return support information that expands proof windows.
+```
+
+Forbidden simplifications:
+
+```text
+FAIL if localized Schur never attempts to construct a target-only exact certificate.
+FAIL if localized Schur always returns `SupportInformation` even for conformance family with target-only local relation.
+FAIL if full-system Schur is used outside complete fallback.
+FAIL if local relation is accepted without replay into original system.
+```
+
+Minimum conformance families:
+
+```text
+LS-F1. Obstruction localized to a proper subset and only support expansion is needed.
+LS-F2. Obstruction localized to a proper subset and exact target-only local relation is produced.
+LS-F3. Scope would be full system; route must refuse and defer to complete fallback.
+```
+
+## 9. Fixed exact proof and proof search
+
+Files:
+
+```text
+src/proof/fixed.rs
+src/proof/schedule.rs
+src/proof/learning.rs
+src/proof/multiple_repair.rs
+```
+
+### 9.1 Fixed proof
+
+`prove_fixed_target(input)` MUST:
+
+```text
+1. Validate candidate is nonzero and in target variable.
+2. Validate proof window supports match system equations.
+3. For CertificateMode:
+   - Ideal: H = S(T)
+   - Radical {a}: require a >= 1; H = S(T)^a
+   - GuardedRadical {a,e}: require a >= 1; build D from verified system.guard_certificates; H = D^e S(T)^a
+4. Build row set C_H = Supp(H) ∪ ⋃ Supp(B_i F_i).
+5. Build exact Q linear system M_H u = vec(H).
+6. Solve over Q.
+7. If inconsistent, return left-null obstruction with row monomials and coefficients.
+8. If consistent, restore multipliers q_i.
+9. Recompute H - Σ q_i F_i as sparse polynomial over Q.
+10. If nonzero, return ImplementationBug / IdentityCheckFailed; never return certificate.
+11. Return the exact TargetCertificate.
+```
+
+### 9.2 Fair search
+
+Unbounded search MUST be fair over:
+
+```text
+- proof window support degree d_B,
+- support power a,
+- guard power e.
+```
+
+Required schedule:
+
+```text
+for weight = 0..∞:
+    for d_B = 0..weight:
+        for a = 1..=weight+1:
+            for e = 0..=weight:
+                if d_B + a + e <= weight + 1:
+                    attempt(d_B, a, e)
+```
+
+The exact schedule may differ, but reviewer must be able to prove:
+
+```text
+For every finite tuple (d_B, a, e), unbounded mode eventually attempts it.
+```
+
+Forbidden simplifications:
+
+```text
+FAIL if unbounded mode enters an infinite window iterator and never reaches complete fallback or fair proof tuple scheduling.
+FAIL if `max_window_degree = None` causes nontermination on conformance failures without trace/resource behavior defined.
+FAIL if proof mode schedule is fair over powers but not over support degree.
+```
+
+### 9.3 Proof learning
+
+Required:
+
+```text
+- Initial proof window must include modular active support from actual modular multipliers.
+- Obstruction expansion must add predecessor supports Pred_F(r).
+- Exhaustive degree expansion must eventually include all monomials up to every finite degree in unbounded mode.
+```
+
+### 9.4 Low-degree multiple repair
+
+Required:
+
+```text
+1. For candidate S, search A(T) up to configured degree.
+2. Construct P(T)=A(T)S(T).
+3. Attempt fixed proof on P, P^a, D^eP^a using the fair schedule within resource bounds.
+4. If certified, output support P, not S.
 ```
 
 Forbidden:
 
 ```text
-- Using agreement across slices as proof.
-- GCD across slices as success without exact certificate.
-- Silently dropping branches because a slice looks inconsistent.
+FAIL if repair returns original uncertified S.
+FAIL if repair accepts a multiple without exact certificate.
 ```
 
----
+## 10. Complete target elimination fallback
 
-## 8. Candidate Normalization and Ranking
+Files:
 
-File: `src/normalize.rs`
+```text
+src/elimination/groebner.rs
+src/elimination/saturation.rs
+src/elimination/target_elimination.rs
+```
 
-### BS-NORM-001 — Normalization
+This is the only place where complete exact target elimination is allowed. It is not coordinate solving and must not enumerate coordinate solutions.
+
+Required algebra:
+
+```text
+Given I = <F_1,...,F_m> and certified guard product D:
+(I : D^∞) ∩ Q[T]
+```
+
+Required implementation:
+
+```text
+1. Build certified guard product D from valid guard certificates. If no guards, D = 1.
+2. If D != 1, introduce saturation variable U and ideal J = <F_1,...,F_m, U*D - 1> in Q[X,T,U].
+3. Use exact Groebner basis or equivalent exact elimination for an elimination order with eliminated variables X,U greater than T.
+4. Extract nonzero univariate polynomials in Q[T] from the elimination basis.
+5. If a nonzero S(T) is found, derive a `GuardedRadicalMembership` or `IdealMembership` certificate by replaying Groebner reductions and clearing U denominators to produce D^e S(T)^a = Σ q_i F_i.
+6. If 1 is in the saturated ideal, return `EmptyAdmissibleSetCertificate`.
+7. If no nonzero T-only polynomial exists, return `NoTargetEliminantCertificate` containing a verifier-checkable elimination-zero certificate.
+8. If resource limits stop the exact elimination, return `ResourceFailure` with actual matrix/pair counts.
+```
+
+Groebner certificate requirements:
+
+```text
+- Each basis polynomial must carry a representation as a combination of original generators and saturation equation.
+- For a support S, verifier must replay/verify D^e S^a = Σ q_i F_i over Q.
+- For no-target-eliminant, verifier must either recompute the deterministic elimination basis from certificate data or verify a Buchberger/reduction certificate proving the elimination ideal basis has no nonzero Q[T] generator.
+```
+
+Forbidden simplifications:
+
+```text
+FAIL if complete fallback is bounded by `max_window_degree` and then returns `ResourceFailure` or `NoVerifiedTargetCertificate` without exact elimination attempt when resource is unbounded.
+FAIL if `CertifiedNoNonzeroTargetEliminant` is accepted only for monomial ideals.
+FAIL if complete fallback returns target support from a relation search without saturation replay.
+FAIL if complete fallback enumerates full coordinate solutions or full coordinate RUR.
+```
+
+Minimum conformance families:
+
+```text
+CTE-F1. Unguarded finite target eliminant.
+CTE-F2. Guarded saturation where eliminant appears only after saturating D.
+CTE-F3. Algebraically empty ideal returning CertifiedEmptyAdmissibleSet.
+CTE-F4. No nonzero target eliminant positive-dimensional algebraic family with exact zero-elimination certificate.
+CTE-F5. Resource-limited run returns FiniteResourceFailure with no unsound success.
+```
+
+## 11. Exact real root and exact target image
+
+Files:
+
+```text
+src/real/algebraic.rs
+src/real/sturm.rs
+src/real/cad.rs
+src/real/fiber.rs
+```
+
+### 11.1 Root isolation
+
+`isolate_real_roots_squarefree` MUST return exact algebraic roots:
 
 ```rust
-pub fn normalize_candidate(candidate: TargetCandidate) -> Option<TargetCandidate>;
-pub fn rank_candidates(candidates: Vec<TargetCandidate>) -> Vec<TargetCandidate>;
-pub fn factor_schedule(candidate: &TargetCandidate) -> Vec<TargetCandidate>;
-pub fn refine_verified_same_ideal(certificates: Vec<TargetCertificate>) -> TargetCertificate;
-```
-
-Normalization pseudocode:
-
-```text
-if reconstructed is None and reconstruction cannot be done: keep modular-only candidate for trace but do not send to fixed proof
-if reconstructed polynomial is zero: discard
-clear denominators
-remove integer content
-make leading coefficient positive
-preserve original support for proof; compute squarefree only for roots
-```
-
-Ranking order:
-
-```text
-1. exact origin candidates
-2. lower degree
-3. reproduced over more primes
-4. reproduced by more origins
-5. lower coefficient height
-6. smaller active support trace
-```
-
-Rules:
-
-```text
-- Ranking order is proof-attempt order only.
-- Ranking MUST NOT be an acceptance condition.
-- Same-ideal verified covers MUST refine by gcd, not product.
-- Component-union covers MUST combine by lcm only when component union semantics has a certificate.
-```
-
----
-
-## 9. Fixed-S Exact Proof
-
-File: `src/proof.rs`
-
-### BS-PROOF-001 — Input and modes
-
-```rust
-#[derive(Clone, Debug)]
-pub struct FixedProofInput {
-    pub system: CertifiedSystemQ,
-    pub candidate: UniPolynomialQ,
-    pub proof_window: ProofWindow,
-    pub certificate_mode: CertificateMode,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum CertificateMode {
-    Ideal,
-    Radical { support_power: usize },
-    GuardedRadical { support_power: usize, guard_power: usize },
-}
-```
-
-### BS-PROOF-002 — Fair certificate mode schedule
-
-```rust
-pub fn fair_certificate_mode_schedule(limits: &ResourceLimits) -> Vec<CertificateMode>;
-```
-
-Pseudocode:
-
-```text
-emit Ideal first
-for weight = 1..limit_or_unbounded:
-  for a = 1..=weight:
-    emit Radical { support_power: a } if a <= weight
-  for a = 1..=weight:
-    for e = 0..=weight:
-      if a + e <= weight:
-        emit GuardedRadical { support_power: a, guard_power: e }
-```
-
-The schedule MUST be fair over `(a, e, d_B)` when combined with proof-window degree expansion. In unbounded ideal execution, every finite tuple must eventually be attempted.
-
-### BS-PROOF-003 — Prove fixed target
-
-```rust
-pub fn prove_fixed_target(input: FixedProofInput) -> Result<TargetCertificate, ProofFailure>;
-```
-
-Pseudocode:
-
-```text
-S := primitive normalized candidate
-mode := input.certificate_mode
-if mode == Ideal:
-  a := 1; e := 0; D := 1
-if mode == Radical:
-  require support_power >= 1
-  a := support_power; e := 0; D := 1
-if mode == GuardedRadical:
-  require support_power >= 1
-  verify all system.guard_certificates
-  construct D as exact product of verified guard factors
-  a := support_power; e := guard_power
-H := D^e * S(T)^a as PolynomialQ over system.variables
-C_H := support(H) ∪ ⋃ support(B_i * F_i)
-M_H := columns vec_C_H(b * F_i)
-b := vec_C_H(H)
-solve M_H u = b over Q
-if inconsistent:
-  compute exact left-null obstruction λ with λ^T M_H = 0 and λ^T b != 0
-  return ProofFailure::Inconsistent { obstruction }
-restore multipliers q_i from u and proof_window supports
-if H - Σ q_i F_i != 0 over Q:
-  return ProofFailure::ImplementationBug-equivalent
-return matching TargetCertificate with explicit multipliers
-```
-
-Forbidden:
-
-```text
-- Accepting modular reconstruction without Q identity check.
-- Treating linear-solve success as enough when identity check fails.
-- Treating inconsistency in one proof window as proof that S is false.
-- Using semantic guards in D unless their GuardCertificate verifies.
-```
-
-### BS-PROOF-004 — Modular proof construction
-The implementation MAY use modular linear algebra, CRT, and rational reconstruction to find multipliers, but only if the reconstructed rational multipliers are explicit and the Q identity check passes. Modular rank stability and successful reconstruction are trace only.
-
----
-
-## 10. Proof Window Learning
-
-File: `src/proof_learning.rs`
-
-### BS-LEARN-001 — Witness and obstruction traces
-
-```rust
-#[derive(Clone, Debug)]
-pub struct ModularWitnessTrace {
-    pub prime: u64,
-    pub active_multiplier_supports: Vec<Vec<Monomial>>,
-}
-
-#[derive(Clone, Debug)]
-pub struct LeftNullObstruction {
-    pub row_monomials: Vec<Monomial>,
-    pub coefficients: Vec<Rational>,
-}
-```
-
-### BS-LEARN-002 — Expansion by predecessors
-
-```rust
-pub fn expand_by_obstruction_predecessors(
-    system: &CertifiedSystemQ,
-    proof_window: &ProofWindow,
-    obstruction: &LeftNullObstruction,
-) -> ProofWindow;
-```
-
-Pseudocode:
-
-```text
-for each row monomial r with nonzero λ_r:
-  for each equation F_i:
-    for each monomial ν in support(F_i):
-      if r is divisible by ν:
-        b := r / ν
-        add b to B_i
-return expanded proof window
-```
-
-Rules:
-
-```text
-- Active support and obstruction support guide proof search only.
-- Unbounded search MUST include exhaustive monomial support enumeration by degree.
-- Resource-limited failure MUST return `FiniteResourceFailure` or `NoVerifiedTargetCertificate`, never unsound success.
-```
-
----
-
-## 11. Repairs and Complete Fallback
-
-### BS-REPAIR-001 — Low-degree multiple repair
-File: `src/repair_multiple.rs`
-
-```rust
-pub fn low_degree_multiple_repair(
-    system: &CertifiedSystemQ,
-    candidate: &UniPolynomialQ,
-    proof_window: &ProofWindow,
-    limits: &ResourceLimits,
-) -> Result<TargetCertificate, ProofFailure>;
-```
-
-Pseudocode:
-
-```text
-for deg_A from 0..limit:
-  construct unknown A(T) of degree deg_A
-  form P(T) = A(T) * candidate
-  solve combined linear system for A coefficients and multipliers
-  for each nonzero reconstructed P:
-    run prove_fixed_target on P
-    if valid: return certificate for P, not for original candidate
-return failure/resource exceeded
-```
-
-Rule: The repaired support is `P(T)`. The original `S(T)` MUST NOT be returned unless it has its own certificate.
-
-### BS-REPAIR-002 — Localized Schur repair
-File: `src/repair_schur.rs`
-
-Required behavior:
-
-```text
-- Use obstruction incidence to identify a minimal scope Ω.
-- Boundary variables are `{target} ∪ separators(Ω)`.
-- Build local membership condition `M_Ω u + N_Ω f = 0`.
-- Output only either exact-certificate target candidate or support information for proof-window expansion.
-```
-
-Forbidden:
-
-```text
-- Full-system Schur repair except inside final exact target elimination fallback.
-- Treating an uncertified Schur relation as solver success.
-- Calling complete fallback and labelling it localized Schur.
-```
-
-### BS-FALLBACK-001 — Complete target elimination fallback
-File: `src/fallback_elimination.rs`
-
-```rust
-pub enum CompleteFallbackResult {
-    CertifiedSupport(TargetCertificate),
-    CertifiedEmpty(EmptyAdmissibleSetCertificate),
-    CertifiedNoTargetEliminant(NoTargetEliminantCertificate),
-    ResourceFailure(CostTrace),
-}
-
-pub fn complete_target_elimination_fallback(system: &CertifiedSystemQ, limits: &ResourceLimits) -> CompleteFallbackResult;
-```
-
-Required behavior:
-
-```text
-- Compute only `(I : D^∞) ∩ Q[T]` or exact certificates about it.
-- Do not enumerate coordinate solutions.
-- Do not construct full coordinate RUR.
-- If a nonzero target eliminant is returned, return it with an exact membership/guarded membership certificate.
-- If empty admissible set is certified, return `CertifiedEmptyAdmissibleSet` path.
-- If no target eliminant is certified, return `CertifiedNoNonzeroTargetEliminant` path, not real nonfinite.
-```
-
-Allowed heavy operation:
-
-```text
-Exact Groebner/elimination or ideal quotient computation is allowed only here and only for the target elimination statement. It MUST be unreachable in route-forcing tests unless the test explicitly targets fallback.
-```
-
----
-
-## 12. Exact Roots and Exact Image
-
-File: `src/roots.rs`, `src/exact_image.rs`
-
-### BS-ROOT-001 — Exact real root records
-
-```rust
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct RationalInterval {
-    pub lower: Rational,
-    pub upper: Rational,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AlgebraicRealRoot {
     pub polynomial: UniPolynomialQ,
     pub isolating_interval: RationalInterval,
     pub index: usize,
 }
-
-pub fn isolate_real_roots_squarefree(poly: &UniPolynomialQ) -> Vec<AlgebraicRealRoot>;
 ```
 
-Required algorithm:
+Required:
 
 ```text
-- Compute squarefree support exactly.
-- Use Sturm sequence or an equivalent exact rational isolation algorithm.
-- Return rational intervals, each containing exactly one real root.
-- Floating approximations may be stored only as trace, not as root records.
+- polynomial must be squarefree.
+- interval must contain exactly one real root.
+- no floating approximation as proof.
 ```
 
-### BS-IMAGE-001 — Candidate cover output
+### 11.2 Real fiber classification
 
-```rust
-#[derive(Clone, Debug)]
-pub struct CertifiedCandidateCover {
-    pub support: UniPolynomialQ,
-    pub squarefree_support: UniPolynomialQ,
-    pub real_roots: Vec<AlgebraicRealRoot>,
-    pub certificate: TargetCertificate,
-}
-```
-
-### BS-IMAGE-002 — Exact target image output
-
-```rust
-#[derive(Clone, Debug)]
-pub struct ExactTargetImageCertificate {
-    pub cover: TargetCertificate,
-    pub squarefree_support: UniPolynomialQ,
-    pub root_classifications: Vec<RealRootFiberCertificate>,
-}
-
-#[derive(Clone, Debug)]
-pub struct CertifiedExactTargetImage {
-    pub support: UniPolynomialQ,
-    pub squarefree_support: UniPolynomialQ,
-    pub values: Vec<AlgebraicRealRoot>,
-    pub rejected_roots: Vec<AlgebraicRealRoot>,
-    pub certificate: ExactTargetImageCertificate,
-}
-
-#[derive(Clone, Debug)]
-pub enum RealRootFiberCertificate {
-    Nonempty { root: AlgebraicRealRoot, certificate: RealFiberNonemptyCertificate },
-    Empty { root: AlgebraicRealRoot, certificate: RealFiberEmptyCertificate },
-}
-```
-
-Rules:
+For each root α of squarefree support, classify:
 
 ```text
-- Partial root classification is trace only.
-- `CertifiedExactTargetImage` requires classifications for every real root of squarefree support.
-- `TryExactImage` returns `CertifiedCandidateCover` if classification is incomplete.
-- `RequireExactImage` returns `NoVerifiedTargetCertificate` or `FiniteResourceFailure` if classification is incomplete.
+∃X ∈ R^n such that F(X, α)=0 and semantic_guards are satisfied.
 ```
 
----
-
-## 13. Dependency DAG and Window Planning
-
-File: `src/dependency_dag.rs`
-
-### BS-DAG-001 — Algebraic footprint only
-
-```rust
-pub fn build_target_dependency_dag(system: &CertifiedSystemQ) -> TargetDependencyDag;
-pub fn plan_certificate_windows(system: &CertifiedSystemQ, dag: &TargetDependencyDag, limits: &ResourceLimits) -> Vec<CertificateWindow>;
-```
-
-Required footprint:
+Required final implementation:
 
 ```text
-- relation-variable incidence
-- graph distance from target
-- separator size
-- monomial support
-- degree
-- affine eliminability
-- explicit tower detectability
-- quotient-rank estimate
+1. Represent α as AlgebraicNumber over Q with minimal polynomial and isolating interval.
+2. Build polynomial system over Q(α) for the fiber F(X,α)=0.
+3. Include semantic guards with correct real sign semantics:
+   - NonZero: g(X,α) != 0
+   - Positive: g(X,α) > 0
+   - Negative: g(X,α) < 0
+   - NonNegative: g(X,α) >= 0
+   - NonPositive: g(X,α) <= 0
+4. Use exact recursive projection-lifting CAD or equivalent exact real algebraic feasibility algorithm over Q(α).
+5. If nonempty, return `RealFiberNonemptyCertificate` containing an exact algebraic sample point and sign/equality proof.
+6. If empty, return `RealFiberEmptyCertificate` containing a CAD/projection infeasibility certificate or Positivstellensatz/RCF certificate that verifier can replay.
+7. If resource limits prevent classification, return incomplete trace, not `CertifiedExactTargetImage`.
+```
+
+Verifier requirements:
+
+```text
+- Verify nonempty sample point by exact algebraic evaluation of all equalities and guards.
+- Verify empty certificate by replaying CAD cell decomposition or the exact infeasibility certificate.
+- Verify every root of squarefree_support is classified exactly once.
+```
+
+Forbidden simplifications:
+
+```text
+FAIL if `classify_real_fibers` always returns Incomplete.
+FAIL if exact image verifier rejects ExactTargetImage as "not handled" in final implementation.
+FAIL if nonempty certificate uses floats or approximate numeric coordinates.
+FAIL if empty certificate is a string or external CAS output without replay.
+FAIL if unclassified roots are silently dropped.
+```
+
+Minimum conformance families:
+
+```text
+EI-F1. Cover S(T)=T^2-2 with both roots real and both fibers nonempty.
+EI-F2. Cover with one spurious real root; exact image rejects it via empty fiber certificate.
+EI-F3. Guard removes one root through NonZero or Positive guard.
+EI-F4. RequireExactImage with small resource limit fails closed.
+```
+
+## 12. Solver control-flow
+
+File: `src/solver.rs`
+
+Required top-level pseudocode:
+
+```text
+solve_target(problem, options):
+    validated = validate(problem)
+    canonical = canonicalize(validated)
+    system = certified_compress(canonical)
+    verify internal compression in debug/check mode
+
+    early_empty = try_cheap_empty_admissible_set_certificate(system)
+    if early_empty.valid:
+        return CertifiedEmptyAdmissibleSet
+
+    dag = build_target_dependency_dag(system)
+    window_schedule = fair_certificate_window_schedule(system, dag, options)
+
+    verified = []
+    obstructions = []
+
+    for schedule_step in window_schedule:
+        W = schedule_step.window
+        candidates = []
+        candidates += DirectTargetEquation.generate(system, W)
+        candidates += NormTraceTower.generate(system, W)
+        candidates += ResidualCyclic.generate(system, W)
+        candidates += TargetCyclicKrylov.generate(system, W)
+        candidates += HiddenVariableSparseResultant.generate(system, W)
+        candidates += SliceSpecialization.generate(system, W)
+
+        for candidate in normalize_rank_and_merge(candidates):
+            for factor_candidate in factor_schedule(candidate):
+                proof_result = fair_fixed_proof_search(system, factor_candidate, W, obstructions, options)
+                if proof_result.valid:
+                    verified.push(proof_result.certificate)
+                    cover = refine_and_finalize_same_ideal_gcd(verified)
+                    return maybe_classify_exact_target_image(problem, cover, options)
+
+                repair_result = low_degree_multiple_repair(system, factor_candidate, proof_result.last_window, options)
+                if repair_result.valid:
+                    verified.push(repair_result.certificate)
+                    cover = refine_and_finalize_same_ideal_gcd(verified)
+                    return maybe_classify_exact_target_image(problem, cover, options)
+
+        schur_result = localized_schur_repair(system, obstructions, options)
+        if schur_result.valid:
+            verified.push(schur_result.certificate)
+            cover = refine_and_finalize_same_ideal_gcd(verified)
+            return maybe_classify_exact_target_image(problem, cover, options)
+        if schur_result.support_information:
+            feed support information into future proof windows
+
+        if schedule_step.resource_exhausted:
+            break
+
+    final = complete_target_elimination_fallback(system, options)
+    match final:
+        CertifiedSupport(cert) => maybe_classify_exact_target_image(problem, cover_from(cert), options)
+        CertifiedEmpty(cert) => CertifiedEmptyAdmissibleSet
+        CertifiedNoTargetEliminant(cert) => CertifiedNoNonzeroTargetEliminant
+        ResourceFailure(trace) => FiniteResourceFailure or NoVerifiedTargetCertificate according to options
+```
+
+Required status consistency:
+
+```text
+- CertifiedCandidateCover: cover Some, certificate Some(TargetCover), exact_image None.
+- CertifiedExactTargetImage: exact_image Some, certificate Some(ExactTargetImage), cover may be None or derivable from image certificate but no ambiguity.
+- CertifiedEmptyAdmissibleSet: cover None, exact_image None, certificate Some(EmptyAdmissibleSet).
+- CertifiedNoNonzeroTargetEliminant: cover None, exact_image None, certificate Some(NoNonzeroTargetEliminant).
+- NoVerifiedTargetCertificate: no success certificate.
+- FiniteResourceFailure: no success certificate and trace includes actual resource blocker.
 ```
 
 Forbidden:
 
 ```text
-- Geometry names.
-- Variable-name semantics beyond equality with target.
-- Expected answers.
-- Fixture names.
+FAIL if complete fallback is reached only after an infinite unbounded iterator.
+FAIL if `assert!` panic is used as normal solver behavior outside tests.
+FAIL if route control exists only under `#[cfg(test)]` and no production route observability exists.
+FAIL if `ImplementationBug` is used for unimplemented algorithm variants.
 ```
 
-Window planner requirements:
+## 13. Route-forcing and no-fallback harness
 
-```text
-- Every planned window is finite and row-closed.
-- Target dependency cone and small separator support are prioritized.
-- Unbounded ideal execution enumerates all multiplier monomial supports by degree eventually.
-- Planner estimates never affect proof soundness.
-```
+The repo MUST include a test-only but source-visible route-forcing harness. It must allow reviewers to run each route while disabling all other candidate routes and complete fallback.
 
----
-
-## 14. Top-Level Solver
-
-File: `src/solver.rs`
-
-### BS-SOLVER-001 — Required top-level pseudocode
-
-```text
-solve_target(problem, options):
-  P0 := validate(problem)
-  if invalid: return InvalidInput
-  P1 := canonicalize(P0)
-  P  := certified_compress(P1)
-
-  early_empty := try_cheap_empty_admissible_set_certificate(P)
-  if early_empty.valid:
-    return CertifiedEmptyAdmissibleSet(early_empty.certificate)
-
-  dag := build_target_dependency_dag(P)
-  windows := plan_certificate_windows(P, dag, options.resource_limits)
-
-  verified := []
-  collected_obstructions := []
-
-  for W in windows:
-    candidates := []
-    candidates += direct_target_equation_candidates(P)
-    candidates += norm_trace_tower_candidates(P, W)
-    candidates += residual_cyclic_candidates(P, W, primes)
-    candidates += target_cyclic_krylov_candidates(P, W)
-    candidates += hidden_variable_sparse_resultant_candidates(P, W)
-    candidates += slice_specialization_candidates(P, W)
-
-    for S in rank_candidates(normalize(candidates)):
-      for Fctr in factor_schedule(S):
-        PW := learn_initial_proof_window(W, Fctr.traces)
-        for mode in fair_certificate_mode_schedule(options.resource_limits):
-          result := prove_fixed_target(P, Fctr, PW, mode)
-          if result.valid:
-            verified += result.certificate
-            cover := refine_and_finalize(verified, SameIdealGcd)
-            return maybe_classify_exact_target_image(problem, cover, options)
-          while result is Inconsistent and can_expand(PW, limits):
-            collected_obstructions += result.obstruction
-            PW := expand_by_obstruction_predecessors(P, PW, result.obstruction)
-            result := prove_fixed_target(P, Fctr, PW, mode)
-            if result.valid:
-              verified += result.certificate
-              cover := refine_and_finalize(verified, SameIdealGcd)
-              return maybe_classify_exact_target_image(problem, cover, options)
-
-        repaired := low_degree_multiple_repair(P, Fctr, PW, limits)
-        if repaired.valid:
-          verified += repaired.certificate
-          cover := refine_and_finalize(verified, SameIdealGcd)
-          return maybe_classify_exact_target_image(problem, cover, options)
-
-    schur := localized_schur_repair(P, W, collected_obstructions)
-    if schur.valid:
-      verified += schur.certificate
-      cover := refine_and_finalize(verified, SameIdealGcd)
-      return maybe_classify_exact_target_image(problem, cover, options)
-
-  final := complete_target_elimination_fallback(P, limits)
-  match final:
-    CertifiedSupport(cert): return maybe_classify_exact_target_image(problem, cert, options)
-    CertifiedEmpty(cert): return CertifiedEmptyAdmissibleSet(cert)
-    CertifiedNoTargetEliminant(cert): return CertifiedNoNonzeroTargetEliminant(cert)
-    ResourceFailure(trace): return NoVerifiedTargetCertificate or FiniteResourceFailure
-```
-
-### BS-SOLVER-002 — MaybeClassifyExactTargetImage
-
-```text
-if options.exact_image_mode == CoverOnly:
-  return CertifiedCandidateCover(cover)
-image := classify_real_fibers(problem, cover)
-if image.valid_and_complete:
-  return CertifiedExactTargetImage(image.result)
-if options.exact_image_mode == RequireExactImage:
-  return NoVerifiedTargetCertificate(image.failure_trace)
-return CertifiedCandidateCover(cover.with_partial_image_trace(image.partial_trace))
-```
-
-Rules:
-
-```text
-- The solver MUST fail closed.
-- No candidate route can bypass `verify_certificate` semantics.
-- No hidden fallback may be called outside the stated top-level location.
-- Final support MUST be primitive-normalized and squarefree support MUST be computed separately for roots.
-```
-
----
-
-## 15. Verification Contract
-
-File: `src/verifier.rs`
-
-### BS-VERIFY-001 — Top-level verifier
+Required API under `#[cfg(test)]`:
 
 ```rust
-pub fn verify_certificate(problem: TargetProblemQ, cert: SolverCertificate) -> VerificationResult;
-```
-
-Verifier trusts only:
-
-```text
-- input polynomials
-- input semantic guard records actually present in `TargetProblemQ`
-- certificate multipliers
-- replay certificate payloads that are exact identities
-- guard certificate exact identities
-- exact real certificate payloads with implemented replay
-- rational arithmetic
-```
-
-Verifier MUST NOT trust:
-
-```text
-- modular rank trace
-- random seed
-- candidate score
-- planner estimate
-- floating point result
-- external CAS output without replay
-- `guard_product` without factor certificates
-- partial real fiber classification
-- source-to-code maps
-- reviewer PASS
-- audit summaries
-```
-
-### BS-VERIFY-002 — Tamper resistance
-Every certificate test MUST include at least one tamper case: change a multiplier, remove a guard certificate, alter a support coefficient, alter a guard product, or delete a root classification. The verifier MUST fail.
-
----
-
-## 16. Mandatory Tests and Test Harness
-
-### BS-TEST-001 — Route forcing harness
-File: `src/test_support.rs` under `#[cfg(test)]` only.
-
-```rust
-#[cfg(test)]
-pub struct TestRouteForcing {
-    pub enabled_origins: std::collections::BTreeSet<CandidateOrigin>,
+pub(crate) struct RouteForcing {
+    pub enabled_origins: BTreeSet<CandidateOrigin>,
     pub allow_complete_fallback: bool,
+    pub allow_other_heavy_routes: bool,
 }
+
+pub(crate) fn solve_target_with_route_forcing(problem: TargetProblemQ, options: SolverOptions, forcing: RouteForcing) -> TargetSolveResult;
 ```
 
-Rules:
+Every route MUST have tests:
 
 ```text
-- The harness MUST NOT be exposed in public production API.
-- Route-specific tests MUST disable all other routes and fallback unless the test explicitly targets fallback.
-- Top-level solver success through another route cannot close a route R-ID.
+- route-only candidate generation
+- route-only solve when fixed proof is possible
+- route-only rejection when candidate is spurious
+- no complete fallback trace
+- no other route trace
+- tamper certificate rejection
 ```
 
-### BS-TEST-002 — Required test families
-Tests MUST be algebraic families, not named geometry problems. At minimum:
+## 14. Documentation artifacts required
+
+Agent must maintain, but reviewer must not blindly trust:
 
 ```text
-1. Direct target equation:
-   F = {T^2 - 2, X^2 - 3}; support T^2 - 2.
-
-2. Residual-cyclic proof:
-   F = {X^2 - 2, T - X}; candidate/proof support T^2 - 2.
-
-3. Guarded radical:
-   F = {D*(T^2 - 2)} with semantic guard D != 0; support T^2 - 2 is accepted only by guarded radical certificate, and guard-certificate tamper fails.
-
-4. Empty admissible set:
-   F = {1}; returns CertifiedEmptyAdmissibleSet, not cover.
-
-5. Same-ideal gcd refinement:
-   two verified covers S1, S2 with nontrivial gcd; final support is gcd, not product.
-
-6. Component-union lcm:
-   explicit component-union certificate; final support is lcm, not product.
-
-7. Resultant route forcing:
-   at least one 3-polynomial hidden-variable eliminant family; resultant route only; fallback disabled.
-
-8. Slice route forcing:
-   a positive-dimensional system with finite target image after exact proof; slice candidates are not accepted without proof.
-
-9. Root isolation:
-   squarefree support T^2 - 2 returns two rational isolating intervals.
-
-10. Exact image fail-closed:
-    RequireExactImage with incomplete classifier returns NoVerifiedTargetCertificate or FiniteResourceFailure, never CertifiedExactTargetImage.
+docs/ai/changes/cw-arc-dtp-q/evidence/non_simplification_manifest.md
+docs/ai/changes/cw-arc-dtp-q/evidence/route_forcing_matrix.md
+docs/ai/changes/cw-arc-dtp-q/evidence/data_flow_proofs.md
 ```
 
-### BS-TEST-003 — Static anti-simplification tests
-Static tests MUST scan production files for forbidden patterns and fail on detection unless the occurrence is in a test or documentation file and is explicitly expected:
+`non_simplification_manifest.md` MUST contain one section per route:
 
 ```text
-- `Unsupported` as a solver status.
-- `equations.len() != 2` or equivalent branch rejecting an entire production route without a general path.
-- function or module names containing `toy`, `temp`, `hack`, `legacy`, `v2`, `new_impl`, `fixture`, `expected`.
-- public production route forcing options.
-- floating point arithmetic in proof, verifier, root records, or certificate adoption path.
-- calls to complete fallback from candidate route implementations.
-- geometry-name strings in production dispatch.
+- Production call chain
+- Required data-flow objects
+- Forbidden simplifications searched
+- Route-forcing tests
+- Tamper tests
+- Why this is not name-only
+- Why this is not certificate-shell-only
+- Why this is not fallback-only
 ```
 
----
+Reviewer must verify each claim from source.
 
-## 17. Forbidden Simplifications and Failure Taxonomy
+## 15. Final disqualifiers
 
-### BS-FORBID-001 — Global forbidden production behavior
-Production path MUST NOT:
+The implementation is automatically non-conformant if any final production path contains one of the following patterns without explicit user-approved Base Spec amendment:
 
 ```text
-1. Build a full coordinate solution list.
-2. Build a full coordinate RUR.
-3. Build full coordinate lex parametrization and read T from it.
-4. Branch on geometry names, problem names, fixture names, expected answers, or official solutions.
-5. Adopt finite-field, numerical, specialization, Krylov, or resultant results without exact proof.
-6. Return nonfinite or no-eliminant without exact complete certificate.
-7. Call hidden fallback not stated in this Base Spec.
-8. Return `Unsupported` as ordinary solver failure.
-9. Treat test/audit/reviewer PASS as implementation evidence by itself.
-10. Treat names, types, trace fields, or certificate structs as proof of algorithm implementation.
+D1. `guard_certificates: Vec::new()` as the only CertifiedSystemQ construction path.
+D2. `semantic_guards: Vec::new()` in proof/guard verification path where original problem guards are needed.
+D3. `classify_real_fibers` or equivalent always returning Incomplete.
+D4. `verify_certificate` rejecting ExactTargetImage as unhandled.
+D5. `complete_target_elimination_fallback` bounded only by window degree and not doing exact elimination.
+D6. `NoTargetEliminantCertificate` verifier limited to monomial ideals.
+D7. modular reconstruction from only the first prime in a multi-prime route.
+D8. `factor_schedule` returning only the original candidate in final implementation.
+D9. localized Schur never attempting certificate construction.
+D10. sparse resultant route rejecting all polynomial_count != 2 or equivalent narrow route.
+D11. slice route using single-equation substitution as global slice system.
+D12. route tests proving only top-level success, not route-forced no-fallback success.
+D13. production `Unsupported`, `not available`, `TODO`, `unimplemented!`, or normal `ImplementationBug` for spec-required variants.
+D14. Hidden call to full coordinate RUR, full coordinate solution enumeration, fixture-specific branch, or problem-name branch.
 ```
 
-### BS-FORBID-002 — Generalized Guardian failure prevention
-The implementation MUST be rejected if any of the following patterns are found:
-
-```text
-Name Substitution:
-  Algorithm name exists but control/data-flow is a weaker or different algorithm.
-
-Certificate Shelling:
-  Certificate structs exist but verifier does not recompute exact identities from input.
-
-Trace Fiction:
-  Modular/cost traces exist but do not feed or describe the actual computation.
-
-Narrow Route Capture:
-  A general route is limited to one variable, two polynomials, low degree, one fixture shape, or one toy family.
-
-Hidden Delegation:
-  A route delegates to another route or complete fallback while claiming its own route success.
-
-Scope Laundering:
-  Agent turns difficult in-scope algebra into out-of-scope or unsupported without user approval.
-
-Evidence Overfitting:
-  Audit files, closure tables, or test names pass while production code lacks the algorithm.
-```
-
----
-
-## 18. Minimal Public Surface and Redundancy Rules
-
-### BS-API-001 — Minimal public API
-The crate root MUST publicly expose only:
-
-```text
-- TargetProblemQ
-- GuardRecord, GuardKind, GuardProvenance
-- Variable
-- PolynomialQ, UniPolynomialQ
-- SolverOptions, ResourceLimits, ExactImageMode
-- TargetSolveResult, SolverStatus
-- CertifiedCandidateCover, CertifiedExactTargetImage, AlgebraicRealRoot, RationalInterval
-- SolverCertificate and certificate enums
-- solve_target
-- verify_certificate
-```
-
-All route internals, matrix representations, residual basis details, and test forcing controls MUST remain private or `#[cfg(test)]`.
-
-### BS-API-002 — Redundancy control
-Implementation MUST NOT add redundant return values such as both `status` and an unchecked boolean success flag, both certificate and unverified support in a route result, or duplicate trace copies of polynomial objects already in certificates. Trace should contain diagnostics, not extra authority.
-
----
-
-## 19. Acceptance Summary
-
-A final implementation can claim `ACCEPTANCE_COMPLETE` for this Change Base Spec only if all of the following are true:
-
-```text
-- Every active R-ID in this Base Spec is implemented or has an approved exception.
-- `cargo test` passes.
-- Route-forcing tests pass with non-target routes and complete fallback disabled.
-- Certificate tamper tests fail as expected.
-- Static anti-simplification tests pass.
-- Reviewer prompts in the companion reviewer file have been run at each phase and final review.
-- Reviewers inspected production code directly, not only evidence files.
-- No high-impact QuestionDebt remains open.
-- Final closure states only the supported claim: certified candidate-cover core with exact-image fail-closed boundary, unless the exact image classifier is actually completed and reviewed.
-```

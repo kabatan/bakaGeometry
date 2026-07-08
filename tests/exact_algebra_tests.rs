@@ -116,3 +116,16 @@ fn squarefree_part_is_exact_and_does_not_mutate_original() {
     assert_eq!(squarefree, uni(&t, &[-1, 1]));
     assert_eq!(repeated, uni(&t, &[1, -2, 1]));
 }
+
+#[test]
+fn squarefree_factorization_splits_conformance_family() {
+    let t = var("T");
+    let polynomial = uni(&t, &[-6, 11, -6, 1]);
+
+    let factors = polynomial.factor_squarefree_over_q();
+
+    assert_eq!(
+        factors,
+        vec![uni(&t, &[-1, 1]), uni(&t, &[-2, 1]), uni(&t, &[-3, 1])]
+    );
+}
