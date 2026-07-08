@@ -66,21 +66,23 @@ Search boundary:
 Code changes:
 - Added `VerificationResult::CertificateDesignGap`.
 - Guard certificates are compared structurally and verified against original `GuardRecord` provenance for `InputSemanticNonzero`.
-- Target certificate verification recomputes ideal, radical, guarded radical, gcd, and lcm identities.
+- Target certificate verification recomputes ideal, radical, guarded radical, and same-ideal gcd identities. `ComponentUnionLcm` computes and checks the lcm support but returns `CertificateDesignGap` unless the source is replay-verifiable.
 - Target, empty, guard-product, and guard Nullstellensatz verifier paths reject mismatched `ExactIdentityKind`.
 - Public certificate polynomials are checked for variable list and monomial arity before verifier arithmetic.
 - `GuardedRadicalMembership` recomputes `guard_product` from verified guard certificates.
 - Empty algebraic and guarded algebraic certificates are checked by exact polynomial identity.
 - `ExactTargetImage` now has a structural shell: cover certificate, squarefree support, and root classification coverage are checked before returning a P16 design gap.
 - `NoNonzeroTargetEliminant` no longer accepts a monomial-only special case; after guard verification it returns a P15 design gap.
+- `solve_target` does not return `CertifiedNoNonzeroTargetEliminant` while the verifier has only a P15 design-gap shell; it returns `CertificateDesignGap` with no success certificate until P15 replay exists.
 
 Evidence:
-- `tests/verifier_tests.rs` covers multiplier tamper, malformed multiplier arity, support tamper, wrong identity kind, guard Nullstellensatz kind tamper, guard product tamper, guard certificate tamper, composite rule tamper, exact-image shell checks, and no-target P15 design gap.
-- `tests/fallback_elimination_solver_tests.rs` was updated so no-target eliminant verifier behavior is a P15 design gap while empty algebraic certificates remain verified.
+- `tests/verifier_tests.rs` covers multiplier tamper, malformed multiplier arity, support tamper, wrong identity kind, guard Nullstellensatz kind tamper, guard product tamper, guard certificate tamper, composite rule tamper, description-only component-union design gap, exact-image shell checks, and no-target P15 design gap.
+- `tests/fallback_elimination_solver_tests.rs` covers solver fail-closed behavior for no-target eliminant while empty algebraic certificates remain verified.
 
 Remaining later-phase boundary:
 - `ExactTargetImage` full real-fiber replay remains P16.
 - `NoNonzeroTargetEliminant` exact elimination-zero replay remains P15.
+- `ComponentUnionLcm` replay-verifiable source remains a later certificate replay gap.
 - Real infeasibility replay remains P16.
 
 ## Test Evidence

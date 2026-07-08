@@ -34,6 +34,12 @@ pub(crate) enum CertificateMode {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct FairProofStep {
+    pub support_degree: usize,
+    pub mode: CertificateMode,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum ProofFailure {
     InvalidInput,
     Inconsistent { obstruction: LeftNullObstruction },
@@ -49,43 +55,78 @@ struct ProofColumn {
 }
 
 pub(crate) fn fair_certificate_mode_schedule(limits: &ResourceLimits) -> Vec<CertificateMode> {
-    let max_weight = limits.max_proof_weight.unwrap_or(6);
-    fair_certificate_mode_schedule_prefix(max_weight)
+    let mut modes = Vec::new();
+    for step in fair_proof_schedule(limits) {
+        if !modes.contains(&step.mode) {
+            modes.push(step.mode);
+        }
+    }
+    modes
 }
 
-fn fair_certificate_mode_schedule_prefix(max_weight: usize) -> Vec<CertificateMode> {
-    FairCertificateModeIter::new()
-        .take_while(|mode| mode_weight(mode).is_none_or(|weight| weight <= max_weight))
+pub(crate) fn fair_proof_schedule(limits: &ResourceLimits) -> Vec<FairProofStep> {
+    let max_weight = limits.max_proof_weight.unwrap_or(6);
+    fair_proof_schedule_prefix(max_weight)
+}
+
+fn fair_proof_schedule_prefix(max_weight: usize) -> Vec<FairProofStep> {
+    FairProofStepIter::new()
+        .take_while(|step| step.weight <= max_weight)
+        .map(|step| step.step)
         .collect()
 }
 
-struct FairCertificateModeIter {
-    emitted_ideal: bool,
-    next_weight: usize,
-    queued: VecDeque<CertificateMode>,
+struct WeightedProofStep {
+    weight: usize,
+    step: FairProofStep,
 }
 
-impl FairCertificateModeIter {
+struct FairProofStepIter {
+    next_weight: usize,
+    queued: VecDeque<WeightedProofStep>,
+}
+
+impl FairProofStepIter {
     fn new() -> Self {
         Self {
-            emitted_ideal: false,
-            next_weight: 1,
+            next_weight: 0,
             queued: VecDeque::new(),
         }
     }
 
     fn fill_next_weight(&mut self) {
         let weight = self.next_weight;
-        for support_power in 1..=weight {
-            self.queued
-                .push_back(CertificateMode::Radical { support_power });
-        }
-        for support_power in 1..=weight {
-            for guard_power in 0..=weight {
-                if support_power + guard_power <= weight {
-                    self.queued.push_back(CertificateMode::GuardedRadical {
-                        support_power,
-                        guard_power,
+        for support_degree in 0..=weight {
+            for support_power in 1..=weight + 1 {
+                for guard_power in 0..=weight {
+                    if support_degree + support_power + guard_power > weight + 1 {
+                        continue;
+                    }
+                    if support_power == 1 && guard_power == 0 {
+                        self.queued.push_back(WeightedProofStep {
+                            weight,
+                            step: FairProofStep {
+                                support_degree,
+                                mode: CertificateMode::Ideal,
+                            },
+                        });
+                    }
+                    self.queued.push_back(WeightedProofStep {
+                        weight,
+                        step: FairProofStep {
+                            support_degree,
+                            mode: CertificateMode::Radical { support_power },
+                        },
+                    });
+                    self.queued.push_back(WeightedProofStep {
+                        weight,
+                        step: FairProofStep {
+                            support_degree,
+                            mode: CertificateMode::GuardedRadical {
+                                support_power,
+                                guard_power,
+                            },
+                        },
                     });
                 }
             }
@@ -94,29 +135,14 @@ impl FairCertificateModeIter {
     }
 }
 
-impl Iterator for FairCertificateModeIter {
-    type Item = CertificateMode;
+impl Iterator for FairProofStepIter {
+    type Item = WeightedProofStep;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if !self.emitted_ideal {
-            self.emitted_ideal = true;
-            return Some(CertificateMode::Ideal);
-        }
         if self.queued.is_empty() {
             self.fill_next_weight();
         }
         self.queued.pop_front()
-    }
-}
-
-fn mode_weight(mode: &CertificateMode) -> Option<usize> {
-    match mode {
-        CertificateMode::Ideal => None,
-        CertificateMode::Radical { support_power } => Some(*support_power),
-        CertificateMode::GuardedRadical {
-            support_power,
-            guard_power,
-        } => Some(*support_power + *guard_power),
     }
 }
 
@@ -725,12 +751,43 @@ mod tests {
 
     #[test]
     fn fair_schedule_iterator_reaches_larger_weights() {
-        let schedule = FairCertificateModeIter::new().take(80).collect::<Vec<_>>();
+        let limits = crate::ResourceLimits {
+            max_window_degree: None,
+            max_proof_weight: Some(5),
+            max_matrix_rows: None,
+            max_matrix_cols: None,
+            max_candidate_count: None,
+        };
+        let schedule = fair_certificate_mode_schedule(&limits);
 
         assert!(schedule.contains(&CertificateMode::GuardedRadical {
             support_power: 3,
             guard_power: 2,
         }));
         assert!(schedule.contains(&CertificateMode::Radical { support_power: 4 }));
+    }
+
+    #[test]
+    fn fair_proof_schedule_covers_support_degree_power_and_guard_tuples() {
+        let limits = crate::ResourceLimits {
+            max_window_degree: None,
+            max_proof_weight: Some(5),
+            max_matrix_rows: None,
+            max_matrix_cols: None,
+            max_candidate_count: None,
+        };
+        let schedule = fair_proof_schedule(&limits);
+
+        assert!(schedule.contains(&FairProofStep {
+            support_degree: 3,
+            mode: CertificateMode::Radical { support_power: 2 },
+        }));
+        assert!(schedule.contains(&FairProofStep {
+            support_degree: 2,
+            mode: CertificateMode::GuardedRadical {
+                support_power: 2,
+                guard_power: 1,
+            },
+        }));
     }
 }

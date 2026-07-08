@@ -394,7 +394,7 @@ fn composite_rule_tamper_recomputes_lcm_instead_of_trusting_rule_label() {
 }
 
 #[test]
-fn component_union_composite_requires_lcm_and_source_marker() {
+fn component_union_lcm_without_replay_source_is_design_gap() {
     let t = variable("T");
     let variables = vec![t.clone()];
     let problem = problem(
@@ -415,18 +415,19 @@ fn component_union_composite_requires_lcm_and_source_marker() {
         identity: identity(ExactIdentityKind::IdealMembership),
     };
 
-    let good = SolverCertificate::TargetCover(TargetCertificate::CompositeCover {
-        support: uni(&t, &[0, -1, 1]),
-        children: vec![child_a.clone(), child_b.clone()],
-        rule: CompositeRule::ComponentUnionLcm,
-        component_union_source: Some(ComponentUnionSource {
-            description: "explicit component union".to_string(),
-        }),
-    });
-    assert_eq!(
-        verify_certificate(problem.clone(), good),
-        VerificationResult::Verified
-    );
+    let description_only_source =
+        SolverCertificate::TargetCover(TargetCertificate::CompositeCover {
+            support: uni(&t, &[0, -1, 1]),
+            children: vec![child_a.clone(), child_b.clone()],
+            rule: CompositeRule::ComponentUnionLcm,
+            component_union_source: Some(ComponentUnionSource {
+                description: "explicit component union".to_string(),
+            }),
+        });
+    assert!(matches!(
+        verify_certificate(problem.clone(), description_only_source),
+        VerificationResult::CertificateDesignGap { .. }
+    ));
 
     let missing_source = SolverCertificate::TargetCover(TargetCertificate::CompositeCover {
         support: uni(&t, &[0, -1, 1]),

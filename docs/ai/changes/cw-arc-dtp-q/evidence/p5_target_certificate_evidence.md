@@ -1,18 +1,23 @@
 # P5 Target Certificate Evidence
 
 Purpose: phase evidence record.
-Status: P5 local evidence after RP-P5 re-review PASS.
+Status: superseded historical P5 local evidence; ComponentUnionLcm claim downgraded by P3 re-review blocker fix on 2026-07-08.
 Authority: non-authoritative; tests and command output are evidence only.
 
 ## Scope
 
-P5 implemented target certificate verification for:
+Historical P5 evidence attempted target certificate verification coverage for:
 
 - `IdealMembership`
 - `RadicalMembership`
 - `GuardedRadicalMembership`
 - `CompositeCover` with `SameIdealGcd`
-- `CompositeCover` with `ComponentUnionLcm` and an explicit component-union source marker
+- `CompositeCover` with `ComponentUnionLcm` and an explicit component-union source marker; this item is downgraded below because a marker string is not replay-verifiable source data
+
+Current downgrade:
+- A nonempty `ComponentUnionSource.description` is not replay-verifiable evidence.
+- Current production verifier code in `src/verifier.rs` computes/checks the lcm support but returns `CertificateDesignGap` for description-only component-union sources.
+- Current regression test: `tests/verifier_tests.rs::component_union_lcm_without_replay_source_is_design_gap`.
 
 Verifier logic recomputes sparse polynomial identities over `BigRational`; it does not use solver trace, candidate origin, or identity labels as proof.
 
@@ -59,6 +64,6 @@ result: pass, no hits
 
 ## P5 Claim Boundary
 
-RP-P5 re-review returned `PASS`. The bounded P5 claim is target certificate verification accepts only nonzero supports whose support variable is the problem target, including composite parent and recursively verified composite children, and recomputes exact rational polynomial identities for ideal, radical, guarded radical, same-ideal gcd, and component-union lcm certificates.
+RP-P5 re-review returned `PASS` for the historical bounded implementation. The current claim is narrower: target certificate verification accepts only nonzero supports whose support variable is the problem target, including composite parent and recursively verified composite children, and recomputes exact rational polynomial identities for ideal, radical, guarded radical, and same-ideal gcd certificates. `ComponentUnionLcm` is not accepted from a description-only source; it returns a design-gap result until replay-verifiable source data exists.
 
 This does not verify candidate generation, residual windows, fixed proof construction, solver route integration, root isolation, or exact-image behavior.

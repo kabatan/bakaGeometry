@@ -295,6 +295,12 @@ fn verify_composite_target_certificate(
             for child in &children[1..] {
                 combined = combined.lcm(target_certificate_support(child));
             }
+            if combined.primitive_integer_normalized() != support.primitive_integer_normalized() {
+                return reject("composite support mismatch");
+            }
+            return design_gap(
+                "component union source replay requires P5/P16 replay-verifiable data",
+            );
         }
     }
 

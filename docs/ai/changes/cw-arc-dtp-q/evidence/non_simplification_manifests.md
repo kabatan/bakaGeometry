@@ -103,8 +103,8 @@ phase
 ## CompleteTargetEliminationFallback
 
 - Production call chain: bounded `solve_target` route exhaustion -> explicit fallback gate -> `complete_target_elimination_fallback` -> certified support, empty certificate, no-target-eliminant certificate, or resource failure.
-- Controlling data-flow: enumerates exact multiplier windows, solves exact rational linear systems for empty certificates or target eliminants, sends target support through `prove_fixed_target`, and has a narrow algebraic no-target-eliminant replay case.
-- Exact replay oracle: fallback support uses fixed proof; empty and no-target certificates are independently replayed by `verify_certificate`.
-- Route-forcing tests: `complete_fallback_disabled_route_control_fails_on_reach`; fallback-specific tests `fallback_certifies_simple_target_eliminant`, `fallback_certifies_empty_admissible_set`, and `no_target_eliminant_is_algebraic_certificate_only`.
-- Tamper tests: empty-certificate multiplier tamper; no-target replay rejects cases outside the implemented algebraic monomial-ideal boundary.
+- Controlling data-flow: enumerates exact multiplier windows, solves exact rational linear systems for empty certificates or target eliminants, and sends target support through `prove_fixed_target`. The no-target-eliminant branch is not replay-complete until P15.
+- Exact replay oracle: fallback support uses fixed proof; empty certificates are independently replayed by `verify_certificate`. No-target-eliminant verifier behavior is a P15 `CertificateDesignGap`, and top-level `solve_target` returns `SolverStatus::CertificateDesignGap` with no success certificate on that path.
+- Route-forcing tests: `complete_fallback_disabled_route_control_fails_on_reach`; fallback-specific tests `fallback_certifies_simple_target_eliminant`, `fallback_certifies_empty_admissible_set`, `no_target_eliminant_is_algebraic_certificate_only`, and `solver_no_target_eliminant_is_design_gap_until_p15_replay`.
+- Tamper tests: empty-certificate multiplier tamper; no-target replay is tracked as a design-gap shell rather than accepted replay.
 - Non-simplification notes: fallback is explicit in top-level solver and disabled during route-only closure tests.

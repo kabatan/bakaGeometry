@@ -1,6 +1,6 @@
 # Current Gap Inventory
 
-Status: P0 evidence plus P1-P3 checkpoint tracking; P1-P3 scoped reviews passed.
+Status: P0 evidence plus P1-P6 checkpoint tracking; P1-P6 scoped reviews passed.
 Authority: evidence only. The V3 Base Spec and production source control correctness.
 
 Purpose: quarantine the current implementation against CW-ARC-DTP-Q Full Implementation v3. Every listed production gap is a `replace` target unless a later reviewer confirms full conformance from production data-flow.
@@ -83,14 +83,14 @@ Disposition:
 ### GAP-005 — no-target-eliminant verifier is monomial-only / design-gap behavior
 
 Finding:
-- `src/verifier.rs` verifies no-target-eliminant only for a monomial non-target ideal shape and otherwise rejects as replay unavailable.
+- `src/verifier.rs` has only a P15 design-gap shell for no-target-eliminant replay.
 - `src/fallback_elimination.rs` creates no-target-eliminant certificate for that narrow shape only.
 
 Impact:
 - Violates V3 G10 and P15.
 
 Disposition:
-- P3 checkpoint implementation removes monomial-only acceptance and returns a P15 design gap after guard verification. Full exact elimination-zero certificate remains P15.
+- P3 checkpoint implementation removes monomial-only verifier acceptance and returns a P15 design gap after guard verification. Top-level `solve_target` returns `CertificateDesignGap` with no success certificate for this path until exact elimination-zero replay exists. Full exact elimination-zero certificate remains P15.
 
 ### GAP-006 — modular reconstruction is first-prime-only
 
@@ -101,7 +101,7 @@ Impact:
 - Violates V3 P6 and candidate route requirements for multi-prime CRT/rational reconstruction.
 
 Disposition:
-- P1 checkpoint implementation uses CRT plus rational reconstruction for multi-prime modular candidates. Single-prime lifting remains a non-certified proof-search convenience. P6 still owns factor schedule.
+- P6 checkpoint implementation keeps single-prime modular candidates modular-only, uses CRT plus rational reconstruction for multi-prime candidates, and preserves duplicate-prime alternatives while still forming distinct-prime reconstruction combinations. Scoped P4-P6 spec, quality, and boundary reviews passed on 2026-07-08.
 
 ### GAP-007 — factor schedule is clone-only
 
@@ -112,7 +112,7 @@ Impact:
 - Violates V3 P6 final factor schedule requirements.
 
 Disposition:
-- `replace` in P6 with actual Q factor schedule and tests for reducible candidates.
+- P6 checkpoint implementation replaces clone-only scheduling with exact Q factor trials plus the original candidate, with reducible-candidate tests. Scoped P4-P6 spec, quality, and boundary reviews passed on 2026-07-08.
 
 ### GAP-008 — localized Schur has support-information-only production path
 
@@ -174,7 +174,7 @@ Disposition:
 ### GAP-013 — candidate routes are narrow relative to V3 route data-flow
 
 Finding:
-- Residual route lacks multi-prime CRT/rational reconstruction and active multiplier solve as required by V3 P8.
+- Residual route still needs full P8 route closure, but P4-P6 now provides the shared residual active multiplier solve, admissible-prime filtering, and multi-prime candidate normalization/CRT pieces used by that later route phase.
 - Krylov route is an exact linear dependence search over current matrices, not yet the full quotient/residual handle required by V3 P9.
 - Sparse resultant route is a simplified Macaulay-style nullspace path, not the V3 sparse template/determinant/minor contract.
 - Slice route substitutes values into equations directly rather than building full sliced systems with slice equations and internal subroutes.
@@ -197,6 +197,18 @@ Impact:
 Disposition:
 - Treat prior closure as historical evidence only. V3 P22 must produce a new final claim if and only if all V3 phases close.
 
+### GAP-015 — ComponentUnionLcm source replay is not implemented
+
+Finding:
+- `ComponentUnionSource` currently carries a description string, not replay-verifiable component-union source data.
+- `src/verifier.rs` can compute/check lcm support from verified child certificates, but description-only source data cannot justify component-union semantics.
+
+Impact:
+- Violates V3 T-CERT-6 if accepted as a verified certificate from description alone.
+
+Disposition:
+- Current verifier returns `CertificateDesignGap` for description-only `ComponentUnionLcm` after support checking. Replace with replay-verifiable source data and replay verification in the owning later certificate phase.
+
 ## Test-only / documentation hits
 
 - `Unsupported` and `TODO` hits found in `tests/anti_simplification_static_tests.rs` are anti-pattern test fixtures, not production behavior.
@@ -204,4 +216,4 @@ Disposition:
 
 ## Current Claim Ceiling
 
-This inventory supports only the claim that V3 authority has been imported, P0 admission passed, P1-P3 checkpoint work was implemented and reviewed, and the current implementation still has known replacement targets for later phases. It does not claim final V3 completion.
+This inventory supports only the claim that V3 authority has been imported, P0 admission passed, P1-P6 checkpoint work was implemented and reviewed, and the current implementation still has known replacement targets for later phases. It does not claim final V3 completion.

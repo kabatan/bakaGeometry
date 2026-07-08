@@ -10,7 +10,7 @@ This registry is an index only. It is not an authority over any Base Spec.
 
 | Spec ID | Status | Scope | Base Spec | Plan | Source Map |
 | --- | --- | --- | --- | --- | --- |
-| `CW-ARC-DTP-Q-FULL-V3` | Active; P0 authority admission passed; P1-P3 checkpoint closed; P4 not started | `geosolver-core` target-value solver | `docs/ai/changes/cw-arc-dtp-q/BASE_SPEC.md` | `docs/ai/changes/cw-arc-dtp-q/PLAN.md` | `docs/ai/changes/cw-arc-dtp-q/source_map.md` |
+| `CW-ARC-DTP-Q-FULL-V3` | Active; P0 authority admission passed; P1-P6 checkpoints closed narrowly; P7 not started | `geosolver-core` target-value solver | `docs/ai/changes/cw-arc-dtp-q/BASE_SPEC.md` | `docs/ai/changes/cw-arc-dtp-q/PLAN.md` | `docs/ai/changes/cw-arc-dtp-q/source_map.md` |
 
 ## Current Import Record
 

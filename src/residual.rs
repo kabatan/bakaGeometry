@@ -134,4 +134,98 @@ mod tests {
         assert_ne!(outside, vec![0, 0, 0]);
         assert_eq!(oracle.reduce(&outside), outside);
     }
+
+    #[test]
+    fn residual_oracle_matches_bruteforce_column_space_over_multiple_primes() {
+        for prime in [2, 3, 5, 7] {
+            for seed in 0..8 {
+                let columns = pseudo_random_columns(prime, 3, 2, seed);
+                let oracle = DenseEchelonResidualOracleFp::from_columns(prime, columns.clone())
+                    .expect("prime modulus");
+                for vector in all_vectors(prime, 3) {
+                    let residual = oracle.reduce(&vector);
+                    assert_eq!(oracle.reduce(&residual), residual);
+                    assert_eq!(
+                        oracle.is_in_column_space(&vector),
+                        brute_force_column_space_contains(prime, &columns, &vector),
+                        "prime={prime} seed={seed} vector={vector:?} columns={columns:?}"
+                    );
+                }
+            }
+        }
+    }
+
+    fn pseudo_random_columns(
+        prime: u64,
+        row_count: usize,
+        column_count: usize,
+        seed: u64,
+    ) -> Vec<Vec<u64>> {
+        let mut state = seed + 1;
+        (0..column_count)
+            .map(|_| {
+                (0..row_count)
+                    .map(|_| {
+                        state = state.wrapping_mul(1_103_515_245).wrapping_add(12_345);
+                        state % prime
+                    })
+                    .collect()
+            })
+            .collect()
+    }
+
+    fn all_vectors(prime: u64, row_count: usize) -> Vec<Vec<u64>> {
+        let mut vectors = Vec::new();
+        let mut current = vec![0; row_count];
+        enumerate_vectors(prime, 0, &mut current, &mut vectors);
+        vectors
+    }
+
+    fn enumerate_vectors(
+        prime: u64,
+        index: usize,
+        current: &mut [u64],
+        vectors: &mut Vec<Vec<u64>>,
+    ) {
+        if index == current.len() {
+            vectors.push(current.to_vec());
+            return;
+        }
+        for value in 0..prime {
+            current[index] = value;
+            enumerate_vectors(prime, index + 1, current, vectors);
+        }
+        current[index] = 0;
+    }
+
+    fn brute_force_column_space_contains(prime: u64, columns: &[Vec<u64>], target: &[u64]) -> bool {
+        let mut coefficients = vec![0; columns.len()];
+        brute_force_coefficients(prime, columns, target, 0, &mut coefficients)
+    }
+
+    fn brute_force_coefficients(
+        prime: u64,
+        columns: &[Vec<u64>],
+        target: &[u64],
+        index: usize,
+        coefficients: &mut [u64],
+    ) -> bool {
+        if index == coefficients.len() {
+            let mut sum = vec![0; target.len()];
+            for (coefficient, column) in coefficients.iter().zip(columns) {
+                for (entry, column_entry) in sum.iter_mut().zip(column) {
+                    *entry = (*entry + coefficient * column_entry) % prime;
+                }
+            }
+            return sum == target;
+        }
+        for value in 0..prime {
+            coefficients[index] = value;
+            if brute_force_coefficients(prime, columns, target, index + 1, coefficients) {
+                return true;
+            }
+        }
+        coefficients[index] = 0;
+        false
+    }
 }

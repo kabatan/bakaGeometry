@@ -239,6 +239,10 @@ mod tests {
         BigRational::from_integer(BigInt::from(value))
     }
 
+    fn fraction(numerator: i64, denominator: i64) -> Rational {
+        BigRational::new(BigInt::from(numerator), BigInt::from(denominator))
+    }
+
     fn monomial(exponents: &[u32]) -> Monomial {
         Monomial {
             exponents: exponents.to_vec(),
@@ -314,5 +318,22 @@ mod tests {
             build_target_power_matrix_q(&sys, &forged).row_monomials,
             window.row_monomials
         );
+    }
+
+    #[test]
+    fn modular_matrix_reduction_filters_denominator_bad_primes() {
+        let t = variable("T");
+        let variables = vec![t.clone()];
+        let equation = PolynomialQ::from_term(variables.clone(), fraction(1, 2), monomial(&[1]));
+        let sys = system(vec![equation], variables, t);
+        let window = make_row_closed_certificate_window(&sys, 1, vec![vec![monomial(&[0])]]);
+        let membership = build_membership_matrix_q(&sys, &window);
+
+        assert!(membership
+            .to_modular_columns(crate::finite_field::PrimeModulus::new(2).unwrap())
+            .is_none());
+        assert!(membership
+            .to_modular_columns(crate::finite_field::PrimeModulus::new(3).unwrap())
+            .is_some());
     }
 }

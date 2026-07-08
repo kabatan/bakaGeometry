@@ -6,6 +6,11 @@ Authority: non-authoritative evidence; `BASE_SPEC.md` and `PLAN.md` remain contr
 
 Date: 2026-07-08.
 
+Update after P3 re-review blocker checklist:
+- `ComponentUnionLcm` is not claimed accepted from a description-only source. Current verifier returns `CertificateDesignGap` unless component-union source data is replay-verifiable.
+- Top-level solver no longer returns `CertifiedNoNonzeroTargetEliminant` for a certificate whose verifier path is only a P15 design gap; it returns `CertificateDesignGap` with no success certificate.
+- Evidence claims should be read against production code and tests, not this review summary alone.
+
 ## Scope
 
 The reviewed scope is P1 through P3 of `CW-ARC-DTP-Q-FULL-V3`.
@@ -41,7 +46,7 @@ cargo test passed: 109 tests.
 Summary:
 - P1 primitives, CRT/rational reconstruction, and exact algebra support were inspected.
 - P2 problem validation, compression replay, semantic guard transfer, and original-problem certificate lifting were inspected.
-- P3 verifier recomputation, identity-kind rejection, public certificate polynomial arity checks, and P15/P16 design-gap shells were inspected.
+- P3 verifier recomputation, identity-kind rejection, public certificate polynomial arity checks, and P15/P16 design-gap shells were inspected. The later re-review blocker fix narrows the ComponentUnionLcm and no-target-eliminant claims as noted above.
 - No blocking P1-P3 issue was reported.
 
 `quality_reviewer`: PASS after fixable findings were addressed.

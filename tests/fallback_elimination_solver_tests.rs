@@ -86,7 +86,7 @@ fn solver_returns_empty_certificate_for_constant_infeasibility() {
 }
 
 #[test]
-fn solver_no_target_eliminant_is_algebraic_only() {
+fn solver_no_target_eliminant_is_design_gap_until_p15_replay() {
     let x = variable("X");
     let t = variable("T");
     let variables = vec![x.clone(), t.clone()];
@@ -95,19 +95,13 @@ fn solver_no_target_eliminant_is_algebraic_only() {
 
     let result = solve_target(input.clone(), options());
 
-    assert_eq!(
-        result.status,
-        SolverStatus::CertifiedNoNonzeroTargetEliminant
-    );
+    assert_eq!(result.status, SolverStatus::CertificateDesignGap);
     assert!(result.cover.is_none());
     assert!(result.exact_image.is_none());
+    assert!(result.certificate.is_none());
     assert!(result
         .trace
         .events
         .iter()
         .any(|event| event == "target_elimination:no_target_eliminant"));
-    assert!(matches!(
-        verify_certificate(input, result.certificate.unwrap()),
-        VerificationResult::CertificateDesignGap { .. }
-    ));
 }

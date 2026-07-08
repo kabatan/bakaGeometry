@@ -10,9 +10,7 @@ use crate::candidates::{CandidateOracle, CandidateOrigin, TargetCandidate};
 use crate::compression::{
     certified_system_from_problem, lift_multipliers_to_original_problem, CertifiedSystemQ,
 };
-use crate::dependency_dag::{
-    build_target_dependency_dag, certificate_window_schedule, plan_certificate_windows,
-};
+use crate::dependency_dag::{build_target_dependency_dag, plan_certificate_windows};
 use crate::exact_image::{classify_real_fibers_conservative, ExactImageClassification};
 use crate::fallback_elimination::{
     complete_target_elimination_fallback, try_empty_admissible_set_certificate,
@@ -20,10 +18,11 @@ use crate::fallback_elimination::{
 };
 use crate::normalize::{factor_schedule, normalize_candidates, rank_candidates};
 use crate::proof::{
-    fair_certificate_mode_schedule, prove_fixed_target, CertificateMode, FixedProofInput,
-    ProofFailure,
+    fair_proof_schedule, prove_fixed_target, CertificateMode, FixedProofInput, ProofFailure,
 };
-use crate::proof_learning::{expand_by_obstruction_predecessors, learn_initial_proof_window};
+use crate::proof_learning::{
+    expand_by_obstruction_predecessors, expand_by_total_degree, learn_initial_proof_window,
+};
 use crate::repair_multiple::low_degree_multiple_repair;
 use crate::repair_schur::{localized_schur_repair, SchurRepairOutput};
 use crate::roots::isolate_real_roots_squarefree;
@@ -115,14 +114,10 @@ fn solve_target_with_route_control(
     }
 
     let dag = build_target_dependency_dag(&system);
-    let bounded_window_search = options.resource_limits.max_window_degree.is_some();
-    let bounded_windows = plan_certificate_windows(&system, &dag, &options.resource_limits);
-    let window_schedule = certificate_window_schedule(&system, &dag, &options.resource_limits);
-    let window_source: Box<dyn Iterator<Item = CertificateWindow> + '_> = if bounded_window_search {
-        Box::new(bounded_windows.into_iter())
-    } else {
-        Box::new(window_schedule)
-    };
+    let effective_window_limits = effective_window_limits(&options.resource_limits);
+    let bounded_windows = plan_certificate_windows(&system, &dag, &effective_window_limits);
+    let window_source: Box<dyn Iterator<Item = CertificateWindow> + '_> =
+        Box::new(bounded_windows.into_iter());
     let candidate_limit = options
         .resource_limits
         .max_candidate_count
@@ -170,7 +165,7 @@ fn solve_target_with_route_control(
                         &system,
                         &window,
                         &proof_candidate,
-                        &options.resource_limits,
+                        &effective_window_limits,
                         &mut collected_obstructions,
                         &mut last_proof_window,
                         &mut trace,
@@ -209,11 +204,6 @@ fn solve_target_with_route_control(
         }
     }
 
-    if !bounded_window_search {
-        trace.events.push("resource:unbounded_search".to_string());
-        return finite_resource_failure(trace);
-    }
-
     assert!(
         allow_complete_fallback,
         "complete fallback reached while disabled"
@@ -233,15 +223,15 @@ fn solve_target_with_route_control(
                 trace,
             };
         }
-        CompleteFallbackResult::CertifiedNoTargetEliminant(certificate) => {
+        CompleteFallbackResult::CertifiedNoTargetEliminant(_) => {
             trace
                 .events
                 .push("target_elimination:no_target_eliminant".to_string());
             return TargetSolveResult {
-                status: SolverStatus::CertifiedNoNonzeroTargetEliminant,
+                status: SolverStatus::CertificateDesignGap,
                 cover: None,
                 exact_image: None,
-                certificate: Some(SolverCertificate::NoNonzeroTargetEliminant(certificate)),
+                certificate: None,
                 trace,
             };
         }
@@ -310,6 +300,14 @@ fn window_exceeds_limits(window: &CertificateWindow, limits: &ResourceLimits) ->
         })
 }
 
+fn effective_window_limits(limits: &ResourceLimits) -> ResourceLimits {
+    let mut effective = limits.clone();
+    if effective.max_window_degree.is_none() {
+        effective.max_window_degree = Some(effective.max_proof_weight.unwrap_or(6));
+    }
+    effective
+}
+
 #[cfg(test)]
 pub(crate) fn solve_target_for_test(
     problem: TargetProblemQ,
@@ -344,12 +342,14 @@ fn try_candidate_certificate(
     let proof_window = learn_initial_proof_window(window, &candidate.traces);
     *last_proof_window = Some(proof_window.clone());
 
-    for mode in fair_certificate_mode_schedule(limits) {
+    for step in fair_proof_schedule(limits) {
+        let scheduled_window = expand_by_total_degree(system, &proof_window, step.support_degree);
+        *last_proof_window = Some(scheduled_window.clone());
         if let Some(certificate) = try_fixed_certificate(
             system,
             support,
-            &proof_window,
-            mode,
+            &scheduled_window,
+            step.mode,
             limits,
             collected_obstructions,
             trace,
@@ -940,5 +940,34 @@ mod tests {
             .events
             .iter()
             .any(|event| event.starts_with("target_elimination:")));
+    }
+
+    #[test]
+    fn max_window_degree_none_uses_fair_prefix_then_reaches_fallback() {
+        let x = variable("X");
+        let t = variable("T");
+        let variables = vec![x.clone(), t.clone()];
+        let equations = vec![polynomial(&variables, &[(1, vec![1, 0])])];
+        let options = SolverOptions {
+            resource_limits: ResourceLimits {
+                max_window_degree: None,
+                max_proof_weight: Some(1),
+                max_matrix_rows: None,
+                max_matrix_cols: None,
+                max_candidate_count: None,
+            },
+            exact_image_mode: ExactImageMode::CoverOnly,
+        };
+
+        let result = solve_target(problem(equations, variables, t), options);
+
+        assert_eq!(result.status, SolverStatus::CertificateDesignGap);
+        assert!(result.cover.is_none());
+        assert!(result.certificate.is_none());
+        assert!(result
+            .trace
+            .events
+            .iter()
+            .any(|event| event == "target_elimination:no_target_eliminant"));
     }
 }

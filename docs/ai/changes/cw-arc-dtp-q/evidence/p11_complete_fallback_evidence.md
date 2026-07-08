@@ -1,5 +1,7 @@
 # P11 Complete Fallback Evidence
 
+Status: superseded historical P11 local evidence; no-target solver-success claim downgraded by P3 re-review blocker fix on 2026-07-08.
+
 Scope: Phase P11, `BS-FALLBACK-001`, `BS-CERT-004`, `MECH-COMPLETE-FALLBACK`.
 
 ## Files inspected or changed
@@ -19,7 +21,8 @@ Scope: Phase P11, `BS-FALLBACK-001`, `BS-CERT-004`, `MECH-COMPLETE-FALLBACK`.
   - `ResourceFailure(CostTrace)`
 - Target-support fallback searches exact target-power relations against the exact rational membership matrix, then calls `prove_fixed_target` before returning a support certificate.
 - Empty fallback solves an exact rational membership identity for `1 = sum q_i F_i`.
-- No-target fallback is conservative: it emits a certificate only for the exact monomial non-target ideal class implemented in both fallback and verifier, and top-level solver maps it to `CertifiedNoNonzeroTargetEliminant`, not an exact real image.
+- Historical no-target fallback emitted a certificate for a narrow monomial non-target ideal class. Current production solver code in `src/solver.rs` does not map that P15-incomplete certificate to `CertifiedNoNonzeroTargetEliminant`; it returns `CertificateDesignGap` with no success certificate until exact elimination-zero replay is implemented.
+- Current regression test: `tests/fallback_elimination_solver_tests.rs::solver_no_target_eliminant_is_design_gap_until_p15_replay`.
 - `solve_target` now performs early exact empty certification, then candidate proof/repair paths, localized Schur inspection, and only then complete target elimination fallback.
 - Nonzero constant support is not returned as a candidate cover; empty cases go through an empty certificate path.
 - Fallback success paths emit `target_elimination:*` trace events; candidate proof success tests assert these events are absent.
@@ -56,6 +59,6 @@ Observed result: no matches.
 
 ## Bounded claim
 
-RP-P11 boundary review returned `PASS` after the route-control fix. This closes the local P11 review gate only.
+RP-P11 boundary review returned `PASS` for the historical bounded implementation after the route-control fix. The current no-target success claim is downgraded: no top-level solver success status is claimed for no-target eliminant before P15 replay.
 
 This evidence supports local P11 review only. It does not claim final source fidelity, P12 solver orchestration completion, dependency DAG/window planning completion, root isolation, exact-image classification, acceptance completion, or R-ID verification.
